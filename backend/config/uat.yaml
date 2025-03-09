@@ -36,9 +36,15 @@ llm:
   default_model: "gpt-4-turbo"
   temperature: 0.5
   timeout_seconds: 90
-  max_tokens: 4096
+  max_tokens: 8192
   retry_attempts: 3
-  batch_size: 10
+  batch_size: 20
+
+# LangSmith settings for observability
+langsmith:
+  project_name: "webagent-research-uat"
+  tracing_enabled: true
+  log_level: "INFO"
 
 # Web search settings
 web_search:

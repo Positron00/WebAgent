@@ -144,6 +144,13 @@ class SecurityConfig(BaseModel):
     password_min_length: int = Field(default=8, ge=8)
 
 
+class LangSmithConfig(BaseModel):
+    """LangSmith configuration for tracing and observability."""
+    project_name: str = Field(default="webagent-research")
+    tracing_enabled: bool = Field(default=True)
+    log_level: LogLevel = Field(default=LogLevel.INFO)
+
+
 class AppConfig(BaseModel):
     """Main application configuration."""
     api: ApiConfig = Field(default_factory=ApiConfig)
@@ -155,6 +162,7 @@ class AppConfig(BaseModel):
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
+    langsmith: LangSmithConfig = Field(default_factory=LangSmithConfig)
     
     @field_validator('cors')
     @classmethod

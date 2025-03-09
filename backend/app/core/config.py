@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = os.getenv("WEBAGENT_API_PREFIX", "/api/v1")
     PROJECT_NAME: str = "WebAgent Backend"
     PROJECT_DESCRIPTION: str = "Multi-Agent Research and Analysis Platform"
-    VERSION: str = "2.0.0"
+    VERSION: str = "2.2.0"
     
     # Server settings
     HOST: str = os.getenv("WEBAGENT_API_HOST", "0.0.0.0")
@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     # OpenAI
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     DEFAULT_MODEL: str = os.getenv("WEBAGENT_LLM_DEFAULT_MODEL", "gpt-4-turbo")
+    
+    # LangSmith for tracing and observability
+    LANGSMITH_API_KEY: Optional[str] = os.getenv("LANGSMITH_API_KEY")
+    LANGSMITH_PROJECT_NAME: str = os.getenv("LANGSMITH_PROJECT_NAME", "webagent-research")
+    LANGSMITH_TRACING_ENABLED: bool = os.getenv("LANGSMITH_TRACING_ENABLED", "True").lower() == "true"
     
     # Tavily for web search
     TAVILY_API_KEY: Optional[str] = os.getenv("TAVILY_API_KEY")

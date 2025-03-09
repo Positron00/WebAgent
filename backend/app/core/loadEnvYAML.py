@@ -179,8 +179,19 @@ def get_database_config():
 
 
 def get_llm_config():
-    """Get LLM configuration section."""
-    return get_config().llm
+    """
+    Get LLM configuration settings.
+    """
+    config = get_config()
+    return config.llm
+
+
+def get_langsmith_config():
+    """
+    Get LangSmith configuration settings.
+    """
+    config = get_config()
+    return config.langsmith
 
 
 def get_web_search_config():

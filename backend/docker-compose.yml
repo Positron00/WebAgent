@@ -2,18 +2,22 @@ version: '3.8'
 
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      - ./app:/app/app
       - ./config:/app/config
     environment:
       - WEBAGENT_ENV=${WEBAGENT_ENV:-dev}
-      - DEBUG_MODE=${DEBUG_MODE:-true}
+      - DEBUG_MODE=${DEBUG_MODE:-True}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - TAVILY_API_KEY=${TAVILY_API_KEY}
-      # Override specific settings if needed
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
+      - LANGSMITH_PROJECT_NAME=${LANGSMITH_PROJECT_NAME:-webagent-research}
+      - LANGSMITH_TRACING_ENABLED=${LANGSMITH_TRACING_ENABLED:-True}
       - WEBAGENT_DATABASE_REDIS_HOST=redis
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:

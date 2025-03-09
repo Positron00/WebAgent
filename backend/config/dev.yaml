@@ -40,6 +40,12 @@ llm:
   retry_attempts: 3
   batch_size: 10
 
+# LangSmith settings for observability
+langsmith:
+  project_name: "webagent-research-dev"
+  tracing_enabled: true
+  log_level: "DEBUG"
+
 # Web search settings
 web_search:
   provider: "tavily"

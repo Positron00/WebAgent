@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-03-09
+
+### Added
+- Phase 2: Agent Development implementation
+  - Supervisor Agent for research planning and workflow orchestration
+  - Web Research Agent with Tavily API integration
+  - Internal Research Agent with vector database integration
+  - Senior Research Agent for information verification and synthesis
+- Agent coordination systems
+  - Research-based workflow routing
+  - Conditional execution based on research needs
+  - Parallel execution of research agents
+  - Synthesis of findings into a comprehensive report
+- Advanced integration services
+  - Tavily web search implementation for real-time information
+  - Enhanced vector database integration for internal knowledge
+  - Better error handling for all agent operations
+  - State management across the agent workflow
+- LangSmith integration for observability
+  - Tracing and monitoring of agent workflows
+  - Performance metrics for LLM calls
+  - Environment-specific project configurations
+  - Detailed logging of agent interactions
+  - Debugging tools for complex workflows
+
+### Changed
+- Complete redesign of the workflow coordination
+  - Moved from a placeholder implementation to a fully functional agent system
+  - Enhanced workflow graph with conditional paths based on research requirements
+  - Improved state management throughout the agent workflow
+  - Added checkpoint functionality for parallel agent completion
+- Enhanced LLM utilization
+  - Specialized prompts for each agent's unique role
+  - Better context management between agents
+  - Improved final synthesis process
+  - More effective use of gpt-4-turbo across agents
+
+### Fixed
+- Report formatting in the final synthesis
+- Type errors and interface compliance issues in the TypeScript frontend
+- Workflow termination conditions to properly handle errors
+- Various bugs in the agent coordination system
+
 ## [2.1.1] - 2025-03-10
 
 ### Fixed
