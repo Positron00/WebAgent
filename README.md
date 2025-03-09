@@ -1,15 +1,104 @@
-# AI Chatbot with Llama 3.3
+# WebAgent: Multi-Agent AI Research and Analysis Platform
 
-A modern, full-stack chatbot application built with Next.js and Together AI's Llama 3.3 70B Instruct Turbo model. The chatbot supports both text and image inputs, providing a seamless conversational experience.
+A sophisticated AI system built as a microservice architecture that combines a modern Next.js frontend with a powerful LangGraph-based multi-agent backend. The platform enables complex research, analysis, and reporting through specialized AI agents.
+
+## Architecture
+
+```
+┌─────────────┐    HTTP/REST API    ┌───────────────────────────────────────────┐
+│ Web Chat App │<------------------>│     LangGraph Multi-Agent Service         │
+│ (Frontend)   │                    │                                           │
+└─────────────┘                     │  ┌─────────────┐       ┌───────────────┐  │
+                                    │  │ Supervisor  │◄─────►│ Team Manager  │  │
+                                    │  │   Agent     │       │    Agent      │  │
+                                    │  └──────┬──────┘       └───────┬───────┘  │
+                                    │         │                      │          │
+                                    │         ▼                      ▲          │
+                                    │  ┌──────────────┐     ┌───────┴───────┐   │
+                                    │  │              │     │               │   │
+                                    │  │  Research    │     │  Data         │   │
+                                    │  │  Agents      │────►│  Analysis     │   │
+                                    │  │              │     │  Agents       │   │
+                                    │  └──────────────┘     └───────────────┘   │
+                                    │     /          \         /          \     │
+                                    │    /            \       /            \    │
+                                    │   ▼              ▼     ▼              ▼   │
+                                    │ ┌────────┐  ┌─────────┐ ┌─────────┐ ┌────┐│
+                                    │ │  Web   │  │Internal │ │  Data   │ │Code││
+                                    │ │Research│  │Research │ │Analysis │ │Asst││
+                                    │ └────┬───┘  └────┬────┘ └────┬────┘ └──┬─┘│
+                                    │      │           │           │         │  │
+                                    │      └─────┐     │      ┌────┘         │  │
+                                    │            ▼     ▼      ▼              │  │
+                                    │          ┌─────────────────┐           │  │
+                                    │          │Senior Research  │◄──────────┘  │
+                                    │          │     Agent       │              │
+                                    │          └─────────────────┘              │
+                                    └───────────────────────────────────────────┘
+                                                     │
+                                     ┌───────────────┼───────────────────┐
+                                     │               │                   │
+                                     ▼               ▼                   ▼
+                             ┌──────────────┐ ┌─────────────┐    ┌─────────────┐
+                             │  Tavily API  │ │ Vector DB   │    │ Python      │
+                             │ (Web Search) │ │ (Internal   │    │ Runtime     │
+                             │              │ │  Knowledge) │    │ (Graphing)  │
+                             └──────────────┘ └─────────────┘    └─────────────┘
+```
 
 ## Features
 
-- 💬 Real-time chat interface
-- 🖼️ Image upload and analysis
+- 💬 Modern chat interface with real-time communication
+- 🔍 Advanced research capabilities via specialized AI agents
+- 📊 Data analysis and visualization
+- 🌐 Web research with source verification
+- 📚 Internal knowledge base integration
+- 📝 Comprehensive report generation
+- 🧩 Microservice architecture for scalability
+- 🔄 Asynchronous task processing
 - 🎯 Type-safe implementation
 - 🛡️ Comprehensive error handling
 - 🎨 Modern UI with Tailwind CSS
 - 📱 Responsive design
+
+## Specialized Agents
+
+The system comprises seven specialized agents that work together:
+
+1. **Supervisor Agent**
+   - Plans and orchestrates the research workflow
+   - Breaks down complex queries into manageable tasks
+   - Assigns tasks to specialized agents
+
+2. **Web Research Agent**
+   - Searches the web via Tavily API integration
+   - Extracts relevant information from search results
+   - Creates detailed reports with citations
+
+3. **Internal Research Agent**
+   - Queries the vector database for internal knowledge
+   - Retrieves relevant documents and information
+   - Synthesizes information into a structured report
+
+4. **Senior Research Agent**
+   - Fact-checks information from both research agents
+   - Requests additional research when necessary
+   - Creates a comprehensive, verified research summary
+
+5. **Data Analysis Agent**
+   - Identifies patterns and insights in research data
+   - Determines appropriate visualization methods
+   - Prepares data for visualization
+
+6. **Coding Assistant Agent**
+   - Creates data visualizations using Python
+   - Generates charts, graphs, and other visual elements
+   - Works with Data Analysis Agent for optimal visualization
+
+7. **Team Manager Agent**
+   - Compiles the final comprehensive report
+   - Integrates research findings, analysis, and visualizations
+   - Formats information for clarity and impact
 
 ## User Guide
 

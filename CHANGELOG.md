@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-03-09
+
+### Added
+- Complete microservice architecture separating frontend and backend
+- Integration with LangGraph Multi-Agent framework
+- Seven specialized intelligent agents:
+  - Supervisor Agent for planning and orchestration
+  - Web Research Agent with Tavily integration
+  - Internal Research Agent for vector database search
+  - Senior Research Agent for fact-checking and synthesis
+  - Data Analysis Agent for pattern identification
+  - Coding Assistant Agent for visualization
+  - Team Manager Agent for final reporting
+- Enhanced workflow with sequential and conditional agent collaboration
+- Tavily API integration for web search
+- Vector database integration for internal knowledge
+- Python runtime service for executing data visualization code
+- Asynchronous API endpoints with status checking
+- Structured report types for different stages of analysis
+
+### Changed
+- Renamed project from "web-chat-app" to "web-agent-app"
+- Migrated to LangGraph for agent orchestration
+- Updated API contract with task-based asynchronous design
+- Enhanced error handling and fallback mechanisms
+- Improved state management for complex multi-stage workflows
+
+### Architecture
+```
+┌─────────────┐    HTTP/REST API    ┌───────────────────────────────────────────┐
+│ Web Chat App │<------------------>│     LangGraph Multi-Agent Service         │
+│ (Frontend)   │                    │                                           │
+└─────────────┘                     │  ┌─────────────┐       ┌───────────────┐  │
+                                    │  │ Supervisor  │◄─────►│ Team Manager  │  │
+                                    │  │   Agent     │       │    Agent      │  │
+                                    │  └──────┬──────┘       └───────┬───────┘  │
+                                    │         │                      │          │
+                                    │         ▼                      ▲          │
+                                    │  ┌──────────────┐     ┌───────┴───────┐   │
+                                    │  │              │     │               │   │
+                                    │  │  Research    │     │  Data         │   │
+                                    │  │  Agents      │────►│  Analysis     │   │
+                                    │  │              │     │  Agents       │   │
+                                    │  └──────────────┘     └───────────────┘   │
+                                    │     /          \         /          \     │
+                                    │    /            \       /            \    │
+                                    │   ▼              ▼     ▼              ▼   │
+                                    │ ┌────────┐  ┌─────────┐ ┌─────────┐ ┌────┐│
+                                    │ │  Web   │  │Internal │ │  Data   │ │Code││
+                                    │ │Research│  │Research │ │Analysis │ │Asst││
+                                    │ └────┬───┘  └────┬────┘ └────┬────┘ └──┬─┘│
+                                    │      │           │           │         │  │
+                                    │      └─────┐     │      ┌────┘         │  │
+                                    │            ▼     ▼      ▼              │  │
+                                    │          ┌─────────────────┐           │  │
+                                    │          │Senior Research  │◄──────────┘  │
+                                    │          │     Agent       │              │
+                                    │          └─────────────────┘              │
+                                    └───────────────────────────────────────────┘
+                                                     │
+                                     ┌───────────────┼───────────────────┐
+                                     │               │                   │
+                                     ▼               ▼                   ▼
+                             ┌──────────────┐ ┌─────────────┐    ┌─────────────┐
+                             │  Tavily API  │ │ Vector DB   │    │ Python      │
+                             │ (Web Search) │ │ (Internal   │    │ Runtime     │
+                             │              │ │  Knowledge) │    │ (Graphing)  │
+                             └──────────────┘ └─────────────┘    └─────────────┘
+```
+
+### Fixed
+- Various stability issues in multi-agent coordination
+- Memory management for long research sessions
+
 ## [1.15.7] - 2024-03-08
 
 ### Changed
