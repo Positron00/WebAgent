@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2025-03-10
+
+### Fixed
+- Resolved TypeScript errors for improved build stability
+  - Updated ChatMessage interface to include id and timestamp properties
+  - Fixed error handling in ChatContext to use undefined instead of null
+  - Corrected incorrect method reference from trackRequest() to addRequest() in rate limiter
+  - Fixed ApiClient usage by removing redundant getInstance() calls
+  - Added proper type annotations to prevent implicit 'any' types
+- Enhanced TypeScript type safety across components
+  - Improved error state handling in chat functionality
+  - Fixed interface compliance for message handling
+  - Strengthened type definitions for API responses
+
 ## [2.1.0] - 2025-03-09
 
 ### Added

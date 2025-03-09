@@ -38,11 +38,21 @@ export async function POST(req: Request) {
       image = null, 
       promptStyle = 'balanced',
       knowledgeFocus = 'general',
-      citeSources = true
+      citeSources = true,
+      agentic = false
     } = body;
 
     if (!validateRequest(messages)) {
       throw new ApiError(400, 'Invalid message format');
+    }
+    
+    // Log the request parameters including agentic mode
+    console.log(`Processing chat request: style=${promptStyle}, focus=${knowledgeFocus}, sources=${citeSources}, agentic=${agentic}`);
+
+    // If agentic mode is true, this shouldn't be called as the frontend should route directly
+    // to the multi-agent backend. Log a warning just in case.
+    if (agentic) {
+      console.warn('Agentic mode is true but request was sent to standard API endpoint. This should be handled by the frontend.');
     }
 
     // Get the appropriate system prompt based on the promptStyle

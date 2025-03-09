@@ -72,6 +72,22 @@ const generateMockSources = (content: string): Source[] => {
   });
 };
 
+// Helper function to convert file to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Failed to convert file to base64'));
+      }
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { accessibility } = useApp();
   const [state, setState] = useState<ChatState>(() => ({
@@ -126,151 +142,133 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const sendMessage = useCallback(
     async (message: string, imageFile?: File | null) => {
+      if (state.isLoading) return;
       if (!message.trim() && !imageFile) return;
 
+      let imageUrl: string | null = null;
+
       try {
-        console.log('Sending message with citeSources set to:', accessibility.citeSources);
-        
-        // Check if we can make this request
-        if (rateLimiter.isRateLimited()) {
-          const timeUntilNext = rateLimiter.getTimeUntilNextAllowed();
-          const remainingSeconds = Math.ceil(timeUntilNext / 1000);
-          const remainingRequests = rateLimiter.getRemainingRequests();
-          setState(prev => ({
-            ...prev,
-            error: `Too many requests. Please try again in ${remainingSeconds} seconds (${remainingRequests} requests remaining).`
-          }));
-          return;
-        }
+        setState(prev => ({ ...prev, error: undefined, isLoading: true }));
 
-        // Create a request ID for tracking
-        const requestId = `req_${Date.now()}`;
-        logger.info('Sending message to chat API', { requestId, messageLength: message.length, hasImage: !!imageFile });
-
-        // Add this request to the rate limiter
-        rateLimiter.addRequest();
-
-        // Update state to show loading and new message
+        // Create a user message from the input
         const userMessage: ChatMessage = {
+          id: `user-${Date.now()}`,
           role: 'user',
-          content: message.trim(),
+          content: message,
+          timestamp: new Date().toISOString(),
         };
 
-        setState(prev => ({
-          ...prev,
-          isLoading: true,
-          error: undefined,
-          messages: [...prev.messages, userMessage],
-        }));
+        // Update messages with user message
+        const newMessages = [...state.messages, userMessage];
+        setState(prev => ({ ...prev, messages: newMessages }));
+        storage.saveMessages(newMessages);
 
-        // Handle image file upload if present
-        let imageUrl: string | undefined;
+        // Process image if provided
         if (imageFile) {
-          try {
-            // TODO: Implement actual image upload to a storage service
-            // For now, we'll just mock it
-            imageUrl = URL.createObjectURL(imageFile);
-            logger.info('Image prepared for upload', { requestId, fileSize: imageFile.size });
-          } catch (error) {
-            logger.error('Failed to prepare image for upload', { requestId, error });
-            throw new Error('Failed to upload image');
-          }
+          // Create a URL for the image to display in the UI
+          imageUrl = URL.createObjectURL(imageFile);
+
+          // Convert image to base64 for the API
+          const base64 = await fileToBase64(imageFile);
+          imageUrl = base64;
         }
 
-        // Send message to API
-        let assistantMessage: ChatMessage;
+        // Check if rate limited
+        if (rateLimiter.isRateLimited()) {
+          const timeUntilNext = rateLimiter.getTimeUntilNextAllowed();
+          throw new Error(`Rate limit exceeded. Please try again in ${Math.ceil(timeUntilNext / 1000)} seconds`);
+        }
 
-        // Debug logging
-        console.log('Decision point - citeSources value:', accessibility.citeSources);
-        console.log('Will make', !accessibility.citeSources ? 'real API call' : 'mock call with sources');
+        // Track the request for rate limiting
+        rateLimiter.addRequest();
 
-        if (!accessibility.citeSources) {
-          // Make an actual API call to TogetherAI when citeSources is false
-          try {
-            logger.info('Making real API call to TogetherAI', { requestId, citeSources: false });
-            
-            const response = await apiClient.sendChatMessage(
-              [...state.messages, userMessage].map(msg => ({
-                role: msg.role,
-                content: msg.content,
-              })),
-              imageUrl || null,
-              accessibility.promptStyle,
-              accessibility.knowledgeFocus,
-              false // explicitly set citeSources to false
-            );
-            
-            // Create assistant message without sources
-            assistantMessage = {
-              role: 'assistant',
-              content: response.choices[0].message.content || 'No response received.',
-              sources: [] // No sources for real API calls when citeSources is false
-            };
-            
-            logger.info('Received real API response', { 
-              requestId,
-              responseLength: assistantMessage.content.length,
-              sourceCount: 0
-            });
-            console.log('CREATED MESSAGE WITHOUT SOURCES due to citeSources=false');
-          } catch (error) {
-            logger.error('Error in real API call', { requestId, error });
-            throw error;
-          }
-        } else {
-          // For demo purposes with sources, use mock response
-          logger.info('Using mock response with sources', { requestId, citeSources: true });
-          
-          const mockResponse = {
-            content: `Here is a response to your question about ${message.substring(0, 30)}... with detailed information and a thorough analysis. The data suggests multiple interesting findings related to this topic.
-
-As research has shown, this particular area has seen significant advancements in recent years. According to several studies, the implications are far-reaching and impact various sectors.
-
-In conclusion, the evidence points to several key insights that help us better understand this phenomenon.`,
-            role: 'assistant'
-          };
-
-          // Add a short delay to simulate API call
-          await new Promise(resolve => setTimeout(resolve, 1500));
-
-          // Create assistant message with mock sources
-          assistantMessage = {
-            role: 'assistant',
-            content: mockResponse.content,
-            sources: generateMockSources(mockResponse.content)
-          };
-          
-          logger.info('Created mock response with sources', { 
-            requestId,
-            responseLength: assistantMessage.content.length,
-            sourceCount: assistantMessage.sources?.length || 0
+        // Get response from API client
+        const client = apiClient; 
+        
+        let response;
+        try {
+          logger.info('Sending message to API', { 
+            agentic: accessibility.agentic, 
+            promptStyle: accessibility.promptStyle,
+            knowledgeFocus: accessibility.knowledgeFocus
           });
-          console.log('CREATED MESSAGE WITH SOURCES due to citeSources=true');
+          
+          response = await client.sendChatMessage(
+            newMessages, 
+            imageUrl, 
+            accessibility.promptStyle, 
+            accessibility.knowledgeFocus, 
+            accessibility.citeSources,
+            accessibility.agentic // Pass the agentic setting
+          );
+        } catch (error) {
+          // Handle rate limit errors
+          if (error instanceof Error && error.message.includes('Rate limit')) {
+            setState(prev => ({ 
+              ...prev, 
+              error: error.message,
+              isLoading: false
+            }));
+            return;
+          }
+          throw error;
         }
+
+        // Check for error in the response (when using the multi-agent backend)
+        if (response.choices[0].finish_reason === 'error') {
+          throw new Error(response.choices[0].message.content);
+        }
+        
+        let sources: Source[] = [];
+        // If citeSources is enabled and we're not in agentic mode, generate mock sources
+        if (accessibility.citeSources && !accessibility.agentic) {
+          sources = generateMockSources(response.choices[0].message.content);
+        }
+
+        // Create assistant message
+        const assistantMessage: ChatMessage = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: response.choices[0].message.content,
+          timestamp: new Date().toISOString(),
+          sources: sources
+        };
+        
+        logger.info('Received API response', { 
+          responseLength: assistantMessage.content.length,
+          sourceCount: assistantMessage.sources?.length || 0,
+          agentic: accessibility.agentic
+        });
 
         // Update state with the new message
+        const updatedMessages = [...newMessages, assistantMessage];
         setState(prev => ({
           ...prev,
+          messages: updatedMessages,
           isLoading: false,
-          messages: [...prev.messages, assistantMessage],
         }));
 
+        // Save to storage
+        storage.saveMessages(updatedMessages);
+
         logger.info('Updated chat state with response', { 
-          requestId,
           responseLength: assistantMessage.content.length,
-          sourceCount: assistantMessage.sources?.length || 0
+          sourceCount: assistantMessage.sources?.length || 0,
+          messageCount: updatedMessages.length
         });
       } catch (error) {
-        logger.error('Error sending message to chat API', error);
-        
+        logger.error('Error in sendMessage:', error);
+
         setState(prev => ({
           ...prev,
           isLoading: false,
-          error: error instanceof Error ? error.message : 'Failed to send message',
+          error: error instanceof Error 
+            ? error.message 
+            : 'An unknown error occurred'
         }));
       }
     },
-    [state.messages, accessibility.promptStyle, accessibility.knowledgeFocus, accessibility.citeSources]
+    [state.messages, accessibility.promptStyle, accessibility.knowledgeFocus, accessibility.citeSources, accessibility.agentic]
   );
 
   const clearMessages = useCallback(() => {

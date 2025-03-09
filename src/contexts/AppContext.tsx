@@ -23,6 +23,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     promptStyle: 'balanced',
     knowledgeFocus: 'general',
     citeSources: true,
+    agentic: false,
     responseTextColor: '#FFFFFF',
     queryTextColor: '#FFFFFF',
     responseBackgroundColor: '#111827',

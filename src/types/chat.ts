@@ -10,8 +10,10 @@ export interface Source {
 }
 
 export interface ChatMessage {
+  id?: string;
   role: Role;
   content: string;
+  timestamp?: string;
   sources?: Source[]; // Sources used for this message
 }
 

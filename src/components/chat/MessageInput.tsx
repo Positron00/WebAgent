@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { MicrophoneIcon, PaperClipIcon, ComputerDesktopIcon, SparklesIcon, PaperAirplaneIcon, Cog6ToothIcon, XMarkIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { MicrophoneIcon, PaperClipIcon, ComputerDesktopIcon, SparklesIcon, PaperAirplaneIcon, Cog6ToothIcon, XMarkIcon, PencilSquareIcon, BeakerIcon } from '@heroicons/react/24/outline';
 import { useApp } from '@/contexts/AppContext';
 import path from 'path';
 import { saveAs } from 'file-saver';
@@ -337,6 +337,13 @@ export function MessageInput({
     setAccessibility(newSettings);
   };
 
+  const toggleAgentic = () => {
+    setAccessibility({
+      ...accessibility,
+      agentic: !accessibility.agentic
+    });
+  };
+
   return (
     <div className="w-full mb-4">
       <div className="relative">
@@ -450,6 +457,22 @@ export function MessageInput({
         
         {/* Right side buttons */}
         <div className="flex items-center gap-2">
+          {/* Agentic toggle button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={toggleAgentic}
+              className={`p-1 rounded transition-colors flex items-center gap-0.5 text-[10px] ${
+                accessibility.agentic ? 'bg-indigo-600 text-white' : 'hover:bg-white/5 text-gray-300'
+              }`}
+              aria-pressed={accessibility.agentic}
+              aria-label={accessibility.agentic ? "Disable multi-agent mode" : "Enable multi-agent mode"}
+            >
+              <BeakerIcon className="w-3 h-3" />
+              <span className="text-xs">Agentic</span>
+            </button>
+          </div>
+          
           {/* Style button and dropdown */}
           <div className="relative">
             <button

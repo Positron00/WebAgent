@@ -17,6 +17,7 @@ export interface AccessibilitySettings {
   promptStyle: 'balanced' | 'creative' | 'precise' | 'helpful' | 'verbose' | 'concise';
   knowledgeFocus: 'general' | 'medical' | 'legal' | 'science' | 'technology' | 'business' | 'history' | 'nature';
   citeSources: boolean;
+  agentic: boolean;
   responseTextColor: string;
   queryTextColor: string;
   responseBackgroundColor: string;
@@ -30,6 +31,7 @@ const DEFAULT_ACCESSIBILITY: AccessibilitySettings = {
   promptStyle: 'balanced',
   knowledgeFocus: 'general',
   citeSources: true,
+  agentic: false,
   responseTextColor: '#FFFFFF',
   queryTextColor: '#FFFFFF',
   responseBackgroundColor: '#111827',
