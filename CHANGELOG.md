@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2025-03-09
+
+### Added
+- Enhanced configuration management
+  - Added support for loading API keys from .env.local file
+  - Implemented prioritized configuration loading: .env.local (highest) > YAML config > .env (lowest)
+  - Improved API key management with better security isolation
+
+### Changed
+- Refined environment configuration handling
+  - Updated configuration loading sequence for better security
+  - Enhanced documentation for environment setup
+  - Improved error messages for configuration issues
+
+### Fixed
+- Integration test reliability improvements
+  - Enhanced error handling in test_integration.py
+  - Fixed configuration loading in testing scenarios
+  - Added graceful fallbacks when API keys are missing
+
 ## [2.3.0] - 2025-03-09
 
 ### Added

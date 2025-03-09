@@ -1,6 +1,21 @@
 """
 Configuration settings for the WebAgent backend microservice.
 Loads environment variables and provides settings throughout the application.
+
+Configuration Priority:
+1. .env.local file (highest priority) - For API keys and sensitive information
+   - Should contain: TOGETHER_API_KEY, OPENAI_API_KEY, LANGSMITH_API_KEY, etc.
+   - Never commit this file to version control
+
+2. YAML configuration (middle priority) - For environment-specific settings
+   - Located in config/{env}.yaml where env is dev, uat, or prod
+   - Selected via WEBAGENT_ENV environment variable
+
+3. .env file (lowest priority) - For default fallback values
+   - General settings that can be safely committed to version control
+   - Used when no other source provides the value
+
+4. Default values in code - Ultimate fallback
 """
 import os
 from typing import List, Optional
@@ -9,10 +24,18 @@ from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
 
+# Priority order for configuration:
+# 1. .env.local file (highest priority for API keys)
+# 2. YAML configuration (high priority for non-API key settings)
+# 3. .env file (lowest priority, fallback)
+
 # Load environment variables from .env file first (lowest priority)
 load_dotenv(".env")
 
-# Then load from YAML configuration (higher priority)
+# Load API keys from .env.local file (highest priority)
+load_dotenv(".env.local", override=True)
+
+# Then load from YAML configuration (middle priority)
 try:
     app_config = get_config()
     api_config = get_api_config()
@@ -33,7 +56,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = os.getenv("WEBAGENT_API_PREFIX", "/api/v1")
     PROJECT_NAME: str = "WebAgent Backend"
     PROJECT_DESCRIPTION: str = "Multi-Agent Research and Analysis Platform"
-    VERSION: str = "2.3.0"
+    VERSION: str = "2.3.1"
     
     # Server settings
     HOST: str = os.getenv("WEBAGENT_API_HOST", "0.0.0.0")
@@ -55,6 +78,9 @@ class Settings(BaseSettings):
     # Tavily for web search
     TAVILY_API_KEY: Optional[str] = os.getenv("TAVILY_API_KEY")
     
+    # Together AI for LLM services
+    TOGETHER_API_KEY: Optional[str] = os.getenv("TOGETHER_API_KEY")
+    
     # Vector database settings
     VECTOR_DB_PATH: str = os.getenv("WEBAGENT_DATABASE_VECTOR_DB_PATH", "./data/vectordb")
     
@@ -73,6 +99,7 @@ class Settings(BaseSettings):
         """Pydantic config class"""
         case_sensitive = True
         env_file = ".env"
+        env_file_encoding = "utf-8"
 
 
 # Override the settings from YAML if available

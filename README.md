@@ -2,7 +2,7 @@
 
 A sophisticated AI system built as a microservice architecture that combines a modern Next.js frontend with a powerful LangGraph-based multi-agent backend. The platform enables complex research, analysis, and reporting through specialized AI agents.
 
-**Version: 2.3.0** - Now with Together AI integration using Llama 3.3 70B Instruct Turbo Free model for enhanced performance and cost efficiency.
+**Version: 2.3.1** - Enhanced configuration management with secure API key handling via .env.local and prioritized configuration loading. Continues to support Together AI integration using Llama 3.3 70B Instruct Turbo Free model for enhanced performance and cost efficiency.
 
 ## Architecture
 
@@ -193,10 +193,28 @@ cd <repository-name>
 npm install
 ```
 
-3. Create a `.env.local` file in the root directory:
-```env
-TOGETHER_API_KEY=your_together_api_key_here
-```
+3. Set up configuration files:
+
+   a. For frontend API keys, create a `.env.local` file in the root directory:
+   ```
+   TOGETHER_API_KEY=your_together_api_key_here
+   ```
+
+   b. For backend configuration, create both `.env` and `.env.local` files in the `backend` directory:
+   ```bash
+   # Copy examples as starting points
+   cp backend/.env.example backend/.env
+   cp backend/.env.example.local backend/.env.local
+   
+   # Edit .env.local with your API keys
+   # nano backend/.env.local
+   ```
+
+   c. Review and modify configuration as needed:
+   ```bash
+   # Set the environment (dev, uat, or prod)
+   echo "WEBAGENT_ENV=dev" >> backend/.env
+   ```
 
 4. Start the development server:
 ```bash
@@ -224,10 +242,17 @@ Configuration is managed through a combination of:
 ### Configuration Priority
 
 Settings are loaded with the following priority (highest to lowest):
-1. Environment variables with `WEBAGENT_` prefix
-2. Environment-specific YAML file (`dev.yaml`, `uat.yaml`, or `prod.yaml`)
-3. `.env` file values
-4. Default values in code
+1. `.env.local` file (highest priority, specifically for API keys and sensitive information)
+2. Environment variables with `WEBAGENT_` prefix 
+3. Environment-specific YAML file (`dev.yaml`, `uat.yaml`, or `prod.yaml`)
+4. `.env` file values (lowest priority, default fallback)
+5. Default values in code
+
+The recommended practice is:
+- Store API keys and sensitive information in `.env.local` (never commit to version control)
+- Configure environment-specific settings in YAML files
+- Use environment variables for deployment-specific overrides
+- Keep fallback/default values in `.env` and code
 
 ### Selecting Environment
 
