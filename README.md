@@ -2,7 +2,7 @@
 
 A sophisticated AI system built as a microservice architecture that combines a modern Next.js frontend with a powerful LangGraph-based multi-agent backend. The platform enables complex research, analysis, and reporting through specialized AI agents.
 
-**Version: 2.2.1** - Now with advanced agent capabilities including data analysis, visualization, and comprehensive reporting.
+**Version: 2.3.0** - Now with Together AI integration using Llama 3.3 70B Instruct Turbo Free model for enhanced performance and cost efficiency.
 
 ## Architecture
 

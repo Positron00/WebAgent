@@ -2,11 +2,13 @@
 
 This is the Python-based microservice backend for the WebAgent platform. It uses LangGraph to orchestrate a multi-agent system for research, analysis, and report generation.
 
-**Version: 2.2.1** - Now with advanced agent capabilities and LangSmith observability.
+**Version: 2.3.0** - Now with Together AI integration, frontend compatibility, and comprehensive testing.
 
 ## Key Features
 
 - Complete multi-agent system with seven specialized agents
+- Together AI integration with Llama 3.3 70B Instruct Turbo Free model
+- Frontend API compatibility layer for seamless integration
 - Advanced data analysis and visualization capabilities
 - Comprehensive report generation with Team Manager Agent
 - Full LangSmith integration for tracing and observability

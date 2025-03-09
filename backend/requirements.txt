@@ -10,6 +10,7 @@ langchain-openai==0.0.5
 langgraph==0.0.25
 langchain-community==0.0.19
 langsmith==0.1.19
+langchain-together==0.0.3
 
 # API and Async
 httpx==0.26.0

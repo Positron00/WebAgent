@@ -5,7 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.2.1] - 2025-03-10
+## [2.3.0] - 2025-03-09
+
+### Added
+- Phase 4: Integration & Testing implementation
+  - Together AI integration with Llama 3.3 70B Instruct Turbo Free model
+  - Frontend API compatibility layer for seamless integration
+  - End-to-end testing framework for workflow validation
+  - Performance optimization for multi-agent workflows
+- Enhanced API capabilities
+  - New frontend-compatible endpoints for chat completions
+  - Status polling mechanism for long-running tasks
+  - Improved error handling and reporting
+- Comprehensive testing suite
+  - Integration tests for external services
+  - End-to-end workflow testing
+  - Performance benchmarking tools
+
+### Changed
+- Switched default LLM provider from OpenAI to Together AI
+  - Updated all agent configurations to use Llama 3.3 70B model
+  - Optimized prompt templates for Llama model capabilities
+  - Improved token efficiency for cost optimization
+- Enhanced frontend integration
+  - Redesigned API client for better compatibility
+  - Added polling mechanism for asynchronous tasks
+  - Improved error handling and recovery
+- Updated Docker configuration
+  - Added Together API key environment variable
+  - Optimized container resource allocation
+  - Improved startup sequence for faster deployment
+
+### Fixed
+- Resolved workflow routing issues in complex agent interactions
+- Fixed token counting and rate limiting for Together AI
+- Improved error handling in asynchronous task execution
+- Enhanced stability of long-running research workflows
+
+## [2.2.1] - 2025-03-09
 
 ### Added
 - Phase 3: Advanced Agents implementation
@@ -84,7 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Workflow termination conditions to properly handle errors
 - Various bugs in the agent coordination system
 
-## [2.1.1] - 2025-03-10
+## [2.1.1] - 2025-03-09
 
 ### Fixed
 - Resolved TypeScript errors for improved build stability

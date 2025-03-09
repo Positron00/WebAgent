@@ -243,42 +243,56 @@ export class ApiClient {
     promptStyle?: string, 
     knowledgeFocus?: string, 
     citeSources?: boolean,
-    agentic?: boolean
+    agentic: boolean = true
   ): Promise<ChatCompletionResponse> {
-    const requestId = this.generateRequestId();
-    console.log(`[${requestId}] Sending chat message with ${messages.length} messages${image ? ' and image' : ''}${promptStyle ? `, prompt style: ${promptStyle}` : ''}${knowledgeFocus ? `, knowledge focus: ${knowledgeFocus}` : ''}${citeSources !== undefined ? `, cite sources: ${citeSources}` : ''}${agentic ? ', using multi-agent mode' : ''}`);
-
-    try {
-      // If agentic mode is enabled, route to the multi-agent backend
-      if (agentic) {
-        // Extract just the text content from the most recent user message
-        const userMessage = messages.filter(msg => msg.role === 'user').pop()?.content || '';
-        
-        // Make the request to the multi-agent API
-        return await this.sendMultiAgentRequest(userMessage, image);
+    // Always use the multi-agent system for better results
+    if (agentic) {
+      // Get the last user message
+      const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+      if (!lastUserMessage) {
+        throw new Error('No user message found in the conversation');
       }
       
-      // Normal LLM mode - continue with existing code
-      return await this.fetchWithRetry<ChatCompletionResponse>(
-        `${this.baseUrl}/chat`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages,
-            image,
-            promptStyle,
-            knowledgeFocus,
-            citeSources
-          }),
-        }
-      );
-    } catch (error) {
-      logger.error(`[${requestId}] Error sending chat message:`, error);
-      throw error;
+      return this.sendMultiAgentRequest(lastUserMessage.content, image);
     }
+    
+    // Legacy non-agentic path (fallback)
+    const requestMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
+    // Add system message if needed
+    if (promptStyle || knowledgeFocus) {
+      let systemContent = "You are a helpful assistant.";
+      
+      if (promptStyle) {
+        systemContent += ` ${promptStyle}`;
+      }
+      
+      if (knowledgeFocus) {
+        systemContent += ` Focus on ${knowledgeFocus} when responding.`;
+      }
+      
+      if (citeSources) {
+        systemContent += " Cite sources when providing information.";
+      }
+      
+      requestMessages.unshift({
+        role: "system",
+        content: systemContent
+      });
+    }
+    
+    return this.sendChatRequest({
+      model: CHAT_SETTINGS.model,
+      messages: requestMessages,
+      max_tokens: CHAT_SETTINGS.max_tokens,
+      temperature: CHAT_SETTINGS.temperature,
+      top_p: CHAT_SETTINGS.top_p,
+      frequency_penalty: CHAT_SETTINGS.frequency_penalty,
+      presence_penalty: CHAT_SETTINGS.presence_penalty
+    });
   }
 
   // New method to handle multi-agent API requests
@@ -287,80 +301,113 @@ export class ApiClient {
     image?: string | null
   ): Promise<ChatCompletionResponse> {
     const requestId = this.generateRequestId();
-    logger.info(`[${requestId}] Sending request to multi-agent API`, { query });
+    const startTime = Date.now();
     
     try {
-      // Make a request to the multi-agent backend
-      const response = await this.fetchWithRetry<any>(
-        // Point to the multi-agent backend endpoint
-        'http://localhost:8000/api/v1/chat',
-        {
-          method: 'POST',
+      logger.info('Sending multi-agent request', { requestId, query });
+      
+      // Prepare the request payload
+      const payload = {
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+        messages: [
+          {
+            role: "user",
+            content: query
+          }
+        ],
+        max_tokens: 4096,
+        temperature: 0.7,
+        top_p: 1.0,
+        frequency_penalty: 0.0,
+        presence_penalty: 0.0
+      };
+      
+      // Send the initial request to start the task
+      const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        throw new ApiError(
+          `API request failed with status ${response.status}`,
+          response.status,
+          await response.json(),
+          requestId
+        );
+      }
+      
+      const initialData = await response.json();
+      
+      // Extract the task ID from the response content
+      const taskIdMatch = initialData.choices[0].message.content.match(/Task ID: ([a-zA-Z0-9-]+)/);
+      if (!taskIdMatch) {
+        throw new Error('Could not extract task ID from response');
+      }
+      
+      const taskId = taskIdMatch[1];
+      logger.info('Multi-agent task started', { requestId, taskId });
+      
+      // Poll for the result
+      let result = null;
+      let attempts = 0;
+      const maxAttempts = 30; // Maximum number of polling attempts
+      const pollInterval = 2000; // 2 seconds between polls
+      
+      while (attempts < maxAttempts) {
+        await this.delay(pollInterval);
+        attempts++;
+        
+        const statusResponse = await fetch(`${this.baseUrl}/v1/chat/status/${taskId}`, {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            query,
-            image
-          }),
-        }
-      );
-      
-      // If the response from the multi-agent system returns a task_id, we need to poll for results
-      if (response.task_id) {
-        logger.info(`[${requestId}] Multi-agent task started, polling for results`, { taskId: response.task_id });
+        });
         
-        // For now, just return a message indicating the task has started
-        // In a complete implementation, we would poll the /api/v1/chat/{task_id} endpoint
-        return {
-          choices: [{
-            message: {
-              content: `Multi-agent task started. Task ID: ${response.task_id}. The system is processing your request, which may take some time.`,
-              role: 'assistant'
-            },
-            finish_reason: 'function_call'
-          }],
-          usage: {
-            prompt_tokens: 0,
-            completion_tokens: 0,
-            total_tokens: 0
-          }
-        };
+        if (!statusResponse.ok) {
+          logger.warn('Error checking task status', { 
+            requestId, 
+            taskId, 
+            status: statusResponse.status 
+          });
+          continue;
+        }
+        
+        const statusData = await statusResponse.json();
+        
+        if (statusData.status === 'completed') {
+          result = statusData.response;
+          break;
+        } else if (statusData.status === 'error') {
+          throw new Error(`Task failed: ${statusData.error}`);
+        }
+        
+        logger.debug('Task still processing', { 
+          requestId, 
+          taskId, 
+          attempt: attempts, 
+          status: statusData.status 
+        });
       }
       
-      // Format the response to match ChatCompletionResponse
-      return {
-        choices: [{
-          message: {
-            content: response.result || response.message || 'No response from multi-agent system',
-            role: 'assistant'
-          },
-          finish_reason: 'stop'
-        }],
-        usage: response.usage || {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0
-        }
-      };
-    } catch (error) {
-      logger.error(`[${requestId}] Error sending multi-agent request:`, error);
+      if (!result) {
+        throw new Error('Task timed out after maximum polling attempts');
+      }
       
-      // Return a user-friendly error message
-      return {
-        choices: [{
-          message: {
-            content: 'There was an error connecting to the multi-agent system. Please ensure the backend is running and try again.',
-            role: 'assistant'
-          },
-          finish_reason: 'error'
-        }],
-        usage: {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0
-        }
-      };
+      this.updateMetrics(startTime);
+      return result;
+      
+    } catch (error) {
+      this.updateMetrics(startTime, true);
+      logger.error('Error in multi-agent request', { 
+        requestId, 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      throw error;
     }
   }
 

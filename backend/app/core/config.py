@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = os.getenv("WEBAGENT_API_PREFIX", "/api/v1")
     PROJECT_NAME: str = "WebAgent Backend"
     PROJECT_DESCRIPTION: str = "Multi-Agent Research and Analysis Platform"
-    VERSION: str = "2.2.1"
+    VERSION: str = "2.3.0"
     
     # Server settings
     HOST: str = os.getenv("WEBAGENT_API_HOST", "0.0.0.0")
