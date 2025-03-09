@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./config:/app/config
+    environment:
+      - WEBAGENT_ENV=${WEBAGENT_ENV:-dev}
+      - DEBUG_MODE=${DEBUG_MODE:-true}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      # Override specific settings if needed
+      - WEBAGENT_DATABASE_REDIS_HOST=redis
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - redis
+    networks:
+      - webagent-network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - webagent-network
+
+networks:
+  webagent-network:
+    driver: bridge
+
+volumes:
+  redis-data: 

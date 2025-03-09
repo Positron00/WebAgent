@@ -1,0 +1,102 @@
+# WebAgent UAT Environment Configuration
+
+# API settings
+api:
+  version: "v1"
+  prefix: "/api/v1"
+  debug_mode: false
+  host: "0.0.0.0"
+  port: 8000
+
+# CORS settings
+cors:
+  origins:
+    - "https://uat.webagent.example.com"
+    - "https://uat-admin.webagent.example.com"
+  allow_credentials: true
+  allow_methods: ["*"]
+  allow_headers: ["*"]
+
+# Database settings
+database:
+  vector_db:
+    path: "/data/vectordb"
+    embedding_dimension: 1536
+    distance_metric: "cosine"
+  redis:
+    host: "redis"
+    port: 6379
+    db: 0
+    password: null
+    key_prefix: "webagent:uat:"
+
+# LLM settings
+llm:
+  provider: "openai"
+  default_model: "gpt-4-turbo"
+  temperature: 0.5
+  timeout_seconds: 90
+  max_tokens: 4096
+  retry_attempts: 3
+  batch_size: 10
+
+# Web search settings
+web_search:
+  provider: "tavily"
+  search_depth: "comprehensive"
+  max_results: 15
+  include_domains: []
+  exclude_domains: []
+  timeout_seconds: 60
+
+# Task management
+tasks:
+  max_concurrent: 20
+  result_ttl_minutes: 120
+  history_ttl_days: 14
+  max_retries: 3
+
+# Agents configuration
+agents:
+  supervisor:
+    model: "gpt-4-turbo"
+    temperature: 0.2
+  web_research:
+    model: "gpt-4-turbo"
+    temperature: 0.3
+    max_searches_per_task: 8
+  internal_research:
+    model: "gpt-4-turbo"
+    temperature: 0.1
+    max_documents: 30
+  senior_research:
+    model: "gpt-4-turbo"
+    temperature: 0.2
+    max_follow_up_questions: 3
+  data_analysis:
+    model: "gpt-4-turbo"
+    temperature: 0.1
+  coding:
+    model: "gpt-4-turbo"
+    temperature: 0.0
+    allowed_modules: ["matplotlib", "seaborn", "numpy", "pandas"]
+    timeout_seconds: 45
+  team_manager:
+    model: "gpt-4-turbo"
+    temperature: 0.4
+
+# Logging configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  log_to_file: true
+  log_file: "/var/log/webagent/webagent-uat.log"
+  rotate_logs: true
+  max_file_size_mb: 20
+  backup_count: 10
+
+# Security settings
+security:
+  token_expire_minutes: 30
+  algorithm: "HS256"
+  password_min_length: 10 

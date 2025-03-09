@@ -205,6 +205,56 @@ npm run dev
 
 ## Environment Variables
 
+### Environment Configuration
+
+The application supports three deployment environments, each with its own configuration:
+
+1. **Development (dev)**: Local development configuration with debug settings
+2. **User Acceptance Testing (uat)**: Testing environment with near-production settings
+3. **Production (prod)**: Production-ready settings optimized for performance and security
+
+Configuration is managed through a combination of:
+
+1. **YAML Files**: Environment-specific settings in `backend/config/{env}.yaml`
+2. **Environment Variables**: Override specific settings via `WEBAGENT_` prefixed variables
+3. **Default Values**: Fallback values defined in code
+
+### Configuration Priority
+
+Settings are loaded with the following priority (highest to lowest):
+1. Environment variables with `WEBAGENT_` prefix
+2. Environment-specific YAML file (`dev.yaml`, `uat.yaml`, or `prod.yaml`)
+3. `.env` file values
+4. Default values in code
+
+### Selecting Environment
+
+Set the environment using the `WEBAGENT_ENV` variable:
+```bash
+# Development (default)
+export WEBAGENT_ENV=dev
+
+# User Acceptance Testing
+export WEBAGENT_ENV=uat
+
+# Production
+export WEBAGENT_ENV=prod
+```
+
+### Configuration Categories
+
+Each environment defines settings for:
+
+- **API**: Server host, port, debug mode
+- **CORS**: Allowed origins, methods, headers
+- **Database**: Vector DB and Redis settings
+- **LLM**: Models, temperatures, timeouts
+- **Web Search**: Provider, depth, result limits
+- **Task Management**: Concurrency, TTL settings
+- **Agents**: Model configuration for each specialized agent
+- **Logging**: Log levels, formats, file settings
+- **Security**: Token settings, algorithms
+
 ### Setting Up Environment Variables
 
 1. **Local Development**:
