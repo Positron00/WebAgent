@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2025-03-10
+
+### Added
+- Phase 3: Advanced Agents implementation
+  - Enhanced Senior Research Agent for information synthesis
+  - Data Analysis Agent for identifying patterns and insights
+  - Coding Assistant Agent for data visualization and analysis
+  - Team Manager Agent for comprehensive report generation
+- Complete multi-agent workflow integration
+  - Advanced conditional routing between agents
+  - Sequential execution of specialized tasks
+  - Advanced checkpoints for workflow coordination
+  - Metadata-rich final reports with multiple sections
+- Extended LangSmith tracing for all new agents
+  - Comprehensive observability across the entire agent workflow
+  - Detailed tracking of agent interactions and outputs
+  - Performance metrics for advanced agent operations
+
+### Changed
+- Enhanced workflow coordination
+  - Refactored workflow to support new agents
+  - Improved state management for data sharing between agents
+  - Added conditional paths based on task requirements
+  - Better error handling throughout the agent workflow
+- Updated prompts for all agents
+  - More precise task definitions
+  - Better context preservation between agents
+  - Improved format instructions
+  - Enhanced knowledge sharing between specialized agents
+
+### Fixed
+- Improved error handling in agent workflow
+- Fixed issues with agent coordination and sequential execution
+- Resolved data passage between agents
+- Enhanced readability of final reports
+
 ## [2.2.0] - 2025-03-09
 
 ### Added

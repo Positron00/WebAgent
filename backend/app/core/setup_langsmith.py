@@ -80,27 +80,39 @@ def get_langchain_tracer() -> Optional[LangChainTracer]:
         setup_langsmith()
     return _langchain_tracer
 
-def create_langsmith_tags(agent_name: str, additional_tags: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def create_langsmith_tags(agent_name: str, additional_tags: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
     """
     Create a standardized set of tags for LangSmith tracing.
     
     Args:
-        agent_name: Name of the agent (e.g., "supervisor", "web_research")
-        additional_tags: Any additional tags to include
-    
+        agent_name: The name of the agent or component being traced
+        additional_tags: Optional additional tags to include
+        
     Returns:
         Dictionary of tags for LangSmith
     """
-    tags = {
+    # Get version from config if possible
+    try:
+        from app.core.config import settings
+        version = settings.VERSION
+    except ImportError:
+        version = "unknown"
+    
+    # Get environment
+    env = os.getenv("WEBAGENT_ENV", "dev")
+    
+    # Create base tags
+    base_tags = {
         "agent": agent_name,
-        "version": settings.VERSION,
-        "environment": os.getenv("WEBAGENT_ENV", "dev")
+        "version": version,
+        "environment": env
     }
     
+    # Add additional tags if provided
     if additional_tags:
-        tags.update(additional_tags)
-        
-    return tags
+        base_tags.update(additional_tags)
+    
+    return base_tags
 
 # Initialize LangSmith on module import
 setup_langsmith() 

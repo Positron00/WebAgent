@@ -48,10 +48,14 @@ class BaseAgent:
         if not self.langsmith_config.tracing_enabled or not self.tracer:
             return None
             
-        return RunnableConfig(
-            tags=create_langsmith_tags(agent_name=self.agent_name),
-            callbacks=[self.tracer]
-        )
+        # Create tags as simple strings in format "key=value"
+        tags_dict = create_langsmith_tags(agent_name=self.agent_name)
+        tags = [f"{k}={v}" for k, v in tags_dict.items()]
+            
+        return {
+            "tags": tags,
+            "callbacks": [self.tracer]
+        }
     
     def trace_chain(self, chain: RunnableSequence) -> RunnableSequence:
         """
