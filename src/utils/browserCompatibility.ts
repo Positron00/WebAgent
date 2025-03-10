@@ -52,8 +52,8 @@ export function detectBrowserCapabilities(): BrowserCapabilities {
   const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
   const isFirefox = ua.toLowerCase().indexOf('firefox') > -1;
-  const isChrome = ua.toLowerCase().indexOf('chrome') > -1 && !isEdge;
   const isEdge = ua.indexOf('Edg') > -1;
+  const isChrome = ua.toLowerCase().indexOf('chrome') > -1 && !isEdge;
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
 
   // Extract browser name and version
@@ -174,14 +174,17 @@ export function applyPolyfills(): void {
   // Add any necessary polyfills here
   // Example: Object.fromEntries polyfill
   if (!Object.fromEntries) {
-    Object.fromEntries = function fromEntries(entries) {
+    Object.fromEntries = function fromEntries(entries: Iterable<[string, any]>) {
       if (!entries || !entries[Symbol.iterator]) {
         throw new Error('Object.fromEntries requires a single iterable argument');
       }
-      const obj = {};
+      
+      const obj: Record<string, any> = {};
+      
       for (const [key, value] of entries) {
         obj[key] = value;
       }
+      
       return obj;
     };
   }

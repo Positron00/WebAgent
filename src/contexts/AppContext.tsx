@@ -10,7 +10,7 @@ export interface Notification {
   id?: string;
 }
 
-interface AppContextType {
+export interface AppContextType {
   theme: ThemePreference;
   setTheme: (theme: ThemePreference) => void;
   accessibility: AccessibilitySettings;
@@ -18,6 +18,10 @@ interface AppContextType {
   isOffline: boolean;
   showNotification: (notification: Notification) => void;
   hideNotification: (id?: string) => void;
+  isMenuOpen: boolean;
+  setMenuOpen: (isOpen: boolean) => void;
+  showModal: (content: React.ReactNode) => void;
+  hideModal: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -40,6 +44,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [isOffline, setIsOffline] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isMenuOpen, setMenuOpen] = useState(false);
+  const [modalContent, setModalContent] = useState<React.ReactNode | null>(null);
 
   // Load settings from storage on client-side only
   useEffect(() => {
@@ -143,28 +149,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Function to show a notification
+  // Show a notification with auto-hide for non-error notifications
   const showNotification = (notification: Notification) => {
     const id = notification.id || Date.now().toString();
-    setNotifications(prev => [...prev, { ...notification, id }]);
+    const newNotification = { ...notification, id };
     
-    // Auto-hide after 5 seconds for non-error notifications
+    setNotifications(prev => [...prev, newNotification]);
+    
+    // Auto-hide non-error notifications after 5 seconds
     if (notification.type !== 'error') {
       setTimeout(() => {
         hideNotification(id);
       }, 5000);
     }
-    
-    return id;
   };
-
-  // Function to hide a notification
+  
+  // Hide a notification by ID or clear all if no ID provided
   const hideNotification = (id?: string) => {
     if (id) {
       setNotifications(prev => prev.filter(notification => notification.id !== id));
     } else {
       setNotifications([]);
     }
+  };
+
+  // Show a modal with the provided content
+  const showModal = (content: React.ReactNode) => {
+    setModalContent(content);
+  };
+
+  // Hide the modal
+  const hideModal = () => {
+    setModalContent(null);
   };
 
   const value = {
@@ -174,10 +190,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAccessibility,
     isOffline,
     showNotification,
-    hideNotification
+    hideNotification,
+    isMenuOpen,
+    setMenuOpen,
+    showModal,
+    hideModal
   };
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+      {modalContent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-lg w-full max-h-[90vh] overflow-auto">
+            {modalContent}
+          </div>
+        </div>
+      )}
+    </AppContext.Provider>
+  );
 }
 
 export function useApp() {

@@ -1,9 +1,12 @@
 import React, { ReactElement, createContext } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
+import { AppContextType } from '@/contexts/AppContext';
+import { ChatContextType } from '@/contexts/ChatContext';
+import { AccessibilitySettings } from '@/utils/storage';
 
-// Create mock contexts
-const MockAppContext = createContext(undefined);
-const MockChatContext = createContext(undefined);
+// Create mock contexts with proper typing
+const MockAppContext = createContext<AppContextType | undefined>(undefined);
+const MockChatContext = createContext<ChatContextType | undefined>(undefined);
 
 // Mock react-markdown
 jest.mock('react-markdown', () => {
@@ -37,7 +40,7 @@ jest.mock('@heroicons/react/24/outline', () => {
 });
 
 // Define the mock accessibility object that will be used consistently
-const mockAccessibility = {
+const mockAccessibility: AccessibilitySettings = {
   reducedMotion: false,
   highContrast: false,
   fontSize: 'normal',

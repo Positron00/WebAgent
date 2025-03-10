@@ -9,7 +9,7 @@ import { rateLimiter } from '@/utils/rateLimiter';
 import { logger } from '@/utils/logger';
 import { useApp } from '@/contexts/AppContext';
 
-interface ChatContextType {
+export interface ChatContextType {
   state: ChatState;
   sendMessage: (message: string, imageFile?: File | null) => Promise<void>;
   clearMessages: () => void;

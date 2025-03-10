@@ -9,7 +9,7 @@ module.exports = {
   ],
   testRegex: '(/__tests__/.*|\\.(test|spec))\\.[jt]sx?$',
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { configFile: './babel-test.config.js' }],
     '^.+\\.node_modules\\.(js|jsx|ts|tsx)$': '<rootDir>/src/__mocks__/transformers/babelTransformer.js',
   },
   transformIgnorePatterns: [

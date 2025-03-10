@@ -13,12 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed test suite for proper exit handling after tests complete
 - Resolved conflicts between test files and custom test runners
 - Updated package.json scripts for simpler test execution
+- Fixed Next.js font loading conflicts with Babel configuration
+- Resolved "use client" directive issues in components using React hooks
+- Fixed TypeScript errors in browser compatibility polyfills
+- Added proper type exports for context interfaces
 
 ### Changed
 - Simplified test commands in package.json
 - Improved Jest configuration with proper test file pattern matching
 - Enhanced test reliability with forceExit option
-- Streamlined testing workflow for developers
+- Moved Babel configuration to a specialized test-only file
 
 ## [2.4.5] - 2025-03-09
 
