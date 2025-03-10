@@ -5,6 +5,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.4] - 2025-03-09
+
+### Added
+- Browser compatibility detection and graceful fallbacks
+- Enhanced test reliability with improved Jest configuration
+- Device capability detection for adaptive feature enabling
+- Automated accessibility checking in development environment
+- User-friendly error messages with troubleshooting suggestions
+
+### Changed
+- Simplified error handling with more user-friendly messages
+- Improved documentation with clearer setup instructions
+- Enhanced browser compatibility with polyfills for older browsers
+- Optimized image loading and processing
+- Streamlined configuration with improved defaults
+
+### Fixed
+- Jest configuration for React components testing
+- Browser compatibility issues in Safari and Firefox
+- Inconsistent behavior in mobile browsers
+- Memory leaks in long-running operations
+- Edge cases in error recovery scenarios
+
+### Testing Improvements
+- Expanded test coverage to include edge cases
+- More robust mocking strategies
+- Enhanced test reliability
+- Improved integration test setup
+- Simplified configuration for local testing
+
+## [2.4.3] - 2025-03-09
+
+### Added
+- Comprehensive health check API endpoint with detailed system metrics
+- Enhanced structured logging with session tracking and component labeling
+- Operation timing for performance monitoring and troubleshooting
+- Client-side configuration with environment detection
+- Extensive test suite for API client operations
+- Request and response validation with detailed error reporting
+- Memory usage tracking in health metrics
+
+### Changed
+- Improved error handling with better context in API client
+- Enhanced retry mechanism with exponential backoff and jitter
+- Optimized metrics collection with status code tracking
+- More detailed log rotation and filtering
+- Safer client-side environment configuration without exposing sensitive data
+
+### Fixed
+- Client-side access to environment variables causing runtime errors
+- Inconsistent error handling in fetch requests
+- Missing validation for API responses
+- Inefficient logging without proper filtering
+- API metrics not tracking all relevant data points
+
+### Observability Improvements
+- Added comprehensive API health metrics
+- Implemented structured logging with consistent format
+- Added request ID tracking across all operations
+- Enhanced error context with stack traces and component information
+- Added operation timing for performance monitoring
+- Added system health reporting via dedicated endpoint
+- Improved metrics collection for better observability
+
+### Security Enhancements
+- Separated sensitive configuration from client-side code
+- Improved input validation and sanitization
+- Added secure default headers to API responses
+- Enhanced error handling to prevent information leakage
+- Implemented safer configuration loading
+
+### Testing Improvements
+- Added comprehensive test suite for API client
+- Implemented mock strategies for external services
+- Added metrics validation in tests
+- Added error handling test scenarios
+- Improved test coverage for edge cases
+
 ## [2.4.2] - 2025-03-09
 
 ### Added

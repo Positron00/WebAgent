@@ -2,6 +2,7 @@ import { ChatCompletionRequest, ChatCompletionResponse } from '@/types/api';
 import { ChatMessage } from '@/types/chat';
 import { CHAT_SETTINGS } from '@/config/chat';
 import { logger } from '@/utils/logger';
+import { clientConfig } from '@/config/clientConfig';
 
 interface RetryOptions {
   maxRetries: number;
@@ -16,207 +17,299 @@ interface ApiMetrics {
   retryCount: number;
   averageResponseTime: number;
   totalResponseTime: number;
+  lastRequestTime: number | null;
+  consecutiveErrors: number;
+  statusCodes: Record<string, number>;
 }
 
-const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  maxRetries: 3,
-  initialDelay: 1000,
-  maxDelay: 10000,
-  backoffFactor: 2,
-};
-
+/**
+ * Enhanced error class with additional context for better debugging
+ */
 class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
     public data?: any,
-    public requestId?: string
+    public requestId?: string,
+    public endpoint?: string,
+    public timestamp: number = Date.now()
   ) {
     super(message);
     this.name = 'ApiError';
+    
+    // Capture stack trace for better debugging
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ApiError);
+    }
+    
+    // Log the error with context
+    logger.error('API Error', {
+      message,
+      status,
+      requestId,
+      endpoint,
+      timestamp: new Date(timestamp).toISOString(),
+      data: typeof data === 'object' ? JSON.stringify(data) : data
+    });
   }
 }
 
+/**
+ * API Client for handling communication with backend services
+ * Enhanced with better error handling, metrics, and observability
+ */
 export class ApiClient {
   private static instance: ApiClient;
   private retryOptions: RetryOptions;
-  private readonly baseUrl = '/api';
+  private readonly baseUrl = clientConfig.api.baseUrl;
   private metrics: ApiMetrics = {
     requestCount: 0,
     errorCount: 0,
     retryCount: 0,
     averageResponseTime: 0,
     totalResponseTime: 0,
+    lastRequestTime: null,
+    consecutiveErrors: 0,
+    statusCodes: {}
   };
-
+  
   private constructor(options: Partial<RetryOptions> = {}) {
-    this.retryOptions = { ...DEFAULT_RETRY_OPTIONS, ...options };
+    this.retryOptions = {
+      maxRetries: options.maxRetries ?? 3,
+      initialDelay: options.initialDelay ?? 500,
+      maxDelay: options.maxDelay ?? 5000,
+      backoffFactor: options.backoffFactor ?? 2
+    };
+    
+    logger.info('ApiClient initialized', { 
+      retryOptions: this.retryOptions,
+      baseUrl: this.baseUrl,
+      environment: clientConfig.environment
+    });
   }
-
+  
   static getInstance(options?: Partial<RetryOptions>): ApiClient {
     if (!ApiClient.instance) {
       ApiClient.instance = new ApiClient(options);
     }
     return ApiClient.instance;
   }
-
+  
   private generateRequestId(): string {
-    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `req_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
   }
-
+  
   private async delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-
+  
   private getRetryDelay(attempt: number): number {
-    const delay = this.retryOptions.initialDelay * 
-      Math.pow(this.retryOptions.backoffFactor, attempt);
-    return Math.min(delay, this.retryOptions.maxDelay);
-  }
-
-  private isRetryableError(error: any): boolean {
-    if (error instanceof ApiError) {
-      // Retry on network errors and specific HTTP status codes
-      return error.status >= 500 || error.status === 429;
-    }
-    return true; // Retry on network/unknown errors
-  }
-
-  private validateResponse(data: any): data is ChatCompletionResponse {
-    logger.debug('Validating API response', {
-      hasData: !!data,
-      hasChoices: data && Array.isArray(data.choices),
-      choicesLength: data?.choices?.length,
-      hasMessage: data?.choices?.[0]?.message,
-      messageContent: typeof data?.choices?.[0]?.message?.content,
-      messageRole: typeof data?.choices?.[0]?.message?.role,
-      rawResponse: data
-    });
-
-    return (
-      data &&
-      Array.isArray(data.choices) &&
-      data.choices.length > 0 &&
-      data.choices[0].message &&
-      typeof data.choices[0].message.content === 'string' &&
-      typeof data.choices[0].message.role === 'string'
+    const delay = Math.min(
+      this.retryOptions.initialDelay * Math.pow(this.retryOptions.backoffFactor, attempt),
+      this.retryOptions.maxDelay
     );
+    // Add jitter to prevent synchronized retries
+    return delay * (0.8 + Math.random() * 0.4);
   }
-
-  private updateMetrics(startTime: number, isError: boolean = false, retries: number = 0) {
-    const responseTime = Date.now() - startTime;
-    this.metrics.requestCount++;
-    this.metrics.totalResponseTime += responseTime;
-    this.metrics.averageResponseTime = this.metrics.totalResponseTime / this.metrics.requestCount;
+  
+  private isRetryableError(error: any): boolean {
+    // Network errors should be retried
+    if (error instanceof TypeError && error.message.includes('network')) {
+      return true;
+    }
     
-    if (isError) this.metrics.errorCount++;
-    if (retries > 0) this.metrics.retryCount += retries;
-
-    // Log metrics if they exceed thresholds
-    if (this.metrics.averageResponseTime > 2000 || this.metrics.errorCount / this.metrics.requestCount > 0.1) {
-      console.warn('API Metrics Warning:', {
+    // Retry server errors (5xx) but not client errors (4xx)
+    if (error instanceof ApiError) {
+      return error.status >= 500 && error.status < 600;
+    }
+    
+    // Timeout errors should be retried
+    if (error instanceof Error && error.message.includes('timeout')) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  private validateResponse(data: any): data is ChatCompletionResponse {
+    const errors = this.getValidationErrors(data);
+    
+    if (errors.length > 0) {
+      logger.warn('Invalid API response', { errors, data: JSON.stringify(data).substring(0, 500) });
+      return false;
+    }
+    
+    return true;
+  }
+  
+  private updateMetrics(startTime: number, isError: boolean = false, retries: number = 0, statusCode?: number) {
+    const requestTime = Date.now() - startTime;
+    
+    this.metrics.requestCount++;
+    this.metrics.totalResponseTime += requestTime;
+    this.metrics.averageResponseTime = this.metrics.totalResponseTime / this.metrics.requestCount;
+    this.metrics.lastRequestTime = Date.now();
+    
+    if (statusCode) {
+      const statusCodeKey = `${statusCode}`;
+      this.metrics.statusCodes[statusCodeKey] = (this.metrics.statusCodes[statusCodeKey] || 0) + 1;
+    }
+    
+    if (isError) {
+      this.metrics.errorCount++;
+      this.metrics.consecutiveErrors++;
+    } else {
+      this.metrics.consecutiveErrors = 0;
+    }
+    
+    if (retries > 0) {
+      this.metrics.retryCount += retries;
+    }
+    
+    // Log metrics periodically (every 10 requests)
+    if (this.metrics.requestCount % 10 === 0) {
+      logger.info('API Metrics', {
         ...this.metrics,
         errorRate: this.metrics.errorCount / this.metrics.requestCount,
+        retryRate: this.metrics.retryCount / this.metrics.requestCount
       });
     }
   }
-
+  
   async fetchWithRetry<T>(
     url: string,
     options: RequestInit,
     customRetryOptions?: Partial<RetryOptions>
   ): Promise<T> {
-    const startTime = Date.now();
-    const requestId = this.generateRequestId();
-    const retryOpts = { ...this.retryOptions, ...customRetryOptions };
-    let lastError: Error | null = null;
-    let retryCount = 0;
-
-    // Add request ID to headers
-    options.headers = {
-      ...options.headers,
-      'X-Request-ID': requestId,
+    const retryOptions: RetryOptions = {
+      ...this.retryOptions,
+      ...customRetryOptions
     };
-
-    logger.info(`[${requestId}] Starting request to ${url}`, {
-      method: options.method,
-      headers: options.headers,
-      bodyLength: options.body ? (options.body as string).length : 0
+    
+    const requestId = this.generateRequestId();
+    const startTime = Date.now();
+    const fullUrl = url.startsWith('http') ? url : `${this.baseUrl}${url}`;
+    let attempt = 0;
+    
+    // Add request ID to headers for tracing
+    const headers = new Headers(options.headers || {});
+    headers.set('X-Request-ID', requestId);
+    
+    // Set timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, clientConfig.api.timeoutMs);
+    
+    logger.debug('API request', { 
+      method: options.method, 
+      url: fullUrl, 
+      requestId,
+      attempt: 0
     });
-
-    for (let attempt = 0; attempt <= retryOpts.maxRetries; attempt++) {
+    
+    while (true) {
       try {
-        if (attempt > 0) {
-          retryCount++;
-          const delay = this.getRetryDelay(attempt - 1);
-          await this.delay(delay);
-          logger.info(`[${requestId}] Retry attempt ${attempt} after ${delay}ms`);
-        }
-
-        const response = await fetch(url, options);
-        const data = await response.json();
-
-        logger.debug(`[${requestId}] Received response`, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          data
+        const response = await fetch(fullUrl, {
+          ...options,
+          headers,
+          signal: controller.signal
         });
-
+        
+        clearTimeout(timeoutId);
+        
+        // Update metrics with status code
+        this.updateMetrics(startTime, !response.ok, attempt, response.status);
+        
         if (!response.ok) {
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            errorData = { error: response.statusText };
+          }
+          
           throw new ApiError(
-            data.error?.message || `API request failed with status ${response.status}`,
+            errorData.error?.message || `HTTP Error: ${response.statusText}`,
             response.status,
-            data,
-            requestId
+            errorData,
+            requestId,
+            fullUrl
           );
         }
-
-        // Validate response structure
-        if (!this.validateResponse(data)) {
-          logger.error(`[${requestId}] Invalid response format`, {
-            data,
-            validationErrors: this.getValidationErrors(data)
-          });
+        
+        const data = await response.json();
+        
+        // For chat completions, validate the response structure
+        if (url.includes('/chat') && !this.validateResponse(data)) {
           throw new ApiError(
-            'Invalid response format from API',
-            500,
+            'Invalid API response format',
+            200,
             data,
-            requestId
+            requestId,
+            fullUrl
           );
         }
-
-        logger.info(`[${requestId}] Request completed successfully`);
-        this.updateMetrics(startTime, false, retryCount);
-        return data as T;
-      } catch (error) {
-        logger.error(`[${requestId}] API error (attempt ${attempt + 1}/${retryOpts.maxRetries + 1}):`, {
-          error,
-          errorMessage: error instanceof Error ? error.message : String(error),
-          errorStack: error instanceof Error ? error.stack : undefined,
-          attempt,
-          maxRetries: retryOpts.maxRetries
+        
+        logger.debug('API response', { 
+          method: options.method, 
+          url: fullUrl, 
+          requestId,
+          statusCode: response.status,
+          duration: Date.now() - startTime,
+          attempt
         });
         
-        lastError = error as Error;
+        return data;
+      } catch (error: any) {
+        const isRetryable = this.isRetryableError(error);
+        const canRetry = attempt < retryOptions.maxRetries && isRetryable;
         
-        if (!this.isRetryableError(error) || attempt === retryOpts.maxRetries) {
-          this.updateMetrics(startTime, true, retryCount);
+        clearTimeout(timeoutId);
+        
+        // Log error details
+        logger.error('API request failed', {
+          method: options.method,
+          url: fullUrl,
+          requestId,
+          attempt,
+          error: error.message,
+          status: error instanceof ApiError ? error.status : undefined,
+          isRetryable,
+          canRetry,
+          retryCount: attempt,
+          maxRetries: retryOptions.maxRetries
+        });
+        
+        if (!canRetry) {
+          this.updateMetrics(startTime, true, attempt);
           throw error;
         }
+        
+        attempt++;
+        const delayMs = this.getRetryDelay(attempt);
+        
+        logger.info('Retrying API request', {
+          method: options.method,
+          url: fullUrl,
+          requestId,
+          attempt,
+          delayMs
+        });
+        
+        await this.delay(delayMs);
       }
     }
-
-    this.updateMetrics(startTime, true, retryCount);
-    throw lastError;
   }
-
+  
   private getValidationErrors(data: any): string[] {
-    const errors: string[] = [];
-    if (!data) errors.push('Response data is null or undefined');
+    const errors = [];
+    
+    if (typeof data !== 'object' || data === null) errors.push('response is not an object');
     if (!Array.isArray(data?.choices)) errors.push('choices is not an array');
-    if (!data?.choices?.length) errors.push('choices array is empty');
-    if (!data?.choices?.[0]?.message) errors.push('first choice has no message');
+    if (data?.choices?.length === 0) errors.push('choices array is empty');
+    if (typeof data?.choices?.[0] !== 'object') errors.push('first choice is not an object');
+    if (typeof data?.choices?.[0]?.message !== 'object') errors.push('message is not an object');
     if (typeof data?.choices?.[0]?.message?.content !== 'string') errors.push('message content is not a string');
     if (typeof data?.choices?.[0]?.message?.role !== 'string') errors.push('message role is not a string');
     return errors;
@@ -226,7 +319,7 @@ export class ApiClient {
     request: ChatCompletionRequest
   ): Promise<ChatCompletionResponse> {
     return this.fetchWithRetry<ChatCompletionResponse>(
-      '/api/chat',
+      clientConfig.api.endpoints.chat,
       {
         method: 'POST',
         headers: {
@@ -256,7 +349,7 @@ export class ApiClient {
       return this.sendMultiAgentRequest(lastUserMessage.content, image);
     }
     
-    // Legacy non-agentic path (fallback)
+    // Legacy non-agentic path (fallback) - use our API route instead of direct access
     const requestMessages = messages.map(msg => ({
       role: msg.role,
       content: msg.content
@@ -284,15 +377,25 @@ export class ApiClient {
       });
     }
     
-    return this.sendChatRequest({
-      model: CHAT_SETTINGS.model,
-      messages: requestMessages,
-      max_tokens: CHAT_SETTINGS.max_tokens,
-      temperature: CHAT_SETTINGS.temperature,
-      top_p: CHAT_SETTINGS.top_p,
-      frequency_penalty: CHAT_SETTINGS.frequency_penalty,
-      presence_penalty: CHAT_SETTINGS.presence_penalty
-    });
+    // Send to our Next.js API route instead of directly to Together AI
+    return this.fetchWithRetry<ChatCompletionResponse>(
+      clientConfig.api.endpoints.chat,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: requestMessages,
+          model: clientConfig.together.model,
+          max_tokens: CHAT_SETTINGS.maxTokens,
+          temperature: CHAT_SETTINGS.temperature,
+          top_p: CHAT_SETTINGS.topP,
+          frequency_penalty: CHAT_SETTINGS.frequencyPenalty,
+          presence_penalty: CHAT_SETTINGS.presencePenalty
+        }),
+      }
+    );
   }
 
   // New method to handle multi-agent API requests
@@ -307,116 +410,150 @@ export class ApiClient {
       logger.info('Sending multi-agent request', { requestId, query });
       
       // Prepare the request payload
-      const payload = {
-        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-        messages: [
-          {
-            role: "user",
-            content: query
-          }
-        ],
-        max_tokens: 4096,
-        temperature: 0.7,
-        top_p: 1.0,
-        frequency_penalty: 0.0,
-        presence_penalty: 0.0
+      const requestBody = {
+        query,
+        image: image || undefined
       };
       
-      // Send the initial request to start the task
-      const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      if (!response.ok) {
-        throw new ApiError(
-          `API request failed with status ${response.status}`,
-          response.status,
-          await response.json(),
-          requestId
-        );
-      }
-      
-      const initialData = await response.json();
-      
-      // Extract the task ID from the response content
-      const taskIdMatch = initialData.choices[0].message.content.match(/Task ID: ([a-zA-Z0-9-]+)/);
-      if (!taskIdMatch) {
-        throw new Error('Could not extract task ID from response');
-      }
-      
-      const taskId = taskIdMatch[1];
-      logger.info('Multi-agent task started', { requestId, taskId });
-      
-      // Poll for the result
-      let result = null;
-      let attempts = 0;
-      const maxAttempts = 30; // Maximum number of polling attempts
-      const pollInterval = 2000; // 2 seconds between polls
-      
-      while (attempts < maxAttempts) {
-        await this.delay(pollInterval);
-        attempts++;
-        
-        const statusResponse = await fetch(`${this.baseUrl}/v1/chat/status/${taskId}`, {
-          method: 'GET',
+      // Use the multi-agent API endpoint
+      const response = await this.fetchWithRetry<ChatCompletionResponse>(
+        '/api/task', // Different endpoint for multi-agent requests
+        {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-Request-ID': requestId
           },
-        });
-        
-        if (!statusResponse.ok) {
-          logger.warn('Error checking task status', { 
-            requestId, 
-            taskId, 
-            status: statusResponse.status 
-          });
-          continue;
+          body: JSON.stringify(requestBody)
         }
-        
-        const statusData = await statusResponse.json();
-        
-        if (statusData.status === 'completed') {
-          result = statusData.response;
-          break;
-        } else if (statusData.status === 'error') {
-          throw new Error(`Task failed: ${statusData.error}`);
-        }
-        
-        logger.debug('Task still processing', { 
-          requestId, 
-          taskId, 
-          attempt: attempts, 
-          status: statusData.status 
-        });
+      );
+      
+      // Check if we need to wait for an async task to complete
+      if (response.choices?.[0]?.message?.content?.includes('task_')) {
+        // This is a task ID, we need to poll for results
+        return this.pollTaskResult(response.choices[0].message.content);
       }
       
-      if (!result) {
-        throw new Error('Task timed out after maximum polling attempts');
-      }
-      
-      this.updateMetrics(startTime);
-      return result;
-      
+      return response;
     } catch (error) {
-      this.updateMetrics(startTime, true);
-      logger.error('Error in multi-agent request', { 
+      logger.error('Multi-agent request failed', { 
         requestId, 
-        error: error instanceof Error ? error.message : String(error) 
+        error: error instanceof Error ? error.message : String(error),
+        query: query.substring(0, 100) // Only log the beginning of the query for privacy
       });
-      throw error;
+      
+      // Create a fallback response for better user experience
+      const fallbackResponse: ChatCompletionResponse = {
+        choices: [{
+          message: {
+            role: 'assistant',
+            content: 'I apologize, but I encountered an error processing your request. Please try again or contact support if the issue persists.'
+          },
+          finish_reason: 'stop'
+        }],
+        usage: {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0
+        }
+      };
+      
+      // Only throw in development, provide fallback in production
+      if (clientConfig.isDevelopment) {
+        throw error;
+      } else {
+        return fallbackResponse;
+      }
     }
   }
-
-  // Method to get current metrics
+  
+  /**
+   * Poll for task results when using the async multi-agent system
+   */
+  private async pollTaskResult(taskId: string): Promise<ChatCompletionResponse> {
+    const maxPolls = 30; // Maximum number of polling attempts
+    const pollInterval = 1000; // Start with 1 second intervals
+    const maxPollInterval = 5000; // Maximum 5 second intervals
+    const pollBackoffFactor = 1.5; // Increase interval by 50% each time
+    
+    let pollCount = 0;
+    let currentInterval = pollInterval;
+    
+    while (pollCount < maxPolls) {
+      await this.delay(currentInterval);
+      pollCount++;
+      
+      try {
+        const result = await this.fetchWithRetry<any>(
+          `/api/task/${taskId}`,
+          { method: 'GET' }
+        );
+        
+        // Check if the task is complete
+        if (result.status === 'completed' && result.result) {
+          // Convert task result to ChatCompletionResponse format
+          return {
+            choices: [{
+              message: {
+                role: 'assistant',
+                content: result.result.content || result.result
+              },
+              finish_reason: 'stop'
+            }],
+            usage: result.usage || {
+              prompt_tokens: 0,
+              completion_tokens: 0,
+              total_tokens: 0
+            }
+          };
+        }
+        
+        // If failed, return an error message
+        if (result.status === 'failed') {
+          throw new Error(`Task failed: ${result.error || 'Unknown error'}`);
+        }
+        
+        // Increase polling interval with backoff
+        currentInterval = Math.min(
+          currentInterval * pollBackoffFactor,
+          maxPollInterval
+        );
+        
+        logger.info('Polling task', { 
+          taskId, 
+          pollCount, 
+          status: result.status,
+          nextPollIn: currentInterval
+        });
+      } catch (error) {
+        logger.error('Error polling task', { 
+          taskId, 
+          pollCount, 
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        
+        // Increase polling interval on error
+        currentInterval = Math.min(
+          currentInterval * 2,
+          maxPollInterval
+        );
+      }
+    }
+    
+    // If we've reached the maximum polling attempts, return a timeout error
+    throw new Error(`Task timed out after ${maxPolls} polling attempts`);
+  }
+  
+  /**
+   * Get current API metrics for monitoring
+   */
   getMetrics(): ApiMetrics {
     return { ...this.metrics };
   }
-
-  // Method to reset metrics
+  
+  /**
+   * Reset metrics counters for testing
+   */
   resetMetrics(): void {
     this.metrics = {
       requestCount: 0,
@@ -424,7 +561,28 @@ export class ApiClient {
       retryCount: 0,
       averageResponseTime: 0,
       totalResponseTime: 0,
+      lastRequestTime: null,
+      consecutiveErrors: 0,
+      statusCodes: {}
     };
+  }
+  
+  /**
+   * Check if the API seems to be healthy based on recent metrics
+   */
+  isHealthy(): boolean {
+    // Consider unhealthy if there have been 3+ consecutive errors
+    if (this.metrics.consecutiveErrors >= 3) {
+      return false;
+    }
+    
+    // Consider unhealthy if error rate is above 50%
+    if (this.metrics.requestCount > 5 && 
+        this.metrics.errorCount / this.metrics.requestCount > 0.5) {
+      return false;
+    }
+    
+    return true;
   }
 }
 

@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
+import { render } from '@/__tests__/utils/test-utils';
 import { MessageInput } from '../MessageInput';
 
 describe('MessageInput Component', () => {

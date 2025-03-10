@@ -3,6 +3,14 @@ import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/contexts/AppContext";
 import { ChatProvider } from "@/contexts/ChatContext";
+import dynamic from 'next/dynamic';
+
+// Dynamically import the browser compatibility warning component
+// to avoid server-side rendering issues with browser detection
+const BrowserCompatibilityWarning = dynamic(
+  () => import('@/components/BrowserCompatibilityWarning'),
+  { ssr: false }
+);
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 const playfair = Playfair_Display({ 
@@ -28,6 +36,7 @@ export default function RootLayout({
         <AppProvider>
           <ChatProvider>
             <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
+              <BrowserCompatibilityWarning />
               <div
                 id="offline-banner"
                 className="fixed top-0 left-0 right-0 bg-yellow-500 text-black p-2 text-center transform transition-transform duration-300 ease-in-out translate-y-[-100%] data-[visible=true]:translate-y-0"
