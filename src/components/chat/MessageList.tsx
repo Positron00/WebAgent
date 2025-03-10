@@ -320,7 +320,9 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
                       aria-label="user's message"
                       style={getMessageStyles('user')}
                     >
-                      {userMessage.content}
+                      <ReactMarkdown>
+                        {userMessage.content}
+                      </ReactMarkdown>
                     </div>
                   </div>
                   {/* Assistant message as article */}

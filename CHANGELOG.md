@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added proper type exports for context interfaces
 - Fixed API routes by adding `export const dynamic = 'force-dynamic'` to properly handle request properties
 - Fixed duplicate '/api' prefix in API endpoint URLs that was causing 404 errors
+- Added markdown rendering to user messages to properly format markdown in user inputs
 
 ### Changed
 - Simplified test commands in package.json
