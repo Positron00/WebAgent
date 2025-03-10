@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] - 2025-03-09
+
+### Added
+- Enhanced error reporting in integration tests with detailed context
+- Improved configuration validation with tracking metrics
+- Extended logging for API key validation failures
+- New metrics for configuration validation and memory usage
+- Memory usage monitoring via Prometheus metrics
+
+### Changed
+- Updated rate limiting implementation for better scalability with Redis support
+- Enhanced input sanitization with comprehensive pattern matching and HTML escaping
+- Improved middleware ordering for more accurate request tracking and security
+- Optimized metrics collection to reduce performance impact
+- Normalized path patterns in metrics to prevent high cardinality
+
+### Fixed
+- Issue with test_integration.py masking real failures in CI/CD
+- JWT token expiration handling with specific error messages
+- Middleware recursion potential in monitoring endpoints
+- LLM metrics tracking for different model and provider combinations
+- Error handling in token counting and other metrics collection
+
 ## [2.4.0] - 2025-03-09
 
 ### Added

@@ -2,7 +2,7 @@
 
 This is the Python-based microservice backend for the WebAgent platform. It uses LangGraph to orchestrate a multi-agent system for research, analysis, and report generation.
 
-**Version: 2.4.0** - Production-ready with enhanced security, monitoring, and deployment support.
+**Version: 2.4.1** - Enhanced reliability and observability with improved testing, error handling, and monitoring capabilities.
 
 ## Key Features
 
