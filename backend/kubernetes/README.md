@@ -36,13 +36,12 @@ export LANGSMITH_API_KEY="your-langsmith-api-key"
 #### Script Options
 
 ```
-Usage: ./deploy.sh [options]
+Usage: ./deploy.sh [OPTIONS]
 
 Options:
-  -e, --environment   Environment to deploy to (default: production)
-  -n, --namespace     Kubernetes namespace (default: default)
-  -v, --version       Version to deploy (default: 2.4.0)
-  -h, --help          Show this help message
+  -h, --help         Show this help message and exit
+  -e, --environment  Environment to deploy (default: staging)
+  -v, --version      Version to deploy (default: 2.4.6)
 ```
 
 ### Manual Deployment

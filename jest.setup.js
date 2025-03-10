@@ -106,4 +106,39 @@ window.ResizeObserver = MockResizeObserver;
 // Mock URL.createObjectURL
 if (typeof window.URL.createObjectURL === 'undefined') {
   Object.defineProperty(window.URL, 'createObjectURL', { value: jest.fn(() => 'mocked-object-url') });
+}
+
+// Mock global fetch API
+global.fetch = jest.fn().mockImplementation((url) => {
+  if (url.includes('/api/ping')) {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: () => Promise.resolve({ status: 'ok' }),
+      text: () => Promise.resolve('ok')
+    });
+  }
+  
+  // Default mock response for other fetch calls
+  return Promise.resolve({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    json: () => Promise.resolve({}),
+    text: () => Promise.resolve('')
+  });
+});
+
+// Mock URL methods if they don't exist
+if (typeof window !== 'undefined') {
+  // Mock createObjectURL if not already there
+  if (!window.URL || !window.URL.createObjectURL) {
+    Object.defineProperty(window.URL, 'createObjectURL', { value: jest.fn(() => 'mock-url') });
+  }
+  
+  // Mock revokeObjectURL if not already there
+  if (!window.URL || !window.URL.revokeObjectURL) {
+    Object.defineProperty(window.URL, 'revokeObjectURL', { value: jest.fn() });
+  }
 } 

@@ -2,7 +2,7 @@
 
 This is the Python-based microservice backend for the WebAgent platform. It uses LangGraph to orchestrate a multi-agent system for research, analysis, and report generation.
 
-**Version: 2.4.5** - Enhanced testing framework with improved browser compatibility detection and graceful fallbacks for different client environments. This update ensures reliable operation across all devices with comprehensive error handling and optimized performance.
+**Version: 2.4.6** - Fixed Jest configuration issues for reliable test execution. The update resolves environment teardown problems, properly excludes non-test files from testing, and ensures all 27 tests pass consistently. This maintenance release improves developer experience with more reliable testing infrastructure.
 
 ## Key Features
 

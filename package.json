@@ -1,17 +1,17 @@
 {
   "name": "web-agent-app",
-  "version": "2.4.5",
+  "version": "2.4.6",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node scripts/test.js",
-    "test:watch": "node scripts/test.js --watch",
-    "test:coverage": "node scripts/test.js --coverage",
-    "test:single": "node scripts/test.js",
-    "test:apiClient": "node scripts/test.js src/__tests__/utils/apiClient.test.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:single": "jest",
+    "test:apiClient": "jest src/__tests__/utils/apiClient.test.ts",
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {

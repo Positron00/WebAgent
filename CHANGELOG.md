@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.6] - 2025-03-10
+
+### Fixed
+- Jest configuration issues causing test failures during environment teardown
+- Properly excluded non-test utility files from being treated as test files
+- Fixed test suite for proper exit handling after tests complete
+- Resolved conflicts between test files and custom test runners
+- Updated package.json scripts for simpler test execution
+
+### Changed
+- Simplified test commands in package.json
+- Improved Jest configuration with proper test file pattern matching
+- Enhanced test reliability with forceExit option
+- Streamlined testing workflow for developers
+
 ## [2.4.5] - 2025-03-09
 
 ### Added

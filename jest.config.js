@@ -1,7 +1,13 @@
 module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/', 
+    '<rootDir>/.next/',
+    '<rootDir>/src/__tests__/utils/test-utils.tsx',
+    '<rootDir>/scripts/test.js'
+  ],
+  testRegex: '(/__tests__/.*|\\.(test|spec))\\.[jt]sx?$',
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
     '^.+\\.node_modules\\.(js|jsx|ts|tsx)$': '<rootDir>/src/__mocks__/transformers/babelTransformer.js',
@@ -40,4 +46,5 @@ module.exports = {
   bail: 1,
   // Improve error reporting
   verbose: true,
+  forceExit: true,
 }; 

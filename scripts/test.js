@@ -21,5 +21,17 @@ if (!jestArgs.includes('--colors')) {
   jestArgs.push('--colors');
 }
 
-// Pass the arguments to Jest's CLI
-jest.run(jestArgs); 
+// Add --forceExit to ensure Jest exits properly
+if (!jestArgs.includes('--forceExit')) {
+  jestArgs.push('--forceExit');
+}
+
+// Run Jest synchronously to avoid async issues with environment teardown
+const runResult = jest.runCLI({
+  // Add any additional config options here
+  forceExit: true,
+  // Pass other arguments through
+  _: jestArgs.filter(arg => !arg.startsWith('--')),
+}, [process.cwd()]);
+
+// Jest will handle the process.exit internally with forceExit: true 

@@ -3,12 +3,21 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { storage, AccessibilitySettings, ThemePreference } from '@/utils/storage';
 
+// Define notification type
+export interface Notification {
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  id?: string;
+}
+
 interface AppContextType {
   theme: ThemePreference;
   setTheme: (theme: ThemePreference) => void;
   accessibility: AccessibilitySettings;
   setAccessibility: (settings: AccessibilitySettings) => void;
   isOffline: boolean;
+  showNotification: (notification: Notification) => void;
+  hideNotification: (id?: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -30,6 +39,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     queryBackgroundColor: '#1E3A8A'
   });
   const [isOffline, setIsOffline] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // Load settings from storage on client-side only
   useEffect(() => {
@@ -133,12 +143,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Function to show a notification
+  const showNotification = (notification: Notification) => {
+    const id = notification.id || Date.now().toString();
+    setNotifications(prev => [...prev, { ...notification, id }]);
+    
+    // Auto-hide after 5 seconds for non-error notifications
+    if (notification.type !== 'error') {
+      setTimeout(() => {
+        hideNotification(id);
+      }, 5000);
+    }
+    
+    return id;
+  };
+
+  // Function to hide a notification
+  const hideNotification = (id?: string) => {
+    if (id) {
+      setNotifications(prev => prev.filter(notification => notification.id !== id));
+    } else {
+      setNotifications([]);
+    }
+  };
+
   const value = {
     theme,
     setTheme,
     accessibility,
     setAccessibility,
     isOffline,
+    showNotification,
+    hideNotification
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

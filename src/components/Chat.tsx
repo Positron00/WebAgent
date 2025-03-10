@@ -11,7 +11,7 @@ import { XMarkIcon, PaperClipIcon, InformationCircleIcon, CodeBracketIcon } from
 
 export default function Chat() {
   const { state, sendMessage, clearMessages } = useChat();
-  const { accessibility } = useApp();
+  const { accessibility, showNotification } = useApp();
   const [input, setInput] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -58,6 +58,18 @@ export default function Chat() {
   };
 
   const handleFileSelect = (file: File) => {
+    // Check if the file is a valid image type
+    const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      // Show error notification for invalid file type
+      showNotification({
+        message: 'Please upload a valid image file (JPEG, PNG, GIF, or WebP)',
+        type: 'error'
+      });
+      return;
+    }
+    
     // If it's a screenshot, store it and create preview URL
     if (file.name.startsWith('screenshot-')) {
       const previewUrl = URL.createObjectURL(file);
