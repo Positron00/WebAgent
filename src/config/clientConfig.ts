@@ -19,9 +19,9 @@ export const clientConfig = {
   api: {
     baseUrl: '/api',
     endpoints: {
-      chat: '/api/chat',
-      ping: '/api/ping',
-      health: '/api/health',
+      chat: '/chat',
+      ping: '/ping',
+      health: '/health',
     },
     timeoutMs: 60000, // 60 seconds
   },

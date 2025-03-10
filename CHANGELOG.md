@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed TypeScript errors in browser compatibility polyfills
 - Added proper type exports for context interfaces
 - Fixed API routes by adding `export const dynamic = 'force-dynamic'` to properly handle request properties
+- Fixed duplicate '/api' prefix in API endpoint URLs that was causing 404 errors
 
 ### Changed
 - Simplified test commands in package.json

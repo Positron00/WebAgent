@@ -2,7 +2,7 @@
 
 A sophisticated AI system built as a microservice architecture that combines a modern Next.js frontend with a powerful LangGraph-based multi-agent backend. The platform enables complex research, analysis, and reporting through specialized AI agents.
 
-**Version: 2.4.6** - Fixed Jest configuration issues for reliable test execution. The update resolves environment teardown problems, properly excludes non-test files from testing, and ensures all 27 tests pass consistently. Also fixed Next.js font loading conflicts with Babel configuration, resolved client component issues, and corrected API route configurations to properly handle dynamic requests. This maintenance release improves developer experience with more reliable testing infrastructure and build process.
+**Version: 2.4.6** - Fixed Jest configuration issues for reliable test execution. The update resolves environment teardown problems, properly excludes non-test files from testing, and ensures all 27 tests pass consistently. Also fixed Next.js font loading conflicts with Babel configuration, resolved client component issues, corrected API route configurations to properly handle dynamic requests, and fixed a critical bug with duplicate API paths that was causing 404 errors. This maintenance release improves developer experience with more reliable testing infrastructure and build process.
 
 ## Architecture
 
