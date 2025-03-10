@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved "use client" directive issues in components using React hooks
 - Fixed TypeScript errors in browser compatibility polyfills
 - Added proper type exports for context interfaces
+- Fixed API routes by adding `export const dynamic = 'force-dynamic'` to properly handle request properties
 
 ### Changed
 - Simplified test commands in package.json

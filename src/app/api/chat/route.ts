@@ -4,6 +4,9 @@ import { SYSTEM_PROMPT, SYSTEM_PROMPTS, KNOWLEDGE_PROMPTS, CHAT_SETTINGS } from 
 import { ChatCompletionRequest, ChatRequestMessage, ChatCompletionResponse } from '@/types/api';
 import { rateLimiter } from '@/utils/rateLimiter';
 
+// Mark this route as dynamic to handle POST requests
+export const dynamic = 'force-dynamic';
+
 // Custom error class for API errors
 class ApiError extends Error {
   constructor(public statusCode: number, message: string) {

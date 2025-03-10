@@ -3,6 +3,9 @@ import { clientConfig } from '@/config/clientConfig';
 import { logger } from '@/utils/logger';
 import { ApiClient } from '@/utils/apiClient';
 
+// Add this export to declare the route as dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * Health check endpoint for monitoring system status
  * 

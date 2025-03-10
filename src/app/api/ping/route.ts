@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { config } from '@/config/env';
 
+// Mark route as dynamic to be consistent with other API routes
+export const dynamic = 'force-dynamic';
+
 // Simple ping endpoint for connectivity checks
 export async function GET() {
   const diagnostics = {
