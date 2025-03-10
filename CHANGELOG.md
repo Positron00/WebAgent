@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2025-03-09
+
+### Added
+- Production Readiness
+  - Security hardening with rate limiting and request validation
+  - JWT authentication support with bcrypt password hashing
+  - Prometheus metrics for API, task, and LLM monitoring
+  - Structured logging with JSON format and request tracking
+  - Security middleware for HTTP headers and input sanitization
+  - Kubernetes deployment configurations
+  - Multi-stage Docker builds for optimized images
+  - Comprehensive API documentation
+
+### Changed
+- Enhanced middleware stack
+  - Added request size limiting
+  - Added security headers
+  - Added request ID tracking
+  - Added Prometheus metrics integration
+- Improved error handling
+  - Centralized exception handling
+  - Detailed error responses with tracking IDs
+  - Enhanced logging for all errors
+- Updated configuration management
+  - Simplified priority logic
+  - Better documentation
+
+### Security
+- Added rate limiting to prevent abuse
+- Added request size limiting to prevent DoS attacks
+- Added security headers to protect against common web vulnerabilities
+- Added input validation and sanitization
+- Added JWT token-based authentication
+- Added secure password hashing with bcrypt
+- Added environment variable isolation
+- Added secure deployment guidance
+
 ## [2.3.1] - 2025-03-09
 
 ### Added

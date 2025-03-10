@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webagent-config
+  namespace: webagent
+  labels:
+    app: webagent
+    component: backend
+data:
+  prod.yaml: |
+    # WebAgent Production Environment Configuration
+    
+    # API settings
+    api:
+      version: "v1"
+      prefix: "/api/v1"
+      debug_mode: false
+      host: "0.0.0.0"
+      port: 8000
+    
+    # CORS settings
+    cors:
+      origins:
+        - "https://webagent.example.com"
+        - "https://api.webagent.example.com"
+        - "https://admin.webagent.example.com"
+      allow_credentials: true
+      allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      allow_headers: ["Content-Type", "Authorization", "X-Requested-With"]
+    
+    # Database settings
+    database:
+      vector_db:
+        path: "/data/vectordb"
+        embedding_dimension: 1536
+        distance_metric: "cosine"
+      redis:
+        host: "redis-master.webagent.svc.cluster.local"
+        port: 6379
+        db: 0
+        key_prefix: "webagent:prod:"
+    
+    # LLM settings
+    llm:
+      provider: "together"
+      default_model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+      temperature: 0.3
+      timeout_seconds: 120
+      max_tokens: 16384
+      retry_attempts: 5
+      batch_size: 50
+    
+    # LangSmith settings for observability
+    langsmith:
+      project_name: "webagent-research-prod"
+      tracing_enabled: true
+      log_level: "WARNING"
+    
+    # Web search settings
+    web_search:
+      provider: "tavily"
+      search_depth: "comprehensive"
+      max_results: 20
+      include_domains: []
+      exclude_domains: []
+      timeout_seconds: 90
+    
+    # Task management
+    tasks:
+      max_concurrent: 50
+      result_ttl_minutes: 240
+      history_ttl_days: 30
+      max_retries: 5
+    
+    # Agents configuration
+    agents:
+      supervisor:
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        temperature: 0.2
+      web_research:
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        temperature: 0.3
+        max_searches_per_task: 10
+      internal_research:
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        temperature: 0.1
+        max_documents: 50
+      senior_research:
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        temperature: 0.2
+        max_follow_up_questions: 5
+      data_analysis:
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        temperature: 0.1
+      coding:
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        temperature: 0.0
+        allowed_modules: ["matplotlib", "seaborn", "numpy", "pandas"]
+        timeout_seconds: 60
+      team_manager:
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        temperature: 0.4
+    
+    # Logging configuration
+    logging:
+      level: "WARNING"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      log_to_file: true
+      log_file: "/var/log/webagent/webagent-prod.log"
+      rotate_logs: true
+      max_file_size_mb: 50
+      backup_count: 20
+    
+    # Security settings
+    security:
+      token_expire_minutes: 15
+      algorithm: "HS256"
+      password_min_length: 12 

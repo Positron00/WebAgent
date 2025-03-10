@@ -2,7 +2,7 @@
 
 This is the Python-based microservice backend for the WebAgent platform. It uses LangGraph to orchestrate a multi-agent system for research, analysis, and report generation.
 
-**Version: 2.3.0** - Now with Together AI integration, frontend compatibility, and comprehensive testing.
+**Version: 2.4.0** - Production-ready with enhanced security, monitoring, and deployment support.
 
 ## Key Features
 
@@ -12,7 +12,10 @@ This is the Python-based microservice backend for the WebAgent platform. It uses
 - Advanced data analysis and visualization capabilities
 - Comprehensive report generation with Team Manager Agent
 - Full LangSmith integration for tracing and observability
-- Environment-specific configurations with YAML
+- Security features including rate limiting, JWT authentication, and input validation
+- Prometheus metrics for comprehensive monitoring
+- Structured logging with request tracking
+- Kubernetes deployment support
 
 ## Architecture
 
@@ -20,9 +23,33 @@ The backend uses a microservice architecture with the following components:
 
 - FastAPI server for REST API endpoints
 - LangGraph for agent orchestration
-- OpenAI integration for LLMs
+- OpenAI and Together AI integration for LLMs
 - Redis for task queueing and caching
 - ChromaDB for vector storage
+- Prometheus client for metrics
+- Structured logging with JSON output
+
+## Security Features
+
+- Rate limiting to prevent abuse
+- Security HTTP headers to protect against common web vulnerabilities
+- Input validation and sanitization
+- JWT token-based authentication
+- Secure password hashing with bcrypt
+- Request size limiting
+- Middleware-based security measures
+- Environment variable isolation
+- Comprehensive error handling and logging
+
+## Monitoring & Observability
+
+- Prometheus metrics for API and LLM requests
+- Task duration and status tracking
+- Structured logging with JSON format
+- Request ID tracking across the application
+- Health check endpoints with detailed status
+- LangSmith integration for LLM tracing
+- Alert rules for critical conditions
 
 ## Getting Started
 
@@ -31,7 +58,9 @@ The backend uses a microservice architecture with the following components:
 - Python 3.10 or higher
 - Docker and Docker Compose (optional)
 - OpenAI API key
-- Tavily API key (for web search)
+- Together AI API key (optional)
+- Tavily API key (optional for web search)
+- LangSmith API key (optional for tracing)
 
 ### Environment Configuration
 
@@ -74,34 +103,17 @@ export WEBAGENT_ENV=prod
 #### Configuration Priority
 
 Settings are loaded with the following priority (highest to lowest):
-1. Environment variables with `WEBAGENT_` prefix
-2. Environment-specific YAML file
-3. `.env` file values
-4. Default values in code
+1. `.env.local` file (highest priority, specifically for API keys and sensitive information)
+2. Environment variables with `WEBAGENT_` prefix 
+3. Environment-specific YAML file (`dev.yaml`, `uat.yaml`, or `prod.yaml`)
+4. `.env` file values (lowest priority, default fallback)
+5. Default values in code
 
-#### Testing Configuration
-
-You can test the configuration loading with:
-
-```bash
-# Test default (dev) configuration
-python test_config.py
-
-# Test specific environment
-python test_config.py uat
-```
-
-### Traditional Environment Setup
-
-You can also use the traditional `.env` file approach (lower priority than YAML):
-
-1. Create a `.env` file in the backend directory:
-
-```
-OPENAI_API_KEY=your_openai_api_key
-TAVILY_API_KEY=your_tavily_api_key
-DEBUG_MODE=true
-```
+The recommended practice is:
+- Store API keys and sensitive information in `.env.local` (never commit to version control)
+- Configure environment-specific settings in YAML files
+- Use environment variables for deployment-specific overrides
+- Keep fallback/default values in `.env` and code
 
 ### Running with Docker Compose
 
@@ -140,19 +152,73 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 WEBAGENT_ENV=uat uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-## API Endpoints
+## Deployment
 
-- `GET /`: Health check
-- `GET /api/v1/health`: Detailed health check
-- `POST /api/v1/chat`: Start a new chat workflow
-- `GET /api/v1/chat/{task_id}`: Get status and results of a chat workflow
-- `GET /api/v1/tasks`: List all tasks
-- `GET /api/v1/tasks/{task_id}`: Get details about a specific task
-- `DELETE /api/v1/tasks/{task_id}`: Delete a task
+### Docker Deployment
 
-## Development
+The application includes a multi-stage Dockerfile for optimized production builds:
 
-### Project Structure
+```bash
+# Build the Docker image
+docker build -t webagent-backend:2.4.0 .
+
+# Run the container
+docker run -p 8000:8000 \
+  --env-file .env.local \
+  --env WEBAGENT_ENV=prod \
+  webagent-backend:2.4.0
+```
+
+### Kubernetes Deployment
+
+Kubernetes manifests are available in the `kubernetes/` directory:
+
+```bash
+# Create the namespace
+kubectl create namespace webagent
+
+# Create secrets (replace placeholders first)
+kubectl apply -f kubernetes/secrets.yaml
+
+# Apply the configuration
+kubectl apply -f kubernetes/configmap.yaml
+
+# Deploy the application
+kubectl apply -f kubernetes/deployment.yaml
+kubectl apply -f kubernetes/service.yaml
+kubectl apply -f kubernetes/ingress.yaml
+```
+
+## Monitoring
+
+### Prometheus Integration
+
+The application exposes Prometheus metrics at the `/api/v1/metrics` endpoint. Kubernetes ServiceMonitor configuration is available in `kubernetes/monitoring/prometheus.yaml`.
+
+Key metrics include:
+- HTTP request counts, latencies, and statuses
+- Task counts and durations
+- LLM request metrics and token usage
+- System resource utilization
+
+### Logging
+
+Logs are written to both the console and files with automatic rotation:
+
+- Development: Human-readable format with DEBUG level
+- UAT/Production: JSON structured format with INFO/WARNING level
+- Log files are stored in the `logs/` directory
+- Production logs rotate daily and are kept for 30 days
+
+## API Documentation
+
+When the server is running, you can access the API documentation at:
+
+- Swagger UI: `http://localhost:8000/api/v1/docs`
+- ReDoc: `http://localhost:8000/api/v1/redoc`
+- API Reference: See the `docs/api_reference.md` file for detailed documentation
+
+## Project Structure
 
 ```
 backend/
@@ -161,51 +227,31 @@ backend/
 │   │   ├── endpoints/
 │   │   │   ├── chat.py
 │   │   │   ├── health.py
-│   │   │   └── tasks.py
+│   │   │   ├── tasks.py
+│   │   │   └── frontend.py
 │   │   └── router.py
 │   ├── agents/            # Agent implementations
 │   ├── core/              # Core configuration
 │   │   ├── config.py      # Settings management
-│   │   ├── config_def.py  # Pydantic models for config
-│   │   └── loadEnvYAML.py # YAML configuration loader
+│   │   ├── logger.py      # Structured logging
+│   │   ├── metrics.py     # Prometheus metrics
+│   │   ├── middleware.py  # Security middleware
+│   │   └── security.py    # Security utilities
 │   ├── graph/             # LangGraph workflow
 │   │   └── workflows.py
 │   ├── models/            # Data models
-│   │   ├── chat.py
-│   │   └── task.py
 │   ├── services/          # Service integrations
-│   │   ├── llm.py
-│   │   ├── task_manager.py
-│   │   └── vectordb.py
 │   └── utils/             # Utility functions
 ├── config/                # Environment configurations
-│   ├── dev.yaml           # Development settings
-│   ├── uat.yaml           # UAT testing settings
-│   └── prod.yaml          # Production settings
+├── docs/                  # Documentation
+├── kubernetes/            # Kubernetes manifests
+├── logs/                  # Log files (gitignored)
 ├── main.py                # FastAPI app entry point
-├── test_config.py         # Configuration test script
 ├── Dockerfile
 ├── docker-compose.yml
 └── requirements.txt
 ```
 
-### Configuration Categories
+## License
 
-Each YAML configuration file defines settings for:
-
-- **API**: Server host, port, debug mode
-- **CORS**: Allowed origins, methods, headers
-- **Database**: Vector DB and Redis settings
-- **LLM**: Models, temperatures, timeouts
-- **Web Search**: Provider, depth, result limits
-- **Task Management**: Concurrency, TTL settings
-- **Agents**: Model configuration for each specialized agent
-- **Logging**: Log levels, formats, file settings
-- **Security**: Token settings, algorithms
-
-### API Documentation
-
-When the server is running, you can access the API documentation at:
-
-- Swagger UI: `http://localhost:8000/api/v1/docs`
-- ReDoc: `http://localhost:8000/api/v1/redoc` 
+This project is licensed under the MIT License - see the LICENSE file for details. 
