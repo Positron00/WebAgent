@@ -5,6 +5,163 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2] - 2025-03-09
+
+### Added
+- Comprehensive architecture documentation with detailed component interactions
+- Robust error handling in integration tests to prevent false positives
+- KeyError handling for LangGraph workflow edge cases
+- Extended test reporting with granular status tracking
+- Architecture diagram in ASCII format for better documentation portability
+
+### Changed
+- Integration test reporting structure for better error visibility
+- Enhanced test suite to handle expected errors gracefully
+- Improved logging context for better debugging
+- Cleaned up API contracts documentation
+- Expanded middleware ordering documentation
+
+### Architecture
+
+The WebAgent platform uses a sophisticated multi-agent architecture with the following key components:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           WebAgent Platform v2.4.2                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌────────────────┐                         ┌─────────────────────────────┐ │
+│  │                │      REST API           │                             │ │
+│  │  Frontend      │◄────────────────────────┤  Backend API Layer          │ │
+│  │  Next.js       │                         │  FastAPI + Middleware       │ │
+│  │  React         │─────────────────────────►  • Security                 │ │
+│  │  TailwindCSS   │                         │  • Rate Limiting            │ │
+│  │                │                         │  • Metrics                  │ │
+│  └────────────────┘                         └───────────────┬─────────────┘ │
+│           │                                                 │               │
+│           │        ┌──────────────────┐                     │               │
+│           └────────┤ State Management │                     │               │
+│                    └──────────────────┘                     ▼               │
+│                                                  ┌─────────────────────────┐ │
+│  ┌────────────────────────────────────────────┐ │                         │ │
+│  │             Monitoring & Observability     │ │  Task Manager           │ │
+│  │  • Prometheus Metrics                      │ │  • Async Processing     │ │
+│  │  • Grafana Dashboards                      │ │  • Task State Storage   │ │
+│  │  • Structured Logging                      │ │  • Result Caching       │ │
+│  │  • LangSmith Tracing                       │ │                         │ │
+│  └──────────────────┬─────────────────────────┘ └───────────┬─────────────┘ │
+│                     │                                       │               │
+│                     ▼                                       ▼               │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │                       LangGraph Orchestration                          │ │
+│  │                                                                        │ │
+│  │  ┌─────────┐        ┌─────────────┐         ┌────────────┐            │ │
+│  │  │         │        │             │         │            │            │ │
+│  │  │Supervisor◄───────┤Team Manager ◄─────────┤Senior      │            │ │
+│  │  │Agent    │        │Agent        │         │Research    │            │ │
+│  │  │         ├──┐     │             │         │Agent       │            │ │
+│  │  └─────────┘  │     └─────────────┘         └────────────┘            │ │
+│  │               │            ▲                      ▲                    │ │
+│  │               │            │                      │                    │ │
+│  │               ▼            │                      │                    │ │
+│  │  ┌─────────────────────────┴──────────────────────┴───────────────┐   │ │
+│  │  │                                                                │   │ │
+│  │  │  ┌─────────────┐    ┌─────────────┐     ┌────────────┐        │   │ │
+│  │  │  │             │    │             │     │            │        │   │ │
+│  │  │  │Web Research │    │Internal     │     │Data        │        │   │ │
+│  │  │  │Agent        │    │Research     │     │Analysis    │        │   │ │
+│  │  │  │             │    │Agent        │     │Agent       │        │   │ │
+│  │  │  └─────────────┘    └─────────────┘     └────────────┘        │   │ │
+│  │  │         │                  │                   │               │   │ │
+│  │  │         └──────────────────┴───────────────────┘               │   │ │
+│  │  │                            │                                   │   │ │
+│  │  └────────────────────────────┼───────────────────────────────────┘   │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                  │                                           │
+│    ┌─────────────────────────────┼───────────────────────────────────────┐   │
+│    │                             │  External Integrations                │   │
+│    │                             ▼                                       │   │
+│    │  ┌──────────────┐    ┌─────────────┐    ┌─────────────────┐        │   │
+│    │  │              │    │             │    │                 │        │   │
+│    │  │ Together AI  │    │ OpenAI API  │    │ Tavily Search   │        │   │
+│    │  │ Llama 3.3    │    │ GPT-4       │    │                 │        │   │
+│    │  │              │    │             │    │                 │        │   │
+│    │  └──────────────┘    └─────────────┘    └─────────────────┘        │   │
+│    └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Architecture Components
+
+1. **Frontend Layer**:
+   - Next.js 14.2+ with React 18
+   - TailwindCSS for styling
+   - TypeScript for type safety
+   - State management with React Context API
+   - RESTful API client with axios
+
+2. **Backend API Layer**:
+   - FastAPI with async/await support
+   - Security middleware (rate limiting, input validation)
+   - Prometheus instrumentation
+   - Custom exception handling
+   - JWT authentication
+
+3. **Task Management**:
+   - Asynchronous task processing
+   - State tracking and persistence
+   - Result caching
+   - Error handling and recovery
+
+4. **LangGraph Orchestration**:
+   - Agent workflow definition
+   - Dynamic routing between agents
+   - State management
+   - Error handling and retry logic
+
+5. **Agent Implementation**:
+   - Supervisor Agent for task planning
+   - Research Agents (Web and Internal)
+   - Analysis Agents for data processing
+   - Team Manager for result aggregation
+
+6. **External Integrations**:
+   - Together AI (Llama 3.3 70B Instruct Turbo Free)
+   - OpenAI API
+   - Tavily Search API
+   - Vector database for internal knowledge
+
+7. **Monitoring & Observability**:
+   - Prometheus metrics
+   - Structured JSON logging
+   - Grafana dashboards
+   - LangSmith tracing for LLM interactions
+   - Health check endpoints
+
+### Communication Flow
+
+1. User submits query through frontend
+2. Backend API validates and creates a new task
+3. Task Manager initiates asynchronous processing
+4. Supervisor Agent analyzes query and plans approach
+5. Research Agents gather information in parallel
+6. Senior Research Agent synthesizes findings
+7. Data Analysis Agent processes the information
+8. Team Manager creates final report
+9. Result is returned to frontend for display
+
+### Resilience Features
+
+- Comprehensive error handling
+- Rate limiting to prevent abuse
+- Circuit breakers for external services
+- Fallback mechanisms for LLM providers
+- Graceful degradation modes
+- Asynchronous processing with retries
+
+This architecture provides a scalable, maintainable, and robust platform for AI-powered research and analysis workflows.
+
 ## [2.4.1] - 2025-03-09
 
 ### Added
