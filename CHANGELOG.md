@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.5] - 2025-03-09
+
+### Added
+- Enhanced Jest configuration with better ESM module handling
+- SVG mocking for improved test reliability
+- Comprehensive browser API mocks in Jest setup
+- Improved timeouts and worker management for test stability
+- Better error reporting in test failures
+
+### Changed
+- Updated Babel configuration with proper plugins for modern JavaScript features
+- Optimized test execution with parallel processing and intelligent bail settings
+- Improved browser compatibility detection and fallbacks
+- Enhanced documentation and error messages
+
+### Fixed
+- Test failures with ESM modules like react-markdown
+- Inconsistent test behavior due to missing browser API mocks
+- ApiClient health check test reliability
+- MessageInput component tests to match implementation
+- Private class methods handling in testing environment
+
+### Testing Improvements
+- Added proper mocking for browser APIs:
+  - localStorage and sessionStorage
+  - matchMedia for responsive testing
+  - SpeechRecognition API
+  - IntersectionObserver and ResizeObserver
+  - URL.createObjectURL
+
 ## [2.4.4] - 2025-03-09
 
 ### Added

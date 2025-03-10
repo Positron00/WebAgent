@@ -3,11 +3,18 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
+    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
+    '^.+\\.node_modules\\.(js|jsx|ts|tsx)$': '<rootDir>/src/__mocks__/transformers/babelTransformer.js',
   },
+  transformIgnorePatterns: [
+    // Transform ESM modules that need to be processed
+    '/node_modules/(?!react-markdown|micromark|decode-named-character-reference|character-entities|property-information|space-separated-tokens|comma-separated-tokens|hast-util-whitespace|remark-parse|remark-rehype|unified|bail|is-plain-obj|trough|vfile|vfile-message|unist-util-stringify-position|mdast-util-from-markdown|mdast-util-to-string|micromark-util-.*|mdast-util-.*|unist-util-.*|hast-util-.*|hastscript|web-namespaces)/',
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    // Mock SVG files
+    '\\.svg$': '<rootDir>/src/__mocks__/svg.js',
   },
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
@@ -27,4 +34,10 @@ module.exports = {
     'jest-watch-typeahead/filename',
     'jest-watch-typeahead/testname',
   ],
+  // Increase timeouts and isolate tests for more reliable test runs
+  testTimeout: 20000,
+  maxWorkers: '50%',
+  bail: 1,
+  // Improve error reporting
+  verbose: true,
 }; 

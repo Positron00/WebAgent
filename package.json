@@ -1,15 +1,17 @@
 {
   "name": "web-agent-app",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "node scripts/test.js",
+    "test:watch": "node scripts/test.js --watch",
+    "test:coverage": "node scripts/test.js --coverage",
+    "test:single": "node scripts/test.js",
+    "test:apiClient": "node scripts/test.js src/__tests__/utils/apiClient.test.ts",
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
@@ -24,6 +26,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@babel/plugin-transform-class-properties": "^7.25.9",
+    "@babel/plugin-transform-private-methods": "^7.25.9",
+    "@babel/plugin-transform-private-property-in-object": "^7.25.9",
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.26.0",

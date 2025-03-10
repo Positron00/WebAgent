@@ -2,7 +2,7 @@
 
 A sophisticated AI system built as a microservice architecture that combines a modern Next.js frontend with a powerful LangGraph-based multi-agent backend. The platform enables complex research, analysis, and reporting through specialized AI agents.
 
-**Version: 2.4.4** - Enhanced resilience with improved testing reliability and browser compatibility. Includes comprehensive error handling, structured logging, detailed health checks, robust client-side configuration, and extensive test coverage to ensure system stability and maintainability.
+**Version: 2.4.5** - Improved testing framework and browser compatibility detection with enhanced Jest configuration, proper environment mocking, and graceful fallbacks for older browsers. The update includes comprehensive error handling, structured logging, and performance optimizations for increased reliability across all devices.
 
 ## Architecture
 
