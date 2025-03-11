@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.7] - 2025-03-10
+
+### Improved
+- Enhanced markdown formatting for better readability
+- Left-justified all text elements for consistent alignment
+- Improved section separation with clearer heading styles
+- Increased spacing between content sections
+- Added consistent styling for blockquotes and code blocks
+- Standardized heading hierarchy with proper indentation
+
 ## [2.4.6] - 2025-03-10
 
 ### Fixed

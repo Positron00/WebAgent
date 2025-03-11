@@ -237,17 +237,17 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
         <ReactMarkdown components={{
           // Enhanced paragraph styling
           p: ({node, ...props}) => <p className="text-left mb-4 leading-relaxed" {...props} />,
-          // Improved heading hierarchy
-          h1: ({node, ...props}) => <h1 className="text-center font-bold text-2xl mb-6 mt-2 text-blue-300" {...props} />,
-          h2: ({node, ...props}) => <h2 className="text-left font-bold text-xl mb-4 mt-6 text-blue-400 border-b border-gray-700 pb-1" {...props} />,
-          h3: ({node, ...props}) => <h3 className="text-left font-bold text-lg mb-3 mt-5 text-blue-500" {...props} />,
-          h4: ({node, ...props}) => <h4 className="text-left font-bold text-base mb-2 mt-4 text-blue-600" {...props} />,
+          // Improved heading hierarchy with left-justification
+          h1: ({node, ...props}) => <h1 className="text-left font-bold text-xl mb-6 mt-4 text-blue-300 border-b border-gray-700 pb-1" {...props} />,
+          h2: ({node, ...props}) => <h2 className="text-left font-bold text-lg mb-5 mt-6 text-blue-400 border-b border-gray-700 pb-1" {...props} />,
+          h3: ({node, ...props}) => <h3 className="text-left font-bold text-base mb-4 mt-5 text-blue-500" {...props} />,
+          h4: ({node, ...props}) => <h4 className="text-left font-bold text-sm mb-3 mt-4 text-blue-600" {...props} />,
           // Enhanced list styling
           ul: ({node, ...props}) => <ul className="text-left mb-4 ml-6 list-disc" {...props} />,
           ol: ({node, ...props}) => <ol className="text-left mb-4 ml-6 list-decimal" {...props} />,
           li: ({node, ...props}) => <li className="mb-2 leading-relaxed" {...props} />,
           // Better blockquote styling
-          blockquote: ({node, ...props}) => <blockquote className="text-left border-l-4 border-blue-500 pl-4 italic mb-4 text-gray-300 bg-gray-700/30 py-2 pr-2 rounded-r" {...props} />,
+          blockquote: ({node, ...props}) => <blockquote className="text-left border-l-4 border-blue-500 pl-4 my-4 text-gray-300 bg-gray-700/30 py-2 pr-2 rounded-r" {...props} />,
           // Enhanced emphasis
           strong: ({node, ...props}) => <strong className="font-bold text-blue-200" {...props} />,
           em: ({node, ...props}) => <em className="italic text-gray-300" {...props} />,
@@ -320,7 +320,28 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
                       aria-label="user's message"
                       style={getMessageStyles('user')}
                     >
-                      <ReactMarkdown>
+                      <ReactMarkdown components={{
+                        // Left-justified paragraph styling
+                        p: ({node, ...props}) => <p className="text-left mb-4 leading-relaxed" {...props} />,
+                        // Left-justified heading hierarchy with clear separation
+                        h1: ({node, ...props}) => <h1 className="text-left font-bold text-xl mb-6 mt-4 border-b border-gray-700 pb-1" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="text-left font-bold text-lg mb-5 mt-6 border-b border-gray-700 pb-1" {...props} />,
+                        h3: ({node, ...props}) => <h3 className="text-left font-bold text-base mb-4 mt-5" {...props} />,
+                        h4: ({node, ...props}) => <h4 className="text-left font-bold text-sm mb-3 mt-4" {...props} />,
+                        // Enhanced list styling
+                        ul: ({node, ...props}) => <ul className="text-left mb-4 ml-6 list-disc" {...props} />,
+                        ol: ({node, ...props}) => <ol className="text-left mb-4 ml-6 list-decimal" {...props} />,
+                        li: ({node, ...props}) => <li className="mb-2" {...props} />,
+                        // Better section separation with blockquotes
+                        blockquote: ({node, ...props}) => <blockquote className="text-left border-l-4 border-gray-500 pl-4 my-4 py-1 pr-2 rounded-r" {...props} />,
+                        // Code formatting
+                        code: ({node, className, ...props}) => {
+                          const isInline = !className || !className.includes('language-');
+                          return isInline ? 
+                            <code className="bg-gray-800 px-1 rounded font-mono text-sm" {...props} /> : 
+                            <code className="block bg-gray-800 p-3 rounded font-mono text-sm my-4 overflow-x-auto" {...props} />;
+                        }
+                      }}>
                         {userMessage.content}
                       </ReactMarkdown>
                     </div>
