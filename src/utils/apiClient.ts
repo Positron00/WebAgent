@@ -392,7 +392,14 @@ export class ApiClient {
           temperature: CHAT_SETTINGS.temperature,
           top_p: CHAT_SETTINGS.topP,
           frequency_penalty: CHAT_SETTINGS.frequencyPenalty,
-          presence_penalty: CHAT_SETTINGS.presencePenalty
+          presence_penalty: CHAT_SETTINGS.presencePenalty,
+          // Include the settings needed by the API route
+          promptStyle,
+          knowledgeFocus,
+          citeSources,
+          agentic,
+          // Include image if provided
+          image: image || null
         }),
       }
     );

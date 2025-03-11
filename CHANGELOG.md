@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Version inconsistency between package.json and client configuration
 - Updated client-side version from 2.4.4 to 2.4.9 to match package version
+- Fixed missing request parameters in API calls (promptStyle, knowledgeFocus, citeSources, agentic)
+- Ensured user preferences are correctly passed from the UI to the API
+- Replaced console.log with structured logger for improved traceability
+- Fixed inconsistent logging format in API request processing
 - Ensured consistent version reporting across UI and server logs
-- Fixed version display in API request logs
 
 ## [2.4.8] - 2025-03-10
 
