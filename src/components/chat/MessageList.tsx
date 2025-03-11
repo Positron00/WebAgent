@@ -302,7 +302,7 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
               // Add citation references to assistant messages that have sources
               let processedContent = assistantMessage?.content;
               const hasSources = !!(assistantMessage?.sources && assistantMessage.sources.length > 0);
-              if (hasSources && assistantMessage && assistantMessage.sources) {
+              if (hasSources && assistantMessage && assistantMessage.sources && accessibility.citeSources) {
                 processedContent = addCitationReferences(
                   assistantMessage.content, 
                   assistantMessage.sources.length

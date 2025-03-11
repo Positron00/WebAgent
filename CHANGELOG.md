@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.8] - 2025-03-10
+
+### Fixed
+- Citation behavior now properly respects the "Cite Sources" toggle setting
+- When "Cite Sources" is disabled, citation references no longer appear in message text
+- Fixed inconsistency between source display and citation references in text
+- Made citation behavior independent of the "Agentic" toggle setting
+
 ## [2.4.7] - 2025-03-10
 
 ### Improved
