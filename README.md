@@ -2,7 +2,7 @@
 
 A sophisticated AI system built as a microservice architecture that combines a modern Next.js frontend with a powerful LangGraph-based multi-agent backend. The platform enables complex research, analysis, and reporting through specialized AI agents.
 
-**Version: 2.4.8** - Fixed citation behavior to properly respect the "Cite Sources" toggle setting. When disabled, citation references no longer appear in message text, independent of the "Agentic" toggle setting. This update ensures consistent user experience with more control over how sources are displayed. Previous improvements in 2.4.7 include enhanced markdown formatting with left-justified content and clearer section separation, while 2.4.6 fixed Jest configuration, Next.js font loading conflicts, and API route configurations.
+**Version: 2.4.9** - Fixed version inconsistency across the application by updating the client-side version number to match the package version. This ensures consistent version reporting in logs and API requests. Previous version 2.4.8 fixed citation behavior to properly respect the "Cite Sources" toggle setting, while 2.4.7 enhanced markdown formatting with left-justified content and clearer section separation.
 
 ## Architecture
 

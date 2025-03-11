@@ -3,6 +3,8 @@ import { config } from '@/config/env';
 import { SYSTEM_PROMPT, SYSTEM_PROMPTS, KNOWLEDGE_PROMPTS, CHAT_SETTINGS } from '@/config/chat';
 import { ChatCompletionRequest, ChatRequestMessage, ChatCompletionResponse } from '@/types/api';
 import { rateLimiter } from '@/utils/rateLimiter';
+import { logger } from '@/utils/logger';
+import { clientConfig } from '@/config/clientConfig';
 
 // Mark this route as dynamic to handle POST requests
 export const dynamic = 'force-dynamic';
@@ -50,12 +52,21 @@ export async function POST(req: Request) {
     }
     
     // Log the request parameters including agentic mode
-    console.log(`Processing chat request: style=${promptStyle}, focus=${knowledgeFocus}, sources=${citeSources}, agentic=${agentic}`);
+    logger.info(`Processing chat request`, {
+      promptStyle,
+      knowledgeFocus,
+      citeSources,
+      agentic,
+      version: clientConfig.version
+    });
 
     // If agentic mode is true, this shouldn't be called as the frontend should route directly
     // to the multi-agent backend. Log a warning just in case.
     if (agentic) {
-      console.warn('Agentic mode is true but request was sent to standard API endpoint. This should be handled by the frontend.');
+      logger.warn('Agentic mode is true but request was sent to standard API endpoint', {
+        shouldBeHandledBy: 'frontend',
+        version: clientConfig.version
+      });
     }
 
     // Get the appropriate system prompt based on the promptStyle
