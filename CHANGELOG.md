@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.2] - 2025-03-13
+
+### Added
+- MLflow integration for experiment tracking and hyperparameter optimization
+- New endpoints for experiment management and metrics visualization
+- Support for fine-tuning experiment tracking with parameter logging
+- Automated hyperparameter optimization capabilities
+- Performance comparison tools for model variants
+
+### Enhanced
+- Added example scripts for MLflow integration in `backend/app/services/examples/`
+- Added comprehensive documentation for MLflow in `backend/app/services/MLFLOW_INTEGRATION.md`
+- Docker Compose configuration for MLflow and LLM service
+
 ## [2.5.1] - 2025-03-13
 
 ### Enhanced
@@ -45,12 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Improvements
 - Added `tenacity` library for robust retry handling
-- Improved error handling in the LLM service framework
-- Enhanced observability with detailed metrics collection
-- Added comprehensive request tracing and logging
-- Implemented proper resource cleanup on shutdown
-- Improved API response consistency and error formatting
-- Enhanced configuration validation
+- Added `safetensors` for improved model loading
 
 ## [2.5.0] - 2025-03-13
 

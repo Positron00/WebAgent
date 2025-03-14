@@ -1,0 +1,51 @@
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file
+COPY backend/requirements-llm.txt /app/requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy service files
+COPY backend/app/services/self_hosted_llm_service.py /app/self_hosted_llm_service.py
+COPY backend/app/services/MLFLOW_INTEGRATION.md /app/MLFLOW_INTEGRATION.md
+COPY backend/app/services/README_SELF_HOSTED_LLM.md /app/README_SELF_HOSTED_LLM.md
+
+# Default environment variables
+ENV MODEL_PATH=/models/llama-3
+ENV PORT=8080
+ENV HOST=0.0.0.0
+
+# MLflow configuration
+ENV MLFLOW_TRACKING_URI=http://mlflow:5000
+ENV MLFLOW_EXPERIMENT_NAME=llm-experiments
+
+# Create directories for MLflow artifacts
+RUN mkdir -p /app/mlflow-artifacts
+
+# Create model directory
+RUN mkdir -p /models
+
+# Expose port
+EXPOSE ${PORT}
+
+# Healthcheck to verify the service is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Command to run the service
+CMD ["python", "self_hosted_llm_service.py", \
+     "--model_path", "${MODEL_PATH}", \
+     "--port", "${PORT}", \
+     "--host", "${HOST}", \
+     "--mlflow_tracking_uri", "${MLFLOW_TRACKING_URI}", \
+     "--mlflow_experiment_name", "${MLFLOW_EXPERIMENT_NAME}"] 

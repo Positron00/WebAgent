@@ -480,3 +480,59 @@ New in version 2.5.0 (improved in 2.5.1), WebAgent can now use your own locally-
 5. **Advanced configuration**:
    
    For more options, including model quantization, custom prompt formats, and Docker configuration, see the [detailed self-hosted LLM documentation](backend/app/services/README_SELF_HOSTED_LLM.md).
+
+### MLflow Integration for Model Experimentation (New)
+
+The self-hosted LLM service now includes MLflow integration for tracking experiments, fine-tuning and hyperparameter optimization:
+
+1. **Setup MLflow**:
+
+   ```bash
+   # Install MLflow (already included in requirements-llm.txt)
+   pip install mlflow scikit-learn
+   
+   # Start MLflow tracking server
+   mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlflow-artifacts --host 0.0.0.0 --port 5000
+   ```
+
+2. **Start the LLM service with MLflow enabled**:
+
+   ```bash
+   python backend/app/services/self_hosted_llm_service.py \
+     --model_path "/path/to/model" \
+     --mlflow_tracking_uri "http://localhost:5000" \
+     --mlflow_experiment_name "llm-experiments"
+   ```
+
+3. **Track experiments in API calls**:
+   
+   Include experiment tracking in your requests:
+   ```json
+   {
+     "messages": [{"role": "user", "content": "Your prompt here"}],
+     "temperature": 0.7,
+     "track_experiment": true,
+     "experiment_name": "temperature-comparison",
+     "run_name": "temp-0.7-test"
+   }
+   ```
+
+4. **View experiments**:
+   
+   Access the MLflow UI at http://localhost:5000 to:
+   - Compare different model configurations
+   - Analyze performance metrics
+   - View generated responses
+   - Find optimal hyperparameters
+
+5. **Automated hyperparameter tuning**:
+   
+   The integration supports systematic optimization of:
+   - Temperature
+   - Top-p sampling
+   - Frequency/presence penalties
+   - Model quantization settings
+
+6. **Detailed documentation**:
+   
+   For comprehensive instructions on MLflow integration, experiment tracking, and hyperparameter optimization, see [MLflow Integration for Self-Hosted LLM](backend/app/services/MLFLOW_INTEGRATION.md).
