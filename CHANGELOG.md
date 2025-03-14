@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2025-03-13
+
+### Enhanced
+- Improved reliability of self-hosted LLM service with better error handling and recovery
+- Added memory management to prevent out-of-memory errors in self-hosted LLM service
+- Enhanced error handling with detailed error messages and appropriate HTTP status codes
+- Implemented graceful shutdown to properly clean up resources
+- Added request timeout handling with configurable timeouts
+- Added model quantization options (4-bit and 8-bit) for better memory efficiency
+- Improved validation of request parameters
+- Added more detailed health check endpoint with memory usage information
+- Implemented metrics endpoint for detailed service monitoring
+- Added comprehensive request tracing with unique request IDs
+- Enhanced observability with structured logging and detailed metrics
+- Enhanced API error recovery with automatic retries and exponential backoff
+
+### Added
+- New `/metrics` endpoint for detailed performance monitoring 
+- Model memory usage information in health check responses
+- Support for 4-bit and 8-bit model quantization (CUDA only)
+- Configurable request timeouts in API requests
+- Memory management with automatic garbage collection
+- Context length validation to prevent token limit errors
+- Graceful shutdown handling for SIGINT and SIGTERM signals
+- Request ID tracking for improved observability
+- LLM service metrics collection (requests, tokens, latency)
+- Support for setting pad_token_id to improve text generation
+
+### Fixed
+- Fixed memory leaks in text generation process
+- Improved error handling for network connectivity issues
+- Added missing timeout settings in API requests
+- Fixed potential crashes when model loading fails
+- Added proper error handling for model paths that don't exist
+- Improved status code handling for better client feedback
+- Enhanced validation to prevent invalid requests
+- Fixed potential deadlocks in request handling
+
+### Technical Improvements
+- Added `tenacity` library for robust retry handling
+- Improved error handling in the LLM service framework
+- Enhanced observability with detailed metrics collection
+- Added comprehensive request tracing and logging
+- Implemented proper resource cleanup on shutdown
+- Improved API response consistency and error formatting
+- Enhanced configuration validation
+
+## [2.5.0] - 2025-03-13
+
+### Added
+- Self-hosted LLM option added to backend LLM service framework
+- Standalone script for running local LLM models with transformers library
+- Flask API service for local LLM hosting with OpenAI API compatibility
+- Graceful fallback to cloud providers when local LLM is unavailable
+- Docker support for containerizing self-hosted LLM service
+- Detailed documentation for setting up and using self-hosted LLMs
+- Extended configuration options in YAML for self-hosted LLM settings
+- Automatic model loading with device detection (CUDA/CPU)
+- Health check endpoint for self-hosted LLM status monitoring
+
+### Changed
+- Updated LLM service to support three provider options: "openai", "together", and "self"
+- Enhanced configuration structure to include self-hosted specific settings
+- Improved error handling with graceful fallbacks across providers
+- Extended status reporting to include self-hosted LLM information
+
+### Technical Details
+- Added `SelfHostedChatModel` class that integrates with LangChain
+- Implemented OpenAI API compatible endpoints for chat completions
+- Added configuration parameters for self-hosted URL and model path
+- Created Docker container support for easier deployment
+- Implemented health check endpoint for monitoring
+- Added detailed documentation with setup instructions
+
 ## [2.4.9] - 2025-03-10
 
 ### Fixed

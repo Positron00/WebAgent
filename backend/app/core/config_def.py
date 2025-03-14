@@ -64,6 +64,9 @@ class LLMConfig(BaseModel):
     max_tokens: int = Field(default=4096, gt=0)
     retry_attempts: int = Field(default=3, ge=0)
     batch_size: int = Field(default=10, gt=0)
+    # Self-hosted LLM specific settings
+    self_hosted_url: Optional[str] = Field(default="http://localhost:8080")
+    model_path: Optional[str] = Field(default=None, description="Path to the model for self-hosted LLM")
 
 
 class WebSearchConfig(BaseModel):

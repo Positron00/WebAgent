@@ -2,7 +2,7 @@
 
 A sophisticated AI system built as a microservice architecture that combines a modern Next.js frontend with a powerful LangGraph-based multi-agent backend. The platform enables complex research, analysis, and reporting through specialized AI agents.
 
-**Version: 2.4.9** - Fixed API request parameters to correctly pass user preferences (promptStyle, knowledgeFocus, citeSources, agentic) from the UI to the backend. Also resolved version inconsistency across the application by updating the client-side version to match the package version and implemented structured logging for improved diagnostics. Previous version 2.4.8 fixed citation behavior to properly respect the "Cite Sources" toggle setting.
+**Version: 2.5.1** - Enhanced reliability and observability of the self-hosted LLM service with memory management, improved error handling, model quantization options, and comprehensive metrics collection. Added detailed request tracing, automatic retries, and configurable timeouts. Previous version 2.5.0 added self-hosted LLM support to the backend LLM service framework.
 
 ## Architecture
 
@@ -178,7 +178,9 @@ The system comprises seven specialized agents that work together:
 
 - Node.js 18.0.0 or later
 - npm or yarn
-- Together AI API key
+- Together AI API key (if using Together AI as provider)
+- OpenAI API key (if using OpenAI as provider)
+- For self-hosted LLM: PyTorch, transformers, and a compatible model
 
 ## Installation
 
@@ -395,3 +397,86 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Together AI](https://www.together.ai/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [TypeScript](https://www.typescriptlang.org/)
+
+## LLM Providers
+
+WebAgent supports multiple LLM providers that can be configured based on your needs:
+
+1. **Together AI** (default)
+   - Uses Together AI's hosting of Llama 3 models
+   - Requires a Together AI API key
+   - Offers a good balance of quality and cost
+
+2. **OpenAI**
+   - Uses OpenAI's GPT models 
+   - Requires an OpenAI API key
+   - Provides high quality but at higher cost
+
+3. **Self-Hosted LLM** (new in v2.5.0)
+   - Run your own local language model
+   - No API keys required
+   - Complete data privacy
+   - Lower latency for some deployments
+   - See [Self-Hosted LLM Setup](#self-hosted-llm-setup) below
+
+### Self-Hosted LLM Setup
+
+New in version 2.5.0 (improved in 2.5.1), WebAgent can now use your own locally-hosted language models:
+
+1. **Configure WebAgent to use self-hosted LLM**:
+   
+   Edit your environment YAML file (e.g., `backend/config/dev.yaml`):
+   ```yaml
+   llm:
+     provider: "self"  # Change from "together" or "openai" to "self"
+     self_hosted_url: "http://localhost:8080"  # Update if running elsewhere
+   ```
+
+2. **Start the self-hosted LLM service**:
+   
+   Basic usage:
+   ```bash
+   python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/model" --port 8080
+   ```
+   
+   With memory optimization (new in v2.5.1):
+   ```bash
+   # Use 8-bit quantization (CUDA only)
+   python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/model" --load_in_8bit
+   
+   # Use 4-bit quantization for larger models (CUDA only)
+   python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/model" --load_in_4bit
+   ```
+   
+   Docker deployment:
+   ```bash
+   # Build the container
+   docker build -f backend/app/services/Dockerfile.llm -t webagent-llm:latest .
+   
+   # Run the container, mounting your model directory
+   docker run -p 8080:8080 \
+     -v /path/to/model:/models/llama-3 \
+     -e MODEL_PATH=/models/llama-3 \
+     webagent-llm:latest
+   ```
+
+3. **Monitor the service** (new in v2.5.1):
+   
+   Check health status:
+   ```bash
+   curl http://localhost:8080/health
+   ```
+   
+   View detailed metrics:
+   ```bash
+   curl http://localhost:8080/metrics
+   ```
+
+4. **Recommended models**:
+   - Llama 3 8B Instruct
+   - Mistral-7B-Instruct-v0.2
+   - Any model compatible with Hugging Face transformers
+
+5. **Advanced configuration**:
+   
+   For more options, including model quantization, custom prompt formats, and Docker configuration, see the [detailed self-hosted LLM documentation](backend/app/services/README_SELF_HOSTED_LLM.md).

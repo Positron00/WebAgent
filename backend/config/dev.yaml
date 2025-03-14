@@ -32,6 +32,7 @@ database:
 
 # LLM settings
 llm:
+  # Provider options: "openai", "together", "self"
   provider: "together"
   default_model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
   temperature: 0.7
@@ -39,6 +40,9 @@ llm:
   max_tokens: 4096
   retry_attempts: 3
   batch_size: 10
+  # Self-hosted LLM specific settings (used when provider is "self")
+  self_hosted_url: "http://localhost:8080"
+  model_path: "/path/to/your/model"  # Only used when starting the self-hosted service
 
 # LangSmith settings for observability
 langsmith:
