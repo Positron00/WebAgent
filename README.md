@@ -1,8 +1,71 @@
-# WebAgent: Multi-Agent AI Research and Analysis Platform
+# WebAgent Platform v2.5.3
 
-A sophisticated AI system built as a microservice architecture that combines a modern Next.js frontend with a powerful LangGraph-based multi-agent backend. The platform enables complex research, analysis, and reporting through specialized AI agents.
+WebAgent is a powerful AI platform that combines multiple specialized agents to perform complex tasks.
 
-**Version: 2.5.1** - Enhanced reliability and observability of the self-hosted LLM service with memory management, improved error handling, model quantization options, and comprehensive metrics collection. Added detailed request tracing, automatic retries, and configurable timeouts. Previous version 2.5.0 added self-hosted LLM support to the backend LLM service framework.
+## What's New in v2.5.3
+
+This release adds a powerful Document Extraction Agent to the WebAgent platform, enabling advanced document analysis and information extraction:
+
+- **Document Extraction Agent**: Extract structured information from documents using multiple methods:
+  - NLP-based extraction with Latent Dirichlet Allocation (LDA) Bayesian Network
+  - LLM-based extraction for complex documents
+  - Hybrid approach combining both methods
+- **Supervisor Integration**: The Supervisor Agent can now directly call the Document Extraction Agent
+- **Team Manager Routing**: Document extraction results can be routed to the Team Manager Agent for quick summarization
+- **Multi-format Support**: Process PDF, DOCX, TXT, HTML, CSV, and JSON documents
+- **Advanced Entity Extraction**: Identify key entities, topics, and relationships in documents
+
+Previous Releases:
+
+- **v2.5.2**: Added MLflow integration for experiment tracking and hyperparameter optimization
+- **v2.5.1**: Improved reliability and observability of the self-hosted LLM service
+- **v2.5.0**: Added self-hosted LLM support to the backend LLM service framework
+
+## Document Extraction Features
+
+The Document Extraction Agent offers three extraction methods:
+
+1. **LDA-based Extraction**: Uses Latent Dirichlet Allocation with Bayesian Network techniques for topic modeling and information extraction
+2. **LLM-based Extraction**: Leverages large language models for complex document understanding and structured extraction
+3. **Hybrid Approach**: Combines LDA topic modeling with LLM extraction for enhanced accuracy and performance
+
+The agent automatically selects the best method based on document characteristics or allows manual selection.
+
+### Example Usage
+
+```python
+from backend.app.agents.supervisor import SupervisorAgent, get_supervisor_agent
+
+# Initialize the supervisor agent (option 1: direct instantiation)
+supervisor = SupervisorAgent()
+
+# Or use the helper function (option 2: recommended for LangGraph integration)
+# supervisor = get_supervisor_agent()
+
+# Process a document with automatic method selection
+result = supervisor.process_request({
+    "request_type": "document_extraction",
+    "document_path": "/path/to/document.pdf",
+    "extraction_method": "auto",  # Options: "lda", "llm", "hybrid", "auto"
+    "route_to_team_manager": True  # Optional routing to Team Manager
+})
+
+# Access extraction results
+if result["success"]:
+    # Access extracted information
+    topics = result.get("topics", [])
+    summary = result.get("summary", "")
+    key_entities = result.get("key_entities", [])
+    
+    # Print summary
+    print(f"Document Summary: {summary}")
+    
+    # Print top topics
+    print("Top Topics:")
+    for topic in topics[:3]:
+        terms = [term["term"] for term in topic["terms"][:5]]
+        print(f"  - Topic {topic['topic_id']}: {', '.join(terms)}")
+```
 
 ## Architecture
 

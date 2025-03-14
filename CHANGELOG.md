@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.4] - 2025-03-13
+
+### Enhanced
+- Consolidated supervisor implementations by combining supervisor.py and supervisor_agent.py
+- Improved LangGraph integration with document extraction capabilities
+- Enhanced supervisor agent to handle both direct API calls and LangGraph workflow transitions
+- Added new request type handling for research requests
+- Extended LangGraph workflow to support document extraction directly from research context
+- Improved code organization and reduced code duplication
+- Streamlined agent initialization and configuration
+
+## [2.5.3] - 2025-03-13
+
+### Added
+- Document Extraction Agent for processing and analyzing documents
+- Natural Language Processing capabilities with Latent Dirichlet Allocation (LDA) Bayesian Network
+- Integration with supervisor agent for direct document processing
+- Optional routing to Team Manager Agent for quick summarization
+- Support for multiple document formats (PDF, DOCX, TXT, HTML, etc.)
+- Advanced entity extraction from documents using NLP techniques
+- Topic modeling for document analysis and summarization
+- Performance metrics and memory usage tracking
+- Dynamic method selection based on document characteristics
+
+### Enhanced
+- Supervisor Agent extended to support specialized agent delegation
+- Added comprehensive metrics collection for performance monitoring
+- Improved error handling and reporting
+- Added direct LLM extraction capability for complex documents
+- Enhanced logging with detailed performance metrics
+
 ## [2.5.2] - 2025-03-13
 
 ### Added

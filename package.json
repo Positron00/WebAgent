@@ -1,6 +1,7 @@
 {
-  "name": "web-agent-app",
-  "version": "2.5.1",
+  "name": "webagent",
+  "version": "2.5.4",
+  "description": "WebAgent Platform with streamlined agent architecture",
   "private": true,
   "scripts": {
     "dev": "next dev",

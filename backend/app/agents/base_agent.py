@@ -1,11 +1,19 @@
 """
-Base Agent class for the WebAgent backend.
+Base Agent
+==========
 
-This module provides a base class for all agents in the system, handling common functionality
-like LangSmith tracing and logging.
+This module defines the BaseAgent class which is the foundation for all specialized agents
+in the WebAgent platform. It provides common functionality and interface requirements.
 """
-from typing import Dict, Any, Optional
+
 import logging
+import time
+from typing import Dict, Any, Optional
+import json
+import uuid
+
+# Import local modules
+from backend.app.core.config import settings
 
 from langchain.schema.runnable import RunnableSequence
 from langchain.schema.runnable import RunnableConfig
@@ -14,22 +22,33 @@ from app.core.setup_langsmith import get_langchain_tracer, create_langsmith_tags
 from app.core.loadEnvYAML import get_langsmith_config
 from app.models.task import WorkflowState
 
+# Initialize logging
 logger = logging.getLogger(__name__)
 
 class BaseAgent:
     """
-    Base class for all agents in the WebAgent system.
-    Provides common functionality for tracing, logging, and state management.
+    Base class for all agents in the WebAgent platform.
+    
+    This class provides common functionality and defines
+    the interface that all specialized agents must implement.
     """
     
-    def __init__(self, agent_name: str):
+    def __init__(self, name: str, config: Dict = None):
         """
-        Initialize the base agent.
+        Initialize a base agent.
         
         Args:
-            agent_name: The name of the agent for tracing and logging
+            name: Unique agent name
+            config: Configuration dictionary (falls back to settings if None)
         """
-        self.agent_name = agent_name
+        self.name = name
+        self.agent_id = f"{name}-{uuid.uuid4().hex[:8]}"
+        self.config = config or getattr(settings, f"{name}_config", {})
+        self.start_time = time.time()
+        self.last_activity = self.start_time
+        
+        logger.info(f"Initialized {self.name} agent with ID: {self.agent_id}")
+        
         self.chain = None
         self._setup_tracing()
         
@@ -49,7 +68,7 @@ class BaseAgent:
             return None
             
         # Create tags as simple strings in format "key=value"
-        tags_dict = create_langsmith_tags(agent_name=self.agent_name)
+        tags_dict = create_langsmith_tags(agent_name=self.name)
         tags = [f"{k}={v}" for k, v in tags_dict.items()]
             
         return {
@@ -68,7 +87,7 @@ class BaseAgent:
             The same chain with tracing configured if enabled
         """
         if self.langsmith_config.tracing_enabled and self.tracer:
-            logger.debug(f"Adding LangSmith tracing to {self.agent_name} chain")
+            logger.debug(f"Adding LangSmith tracing to {self.name} chain")
             return chain.with_config(self.get_trace_config())
         return chain
     
@@ -84,4 +103,52 @@ class BaseAgent:
         Returns:
             Updated workflow state after agent processing
         """
-        raise NotImplementedError("Subclasses must implement run().") 
+        raise NotImplementedError("Subclasses must implement run().")
+    
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Get the current status of the agent.
+        
+        Returns:
+            Status information
+        """
+        return {
+            "agent_id": self.agent_id,
+            "name": self.name,
+            "uptime": time.time() - self.start_time,
+            "last_activity": self.last_activity,
+            "status": "active"
+        }
+    
+    def log_activity(self, activity_type: str, details: Dict[str, Any] = None) -> None:
+        """
+        Log an agent activity.
+        
+        Args:
+            activity_type: Type of activity
+            details: Additional activity details
+        """
+        self.last_activity = time.time()
+        
+        log_entry = {
+            "agent_id": self.agent_id,
+            "name": self.name,
+            "activity_type": activity_type,
+            "timestamp": self.last_activity
+        }
+        
+        if details:
+            log_entry["details"] = details
+        
+        logger.info(f"Agent activity: {json.dumps(log_entry)}")
+    
+    def validate_config(self) -> bool:
+        """
+        Validate the agent configuration.
+        
+        Returns:
+            True if configuration is valid, False otherwise
+        """
+        # Base implementation assumes config is valid
+        # Specialized agents should override this
+        return True 
