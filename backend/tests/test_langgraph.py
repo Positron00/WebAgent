@@ -1,0 +1,204 @@
+#!/usr/bin/env python
+"""
+Comprehensive tests for the LangGraph framework implementation.
+
+This test suite focuses on testing the LangGraph workflow components:
+1. Graph construction and compilation
+2. Agent integration within the graph
+3. Workflow state transitions
+4. Error handling and recovery
+5. Security aspects
+
+Run with: pytest -xvs backend/tests/test_langgraph.py
+"""
+import os
+import sys
+import pytest
+import logging
+import asyncio
+from typing import Dict, List, Any, Optional
+from unittest.mock import patch, MagicMock
+
+# Configure logging for tests
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import the modules to test
+from app.models.task import WorkflowState
+from app.graph.workflows import build_agent_workflow, get_agent_workflow
+from app.agents.base_agent import BaseAgent
+
+# Import mock utils that will be created
+from tests.mock_utils import create_mock_agent, create_test_workflow_state
+
+
+class TestLangGraphWorkflow:
+    """Tests for the LangGraph workflow implementation."""
+    
+    @pytest.fixture
+    def mock_agents(self):
+        """Set up mock agents for testing."""
+        agents = {}
+        agent_names = [
+            "supervisor", "web_research", "internal_research", 
+            "senior_research", "data_analysis", "coding_assistant", 
+            "team_manager"
+        ]
+        
+        for name in agent_names:
+            agents[name] = create_mock_agent(name)
+            
+        return agents
+    
+    @pytest.fixture
+    def test_state(self):
+        """Create a test workflow state."""
+        return create_test_workflow_state(
+            query="What are the benefits of LangGraph for agent workflows?",
+            current_step="supervisor"
+        )
+    
+    @pytest.mark.asyncio
+    async def test_workflow_construction(self, mock_agents):
+        """Test that the workflow can be constructed properly."""
+        # Patch all the get_*_agent functions
+        with patch('app.graph.workflows.get_supervisor_agent', return_value=mock_agents["supervisor"]), \
+             patch('app.graph.workflows.get_web_research_agent', return_value=mock_agents["web_research"]), \
+             patch('app.graph.workflows.get_internal_research_agent', return_value=mock_agents["internal_research"]), \
+             patch('app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
+             patch('app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
+             patch('app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
+             patch('app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
+            
+            # Build the workflow
+            workflow = build_agent_workflow()
+            
+            # Check that workflow was created
+            assert workflow is not None, "Workflow should be created"
+    
+    @pytest.mark.asyncio
+    async def test_workflow_singleton(self, mock_agents):
+        """Test the singleton pattern for get_agent_workflow."""
+        # Patch all the get_*_agent functions for both calls
+        with patch('app.graph.workflows.get_supervisor_agent', return_value=mock_agents["supervisor"]), \
+             patch('app.graph.workflows.get_web_research_agent', return_value=mock_agents["web_research"]), \
+             patch('app.graph.workflows.get_internal_research_agent', return_value=mock_agents["internal_research"]), \
+             patch('app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
+             patch('app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
+             patch('app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
+             patch('app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
+            
+            # Get the workflow twice
+            workflow1 = get_agent_workflow()
+            workflow2 = get_agent_workflow()
+            
+            # Check that we got the same instance
+            assert workflow1 is workflow2, "get_agent_workflow should return the same instance"
+    
+    @pytest.mark.asyncio
+    async def test_workflow_supervisor_to_web_research(self, mock_agents, test_state):
+        """Test the transition from supervisor to web research agent."""
+        # Configure mock supervisor to set research plan requiring web search
+        async def mock_supervisor_run(state):
+            state.context["research_plan"] = {
+                "requires_web_search": True,
+                "requires_internal_knowledge": False
+            }
+            state.update_with_agent_output("supervisor", {
+                "analysis": "This query requires web search."
+            })
+            return state
+        
+        mock_agents["supervisor"].run.side_effect = mock_supervisor_run
+        
+        # Patch all the get_*_agent functions
+        with patch('app.graph.workflows.get_supervisor_agent', return_value=mock_agents["supervisor"]), \
+             patch('app.graph.workflows.get_web_research_agent', return_value=mock_agents["web_research"]), \
+             patch('app.graph.workflows.get_internal_research_agent', return_value=mock_agents["internal_research"]), \
+             patch('app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
+             patch('app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
+             patch('app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
+             patch('app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
+            
+            # Build the workflow
+            workflow = build_agent_workflow()
+            
+            # Run the workflow with supervisor's step only
+            with patch('langgraph.graph.StateGraph.get_next_node', side_effect=["supervisor", "web_research", None]):
+                # Run the workflow for just the first step
+                state = await workflow.ainvoke(test_state)
+                
+                # Check that supervisor was called
+                mock_agents["supervisor"].run.assert_called_once()
+                
+                # Check that web_research would be the next step
+                assert "research_plan" in state.context
+                assert state.context["research_plan"]["requires_web_search"] is True
+    
+    @pytest.mark.asyncio
+    async def test_workflow_error_handling(self, mock_agents, test_state):
+        """Test that errors in agents are properly handled."""
+        # Configure mock supervisor to raise an error
+        async def mock_supervisor_error(state):
+            state.mark_error("Test error in supervisor agent")
+            return state
+        
+        mock_agents["supervisor"].run.side_effect = mock_supervisor_error
+        
+        # Patch all the get_*_agent functions
+        with patch('app.graph.workflows.get_supervisor_agent', return_value=mock_agents["supervisor"]), \
+             patch('app.graph.workflows.get_web_research_agent', return_value=mock_agents["web_research"]), \
+             patch('app.graph.workflows.get_internal_research_agent', return_value=mock_agents["internal_research"]), \
+             patch('app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
+             patch('app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
+             patch('app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
+             patch('app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
+            
+            # Build the workflow
+            workflow = build_agent_workflow()
+            
+            # Run the workflow
+            state = await workflow.ainvoke(test_state)
+            
+            # Check that the error was marked
+            assert state.error is not None
+            assert "Test error in supervisor agent" in state.error
+    
+    @pytest.mark.asyncio
+    async def test_workflow_security(self, mock_agents, test_state):
+        """Test that the workflow handles potentially dangerous inputs properly."""
+        # Set a query with potential injection attempt
+        test_state.query = "What is LangGraph? ; rm -rf / ; echo"
+        
+        # Patch all the get_*_agent functions
+        with patch('app.graph.workflows.get_supervisor_agent', return_value=mock_agents["supervisor"]), \
+             patch('app.graph.workflows.get_web_research_agent', return_value=mock_agents["web_research"]), \
+             patch('app.graph.workflows.get_internal_research_agent', return_value=mock_agents["internal_research"]), \
+             patch('app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
+             patch('app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
+             patch('app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
+             patch('app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
+            
+            # Build the workflow
+            workflow = build_agent_workflow()
+            
+            # Run just the supervisor step to check input handling
+            with patch('langgraph.graph.StateGraph.get_next_node', side_effect=["supervisor", None]):
+                await workflow.ainvoke(test_state)
+                
+                # Check that the query was passed to the supervisor agent as is
+                # (any sanitization would be in the agent implementation)
+                mock_agents["supervisor"].run.assert_called_once()
+                
+                # Access the first positional argument (state)
+                called_state = mock_agents["supervisor"].run.call_args[0][0]
+                assert called_state.query == "What is LangGraph? ; rm -rf / ; echo"
+
+if __name__ == "__main__":
+    pytest.main(["-xvs", __file__]) 

@@ -1,24 +1,23 @@
-# WebAgent Platform v2.5.5
+# WebAgent Platform v2.5.6
 
 WebAgent is a powerful AI platform that combines multiple specialized agents to perform complex tasks.
 
-## What's New in v2.5.5
+## What's New in v2.5.6
 
-This release adds an advanced Retrieval-Augmented Generation (RAG) system to the Internal Research Agent, providing high-quality information retrieval and synthesis:
+This release streamlines the LangGraph implementation and improves testing:
 
-- **Advanced RAG Architecture**: Three-stage pipeline of retrieval, reranking, and generation for accurate responses
-- **Hybrid Retrieval**: Combines dense semantic embeddings (Contriever) with sparse lexical search (BM25)
-- **Cross-Encoder Reranking**: Uses state-of-the-art reranker models to prioritize the most relevant documents
-- **Ensemble Approach**: Intelligently weights results from multiple retrieval methods for improved coverage
-- **MLflow Integration**: Built-in experiment tracking for optimizing and analyzing RAG performance
-- **Performance Metrics**: Detailed metrics and logging for each component of the RAG pipeline
+- **Optimized LangGraph Framework**: Lazy loading of agent instances for improved performance
+- **Enhanced Security**: Better error handling and protection against potential security issues
+- **Comprehensive Testing**: New test suite for LangGraph components with mock agents
+- **Streamlined Architecture**: Reduced code redundancy and improved maintainability
+- **Better Error Handling**: Centralized error handling with sensitive data filtering
 
 Previous Releases:
 
+- **v2.5.5**: Added advanced RAG architecture to the Internal Research Agent
 - **v2.5.4**: Consolidated supervisor implementations and improved agent architecture
 - **v2.5.3**: Added Document Extraction Agent for processing and analyzing documents
 - **v2.5.2**: Added MLflow integration for experiment tracking and hyperparameter optimization
-- **v2.5.1**: Improved reliability and observability of the self-hosted LLM service
 
 ## Document Extraction Features
 
@@ -666,3 +665,47 @@ The self-hosted LLM service now includes MLflow integration for tracking experim
 6. **Detailed documentation**:
    
    For comprehensive instructions on MLflow integration, experiment tracking, and hyperparameter optimization, see [MLflow Integration for Self-Hosted LLM](backend/app/services/MLFLOW_INTEGRATION.md).
+
+## Key Features
+
+### Multi-Agent System
+- **Supervisor Agent**: Analyzes queries, creates research plans, and delegates tasks
+- **Web Research Agent**: Searches the internet for relevant information
+- **Internal Research Agent**: Uses RAG to search internal knowledge bases
+- **Senior Research Agent**: Synthesizes information and evaluates research quality
+- **Advanced Agent**: Conducts specialized analysis, generates code, or creates data visualizations
+- **Enhanced Research Loop**: Senior Research Agent can evaluate research quality and request up to 3 rounds of additional, focused research
+
+### LangGraph Integration
+- Flexible workflow orchestration using directed graphs
+- Conditional routing between agents based on research requirements
+- Support for both sequential and parallel agent execution
+- State management for complex multi-agent workflows
+- Research loop capability for thorough investigation
+
+### Advanced RAG Architecture
+- Multi-stage retrieval pipeline with hybrid retrieval (dense + sparse)
+- Cross-encoder reranking to prioritize the most relevant documents
+- BM25 sparse retrieval for better keyword-based matching
+- Ensemble retrieval combining semantic and lexical search strengths
+
+### Document Processing
+- Extract and analyze information from documents
+- Support for multiple document formats (PDF, DOCX, TXT, HTML)
+- Entity extraction and topic modeling
+
+## Research Loop Process
+
+The WebAgent platform now features an enhanced research loop capability:
+
+1. **Initial Research**: Web Research and Internal Research agents gather information based on the research plan.
+
+2. **Evaluation**: The Senior Research Agent evaluates the quality and completeness of the research with a score from 1-10.
+
+3. **Follow-up Research**: If the research is incomplete or lacks critical information, the Senior Research Agent can request additional, focused research with specific questions.
+
+4. **Iteration**: The research agents focus on gathering the missing information through targeted searches.
+
+5. **Final Synthesis**: After up to 3 iterations, the Senior Research Agent produces a comprehensive final report.
+
+This iterative process ensures thorough research and high-quality answers to complex queries.

@@ -1,12 +1,13 @@
 {
   "name": "webagent",
-  "version": "2.5.5",
-  "description": "WebAgent Platform with advanced RAG capabilities",
+  "version": "2.5.7",
+  "description": "WebAgent Platform with enhanced research loop capabilities",
+  "main": "index.js",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "nodemon index.js",
     "build": "next build",
-    "start": "next start",
+    "start": "node index.js",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",

@@ -49,6 +49,8 @@ RESEARCH PLAN: {research_plan}
 You have been provided with the following internal documents, ranked by relevance:
 {documents}
 
+{feedback_section}
+
 Your task:
 1. Analyze the documents and extract relevant information for the query
 2. Organize the information in a clear, structured format
@@ -56,8 +58,24 @@ Your task:
 4. Only include information that is directly related to the query
 5. Highlight key facts, statistics, and insights
 6. Format your findings as markdown
+7. If additional research was requested, focus on addressing the specific questions and missing information
 
 IMPORTANT: Be thorough, accurate, and objective. Cite all sources. If the information is not in the provided documents, state that clearly.
+"""
+
+# Prompt for follow-up research
+FOLLOWUP_RESEARCH_PROMPT = """
+ADDITIONAL RESEARCH REQUESTED - ITERATION {iteration}
+
+Previous research was rated {score}/10.
+
+Missing information:
+{missing_information}
+
+Specific research questions to address:
+{research_questions}
+
+Please focus on finding this information in your analysis.
 """
 
 # Experiment tracking configuration
@@ -327,6 +345,33 @@ class InternalResearchAgent(BaseAgent):
             
         return formatted_docs
     
+    def _format_feedback(self, state: WorkflowState) -> str:
+        """Format feedback from Senior Research Agent if available."""
+        # Check if there's feedback in the context
+        feedback = state.context.get("research_feedback")
+        iteration = state.context.get("research_iteration", 1)
+        
+        if not feedback or iteration <= 1:
+            return ""
+            
+        # Format the feedback section
+        score = feedback.get("score", 0)
+        missing_info = feedback.get("missing_information", [])
+        questions = feedback.get("research_questions", [])
+        
+        # Format missing information as bullet points
+        missing_info_str = "\n".join([f"- {item}" for item in missing_info])
+        
+        # Format research questions as bullet points
+        questions_str = "\n".join([f"- {q}" for q in questions])
+        
+        return FOLLOWUP_RESEARCH_PROMPT.format(
+            iteration=iteration,
+            score=score,
+            missing_information=missing_info_str,
+            research_questions=questions_str
+        )
+    
     @timing_decorator
     @log_memory_usage
     async def run(self, state: WorkflowState) -> WorkflowState:
@@ -352,6 +397,10 @@ class InternalResearchAgent(BaseAgent):
             # Get the research plan
             research_plan = state.context.get("research_plan", {})
             
+            # Get the current research iteration
+            iteration = state.context.get("research_iteration", 1)
+            is_followup = iteration > 1
+            
             # If internal knowledge is not required, skip this step
             if not research_plan.get("requires_internal_knowledge", True):
                 logger.info("Internal knowledge not required by research plan. Skipping.")
@@ -367,12 +416,41 @@ class InternalResearchAgent(BaseAgent):
                 
                 return state
             
+            # Modify search query if this is a follow-up research request
+            search_query = state.query
+            if is_followup:
+                feedback = state.context.get("research_feedback", {})
+                questions = feedback.get("research_questions", [])
+                
+                # If there are specific questions, use them to enhance the query
+                if questions:
+                    search_query = f"{state.query} {questions[0]}"
+                    logger.info(f"Using enhanced query for search: {search_query}")
+            
             # 1. Retrieve documents using the RAG Retriever
-            logger.info("Retrieving internal documents")
+            logger.info(f"Retrieving internal documents (iteration {iteration})")
             retrieved_documents = await self.retriever.retrieve(
-                query=state.query,
+                query=search_query,
                 k=self.config.get("retrieve_k", 20)
             )
+            
+            # If follow-up research and there are specific questions, get additional documents
+            if is_followup:
+                feedback = state.context.get("research_feedback", {})
+                questions = feedback.get("research_questions", [])[1:]  # Get remaining questions
+                
+                for i, question in enumerate(questions[:2]):  # Limit to 2 additional questions
+                    logger.info(f"Performing additional document retrieval for: {question}")
+                    additional_docs = await self.retriever.retrieve(
+                        query=question,
+                        k=self.config.get("retrieve_k", 10)  # Fewer documents for follow-up questions
+                    )
+                    # Add unique documents that weren't already retrieved
+                    existing_ids = {doc.get("id") for doc in retrieved_documents if "id" in doc}
+                    for doc in additional_docs:
+                        if doc.get("id") not in existing_ids:
+                            retrieved_documents.append(doc)
+                            existing_ids.add(doc.get("id"))
             
             if not retrieved_documents:
                 logger.warning("No internal documents found.")
@@ -392,7 +470,7 @@ class InternalResearchAgent(BaseAgent):
             # 2. Rerank documents to prioritize the most relevant ones
             logger.info("Reranking retrieved documents")
             reranked_documents = await self.reranker.rerank(
-                query=state.query,
+                query=search_query,
                 documents=retrieved_documents,
                 top_n=self.config.get("rerank_top_n", 5)
             )
@@ -400,12 +478,16 @@ class InternalResearchAgent(BaseAgent):
             # Format internal documents for the prompt
             formatted_docs = self._format_internal_documents(reranked_documents)
             
+            # Format feedback section if this is a follow-up research
+            feedback_section = self._format_feedback(state)
+            
             # 3. Generate answer using the LLM with reranked documents as context
             logger.info("Generating research findings")
             analysis = await self.chain.ainvoke({
                 "query": state.query,
                 "research_plan": research_plan.get("analysis", "No research plan provided."),
-                "documents": formatted_docs
+                "documents": formatted_docs,
+                "feedback_section": feedback_section
             })
             
             # Create the internal research report
@@ -413,6 +495,7 @@ class InternalResearchAgent(BaseAgent):
                 "status": "completed",
                 "documents": reranked_documents,
                 "findings": analysis,
+                "iteration": iteration,
                 "timestamp": datetime.now().isoformat(),
                 "metrics": {
                     "total_time": time.time() - start_time,
@@ -430,12 +513,13 @@ class InternalResearchAgent(BaseAgent):
             
             if TRACKING_ENABLED:
                 mlflow.log_param("status", "completed")
+                mlflow.log_param("iteration", iteration)
                 mlflow.log_metric("total_time", internal_research_report["metrics"]["total_time"])
                 mlflow.log_metric("num_retrieved", internal_research_report["metrics"]["num_retrieved"])
                 mlflow.log_metric("num_reranked", internal_research_report["metrics"]["num_reranked"])
                 mlflow.end_run()
             
-            logger.info(f"Internal Research completed with {len(reranked_documents)} relevant documents in {internal_research_report['metrics']['total_time']:.2f}s.")
+            logger.info(f"Internal Research completed with {len(reranked_documents)} relevant documents in {internal_research_report['metrics']['total_time']:.2f}s (iteration {iteration}).")
             return state
             
         except Exception as e:

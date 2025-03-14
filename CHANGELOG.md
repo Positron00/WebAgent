@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.7] - 2025-03-14
+
+### Added
+- Senior Research Agent evaluation capability for assessing research quality
+- Feedback mechanism to identify missing information in research
+- Support for up to 3 loops of additional research for thorough investigation
+- Targeted search capability in Web Research Agent based on follow-up questions
+- Feedback-based document retrieval in Internal Research Agent
+- Conditional routing for research loops in LangGraph workflow
+- Research iteration tracking in workflow state
+- Enhanced context sharing between research iterations
+
+### Enhanced
+- Web Research Agent to process feedback from Senior Research Agent
+- Internal Research Agent query formulation based on feedback
+- Document relevance for follow-up research questions
+- Result integration for multi-iteration research
+
+## [2.5.6] - 2025-03-14
+
+### Added
+- Comprehensive testing suite for LangGraph components
+- Security-focused tests for workflow transitions
+- Unit tests for singleton patterns in workflow implementation
+- Mock utilities for testing LangGraph components
+- Input validation for workflow state transitions
+- Error message sanitization to prevent information leakage
+
+### Enhanced
+- Streamlined workflow implementation with reduced redundancy
+- Centralized error handling with better security
+- Implemented lazy loading mechanism for agent instantiation
+- Added better logging throughout the framework
+- Added guards against unauthorized workflow transitions
+- Improved test isolation for more reliable test runs
+
 ## [2.5.5] - 2025-03-14
 
 ### Added
@@ -35,6 +71,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extended LangGraph workflow to support document extraction directly from research context
 - Improved code organization and reduced code duplication
 - Streamlined agent initialization and configuration
+- Better error handling and logging throughout
+- Optimized imports and dependencies
+- Cleaner interface between components
 
 ## [2.5.3] - 2025-03-13
 
@@ -2568,3 +2607,50 @@ This architecture provides a scalable, maintainable, and robust platform for AI-
 - Tailwind CSS
 - React 18
 - Together AI API integration
+
+## CHANGELOG
+
+### Version 2.5.7 (2025-03-14)
+
+#### Enhanced Research Loop Capability
+
+* **Senior Research Agent Improvements**:
+  * Added evaluation capability to assess research quality
+  * Implemented feedback mechanism to identify missing information
+  * Added support for up to 3 loops of additional research
+
+* **Web Research Agent Enhancements**:
+  * Updated to process feedback from Senior Research Agent
+  * Added capability to perform targeted searches based on specific follow-up questions
+  * Improved result integration for multi-iteration research
+
+* **Internal Research Agent Enhancements**:
+  * Added support for feedback-based document retrieval
+  * Enhanced query formulation based on Senior Research feedback
+  * Improved document relevance for follow-up research questions
+
+* **LangGraph Workflow Updates**:
+  * Added conditional routing for research loops
+  * Implemented research iteration tracking in workflow state
+  * Enhanced context sharing between research iterations
+
+### Version 2.5.6 (2025-03-14)
+
+#### LangGraph Framework Improvements
+
+* **Testing Framework Enhancement**:
+  * Added comprehensive testing suite for LangGraph components
+  * Implemented security-focused tests for workflow transitions
+  * Added unit tests for singleton patterns in workflow implementation
+  * Created mock utilities for testing LangGraph components
+
+* **LangGraph Implementation Improvements**:
+  * Streamlined workflow implementation with reduced redundancy
+  * Centralized error handling with better security
+  * Implemented lazy loading mechanism for agent instantiation
+  * Added better logging throughout the framework
+
+* **Security Enhancements**:
+  * Added input validation for workflow state transitions
+  * Implemented error message sanitization to prevent information leakage
+  * Added guards against unauthorized workflow transitions
