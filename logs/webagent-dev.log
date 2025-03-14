@@ -1536,3 +1536,370 @@
 2025-03-14 14:07:28,442 - webagent - DEBUG - Function get_agent_workflow executed in 0.0022 seconds
 2025-03-14 14:07:28,442 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
 2025-03-14 14:07:28,446 - webagent - DEBUG - Function build_agent_workflow executed in 0.0021 seconds
+2025-03-14 14:13:04,035 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:13:04,079 - webagent - DEBUG - Function build_agent_workflow executed in 0.0025 seconds
+2025-03-14 14:13:04,083 - webagent - DEBUG - Function build_agent_workflow executed in 0.0018 seconds
+2025-03-14 14:13:04,083 - webagent - DEBUG - Function get_agent_workflow executed in 0.0019 seconds
+2025-03-14 14:13:04,083 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:13:04,088 - webagent - DEBUG - Function build_agent_workflow executed in 0.0018 seconds
+2025-03-14 14:15:36,367 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:15:36,496 - webagent - DEBUG - Function build_agent_workflow executed in 0.0026 seconds
+2025-03-14 14:15:36,500 - webagent - DEBUG - Function build_agent_workflow executed in 0.0018 seconds
+2025-03-14 14:15:36,500 - webagent - DEBUG - Function get_agent_workflow executed in 0.0019 seconds
+2025-03-14 14:15:36,500 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:15:36,507 - webagent - DEBUG - Function build_agent_workflow executed in 0.0022 seconds
+2025-03-14 14:16:24,902 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:16:24,960 - webagent - DEBUG - Function build_agent_workflow executed in 0.0024 seconds
+2025-03-14 14:16:24,964 - webagent - DEBUG - Function build_agent_workflow executed in 0.0020 seconds
+2025-03-14 14:16:24,965 - webagent - DEBUG - Function get_agent_workflow executed in 0.0021 seconds
+2025-03-14 14:16:24,965 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:16:24,972 - webagent - DEBUG - Function build_agent_workflow executed in 0.0017 seconds
+2025-03-14 14:16:54,546 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:16:54,567 - webagent - INFO - Starting WebAgent Backend v2.3.1
+2025-03-14 14:16:54,567 - webagent - INFO - Environment: dev
+2025-03-14 14:16:54,567 - webagent - INFO - Debug mode: True
+2025-03-14 14:16:54,567 - webagent - INFO - API base URL: /api/v1
+2025-03-14 14:17:23,442 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:17:23,528 - webagent - DEBUG - Function build_agent_workflow executed in 0.0026 seconds
+2025-03-14 14:17:23,533 - webagent - DEBUG - Function build_agent_workflow executed in 0.0022 seconds
+2025-03-14 14:17:23,533 - webagent - DEBUG - Function get_agent_workflow executed in 0.0023 seconds
+2025-03-14 14:17:23,533 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:17:29,177 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:17:29,198 - webagent - INFO - Starting WebAgent Backend v2.3.1
+2025-03-14 14:17:29,199 - webagent - INFO - Environment: dev
+2025-03-14 14:17:29,199 - webagent - INFO - Debug mode: True
+2025-03-14 14:17:29,199 - webagent - INFO - API base URL: /api/v1
+2025-03-14 14:18:05,163 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:18:05,211 - webagent - DEBUG - Function build_agent_workflow executed in 0.0033 seconds
+2025-03-14 14:18:05,215 - webagent - DEBUG - Function build_agent_workflow executed in 0.0020 seconds
+2025-03-14 14:18:05,216 - webagent - DEBUG - Function get_agent_workflow executed in 0.0021 seconds
+2025-03-14 14:18:05,216 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:18:11,000 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:18:11,021 - webagent - INFO - Starting WebAgent Backend v2.3.1
+2025-03-14 14:18:11,021 - webagent - INFO - Environment: dev
+2025-03-14 14:18:11,021 - webagent - INFO - Debug mode: True
+2025-03-14 14:18:11,021 - webagent - INFO - API base URL: /api/v1
+2025-03-14 14:18:11,110 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: bda24ea4-28aa-4573-ba21-6d82e2fe6743
+2025-03-14 14:18:11,111 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,112 - webagent - INFO - Response: 200 - Time: 0.0011s - ID: bda24ea4-28aa-4573-ba21-6d82e2fe6743
+2025-03-14 14:18:11,114 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 98c92245-9483-4db6-89e3-bcad19a9db40
+2025-03-14 14:18:11,114 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,114 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 98c92245-9483-4db6-89e3-bcad19a9db40
+2025-03-14 14:18:11,116 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 59f28ac7-2f41-4f30-b0ac-55f2cf0c34f8
+2025-03-14 14:18:11,116 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,116 - webagent - INFO - Response: 200 - Time: 0.0007s - ID: 59f28ac7-2f41-4f30-b0ac-55f2cf0c34f8
+2025-03-14 14:18:11,117 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: fb9ef338-6fba-46ed-830a-c26e2b6c7cec
+2025-03-14 14:18:11,118 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,118 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: fb9ef338-6fba-46ed-830a-c26e2b6c7cec
+2025-03-14 14:18:11,119 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 6be3472c-cd11-4e2f-8b16-b3f167c72f7e
+2025-03-14 14:18:11,119 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,120 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 6be3472c-cd11-4e2f-8b16-b3f167c72f7e
+2025-03-14 14:18:11,121 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 3b0f0e6a-8e4d-4ee0-9d5b-8a73866b5245
+2025-03-14 14:18:11,121 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,121 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 3b0f0e6a-8e4d-4ee0-9d5b-8a73866b5245
+2025-03-14 14:18:11,122 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 4a17b7ed-f2e4-484d-accf-cc3d065b7ca3
+2025-03-14 14:18:11,122 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,123 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 4a17b7ed-f2e4-484d-accf-cc3d065b7ca3
+2025-03-14 14:18:11,124 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 4775017a-107e-4465-9422-24133682290f
+2025-03-14 14:18:11,124 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,125 - webagent - INFO - Response: 200 - Time: 0.0009s - ID: 4775017a-107e-4465-9422-24133682290f
+2025-03-14 14:18:11,126 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: f45a9175-fc34-4e55-b16c-fd6638565e23
+2025-03-14 14:18:11,126 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,126 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: f45a9175-fc34-4e55-b16c-fd6638565e23
+2025-03-14 14:18:11,127 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 21039510-68f9-4954-85b9-0a0ca6973e28
+2025-03-14 14:18:11,127 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,128 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 21039510-68f9-4954-85b9-0a0ca6973e28
+2025-03-14 14:18:11,129 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 5eda046e-ad14-46d4-9844-0346da3035ff
+2025-03-14 14:18:11,129 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,129 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 5eda046e-ad14-46d4-9844-0346da3035ff
+2025-03-14 14:18:11,130 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 61994144-6e96-46fd-9b67-c19850f8da48
+2025-03-14 14:18:11,131 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,131 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 61994144-6e96-46fd-9b67-c19850f8da48
+2025-03-14 14:18:11,132 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 89ab73b5-cecd-483e-8058-f2dc881023cf
+2025-03-14 14:18:11,132 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,133 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 89ab73b5-cecd-483e-8058-f2dc881023cf
+2025-03-14 14:18:11,134 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: d2167ddf-cd8f-4fa9-829c-02eb6ab774f8
+2025-03-14 14:18:11,134 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,134 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: d2167ddf-cd8f-4fa9-829c-02eb6ab774f8
+2025-03-14 14:18:11,135 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: eac72ea2-39a4-4fb1-8cfc-4483f4f11d15
+2025-03-14 14:18:11,136 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,136 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: eac72ea2-39a4-4fb1-8cfc-4483f4f11d15
+2025-03-14 14:18:11,137 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 8d056f05-f96e-4018-af26-b7b615dc9f1d
+2025-03-14 14:18:11,137 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,137 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 8d056f05-f96e-4018-af26-b7b615dc9f1d
+2025-03-14 14:18:11,138 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: b4dbf8f3-58d8-4221-80d2-cba7d0b55c83
+2025-03-14 14:18:11,138 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,139 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: b4dbf8f3-58d8-4221-80d2-cba7d0b55c83
+2025-03-14 14:18:11,140 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: c39ed2f6-f48e-4889-a497-725e92f5d17a
+2025-03-14 14:18:11,140 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,140 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: c39ed2f6-f48e-4889-a497-725e92f5d17a
+2025-03-14 14:18:11,141 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 1f6bec96-f2b7-4653-9bca-39be1ba0792a
+2025-03-14 14:18:11,141 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,141 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 1f6bec96-f2b7-4653-9bca-39be1ba0792a
+2025-03-14 14:18:11,142 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 88fe590e-a179-4f1c-9ed8-fa3988613759
+2025-03-14 14:18:11,143 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,143 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 88fe590e-a179-4f1c-9ed8-fa3988613759
+2025-03-14 14:18:11,144 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 86373044-4738-4b1e-a87d-7b06e0d1afdd
+2025-03-14 14:18:11,144 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,145 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 86373044-4738-4b1e-a87d-7b06e0d1afdd
+2025-03-14 14:18:11,145 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: a26592e5-7d5f-42cf-aea6-44fb4242f2a9
+2025-03-14 14:18:11,146 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,146 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: a26592e5-7d5f-42cf-aea6-44fb4242f2a9
+2025-03-14 14:18:11,147 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: d158d992-3048-40a9-9544-06276006f10d
+2025-03-14 14:18:11,147 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,147 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: d158d992-3048-40a9-9544-06276006f10d
+2025-03-14 14:18:11,148 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 5f75a442-02a4-48c3-bbfc-7a05365623da
+2025-03-14 14:18:11,148 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,149 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 5f75a442-02a4-48c3-bbfc-7a05365623da
+2025-03-14 14:18:11,150 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 5e20b969-0ee8-48de-84be-befa86da271d
+2025-03-14 14:18:11,150 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,150 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 5e20b969-0ee8-48de-84be-befa86da271d
+2025-03-14 14:18:11,151 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: aadc2e83-bf1a-40d2-8cd1-ff71e7c07959
+2025-03-14 14:18:11,151 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,152 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: aadc2e83-bf1a-40d2-8cd1-ff71e7c07959
+2025-03-14 14:18:11,152 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 3ba4f9e4-9265-40e3-909d-fbfadb7de147
+2025-03-14 14:18:11,153 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,153 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 3ba4f9e4-9265-40e3-909d-fbfadb7de147
+2025-03-14 14:18:11,154 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 03fea519-0fa3-441b-b9f6-708da6a7420f
+2025-03-14 14:18:11,154 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,154 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 03fea519-0fa3-441b-b9f6-708da6a7420f
+2025-03-14 14:18:11,155 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: d1481c38-3973-4e6b-a617-b7743f6498f8
+2025-03-14 14:18:11,155 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,156 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: d1481c38-3973-4e6b-a617-b7743f6498f8
+2025-03-14 14:18:11,157 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: c4b9ea5c-48ce-471e-983c-dc9440f1e226
+2025-03-14 14:18:11,157 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,157 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: c4b9ea5c-48ce-471e-983c-dc9440f1e226
+2025-03-14 14:18:11,158 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 242bb8bb-6275-497c-afb9-a13a793f6b64
+2025-03-14 14:18:11,158 - webagent - INFO - Health check requested
+2025-03-14 14:18:11,159 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 242bb8bb-6275-497c-afb9-a13a793f6b64
+2025-03-14 14:18:47,210 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:18:47,259 - webagent - DEBUG - Function build_agent_workflow executed in 0.0027 seconds
+2025-03-14 14:18:47,263 - webagent - DEBUG - Function build_agent_workflow executed in 0.0018 seconds
+2025-03-14 14:18:47,263 - webagent - DEBUG - Function get_agent_workflow executed in 0.0019 seconds
+2025-03-14 14:18:47,263 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:18:53,074 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:18:53,095 - webagent - INFO - Starting WebAgent Backend v2.3.1
+2025-03-14 14:18:53,095 - webagent - INFO - Environment: dev
+2025-03-14 14:18:53,095 - webagent - INFO - Debug mode: True
+2025-03-14 14:18:53,095 - webagent - INFO - API base URL: /api/v1
+2025-03-14 14:18:53,164 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: c27c5115-2230-4232-8ce1-89b16d95ba77
+2025-03-14 14:18:53,165 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,166 - webagent - INFO - Response: 200 - Time: 0.0010s - ID: c27c5115-2230-4232-8ce1-89b16d95ba77
+2025-03-14 14:18:53,168 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: e80fc12a-11eb-4633-909d-77c071ba9047
+2025-03-14 14:18:53,168 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,168 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: e80fc12a-11eb-4633-909d-77c071ba9047
+2025-03-14 14:18:53,169 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 207568ff-2509-4656-95d8-75f07d19a517
+2025-03-14 14:18:53,169 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,170 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 207568ff-2509-4656-95d8-75f07d19a517
+2025-03-14 14:18:53,171 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 3530eae8-ad07-48cc-ac7f-ada320e6a17c
+2025-03-14 14:18:53,171 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,171 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 3530eae8-ad07-48cc-ac7f-ada320e6a17c
+2025-03-14 14:18:53,172 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 534eb8fe-d0d9-40e2-ba7f-ca30727a0329
+2025-03-14 14:18:53,172 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,173 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 534eb8fe-d0d9-40e2-ba7f-ca30727a0329
+2025-03-14 14:18:53,174 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: fe6b0ace-e6f4-4886-87bc-a229bff0270d
+2025-03-14 14:18:53,174 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,174 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: fe6b0ace-e6f4-4886-87bc-a229bff0270d
+2025-03-14 14:18:53,175 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 79331423-47ad-4aff-9827-4db9da840a7a
+2025-03-14 14:18:53,175 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,176 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 79331423-47ad-4aff-9827-4db9da840a7a
+2025-03-14 14:18:53,177 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 289e1776-cccd-42c0-bdeb-2a85b2bf3f1d
+2025-03-14 14:18:53,177 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,177 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 289e1776-cccd-42c0-bdeb-2a85b2bf3f1d
+2025-03-14 14:18:53,178 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: a27a85df-aa28-43a5-96c8-c2b0d06482ae
+2025-03-14 14:18:53,179 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,179 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: a27a85df-aa28-43a5-96c8-c2b0d06482ae
+2025-03-14 14:18:53,180 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: fc81e037-4e24-4c1c-b286-9a988bb94dc9
+2025-03-14 14:18:53,180 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,181 - webagent - INFO - Response: 200 - Time: 0.0010s - ID: fc81e037-4e24-4c1c-b286-9a988bb94dc9
+2025-03-14 14:18:53,182 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 1fd7f312-d40c-4a9a-b0e4-0cf71ef8ccac
+2025-03-14 14:18:53,182 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,182 - webagent - INFO - Response: 200 - Time: 0.0004s - ID: 1fd7f312-d40c-4a9a-b0e4-0cf71ef8ccac
+2025-03-14 14:18:53,183 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 3e81ed86-37d1-47cc-b806-72fd226dea44
+2025-03-14 14:18:53,183 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,184 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 3e81ed86-37d1-47cc-b806-72fd226dea44
+2025-03-14 14:18:53,185 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: c33908eb-4e70-4133-9f1e-7a5c508237d3
+2025-03-14 14:18:53,185 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,185 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: c33908eb-4e70-4133-9f1e-7a5c508237d3
+2025-03-14 14:18:53,186 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 4d907e02-abf3-4382-9243-b43ef51879f0
+2025-03-14 14:18:53,186 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,187 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 4d907e02-abf3-4382-9243-b43ef51879f0
+2025-03-14 14:18:53,188 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: df029595-720d-4718-8f7a-642a41c22034
+2025-03-14 14:18:53,188 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,188 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: df029595-720d-4718-8f7a-642a41c22034
+2025-03-14 14:18:53,189 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: f65cc4d7-dabd-4d68-abe2-0f801d0e12e3
+2025-03-14 14:18:53,189 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,189 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: f65cc4d7-dabd-4d68-abe2-0f801d0e12e3
+2025-03-14 14:18:53,190 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: b7cd5d7c-44c6-49f7-939d-7677270b3c22
+2025-03-14 14:18:53,190 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,191 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: b7cd5d7c-44c6-49f7-939d-7677270b3c22
+2025-03-14 14:18:53,192 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 0a9506b6-d493-4cd4-b492-ff8857f15724
+2025-03-14 14:18:53,192 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,192 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 0a9506b6-d493-4cd4-b492-ff8857f15724
+2025-03-14 14:18:53,193 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: aeef1b79-5076-4b4a-9a49-ec351fc0e30f
+2025-03-14 14:18:53,193 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,194 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: aeef1b79-5076-4b4a-9a49-ec351fc0e30f
+2025-03-14 14:18:53,195 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 01e7ccf2-901f-4151-82f2-82456724ba47
+2025-03-14 14:18:53,195 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,195 - webagent - INFO - Response: 200 - Time: 0.0007s - ID: 01e7ccf2-901f-4151-82f2-82456724ba47
+2025-03-14 14:18:53,197 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 2f15e0d4-277e-444c-b3b4-c1a3a20ebf9f
+2025-03-14 14:18:53,197 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,197 - webagent - INFO - Response: 200 - Time: 0.0008s - ID: 2f15e0d4-277e-444c-b3b4-c1a3a20ebf9f
+2025-03-14 14:18:53,198 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: bdecfaa6-51e3-4ab4-befa-baf0c429b554
+2025-03-14 14:18:53,199 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,199 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: bdecfaa6-51e3-4ab4-befa-baf0c429b554
+2025-03-14 14:18:53,200 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: ddd2ab06-636f-4723-9a66-f985438f4a51
+2025-03-14 14:18:53,200 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,200 - webagent - INFO - Response: 200 - Time: 0.0007s - ID: ddd2ab06-636f-4723-9a66-f985438f4a51
+2025-03-14 14:18:53,201 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 921bfdaf-b5b3-4952-9712-c84ab1d5fcc2
+2025-03-14 14:18:53,202 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,202 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 921bfdaf-b5b3-4952-9712-c84ab1d5fcc2
+2025-03-14 14:18:53,203 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 81735d5a-cfff-44da-ae72-dcbcdd47c570
+2025-03-14 14:18:53,203 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,203 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 81735d5a-cfff-44da-ae72-dcbcdd47c570
+2025-03-14 14:18:53,204 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: ef91a77a-8e55-42b7-87a0-227ee09e83db
+2025-03-14 14:18:53,204 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,205 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: ef91a77a-8e55-42b7-87a0-227ee09e83db
+2025-03-14 14:18:53,206 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 0ca41438-34a7-4aef-8b31-e026a24f4d37
+2025-03-14 14:18:53,206 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,206 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 0ca41438-34a7-4aef-8b31-e026a24f4d37
+2025-03-14 14:18:53,207 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 93be6c75-d430-4faa-99ef-424ea56fd3e6
+2025-03-14 14:18:53,207 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,207 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 93be6c75-d430-4faa-99ef-424ea56fd3e6
+2025-03-14 14:18:53,208 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: a44bfe11-69d6-4fb8-93fe-0a06f5b4e56c
+2025-03-14 14:18:53,208 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,209 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: a44bfe11-69d6-4fb8-93fe-0a06f5b4e56c
+2025-03-14 14:18:53,210 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 25adfa10-2c53-4388-8500-bc922b51f7fd
+2025-03-14 14:18:53,210 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,210 - webagent - INFO - Response: 200 - Time: 0.0008s - ID: 25adfa10-2c53-4388-8500-bc922b51f7fd
+2025-03-14 14:18:53,212 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 236eeeef-d81b-4c47-ba43-8bda3c453b2d
+2025-03-14 14:18:53,212 - webagent - INFO - Health check requested
+2025-03-14 14:18:53,212 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 236eeeef-d81b-4c47-ba43-8bda3c453b2d
+2025-03-14 14:19:24,267 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:19:24,313 - webagent - DEBUG - Function build_agent_workflow executed in 0.0026 seconds
+2025-03-14 14:19:24,318 - webagent - DEBUG - Function build_agent_workflow executed in 0.0021 seconds
+2025-03-14 14:19:24,318 - webagent - DEBUG - Function get_agent_workflow executed in 0.0022 seconds
+2025-03-14 14:19:24,318 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:19:30,262 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:19:30,286 - webagent - INFO - Starting WebAgent Backend v2.3.1
+2025-03-14 14:19:30,286 - webagent - INFO - Environment: dev
+2025-03-14 14:19:30,286 - webagent - INFO - Debug mode: True
+2025-03-14 14:19:30,286 - webagent - INFO - API base URL: /api/v1
+2025-03-14 14:19:30,382 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 39dd0e25-69d8-432c-91b9-d30c7769d267
+2025-03-14 14:19:30,382 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,383 - webagent - INFO - Response: 200 - Time: 0.0010s - ID: 39dd0e25-69d8-432c-91b9-d30c7769d267
+2025-03-14 14:19:30,385 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: d60c5c5a-0b28-4dfa-9692-4b5b977468f6
+2025-03-14 14:19:30,386 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,386 - webagent - INFO - Response: 200 - Time: 0.0007s - ID: d60c5c5a-0b28-4dfa-9692-4b5b977468f6
+2025-03-14 14:19:30,387 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: af8ba35f-e73e-4ba1-8bdd-06d4c6a0abf5
+2025-03-14 14:19:30,388 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,388 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: af8ba35f-e73e-4ba1-8bdd-06d4c6a0abf5
+2025-03-14 14:19:30,389 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: e0939dca-66c7-4e71-9f4e-91857b0ec2f5
+2025-03-14 14:19:30,389 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,389 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: e0939dca-66c7-4e71-9f4e-91857b0ec2f5
+2025-03-14 14:19:30,390 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: a102e068-4d74-4b4d-b469-d6330df7b4a5
+2025-03-14 14:19:30,391 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,391 - webagent - INFO - Response: 200 - Time: 0.0008s - ID: a102e068-4d74-4b4d-b469-d6330df7b4a5
+2025-03-14 14:19:30,392 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: d3ed734c-8131-43ed-819d-f9673a8cd935
+2025-03-14 14:19:30,393 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,393 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: d3ed734c-8131-43ed-819d-f9673a8cd935
+2025-03-14 14:19:30,394 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 247bdab1-3f06-4d2a-8197-9a44be856f7f
+2025-03-14 14:19:30,394 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,395 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 247bdab1-3f06-4d2a-8197-9a44be856f7f
+2025-03-14 14:19:30,396 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 6a468d04-ec31-48d8-bdf8-df1729a0d85b
+2025-03-14 14:19:30,396 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,397 - webagent - INFO - Response: 200 - Time: 0.0009s - ID: 6a468d04-ec31-48d8-bdf8-df1729a0d85b
+2025-03-14 14:19:30,398 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 8d6c50f6-aea3-41ee-9e5d-59b4890d7a28
+2025-03-14 14:19:30,398 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,398 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 8d6c50f6-aea3-41ee-9e5d-59b4890d7a28
+2025-03-14 14:19:30,399 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 6b07f5f1-491c-46d0-9f66-67ef12226350
+2025-03-14 14:19:30,400 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,400 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 6b07f5f1-491c-46d0-9f66-67ef12226350
+2025-03-14 14:19:30,401 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 79c64447-71de-4ac7-881c-7b8f2c8e4887
+2025-03-14 14:19:30,401 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,402 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 79c64447-71de-4ac7-881c-7b8f2c8e4887
+2025-03-14 14:19:30,403 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 5c5530cd-21fa-4e9c-99d2-2a795f4e419f
+2025-03-14 14:19:30,403 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,403 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 5c5530cd-21fa-4e9c-99d2-2a795f4e419f
+2025-03-14 14:19:30,404 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 70c20998-6d70-4c8a-8743-6b4b51bb18c9
+2025-03-14 14:19:30,404 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,405 - webagent - INFO - Response: 200 - Time: 0.0007s - ID: 70c20998-6d70-4c8a-8743-6b4b51bb18c9
+2025-03-14 14:19:30,406 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 0957525a-c919-4971-ac24-691e1b6138d6
+2025-03-14 14:19:30,406 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,407 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 0957525a-c919-4971-ac24-691e1b6138d6
+2025-03-14 14:19:30,408 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: ae31b025-e0ed-4f61-8d2f-4faa523ab42f
+2025-03-14 14:19:30,408 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,408 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: ae31b025-e0ed-4f61-8d2f-4faa523ab42f
+2025-03-14 14:19:30,409 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: bd5cbeb0-99a7-46c2-a55a-c9893cd34f9a
+2025-03-14 14:19:30,410 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,410 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: bd5cbeb0-99a7-46c2-a55a-c9893cd34f9a
+2025-03-14 14:19:30,411 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: b44f0adc-f574-44b2-a867-9837178774c2
+2025-03-14 14:19:30,411 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,412 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: b44f0adc-f574-44b2-a867-9837178774c2
+2025-03-14 14:19:30,413 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: aeb25152-d7ca-45d4-8499-3efa6ddfcf8c
+2025-03-14 14:19:30,413 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,413 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: aeb25152-d7ca-45d4-8499-3efa6ddfcf8c
+2025-03-14 14:19:30,414 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: da33df6c-3d08-48bf-89c3-c16c208603a3
+2025-03-14 14:19:30,415 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,415 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: da33df6c-3d08-48bf-89c3-c16c208603a3
+2025-03-14 14:19:30,416 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: dc823ed7-a5ee-4965-8afe-f5bab9fa8f6d
+2025-03-14 14:19:30,416 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,417 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: dc823ed7-a5ee-4965-8afe-f5bab9fa8f6d
+2025-03-14 14:19:30,418 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: d1c54e7f-3633-48b4-a420-b00153323d70
+2025-03-14 14:19:30,418 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,418 - webagent - INFO - Response: 200 - Time: 0.0007s - ID: d1c54e7f-3633-48b4-a420-b00153323d70
+2025-03-14 14:19:30,419 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 4833d88f-7f8e-46ae-a2ef-84eaa488b780
+2025-03-14 14:19:30,419 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,420 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 4833d88f-7f8e-46ae-a2ef-84eaa488b780
+2025-03-14 14:19:30,421 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: d8c8d957-c91f-443e-accb-6545fb4ab52d
+2025-03-14 14:19:30,421 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,421 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: d8c8d957-c91f-443e-accb-6545fb4ab52d
+2025-03-14 14:19:30,422 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: b8d485f8-5e07-4726-807b-8cdeb0d5f6b6
+2025-03-14 14:19:30,423 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,423 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: b8d485f8-5e07-4726-807b-8cdeb0d5f6b6
+2025-03-14 14:19:30,424 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: cbd42fef-5943-4942-b93e-dc1961b3ebdf
+2025-03-14 14:19:30,424 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,425 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: cbd42fef-5943-4942-b93e-dc1961b3ebdf
+2025-03-14 14:19:30,425 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 624682f5-f5ec-4d01-9252-d6a9b8c455df
+2025-03-14 14:19:30,426 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,426 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 624682f5-f5ec-4d01-9252-d6a9b8c455df
+2025-03-14 14:19:30,427 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 3e2f4db1-6a60-4bbc-bf61-db0b786ad037
+2025-03-14 14:19:30,427 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,428 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 3e2f4db1-6a60-4bbc-bf61-db0b786ad037
+2025-03-14 14:19:30,429 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 13467bc6-9f3f-48db-9246-10acfa62c158
+2025-03-14 14:19:30,429 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,429 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: 13467bc6-9f3f-48db-9246-10acfa62c158
+2025-03-14 14:19:30,430 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 3872474c-be0d-4779-b12c-0ec95f2f3a32
+2025-03-14 14:19:30,431 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,431 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 3872474c-be0d-4779-b12c-0ec95f2f3a32
+2025-03-14 14:19:30,432 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: ea65439a-8026-4760-be46-7c860d1de8e4
+2025-03-14 14:19:30,432 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,433 - webagent - INFO - Response: 200 - Time: 0.0006s - ID: ea65439a-8026-4760-be46-7c860d1de8e4
+2025-03-14 14:19:30,434 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 07851559-b4e2-4858-a80f-709fb8742f90
+2025-03-14 14:19:30,434 - webagent - INFO - Health check requested
+2025-03-14 14:19:30,434 - webagent - INFO - Response: 200 - Time: 0.0005s - ID: 07851559-b4e2-4858-a80f-709fb8742f90
+2025-03-14 14:29:10,111 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:29:10,157 - webagent - DEBUG - Function build_agent_workflow executed in 0.0022 seconds
+2025-03-14 14:29:10,160 - webagent - DEBUG - Function build_agent_workflow executed in 0.0016 seconds
+2025-03-14 14:29:10,160 - webagent - DEBUG - Function get_agent_workflow executed in 0.0017 seconds
+2025-03-14 14:29:10,160 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:29:15,829 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:29:15,852 - webagent - INFO - Starting WebAgent Backend v2.3.1
+2025-03-14 14:29:15,852 - webagent - INFO - Environment: dev
+2025-03-14 14:29:15,852 - webagent - INFO - Debug mode: True
+2025-03-14 14:29:15,852 - webagent - INFO - API base URL: /api/v1
+2025-03-14 14:29:16,214 - webagent - INFO - Request: GET http://testserver/ - Client: testclient - ID: 8cc04f31-537a-47b2-a286-4e7e01f5714c
+2025-03-14 14:29:16,214 - webagent - INFO - Health check requested
+2025-03-14 14:29:16,215 - webagent - INFO - Response: 200 - Time: 0.0011s - ID: 8cc04f31-537a-47b2-a286-4e7e01f5714c
+2025-03-14 14:31:06,345 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:31:06,393 - webagent - DEBUG - Function build_agent_workflow executed in 0.0024 seconds
+2025-03-14 14:31:06,398 - webagent - DEBUG - Function build_agent_workflow executed in 0.0022 seconds
+2025-03-14 14:31:06,398 - webagent - DEBUG - Function get_agent_workflow executed in 0.0023 seconds
+2025-03-14 14:31:06,398 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:31:12,184 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:33:19,019 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 14:33:19,064 - webagent - DEBUG - Function build_agent_workflow executed in 0.0027 seconds
+2025-03-14 14:33:19,069 - webagent - DEBUG - Function build_agent_workflow executed in 0.0019 seconds
+2025-03-14 14:33:19,069 - webagent - DEBUG - Function get_agent_workflow executed in 0.0019 seconds
+2025-03-14 14:33:19,069 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-14 14:33:24,823 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log

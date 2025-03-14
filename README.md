@@ -2,8 +2,8 @@
 
 A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-![WebAgent Platform Version](https://img.shields.io/badge/version-2.5.10-blue)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--16-brightgreen)
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.5.11-blue)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--14-brightgreen)
 
 ## Overview
 
@@ -256,288 +256,184 @@ This loop enables the Senior Research Agent to:
 5. Re-evaluate and refine until quality threshold is met
 6. Synthesize the final comprehensive report
 
-## Getting Started
+## Installation and Setup
+
+Follow these steps to set up the WebAgent platform on your local environment:
 
 ### Prerequisites
 
-- Python 3.10+
-- Node.js 16+ (for frontend)
-- OpenAI API key or Anthropic API key
-- LangSmith API key (optional, for tracing)
+- Python 3.10+ 
+- Node.js 18+ (for frontend)
+- Conda (recommended for environment management)
+- Git
 
-### Installation
+### Backend Setup
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/webagent.git
-   cd webagent
+   git clone https://github.com/yourorg/WebAgent.git
+   cd WebAgent
    ```
 
-2. Install backend dependencies:
+2. Create and activate a conda environment:
    ```bash
-   cd backend
+   conda create -n agents python=3.12
+   conda activate agents
+   ```
+
+3. Install backend dependencies:
+   ```bash
    pip install -r requirements.txt
    ```
 
-3. Install frontend dependencies:
+4. Configure environment variables:
    ```bash
-   cd ..
+   cp backend/config/example.yaml backend/config/dev.yaml
+   ```
+   Edit the `dev.yaml` file to set your API keys, database connections, and other configuration parameters.
+
+### Frontend Setup (Optional)
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+
+2. Install frontend dependencies:
+   ```bash
    npm install
    ```
 
-4. Create a `.env` file in the backend directory:
-   ```
-   # Core settings
-   WEBAGENT_ENV=development
-   DEBUG_MODE=true
-   LOG_LEVEL=INFO
-   
-   # LLM Provider
-   LLM_PROVIDER=openai
-   OPENAI_API_KEY=your_openai_key_here
-   ANTHROPIC_API_KEY=your_anthropic_key_here
-   
-   # LangSmith (optional)
-   LANGSMITH_API_KEY=your_langsmith_key_here
-   LANGSMITH_PROJECT=webagent
-   LANGSMITH_ENABLED=false
-   
-   # Security settings
-   REQUEST_SIZE_LIMIT=10485760  # 10MB
-   RATE_LIMIT_ENABLED=true
-   RATE_LIMIT_REQUESTS=100
-   RATE_LIMIT_TIMEFRAME=60
-   
-   # Authentication (optional)
-   AUTH_ENABLED=false
-   JWT_SECRET_KEY=your_jwt_secret_here
-   API_KEY_ENABLED=false
-   API_KEY=your_api_key_here
-   ```
+## Running WebAgent
 
-### Running the Application
+### Running the Backend
 
-1. Start the backend server:
+1. Ensure your conda environment is activated:
    ```bash
-   cd backend
-   uvicorn main:app --reload
+   conda activate agents
    ```
 
-2. Start the frontend (in a new terminal):
+2. Start the backend server:
+   ```bash
+   python -m backend.main
+   ```
+
+   The server will start on http://localhost:8000 by default, with API endpoints available at http://localhost:8000/api/v1/
+
+3. Access the OpenAPI documentation:
+   Open your browser and navigate to http://localhost:8000/docs to view the API documentation.
+
+### Running the Frontend (Optional)
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+
+2. Start the development server:
    ```bash
    npm run dev
    ```
 
-3. Access the application at `http://localhost:3000`
+   The frontend will be available at http://localhost:3000 (or port 3001 if 3000 is already occupied).
 
-### Example Usage
+### Using WebAgent
 
-Here's an example of using the WebAgent platform programmatically:
+1. API Usage Example:
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/chat/completions" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_API_KEY" \
+     -d '{"query": "What are the benefits of multi-agent AI systems?"}'
+   ```
 
-```python
-# Example script to run a workflow
-from backend.path_setup import setup_path
-setup_path()
+2. Programmatic Usage:
+   ```python
+   import requests
+   
+   response = requests.post(
+       "http://localhost:8000/api/v1/chat/completions",
+       headers={"Authorization": "Bearer YOUR_API_KEY"},
+       json={"query": "What are the benefits of multi-agent AI systems?"}
+   )
+   
+   print(response.json())
+   ```
 
-from backend.app.agents.supervisor import get_supervisor_agent
-from backend.app.graph.workflows import get_agent_workflow
-from backend.app.models.task import WorkflowState
+## Testing and Diagnostics
 
-# Get the workflow
-workflow = get_agent_workflow()
+WebAgent includes a comprehensive test suite and diagnostic tools to ensure everything is working correctly.
 
-# Create initial state with a research query
-state = WorkflowState(query="What are the latest advancements in large language models?")
+### Running Tests
 
-# Execute the workflow
-final_state = workflow.invoke(state)
+1. Run the LangGraph workflow tests:
+   ```bash
+   python -m backend.tests.test_langgraph
+   ```
 
-# Print the final report
-if final_state.final_report:
-    print("Final Report:")
-    print(final_state.final_report["content"])
-```
+2. Run the security tests:
+   ```bash
+   python -m backend.tests.test_security
+   ```
 
-### Running Diagnostics
+3. Run all tests with pytest:
+   ```bash
+   pytest backend/tests/
+   ```
 
-The WebAgent platform includes built-in diagnostics for monitoring system health and performance:
+### Diagnosing Issues
 
-```python
-# Example script to run diagnostics
-from backend.path_setup import setup_path
-setup_path()
+1. Check the logs:
+   Logs are stored in the `logs/` directory. You can examine them for error messages and debugging information:
+   ```bash
+   tail -f logs/webagent-dev.log
+   ```
 
-from backend.app.utils.diagnostics import print_diagnostics_report
+2. Enable debug mode:
+   Set `DEBUG: true` in your `dev.yaml` configuration file to enable more verbose logging.
 
-# Run full diagnostics and print the report
-print_diagnostics_report()
-```
+3. Use LangSmith for tracing:
+   WebAgent is integrated with LangSmith for tracing and debugging agent workflows. Configure your LangSmith API key in the `dev.yaml` file:
+   ```yaml
+   LANGSMITH:
+     API_KEY: your_langsmith_api_key
+     PROJECT: webagent-research
+   ```
 
-Sample output:
-```
-========== WebAgent Diagnostics Report ==========
-WebAgent v2.5.8 | 2025-03-14T12:34:56.789012
-Environment: development
-==================================================
+4. Monitoring API endpoints:
+   The system health can be checked via the `/health` endpoint:
+   ```bash
+   curl http://localhost:8000/health
+   ```
 
-## System Information
-OS: Darwin 24.3.0
-Python: 3.10.11
-CPU Count: 8
-Platform: Darwin-24.3.0-x86_64-i386-64bit
-Working Directory: /Users/user/Projects/webagent
+5. Performance monitoring:
+   If you've enabled Prometheus metrics, they're available at:
+   ```bash
+   curl http://localhost:8000/metrics
+   ```
 
-## Environment Configuration
-Debug Mode: True
-LLM Provider: openai
+### Common Issues and Solutions
 
-API Keys:
-  OPENAI_API_KEY: ✓ Set
-  ANTHROPIC_API_KEY: ✓ Set
-  LANGSMITH_API_KEY: ✓ Set
+1. **Import Errors**: Ensure your conda environment is activated and all dependencies are installed.
 
-## Agent Status
-supervisor: active (Avg time: 0.83s)
-web_research: active (Avg time: 2.41s)
-internal_research: active (Avg time: 1.78s)
-senior_research: active (Avg time: 1.92s)
-document_extraction: active (Avg time: 3.56s)
-team_manager: active (Avg time: 0.95s)
+2. **API Key Errors**: Verify that all required API keys are correctly set in your configuration file.
 
-## Workflow
-Nodes: __start__, supervisor, web_research, internal_research, senior_research, data_analysis, coding_assistant, team_manager, end
-Compiled: True
-Node Count: 9
-Edge Count: 14
+3. **LangGraph Workflow Issues**: If you're experiencing issues with the agent workflow:
+   - Check that your LangGraph version matches the required version (0.3.5+)
+   - Verify that all agents are correctly initialized
+   - Look at the workflow state transitions in the logs
 
-## Network Connectivity
-openai: ✓ Available (Latency: 126.3ms)
-anthropic: ✓ Available (Latency: 154.8ms)
-langsmith: ✓ Available (Latency: 87.2ms)
+4. **Memory or Performance Issues**: 
+   - Adjust the chunk sizes for document processing in the configuration
+   - Reduce the maximum tokens for LLM calls
+   - Implement proper caching for API responses
 
-## Language Model Status
-Provider: openai
-Default Model: gpt-4-turbo
-API Check: check_disabled
+5. **Security Test Failures**:
+   - Ensure that middleware is correctly configured
+   - Check that rate limiting is properly set up
+   - Verify that authentication is correctly implemented
 
-## Performance Metrics
-Memory (RSS): 156.45 MB
-System Memory: 14.32 GB available of 16.00 GB
-CPU Usage: 2.3% (process) / 8.7% (system)
-Threads: 12
-Uptime: 5.2 minutes
-
-LLM Calls:
-  gpt-4-turbo: 24 calls, avg 0.92s per call
-  claude-3-haiku: 8 calls, avg 1.33s per call
-
-========== End Diagnostics Report ==========
-```
-
-### Using the CLI
-
-The WebAgent platform includes a command-line interface for running tasks and diagnostics:
-
-```bash
-# Run diagnostics
-python scripts/run_webagent.py --mode diagnostics
-
-# Run diagnostics with network and LLM checks
-python scripts/run_webagent.py --mode diagnostics --check-network --check-llm
-
-# Run a workflow
-python scripts/run_webagent.py --mode workflow --query "Research the impact of AI on healthcare"
-
-# Run a workflow with custom parameters
-python scripts/run_webagent.py --mode workflow --query "Research the impact of AI on healthcare" --max-iterations 5 --timeout 600 --output markdown
-
-# Extract data from a document
-python scripts/run_webagent.py --mode direct --type document_extraction --document path/to/document.pdf
-
-# Run a research request
-python scripts/run_webagent.py --mode direct --type research --query "What are the latest advancements in quantum computing?" --output text
-
-# Run a coding assistant request
-python scripts/run_webagent.py --mode direct --type coding_assistant --query "Write a Python function to calculate Fibonacci numbers"
-```
-
-The CLI supports the following modes:
-
-1. **diagnostics**: Run system diagnostics to check WebAgent health
-   - `--check-network`: Test connectivity to external services
-   - `--check-llm`: Verify language model availability
-
-2. **workflow**: Run a full agent workflow for complex queries
-   - `--query`: The user query to process (required)
-   - `--max-iterations`: Maximum number of research iterations (default: 3)
-   - `--timeout`: Maximum time in seconds to wait for completion (default: 300)
-   - `--output`: Output format (json, text, markdown)
-
-3. **direct**: Make a direct request to a specific agent
-   - `--type`: Request type (document_extraction, research, team_management, data_analysis, coding_assistant)
-   - `--query`: Query text for research requests
-   - `--document`: Path to document for extraction
-   - `--output`: Output format (json, text, markdown)
-
-The script provides detailed error handling and logging to help diagnose issues during execution.
-
-## Security Features
-
-WebAgent includes comprehensive security features to protect against common threats:
-
-1. **Input Validation and Sanitization**:
-   - Automatic sanitization of potentially dangerous inputs
-   - Prevention of prompt injection attacks
-   - Validation of all user inputs and document content
-
-2. **Authentication and Authorization**:
-   - JWT-based authentication system
-   - API key authentication for programmatic access
-   - Fine-grained permission controls
-
-3. **Rate Limiting and Request Validation**:
-   - Configurable rate limiting to prevent abuse
-   - Request size validation to prevent DoS attacks
-   - Automatic blocking of suspicious request patterns
-
-4. **Secure Workflow Execution**:
-   - Isolation of agent states to prevent data leakage
-   - Enforced agent sequencing to prevent unauthorized transitions
-   - Error message sanitization to prevent sensitive data exposure
-
-5. **Web Vulnerability Protection**:
-   - Protection against XSS, SQL injection, and CSRF attacks
-   - Security headers middleware
-   - HTTPS enforcement in production environments
-
-## Observability Features
-
-WebAgent provides advanced observability features to monitor system health and performance:
-
-1. **Detailed Diagnostics**:
-   - Comprehensive system information
-   - Environment configuration checks
-   - Agent status monitoring
-   - Network connectivity verification
-   - Language model availability checks
-
-2. **Performance Metrics**:
-   - Memory usage tracking per component
-   - CPU utilization monitoring
-   - Execution time tracking for all agent operations
-   - LLM call statistics and token usage
-
-3. **Prometheus Integration**:
-   - HTTP request metrics
-   - LLM call metrics
-   - Agent execution metrics
-   - Resource utilization metrics
-
-4. **LangSmith Tracing**:
-   - Detailed traces of agent executions
-   - Input/output recording for debugging
-   - Performance profiling
-   - Error tracking and reporting
+For more detailed diagnostics, use the built-in observability features and consult the API documentation.
 
 ## Development
 
