@@ -1,25 +1,24 @@
-# WebAgent Platform v2.5.3
+# WebAgent Platform v2.5.5
 
 WebAgent is a powerful AI platform that combines multiple specialized agents to perform complex tasks.
 
-## What's New in v2.5.3
+## What's New in v2.5.5
 
-This release adds a powerful Document Extraction Agent to the WebAgent platform, enabling advanced document analysis and information extraction:
+This release adds an advanced Retrieval-Augmented Generation (RAG) system to the Internal Research Agent, providing high-quality information retrieval and synthesis:
 
-- **Document Extraction Agent**: Extract structured information from documents using multiple methods:
-  - NLP-based extraction with Latent Dirichlet Allocation (LDA) Bayesian Network
-  - LLM-based extraction for complex documents
-  - Hybrid approach combining both methods
-- **Supervisor Integration**: The Supervisor Agent can now directly call the Document Extraction Agent
-- **Team Manager Routing**: Document extraction results can be routed to the Team Manager Agent for quick summarization
-- **Multi-format Support**: Process PDF, DOCX, TXT, HTML, CSV, and JSON documents
-- **Advanced Entity Extraction**: Identify key entities, topics, and relationships in documents
+- **Advanced RAG Architecture**: Three-stage pipeline of retrieval, reranking, and generation for accurate responses
+- **Hybrid Retrieval**: Combines dense semantic embeddings (Contriever) with sparse lexical search (BM25)
+- **Cross-Encoder Reranking**: Uses state-of-the-art reranker models to prioritize the most relevant documents
+- **Ensemble Approach**: Intelligently weights results from multiple retrieval methods for improved coverage
+- **MLflow Integration**: Built-in experiment tracking for optimizing and analyzing RAG performance
+- **Performance Metrics**: Detailed metrics and logging for each component of the RAG pipeline
 
 Previous Releases:
 
+- **v2.5.4**: Consolidated supervisor implementations and improved agent architecture
+- **v2.5.3**: Added Document Extraction Agent for processing and analyzing documents
 - **v2.5.2**: Added MLflow integration for experiment tracking and hyperparameter optimization
 - **v2.5.1**: Improved reliability and observability of the self-hosted LLM service
-- **v2.5.0**: Added self-hosted LLM support to the backend LLM service framework
 
 ## Document Extraction Features
 
@@ -65,6 +64,74 @@ if result["success"]:
     for topic in topics[:3]:
         terms = [term["term"] for term in topic["terms"][:5]]
         print(f"  - Topic {topic['topic_id']}: {', '.join(terms)}")
+```
+
+## Advanced RAG Features
+
+The Internal Research Agent now features a state-of-the-art Retrieval-Augmented Generation (RAG) system that dramatically improves information retrieval and answer quality.
+
+### RAG Architecture Components
+
+1. **Retriever**: Advanced hybrid retrieval system that combines:
+   - **Dense Retrieval**: Uses Contriever embeddings for semantic understanding
+   - **Sparse Retrieval**: Employs BM25 for keyword-based matching
+   - **Ensemble Approach**: Weighted combination of both methods for comprehensive coverage
+
+2. **Reranker**: Cross-encoder model that scores and prioritizes retrieved documents:
+   - Uses a cross-encoder model to deeply analyze query-document relevance
+   - Filters out less relevant information to focus the LLM on the most useful context
+   - Dramatically improves precision without sacrificing recall
+
+3. **Generator**: Leverages the LLM to synthesize information from reranked documents:
+   - Produces comprehensive, accurate answers grounded in retrieved information
+   - Cites sources and provides structured output
+   - Maintains factuality by focusing on retrieved information
+
+### Performance Monitoring
+
+The RAG system includes built-in performance monitoring:
+
+- **MLflow Integration**: Tracks experiments and metrics for each RAG component
+- **Detailed Logging**: Comprehensive logging of retrieval time, document scores, and more
+- **Memory Usage Tracking**: Monitors resource consumption for large model operations
+
+### Example Usage
+
+```python
+from backend.app.agents.internal_research import get_internal_research_agent
+from app.models.task import WorkflowState
+
+# Initialize the research agent
+research_agent = get_internal_research_agent()
+
+# Create a workflow state with a query
+state = WorkflowState(query="What are the environmental impacts of lithium mining?")
+
+# Run the agent to perform RAG-enhanced research
+result_state = await research_agent.run(state)
+
+# Get the findings
+findings = result_state.context.get("internal_research_findings")
+```
+
+### Customizing RAG Configuration
+
+The RAG system can be customized by providing configuration options:
+
+```python
+# Custom configuration
+config = {
+    "embedding_model": "facebook/contriever",  # Model for dense embeddings
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",  # Cross-encoder for reranking
+    "dense_k": 20,  # Number of results from dense retrieval
+    "sparse_k": 20,  # Number of results from sparse retrieval
+    "retrieve_k": 20,  # Total number of documents to retrieve
+    "rerank_top_n": 5,  # Number of documents to keep after reranking
+    "llm_model": "gpt-4-turbo"  # LLM to use for generation
+}
+
+# Initialize with custom config
+research_agent = InternalResearchAgent(config=config)
 ```
 
 ## Architecture
@@ -262,8 +329,8 @@ npm install
 
    a. For frontend API keys, create a `.env.local` file in the root directory:
    ```
-   TOGETHER_API_KEY=your_together_api_key_here
-   ```
+TOGETHER_API_KEY=your_together_api_key_here
+```
 
    b. For backend configuration, create both `.env` and `.env.local` files in the `backend` directory:
    ```bash

@@ -12,6 +12,10 @@ langchain-community==0.0.19
 langsmith==0.1.19
 langchain-together==0.0.3
 
+# RAG components
+sentence-transformers==2.2.2
+rank_bm25==0.2.2
+
 # API and Async
 httpx==0.26.0
 aiohttp==3.9.3

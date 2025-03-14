@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.5] - 2025-03-14
+
+### Added
+- Advanced Retrieval-Augmented Generation (RAG) architecture for the Internal Research Agent
+- Multi-stage retrieval pipeline with hybrid retrieval (dense + sparse) and reranking
+- Integration with Contriever embeddings for improved semantic retrieval
+- Cross-encoder reranking to prioritize the most relevant documents
+- BM25 sparse retrieval for better keyword-based matching
+- Ensemble retrieval combining the strengths of semantic and lexical search
+- Comprehensive MLflow experiment tracking integration for RAG components
+- Performance metrics for each RAG component (retrieval time, reranking scores)
+
+### Enhanced
+- Improved document relevance through advanced reranking
+- Better response quality with contextual document prioritization
+- Added graceful fallback to basic retrieval when advanced models unavailable
+- Extended logging with detailed performance metrics
+- Added memory usage tracking for large model operations
+- Optimized document processing with asyncio for improved concurrency
+
 ## [2.5.4] - 2025-03-13
 
 ### Enhanced
