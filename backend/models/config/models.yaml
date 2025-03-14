@@ -1,0 +1,63 @@
+# Model Services Configuration
+
+# Global settings
+gateway:
+  host: localhost
+  port: 8000
+  log_level: info
+
+# Default model parameters (applied to all models unless overridden)
+default_parameters:
+  max_new_tokens: 2048
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 40
+  repetition_penalty: 1.1
+
+# Model definitions
+models:
+  # Example of a local transformer model
+  llama2-7b:
+    display_name: "Llama 2 (7B)"
+    model_type: llm
+    model_path: "models/llama2/7B"
+    device: "cuda:0"
+    host: localhost
+    port: 8501
+    capabilities:
+      - text-generation
+      - chat
+    parameters:
+      max_new_tokens: 4096
+      temperature: 0.8
+
+  # Example of an embedding model
+  e5-small:
+    display_name: "E5 Small"
+    model_type: embedding
+    model_path: "models/e5-small-v2"
+    device: "cuda:0"
+    host: localhost
+    port: 8502
+    capabilities:
+      - embeddings
+    parameters:
+      normalize: true
+      max_length: 512
+
+  # Example of another model type
+  mistral-7b:
+    display_name: "Mistral (7B)"
+    model_type: llm
+    model_path: "models/mistral/7B"
+    device: "cuda:0"
+    host: localhost
+    port: 8503
+    capabilities:
+      - text-generation
+      - chat
+      - instruction-following
+    parameters:
+      max_new_tokens: 4096
+      temperature: 0.7
+      top_p: 0.95 

@@ -1,6 +1,34 @@
 # Changelog
 
-All notable changes to the WebAgent project will be documented in this file.
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.6.0] - 2025-03-14
+
+### Added
+- Microservices framework for model management
+  - Added ModelRegistry for tracking available models
+  - Created BaseModelService as a foundation for model services
+  - Implemented TransformerModelService for HuggingFace models
+  - Added ModelAPIGateway to route requests to appropriate model services
+  - Created ModelManager for orchestrating model service processes
+- Configuration system for models with YAML support
+- Comprehensive logging throughout model services
+- Health check and monitoring for model services
+- Runner scripts for model services and manager
+
+### Fixed
+- Resolved issues with rate limiting tests
+- Fixed test suite compatibility with latest dependencies
+- Addressed module imports and path resolution
+- Fixed error message redaction in security tests
+
+### Changed
+- Enhanced error handling in test scenarios
+- Improved module organization for better maintainability
+- Updated API error handling to provide better diagnostics
 
 ## [2.5.11] - 2025-03-14
 

@@ -2,7 +2,7 @@
 
 A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-![WebAgent Platform Version](https://img.shields.io/badge/version-2.5.11-blue)
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.6.0-blue)
 ![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--14-brightgreen)
 
 ## Overview
@@ -14,12 +14,18 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
 - **Multi-Agent System**: Integrated system of specialized agents working together to solve complex tasks
   - Supervisor Agent: Analyzes user queries and orchestrates the workflow
   - Research Agents: Web and internal knowledge retrieval
-  - Senior Research Agent: Evaluates research quality and produces final reports
+  - Senior Research Agent: Evaluates research quality and produces summary reports
   - Document Extraction Agent: Processes documents and extracts structured data
   - Team Manager Agent: Synthesizes outputs from multiple agents
   - Specialized Agents: Data analysis and coding assistance
 
 - **LangGraph Integration**: Uses LangGraph for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow, compatible with LangGraph 0.0.25+
+
+- **Microservices Model Framework**: Decoupled model services that can be independently scaled and managed
+  - Model Registry for discovery and status tracking
+  - API Gateway for unified access to all model services
+  - Supports transformer-based language and embedding models
+  - Configurable via YAML for easy deployment and management
 
 - **Advanced RAG Architecture**: Sophisticated retrieval and processing with built-in document extraction capabilities, enhanced BM25 lexical retrieval for improved results
 
@@ -44,53 +50,96 @@ WebAgent uses a modular architecture with a clear separation of concerns:
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                              WebAgent Platform                                  │
 │                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │                                                                         │   │
-│  │  ┌───────────┐    ┌────────────────────────────────────────────────┐   │   │
-│  │  │           │    │               LangGraph Workflow                │   │   │
-│  │  │  FastAPI  │    │  ┌───────────┐        ┌───────────────────┐    │   │   │
-│  │  │  Server   │◄───┼─►│ Supervisor│        │ Research Agents    │    │   │   │
-│  │  │           │    │  │  Agent    │───────►│ ┌─────────────┐    │    │   │
-│  │  └───────────┘    │  └───────────┘        │ │Web Research │    │    │   │
-│  │        ▲          │        │              │ └─────────────┘    │    │   │
-│  │        │          │        │              │ ┌─────────────┐    │    │   │
-│  │        │          │        │              │ │  Internal   │    │    │   │
-│  │        │          │        │              │ │  Research   │    │    │   │
-│  │        │          │        │              │ └─────────────┘    │    │   │
-│  │  ┌───────────┐    │        │              └─────────┬─────────┘    │   │   │
+│  ┌─────────────────────────────────────────────────────────────────────────-┐   │
+│  │                                                                          │   │
+│  │  ┌───────────┐    ┌───────────────────────────────────────────────--─┐   │   │
+│  │  │           │    │               LangGraph Workflow                 │   │   │
+│  │  │  FastAPI  │    │  ┌───────────┐        ┌───────────────────┐      │   │   │
+│  │  │  Server   │◄───┼─►│ Supervisor│        │ Research Agents   │      │   │   │
+│  │  │           │    │  │  Agent    │───────►│ ┌─────────────┐   │      │   │   │
+│  │  └───────────┘    │  └───────────┘        │ │Web Research │   │      │   │   │ 
+│  │        ▲          │        │              │ └─────────────┘   │      │   │   │ 
+│  │        │          │        │              │ ┌─────────────┐   │      │   │   │
+│  │        │          │        │              │ │  Internal   │   │      │   │   │
+│  │        │          │        │              │ │  Research   │   │      │   │   │
+│  │        │          │        │              │ └─────────────┘   │      │   │   │
+│  │  ┌───────────┐    │        │              └─────────┬─────────┘      │   │   │
 │  │  │           │    │        │                        │                │   │   │
-│  │  │ Frontend  │    │        │              ┌─────────▼─────────┐     │   │   │
-│  │  │  Client   │◄───┼────────┼──────────────│  Senior Research  │     │   │   │
-│  │  │           │    │        │      ┌───────│      Agent        │     │   │   │
-│  │  └───────────┘    │        │      │       └─────────┬─────────┘     │   │   │
+│  │  │ Frontend  │    │        │              ┌─────────▼─────────┐      │   │   │
+│  │  │  Client   │◄───┼────────┼──────────────│  Senior Research  │      │   │   │
+│  │  │           │    │        │      ┌───────│      Agent        │      │   │   │
+│  │  └───────────┘    │        │      │       └─────────┬─────────┘      │   │   │
 │  │                   │        │      │                 │                │   │   │
-│  │                   │        │      │       ┌─────────▼─────────┐     │   │   │
-│  │                   │        │      │       │  Specialized      │     │   │   │
-│  │  ┌───────────┐    │        ▼      │       │     Agents        │     │   │   │
-│  │  │           │    │  ┌───────────┐│       │ ┌─────────────┐   │     │   │   │
-│  │  │Observa-   │    │  │ Document  ││       │ │    Data     │   │     │   │   │
-│  │  │bility &   │◄───┼──│Extraction ││       │ │  Analysis   │   │     │   │   │
-│  │  │Monitoring │    │  │   Agent   ││       │ └─────────────┘   │     │   │   │
-│  │  │           │    │  └───────────┘│       │ ┌─────────────┐   │     │   │   │
-│  │  └───────────┘    │        │      │       │ │   Coding    │   │     │   │   │
-│  │                   │        │      │       │ │  Assistant  │   │     │   │   │
-│  │                   │        │      │       │ └─────────────┘   │     │   │   │
-│  │                   │        │      │       └─────────┬─────────┘     │   │   │
+│  │                   │        │      │       ┌─────────▼─────────┐      │   │   │
+│  │                   │        │      │       │  Specialized      │      │   │   │
+│  │  ┌───────────┐    │        ▼      │       │     Agents        │      │   │   │
+│  │  │           │    │  ┌───────────┐│       │ ┌─────────────┐   │      │   │   │
+│  │  │Observa-   │    │  │ Document  ││       │ │    Data     │   │      │   │   │
+│  │  │bility &   │◄───┼──│Extraction ││       │ │  Analysis   │   │      │   │   │
+│  │  │Monitoring │    │  │   Agent   ││       │ └─────────────┘   │      │   │   │
+│  │  │           │    │  └───────────┘│       │ ┌─────────────┐   │      │   │   │
+│  │  └───────────┘    │        │      │       │ │   Coding    │   │      │   │   │
+│  │                   │        │      │       │ │  Assistant  │   │      │   │   │
+│  │                   │        │      │       │ └─────────────┘   │      │   │   │
+│  │                   │        │      │       └─────────┬─────────┘      │   │   │
 │  │                   │        │      │                 │                │   │   │
 │  │                   │        │      │                 │                │   │   │
 │  │                   │        ▼      ▼                 ▼                │   │   │
-│  │                   │  ┌─────────────────────────────────────────┐    │   │   │
-│  │                   │  │               Team Manager Agent         │    │   │   │
-│  │                   │  └─────────────────────────────────────────┘    │   │   │
+│  │                   │  ┌─────────────────────────────────────────┐     │   │   │
+│  │                   │  │               Team Manager Agent        │     │   │   │
+│  │                   │  └─────────────────────────────────────────┘     │   │   │
 │  │                   │                                                  │   │   │
 │  │                   └──────────────────────────────────────────────────┘   │   │
 │  │                                                                          │   │
-│  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌───────────┐ │   │
-│  │  │ Prometheus  │    │   Grafana   │    │ LangSmith   │    │ Security  │ │   │
-│  │  │  Metrics    │    │ Dashboards  │    │  Tracing    │    │ Module    │ │   │
-│  │  └─────────────┘    └─────────────┘    └─────────────┘    └───────────┘ │   │
+│  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌───────────┐  │   │
+│  │  │ Prometheus  │    │   Grafana   │    │ LangSmith   │    │ Security  │  │   │
+│  │  │  Metrics    │    │ Dashboards  │    │  Tracing    │    │ Module    │  │   │
+│  │  └─────────────┘    └─────────────┘    └─────────────┘    └───────────┘  │   │
 │  │                                                                          │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Model Microservices Architecture
+
+The WebAgent platform now includes a model microservices framework that allows each model to run as an independent service:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                       Model Microservices Framework                             │
+│                                                                                 │
+│  ┌─────────────┐                                                                │
+│  │   Client    │                                                                │
+│  │ Applications│                                                                │
+│  └──────┬──────┘                                                                │
+│         │                                                                       │
+│         ▼                                                                       │
+│  ┌─────────────────────────┐                                                    │
+│  │                         │                                                    │
+│  │     Model API Gateway   │                                                    │
+│  │                         │                                                    │
+│  └───┬─────────────┬───────┘                                                    │
+│      │             │                                                            │
+│      │             │                 ┌───────────────┐                          │
+│      │             │                 │               │                          │
+│      │             │◄───Discovery───►│ Model Registry│                          │
+│      │             │                 │               │                          │
+│      │             │                 └───────────────┘                          │
+│      │             │                                                            │
+│      ▼             ▼                                                            │
+│  ┌───────────┐ ┌───────────┐         ┌───────────┐        ┌───────────┐         │
+│  │           │ │           │         │           │        │           │         │
+│  │ LLM Model │ │ Embedding │         │ Classifier│        │ Other     │         │
+│  │ Service   │ │ Model     │         │ Model     │        │ Model     │         │
+│  │           │ │ Service   │         │ Service   │        │ Services  │         │
+│  └───────────┘ └───────────┘         └───────────┘        └───────────┘         │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │                                                                         │    │
+│  │                         Model Manager                                   │    │
+│  │                                                                         │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -118,20 +167,27 @@ WebAgent uses a modular architecture with a clear separation of concerns:
    - Specialized Agents: Data analysis and code generation
    - Team Manager Agent: Synthesizes outputs into final response
 
-4. **Document Processing Pipeline**: For extracting and processing document content
+4. **Model Microservices**: Independent model services that can be managed separately
+   - Model Registry: Tracks available models and their status
+   - Model API Gateway: Routes requests to appropriate model services
+   - Base Model Service: Foundation for all model services
+   - Model Manager: Orchestrates model service processes
+   - Configuration System: YAML-based configuration for model services
+
+5. **Document Processing Pipeline**: For extracting and processing document content
    - PDF, Word, HTML and text document support
    - Table and image extraction
    - Structural parsing and semantic chunking
    - Hierarchical document representation
    - Enhanced BM25 lexical search for better keyword matching
 
-5. **Integration Layer**: Connectors to external knowledge sources and APIs
+6. **Integration Layer**: Connectors to external knowledge sources and APIs
    - Web search integration (via Tavily)
    - Internal knowledge base (via vector database)
    - LLM provider integration (OpenAI, Anthropic)
    - LangSmith for tracing and debugging
 
-6. **Observability & Monitoring**: Tools for system monitoring and performance analysis
+7. **Observability & Monitoring**: Tools for system monitoring and performance analysis
    - Prometheus metrics collection
    - Grafana dashboards for visualization
    - Detailed diagnostics for system health
@@ -139,7 +195,7 @@ WebAgent uses a modular architecture with a clear separation of concerns:
    - Security monitoring and alerting
    - Comprehensive error tracking and reporting
 
-7. **Security Module**: Comprehensive security features
+8. **Security Module**: Comprehensive security features
    - JWT authentication and API key authorization
    - Input validation and sanitization
    - Rate limiting and request size validation
@@ -148,332 +204,136 @@ WebAgent uses a modular architecture with a clear separation of concerns:
    - Secure configuration management
    - Comprehensive middleware for request protection
 
-### Security Architecture
+## Running WebAgent
 
-WebAgent implements a multi-layered security architecture to protect against various threats:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                             Security Architecture                                    │
-│                                                                                      │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
-│  │                          Request Processing Pipeline                          │   │
-│  │                                                                              │   │
-│  │  ┌───────────┐    ┌───────────┐    ┌───────────┐    ┌───────────────────┐   │   │
-│  │  │ Rate      │    │ Request   │    │ Input     │    │                   │   │   │
-│  │  │ Limiting  │───►│ Size      │───►│ Validation│───►│  Authentication   │   │   │
-│  │  │ Middleware│    │ Validation│    │ Middleware│    │  & Authorization  │   │   │
-│  │  └───────────┘    └───────────┘    └───────────┘    └───────────────────┘   │   │
-│  │        │                                                      │              │   │
-│  │        ▼                                                      ▼              │   │
-│  │  ┌────────────────┐                                   ┌───────────────────┐ │   │
-│  │  │                │                                   │                   │ │   │
-│  │  │  Rejected if   │                                   │    JWT Token      │ │   │
-│  │  │  too many      │                                   │    Verification   │ │   │
-│  │  │  requests      │                                   │                   │ │   │
-│  │  └────────────────┘                                   └───────────────────┘ │   │
-│  │                                                              │              │   │
-│  │                                                              ▼              │   │
-│  │                                                      ┌───────────────────┐ │   │
-│  │                                                      │                   │ │   │
-│  │                                                      │    API Key        │ │   │
-│  │                                                      │    Validation     │ │   │
-│  │                                                      │                   │ │   │
-│  │                                                      └───────────────────┘ │   │
-│  │                                                                            │   │
-│  └──────────────────────────────────────────────────────────────────────────────┘   │
-│                                       │                                             │
-│                                       ▼                                             │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
-│  │                              Protected Resources                             │   │
-│  │                                                                              │   │
-│  │  ┌───────────┐    ┌───────────┐    ┌───────────┐    ┌───────────────────┐   │   │
-│  │  │ API       │    │ Agent     │    │ Document  │    │ Knowledge Base    │   │   │
-│  │  │ Endpoints │    │ Workflows │    │ Processing│    │ Access Controls   │   │   │
-│  │  │           │    │           │    │           │    │                   │   │   │
-│  │  └───────────┘    └───────────┘    └───────────┘    └───────────────────┘   │   │
-│  │                                                                              │   │
-│  └──────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                      │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
-│  │                           Error Handling & Logging                           │   │
-│  │                                                                              │   │
-│  │  ┌───────────────┐    ┌───────────────┐    ┌───────────────────────────┐    │   │
-│  │  │ Error Message │    │ Security      │    │ Comprehensive Audit       │    │   │
-│  │  │ Sanitization  │    │ Event Logging │    │ Trail                     │    │   │
-│  │  │               │    │               │    │                           │    │   │
-│  │  └───────────────┘    └───────────────┘    └───────────────────────────┘    │   │
-│  │                                                                              │   │
-│  └──────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                      │
-└──────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-This security architecture ensures:
-- Prevention of DoS attacks through rate limiting
-- Protection against oversized payloads
-- Input validation to prevent injection attacks
-- Authentication via JWT tokens or API keys
-- Proper error handling without leaking sensitive data
-- Comprehensive logging for security events
-- Clear separation between authentication, authorization, and resource access
-
-### Research Loop Architecture
-
-The WebAgent platform features an advanced research loop capability that enables iterative refinement of research results:
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Research Loop Architecture                       │
-│                                                                         │
-│  ┌──────────────┐     ┌────────────────┐     ┌───────────────────────┐  │
-│  │  Research    │     │  Research      │     │  Research Evaluation  │  │
-│  │   Request    │────►│  Execution     │────►│   & Analysis          │  │
-│  └──────────────┘     └────────────────┘     └───────────┬───────────┘  │
-│                                                          │              │
-│           ┌───────────────────────────────┐              │              │
-│           │                               │              │              │
-│           │                               ▼              ▼              │
-│  ┌────────▼─────────┐     ┌─────────────────────┐     ┌─────────────┐  │
-│  │  Final Research  │◄────│ Quality Assessment  │◄────┤  Iteration  │  │
-│  │  Synthesis       │  No │ Meets Threshold?    │  No │  Count < 3? │  │
-│  └──────────────────┘     └─────────┬───────────┘     └─────┬───────┘  │
-│                                     │ Yes                   │ Yes      │
-│                                     │                       │          │
-│                                     │                 ┌─────▼───────┐  │
-│                                     └────────────────►│ Additional  │  │
-│                                                       │ Research    │  │
-│                                                       └─────────────┘  │
-│                                                                        │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-This loop enables the Senior Research Agent to:
-1. Evaluate research completeness with a numerical score (1-10)
-2. Identify specific gaps and missing information
-3. Formulate targeted follow-up questions
-4. Request additional research from the appropriate agents
-5. Re-evaluate and refine until quality threshold is met
-6. Synthesize the final comprehensive report
-
-## Installation and Setup
-
-Follow these steps to set up the WebAgent platform on your local environment:
+Follow these steps to set up and run the WebAgent platform:
 
 ### Prerequisites
 
-- Python 3.10+ 
-- Node.js 18+ (for frontend)
-- Conda (recommended for environment management)
-- Git
+- Python 3.12 or higher
+- Conda for environment management
+- Git for version control
 
-### Backend Setup
+### Setup Environment
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourorg/WebAgent.git
-   cd WebAgent
+   git clone https://github.com/Positron00/WebAgent.git
+   cd webagent
    ```
 
-2. Create and activate a conda environment:
+2. Create and activate conda environment:
    ```bash
    conda create -n agents python=3.12
    conda activate agents
    ```
 
-3. Install backend dependencies:
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. Configure environment variables:
+4. Set up configuration:
    ```bash
    cp backend/config/example.yaml backend/config/dev.yaml
-   ```
-   Edit the `dev.yaml` file to set your API keys, database connections, and other configuration parameters.
-
-### Frontend Setup (Optional)
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
+   # Edit dev.yaml with your configuration
    ```
 
-2. Install frontend dependencies:
-   ```bash
-   npm install
-   ```
+### Running the Application
 
-## Running WebAgent
-
-### Running the Backend
-
-1. Ensure your conda environment is activated:
-   ```bash
-   conda activate agents
-   ```
-
-2. Start the backend server:
+1. Start the main application:
    ```bash
    python -m backend.main
    ```
 
-   The server will start on http://localhost:8000 by default, with API endpoints available at http://localhost:8000/api/v1/
-
-3. Access the OpenAPI documentation:
-   Open your browser and navigate to http://localhost:8000/docs to view the API documentation.
-
-### Running the Frontend (Optional)
-
-1. Navigate to the frontend directory:
+2. Run Model Services (optional):
    ```bash
-   cd frontend
-   ```
-
-2. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-   The frontend will be available at http://localhost:3000 (or port 3001 if 3000 is already occupied).
-
-### Using WebAgent
-
-1. API Usage Example:
-   ```bash
-   curl -X POST "http://localhost:8000/api/v1/chat/completions" \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer YOUR_API_KEY" \
-     -d '{"query": "What are the benefits of multi-agent AI systems?"}'
-   ```
-
-2. Programmatic Usage:
-   ```python
-   import requests
+   # Start the model manager
+   python -m backend.models.run_manager
    
-   response = requests.post(
-       "http://localhost:8000/api/v1/chat/completions",
-       headers={"Authorization": "Bearer YOUR_API_KEY"},
-       json={"query": "What are the benefits of multi-agent AI systems?"}
-   )
-   
-   print(response.json())
+   # Or start individual model services
+   python -m backend.models.run_model_service --model-id llama2-7b
    ```
+
+3. Access the application:
+   - Web UI: http://localhost:3000
+   - API: http://localhost:8000/api/v1
+   - Swagger UI: http://localhost:8000/docs
+   - Model API Gateway: http://localhost:8000/model-api
 
 ## Testing and Diagnostics
 
-WebAgent includes a comprehensive test suite and diagnostic tools to ensure everything is working correctly.
+WebAgent includes comprehensive testing and diagnostic tools.
 
 ### Running Tests
 
-1. Run the LangGraph workflow tests:
+1. Run all tests:
    ```bash
+   pytest
+   ```
+
+2. Run specific test modules:
+   ```bash
+   # Run LangGraph workflow tests
    python -m backend.tests.test_langgraph
-   ```
-
-2. Run the security tests:
-   ```bash
+   
+   # Run security tests
    python -m backend.tests.test_security
+   
+   # Run model service tests
+   python -m backend.tests.test_models
    ```
 
-3. Run all tests with pytest:
+3. Run with coverage:
    ```bash
-   pytest backend/tests/
+   pytest --cov=backend
    ```
 
-### Diagnosing Issues
+### Diagnostics
 
-1. Check the logs:
-   Logs are stored in the `logs/` directory. You can examine them for error messages and debugging information:
+1. Check system status:
+   ```bash
+   python -m backend.diagnostics.system_check
+   ```
+
+2. Check model services status:
+   ```bash
+   curl http://localhost:8000/model-api/metrics
+   ```
+
+3. View logs:
    ```bash
    tail -f logs/webagent-dev.log
    ```
 
-2. Enable debug mode:
-   Set `DEBUG: true` in your `dev.yaml` configuration file to enable more verbose logging.
+4. View LangSmith traces (if configured):
+   - Visit LangSmith at https://smith.langchain.com
+   - Filter by project "webagent-research"
 
-3. Use LangSmith for tracing:
-   WebAgent is integrated with LangSmith for tracing and debugging agent workflows. Configure your LangSmith API key in the `dev.yaml` file:
-   ```yaml
-   LANGSMITH:
-     API_KEY: your_langsmith_api_key
-     PROJECT: webagent-research
-   ```
+### Common Issues and Troubleshooting
 
-4. Monitoring API endpoints:
-   The system health can be checked via the `/health` endpoint:
-   ```bash
-   curl http://localhost:8000/health
-   ```
+1. **Connection Errors with Model Services**
+   - Ensure model services are running and registered correctly
+   - Check ports and host configurations in `backend/models/config/models.yaml`
+   - Verify model paths and accessibility
 
-5. Performance monitoring:
-   If you've enabled Prometheus metrics, they're available at:
-   ```bash
-   curl http://localhost:8000/metrics
-   ```
+2. **LangGraph Workflow Issues**
+   - Check for proper agent implementation and integration
+   - Verify state transitions in the workflow
+   - Review LangSmith traces for detailed execution information
 
-### Common Issues and Solutions
+3. **Security Test Failures**
+   - Ensure rate limiting is properly configured
+   - Check error message redaction in security module
+   - Verify middleware ordering in FastAPI application
 
-1. **Import Errors**: Ensure your conda environment is activated and all dependencies are installed.
+## Contributing
 
-2. **API Key Errors**: Verify that all required API keys are correctly set in your configuration file.
-
-3. **LangGraph Workflow Issues**: If you're experiencing issues with the agent workflow:
-   - Check that your LangGraph version matches the required version (0.3.5+)
-   - Verify that all agents are correctly initialized
-   - Look at the workflow state transitions in the logs
-
-4. **Memory or Performance Issues**: 
-   - Adjust the chunk sizes for document processing in the configuration
-   - Reduce the maximum tokens for LLM calls
-   - Implement proper caching for API responses
-
-5. **Security Test Failures**:
-   - Ensure that middleware is correctly configured
-   - Check that rate limiting is properly set up
-   - Verify that authentication is correctly implemented
-
-For more detailed diagnostics, use the built-in observability features and consult the API documentation.
-
-## Development
-
-### Project Structure
-
-```
-webagent/
-├── backend/                  # Backend Python code
-│   ├── app/                  # Main application
-│   │   ├── agents/           # Agent implementations
-│   │   ├── api/              # API endpoints
-│   │   ├── core/             # Core functionality
-│   │   ├── graph/            # LangGraph workflows
-│   │   ├── models/           # Data models
-│   │   ├── services/         # Service integrations
-│   │   └── utils/            # Utility functions
-│   ├── tests/                # Test cases
-│   └── main.py               # Application entry point
-├── frontend/                 # Frontend React/Next.js code
-├── scripts/                  # Utility scripts
-└── docs/                     # Documentation
-```
-
-### Running Tests
-
-```bash
-cd backend
-python -m pytest
-```
-
-### Adding a New Agent
-
-1. Create a new agent file in `backend/app/agents/`
-2. Implement the agent class extending `BaseAgent`
-3. Add a factory function to get the agent instance
-4. Update the workflow in `backend/app/graph/workflows.py`
+We welcome contributions to the WebAgent platform. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
