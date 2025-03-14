@@ -8,8 +8,9 @@ import logging
 from typing import Dict, List, Optional, Any
 
 from langchain_core.runnables import RunnableConfig
-from langgraph.graph import END, StateGraph, WorkflowState
+from langgraph.graph import END, StateGraph
 
+from backend.app.models.task import WorkflowState
 from backend.app.agents.supervisor import get_supervisor_agent
 from backend.app.agents.web_research import get_web_research_agent
 from backend.app.agents.internal_research import get_internal_research_agent
@@ -17,12 +18,12 @@ from backend.app.agents.senior_research import get_senior_research_agent
 from backend.app.agents.data_analysis import get_data_analysis_agent
 from backend.app.agents.coding_assistant import get_coding_assistant_agent
 from backend.app.agents.team_manager import get_team_manager_agent
-from backend.app.config.environment import get_env_config
+from backend.app.core.config import settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Singleton instance of the workflow
+# Singleton instance of the agent workflow
 _workflow_instance = None
 
 def build_agent_workflow() -> StateGraph:
@@ -30,31 +31,30 @@ def build_agent_workflow() -> StateGraph:
     Build the agent workflow graph.
     
     Returns:
-        StateGraph: The compiled workflow graph
+        StateGraph: The compiled agent workflow graph.
     """
-    # Get environment configuration
-    env_config = get_env_config()
+    logger.info("Building agent workflow graph")
+    
+    # Initialize agents
+    supervisor = get_supervisor_agent()
+    web_research = get_web_research_agent()
+    internal_research = get_internal_research_agent()
+    senior_research = get_senior_research_agent()
+    data_analysis = get_data_analysis_agent()
+    coding_assistant = get_coding_assistant_agent()
+    team_manager = get_team_manager_agent()
     
     # Create a new graph
     workflow = StateGraph(WorkflowState)
     
-    # Initialize agents
-    supervisor_agent = get_supervisor_agent()
-    web_research_agent = get_web_research_agent()
-    internal_research_agent = get_internal_research_agent()
-    senior_research_agent = get_senior_research_agent()
-    data_analysis_agent = get_data_analysis_agent()
-    coding_assistant_agent = get_coding_assistant_agent()
-    team_manager_agent = get_team_manager_agent()
-    
     # Initialize the workflow graph
-    workflow.add_node("supervisor", supervisor_agent.run)
-    workflow.add_node("web_research", web_research_agent.run)
-    workflow.add_node("internal_research", internal_research_agent.run)
-    workflow.add_node("senior_research", senior_research_agent.run)
-    workflow.add_node("data_analysis", data_analysis_agent.run)
-    workflow.add_node("coding_assistant", coding_assistant_agent.run)
-    workflow.add_node("team_manager", team_manager_agent.run)
+    workflow.add_node("supervisor", supervisor.run)
+    workflow.add_node("web_research", web_research.run)
+    workflow.add_node("internal_research", internal_research.run)
+    workflow.add_node("senior_research", senior_research.run)
+    workflow.add_node("data_analysis", data_analysis.run)
+    workflow.add_node("coding_assistant", coding_assistant.run)
+    workflow.add_node("team_manager", team_manager.run)
     
     # Define the research routing logic
     def research_router(state: WorkflowState) -> List[str]:

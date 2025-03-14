@@ -19,8 +19,11 @@ from app.core.config import settings
 logs_dir = Path("./logs")
 logs_dir.mkdir(exist_ok=True)
 
+# Get environment or default to 'dev'
+env = getattr(settings, "WEBAGENT_ENV", os.getenv("WEBAGENT_ENV", "dev"))
+
 # Determine log file path
-log_file = logs_dir / f"webagent-{settings.WEBAGENT_ENV}.log"
+log_file = logs_dir / f"webagent-{env}.log"
 
 # Configure logging levels based on environment
 if settings.DEBUG_MODE:
@@ -105,7 +108,7 @@ console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setLevel(log_level)
 
 # Create file handler with rotation
-if settings.WEBAGENT_ENV == "prod":
+if env == "prod":
     # In production, rotate logs daily and keep 30 days of logs
     file_handler = TimedRotatingFileHandler(
         filename=log_file,
@@ -126,7 +129,7 @@ else:
 file_handler.setLevel(log_level)
 
 # Set formatters
-if settings.WEBAGENT_ENV == "dev":
+if env == "dev":
     # Use readable format for development
     console_format = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -168,9 +171,44 @@ def get_logger(name: str) -> logging.Logger:
     """Get a logger with the given name."""
     return logging.getLogger(f"webagent.{name}")
 
+def setup_logger(name: str, log_level: int = None) -> logging.Logger:
+    """
+    Set up a logger with the given name and log level.
+    
+    Args:
+        name: Name of the logger
+        log_level: Log level (defaults to the level set in settings)
+        
+    Returns:
+        Configured logger instance
+    """
+    # Get the logger
+    logger_instance = get_logger(name)
+    
+    # Set log level (use the one from settings if not specified)
+    if log_level is None:
+        log_level = logging.DEBUG if settings.DEBUG_MODE else logging.INFO
+    
+    logger_instance.setLevel(log_level)
+    
+    # Ensure the logger has handlers (might already have them from root logger)
+    if not logger_instance.handlers:
+        # Create console handler
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(log_level)
+        
+        # Set formatter
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        console_handler.setFormatter(formatter)
+        
+        # Add handler to logger
+        logger_instance.addHandler(console_handler)
+    
+    return logger_instance
+
 # Log startup information
 logger.info(
-    f"Logger initialized - Environment: {settings.WEBAGENT_ENV}, "
+    f"Logger initialized - Environment: {env}, "
     f"Level: {logging.getLevelName(log_level)}, "
     f"File: {log_file}"
 ) 

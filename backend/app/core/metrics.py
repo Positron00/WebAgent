@@ -316,4 +316,226 @@ def setup_metrics(app: FastAPI):
         return Response(
             content=generate_latest(REGISTRY),
             media_type="text/plain"
-        ) 
+        )
+
+# Dictionary to store execution times for functions
+_execution_times = {}
+
+def timing_decorator(func):
+    """
+    Decorator to measure and record function execution time.
+    
+    Args:
+        func: Function to measure
+        
+    Returns:
+        Wrapped function that measures execution time
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # Get function name
+        func_name = func.__name__
+        
+        # Initialize stats if not already present
+        if func_name not in _execution_times:
+            _execution_times[func_name] = {
+                "total": 0.0,
+                "count": 0,
+                "min": float("inf"),
+                "max": 0.0,
+                "average": 0.0
+            }
+        
+        # Measure execution time
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        duration = time.time() - start_time
+        
+        # Update stats
+        _execution_times[func_name]["total"] += duration
+        _execution_times[func_name]["count"] += 1
+        _execution_times[func_name]["min"] = min(_execution_times[func_name]["min"], duration)
+        _execution_times[func_name]["max"] = max(_execution_times[func_name]["max"], duration)
+        _execution_times[func_name]["average"] = _execution_times[func_name]["total"] / _execution_times[func_name]["count"]
+        
+        # Log execution time
+        logger.debug(f"Function {func_name} executed in {duration:.4f} seconds")
+        
+        return result
+    
+    return wrapper
+
+def get_metric_statistics():
+    """
+    Get statistics for all metrics.
+    
+    Returns:
+        Dictionary with metric statistics
+    """
+    # Get execution times
+    execution_times = {k: v for k, v in _execution_times.items()}
+    
+    # Get Prometheus metrics
+    metrics = {}
+    
+    # Add HTTP request metrics
+    try:
+        metrics["http_requests"] = {
+            "total": sum([c.value for c in REQUEST_COUNT._metrics.values()]),
+            "in_progress": sum([g.value for g in REQUESTS_IN_PROGRESS._metrics.values()]),
+            "latency": {
+                "average": _get_histogram_average(REQUEST_LATENCY),
+                "p50": _get_histogram_quantile(REQUEST_LATENCY, 0.5),
+                "p95": _get_histogram_quantile(REQUEST_LATENCY, 0.95),
+                "p99": _get_histogram_quantile(REQUEST_LATENCY, 0.99)
+            }
+        }
+    except Exception as e:
+        logger.warning(f"Error getting HTTP request metrics: {str(e)}")
+        metrics["http_requests"] = {"error": str(e)}
+    
+    # Add LLM request metrics
+    try:
+        metrics["llm_requests"] = {
+            "total": sum([c.value for c in LLM_REQUEST_COUNT._metrics.values()]),
+            "latency": {
+                "average": _get_histogram_average(LLM_REQUEST_LATENCY),
+                "p50": _get_histogram_quantile(LLM_REQUEST_LATENCY, 0.5),
+                "p95": _get_histogram_quantile(LLM_REQUEST_LATENCY, 0.95),
+                "p99": _get_histogram_quantile(LLM_REQUEST_LATENCY, 0.99)
+            },
+            "tokens": {
+                "prompt": sum([c.value for c, l in LLM_TOKEN_COUNT._metrics.items() if l["type"] == "prompt"]),
+                "completion": sum([c.value for c, l in LLM_TOKEN_COUNT._metrics.items() if l["type"] == "completion"])
+            }
+        }
+    except Exception as e:
+        logger.warning(f"Error getting LLM request metrics: {str(e)}")
+        metrics["llm_requests"] = {"error": str(e)}
+    
+    # Add task metrics
+    try:
+        metrics["tasks"] = {
+            "total": sum([c.value for c in TASK_COUNT._metrics.values()]),
+            "duration": {
+                "average": _get_histogram_average(TASK_DURATION),
+                "p50": _get_histogram_quantile(TASK_DURATION, 0.5),
+                "p95": _get_histogram_quantile(TASK_DURATION, 0.95),
+                "p99": _get_histogram_quantile(TASK_DURATION, 0.99)
+            }
+        }
+    except Exception as e:
+        logger.warning(f"Error getting task metrics: {str(e)}")
+        metrics["tasks"] = {"error": str(e)}
+    
+    # Add error metrics
+    try:
+        metrics["errors"] = {
+            "total": sum([c.value for c in ERROR_COUNT._metrics.values()]),
+            "by_type": {l["type"]: c.value for c, l in ERROR_COUNT._metrics.items()}
+        }
+    except Exception as e:
+        logger.warning(f"Error getting error metrics: {str(e)}")
+        metrics["errors"] = {"error": str(e)}
+    
+    return {
+        "execution_times": execution_times,
+        "metrics": metrics
+    }
+
+def _get_histogram_average(histogram):
+    """
+    Calculate the average value from a Prometheus histogram.
+    
+    Args:
+        histogram: Prometheus histogram
+        
+    Returns:
+        Average value or None if no data
+    """
+    total_sum = 0
+    total_count = 0
+    
+    for metric in histogram._metrics.values():
+        total_sum += metric.sum
+        total_count += metric.sample_count
+    
+    if total_count > 0:
+        return total_sum / total_count
+    else:
+        return None
+
+def _get_histogram_quantile(histogram, quantile):
+    """
+    Calculate a quantile from a Prometheus histogram.
+    
+    Args:
+        histogram: Prometheus histogram
+        quantile: Quantile to calculate (0.0 to 1.0)
+        
+    Returns:
+        Quantile value or None if no data
+    """
+    # This is a simplified implementation
+    # For accurate quantiles, use Prometheus's built-in quantile functions
+    
+    # Collect all observations
+    observations = []
+    
+    for metric in histogram._metrics.values():
+        # Extract bucket boundaries and counts
+        buckets = sorted([(float(k.split('_')[-1]), v) for k, v in metric.buckets.items()])
+        
+        # Skip if no data
+        if not buckets:
+            continue
+        
+        # Add observations based on bucket counts
+        for i, (upper_bound, count) in enumerate(buckets):
+            if i == 0:
+                # First bucket
+                observations.extend([upper_bound] * count)
+            else:
+                # Subsequent buckets
+                prev_count = buckets[i-1][1]
+                observations.extend([upper_bound] * (count - prev_count))
+    
+    # Calculate quantile
+    if observations:
+        observations.sort()
+        index = int(quantile * len(observations))
+        return observations[index]
+    else:
+        return None
+
+def log_memory_usage():
+    """
+    Log current memory usage.
+    
+    Returns:
+        Dictionary with memory usage information
+    """
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        
+        # Update memory usage gauge
+        MEMORY_USAGE.labels(type="rss").set(memory_info.rss)
+        MEMORY_USAGE.labels(type="vms").set(memory_info.vms)
+        
+        memory_usage = {
+            "rss": memory_info.rss / 1024 / 1024,  # MB
+            "vms": memory_info.vms / 1024 / 1024,  # MB
+            "percent": process.memory_percent()
+        }
+        
+        logger.debug(f"Memory usage: {memory_usage['rss']:.2f} MB (RSS), {memory_usage['percent']:.2f}%")
+        
+        return memory_usage
+    except ImportError:
+        logger.warning("psutil not installed, cannot log memory usage")
+        return {"error": "psutil not installed"}
+    except Exception as e:
+        logger.error(f"Error logging memory usage: {str(e)}")
+        return {"error": str(e)} 

@@ -1,0 +1,61 @@
+2025-03-14 09:02:18,813 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:02:18,958 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:02:18,958 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:03:26,430 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:03:26,681 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:03:26,681 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:03:26,682 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 09:03:26,682 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 09:03:26,712 - webagent - DEBUG - Function check_system_info executed in 0.0297 seconds
+2025-03-14 09:03:26,712 - webagent - DEBUG - Function check_system_info executed in 0.0297 seconds
+2025-03-14 09:03:27,279 - webagent - DEBUG - Function check_dependencies executed in 0.5674 seconds
+2025-03-14 09:03:27,279 - webagent - DEBUG - Function check_dependencies executed in 0.5674 seconds
+2025-03-14 09:03:27,279 - webagent.webagent_example - ERROR - Error running diagnostics: 'YAMLConfigSettings' object has no attribute 'WEBAGENT_ENV'
+2025-03-14 09:03:27,279 - webagent.webagent_example - ERROR - Error running diagnostics: 'YAMLConfigSettings' object has no attribute 'WEBAGENT_ENV'
+2025-03-14 09:04:21,371 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:04:21,680 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:04:21,680 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:04:21,680 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 09:04:21,680 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 09:04:21,706 - webagent - DEBUG - Function check_system_info executed in 0.0261 seconds
+2025-03-14 09:04:21,706 - webagent - DEBUG - Function check_system_info executed in 0.0261 seconds
+2025-03-14 09:04:21,842 - webagent - DEBUG - Function check_dependencies executed in 0.1357 seconds
+2025-03-14 09:04:21,842 - webagent - DEBUG - Function check_dependencies executed in 0.1357 seconds
+2025-03-14 09:04:21,843 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-14 09:04:21,843 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-14 09:04:21,849 - webagent - DEBUG - Function check_agents executed in 0.0063 seconds
+2025-03-14 09:04:21,849 - webagent - DEBUG - Function check_agents executed in 0.0063 seconds
+2025-03-14 09:04:21,850 - webagent - DEBUG - Function check_workflow executed in 0.0013 seconds
+2025-03-14 09:04:21,850 - webagent - DEBUG - Function check_workflow executed in 0.0013 seconds
+2025-03-14 09:04:22,058 - webagent - DEBUG - Function check_performance_metrics executed in 0.2081 seconds
+2025-03-14 09:04:22,058 - webagent - DEBUG - Function check_performance_metrics executed in 0.2081 seconds
+2025-03-14 09:04:22,060 - webagent - DEBUG - Function check_security_status executed in 0.0017 seconds
+2025-03-14 09:04:22,060 - webagent - DEBUG - Function check_security_status executed in 0.0017 seconds
+2025-03-14 09:04:22,060 - webagent - DEBUG - Function run_all_checks executed in 0.3803 seconds
+2025-03-14 09:04:22,060 - webagent - DEBUG - Function run_all_checks executed in 0.3803 seconds
+2025-03-14 09:04:22,060 - webagent.webagent_example - ERROR - Error running diagnostics: 'YAMLConfigSettings' object has no attribute 'WEBAGENT_ENV'
+2025-03-14 09:04:22,060 - webagent.webagent_example - ERROR - Error running diagnostics: 'YAMLConfigSettings' object has no attribute 'WEBAGENT_ENV'
+2025-03-14 09:05:11,068 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:05:11,187 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:05:11,187 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:05:11,187 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 09:05:11,187 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 09:05:11,212 - webagent - DEBUG - Function check_system_info executed in 0.0249 seconds
+2025-03-14 09:05:11,212 - webagent - DEBUG - Function check_system_info executed in 0.0249 seconds
+2025-03-14 09:05:11,349 - webagent - DEBUG - Function check_dependencies executed in 0.1365 seconds
+2025-03-14 09:05:11,349 - webagent - DEBUG - Function check_dependencies executed in 0.1365 seconds
+2025-03-14 09:05:11,349 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-14 09:05:11,349 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-14 09:05:11,352 - webagent - DEBUG - Function check_agents executed in 0.0026 seconds
+2025-03-14 09:05:11,352 - webagent - DEBUG - Function check_agents executed in 0.0026 seconds
+2025-03-14 09:05:11,353 - webagent - DEBUG - Function check_workflow executed in 0.0009 seconds
+2025-03-14 09:05:11,353 - webagent - DEBUG - Function check_workflow executed in 0.0009 seconds
+2025-03-14 09:05:11,563 - webagent - DEBUG - Function check_performance_metrics executed in 0.2100 seconds
+2025-03-14 09:05:11,563 - webagent - DEBUG - Function check_performance_metrics executed in 0.2100 seconds
+2025-03-14 09:05:11,564 - webagent - DEBUG - Function check_security_status executed in 0.0006 seconds
+2025-03-14 09:05:11,564 - webagent - DEBUG - Function check_security_status executed in 0.0006 seconds
+2025-03-14 09:05:11,564 - webagent - DEBUG - Function run_all_checks executed in 0.3767 seconds
+2025-03-14 09:05:11,564 - webagent - DEBUG - Function run_all_checks executed in 0.3767 seconds
+2025-03-14 09:05:34,139 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:05:34,239 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 09:05:34,239 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
