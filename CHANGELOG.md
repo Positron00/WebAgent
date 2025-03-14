@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.2] - 2025-03-14
+
+### Fixed
+- Resolved Pydantic protected namespace warnings in model services
+- Fixed model registry multiple values issue for 'model_id' keyword
+- Updated model service API to use lifespan event handlers instead of deprecated on_event
+- Improved model service test reliability with better mocking
+- Addressed deprecated dict method warnings with model_dump in Pydantic models
+
+### Changed
+- Enhanced diagnostic output with more detailed performance metrics
+- Improved test organization for better maintainability
+- Updated model service process handling with safer termination
+- Standardized model service configuration validation
+- Enhanced testing robustness for model management
+
 ## [2.6.1] - 2025-03-14
 
 ### Added

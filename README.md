@@ -2,7 +2,7 @@
 
 A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-![WebAgent Platform Version](https://img.shields.io/badge/version-2.6.1-blue)
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.6.2-blue)
 ![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--14-brightgreen)
 
 ## Overview
@@ -58,7 +58,7 @@ WebAgent uses a modular architecture with a clear separation of concerns:
 │  │  │  Server   │◄───┼─►│ Supervisor│        │ Research Agents   │      │   │   │
 │  │  │           │    │  │  Agent    │───────►│ ┌─────────────┐   │      │   │   │
 │  │  └───────────┘    │  └───────────┘        │ │Web Research │   │      │   │   │ 
-│  │        ▲          │        │              │ └─────────────┘   │      │   │   │ 
+│  │        ▲          │        │              │ └─────────────┘   │      │   │   │
 │  │        │          │        │              │ ┌─────────────┐   │      │   │   │
 │  │        │          │        │              │ │  Internal   │   │      │   │   │
 │  │        │          │        │              │ │  Research   │   │      │   │   │
