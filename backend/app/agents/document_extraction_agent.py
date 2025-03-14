@@ -32,11 +32,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 
 # Import local modules
-from backend.app.core.config import settings
-from backend.app.services.llm import get_llm
-from backend.app.agents.base_agent import BaseAgent
-from backend.app.utils.metrics import timing_decorator, log_memory_usage
-from backend.app.utils.document_utils import extract_text_from_document
+from app.core.config import settings
+from app.services.llm import get_llm
+from app.agents.base_agent import BaseAgent
+from app.utils.metrics import timing_decorator, log_memory_usage
+from app.utils.document_utils import extract_text_from_document
+from langchain.output_parsers import PydanticOutputParser
+from langchain.schema.runnable import RunnableLambda
 
 # Initialize logging
 logger = logging.getLogger(__name__)

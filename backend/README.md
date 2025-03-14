@@ -1,257 +1,316 @@
 # WebAgent Backend
 
-This is the Python-based microservice backend for the WebAgent platform. It uses LangGraph to orchestrate a multi-agent system for research, analysis, and report generation.
-
-**Version: 2.4.6** - Fixed Jest configuration issues for reliable test execution. The update resolves environment teardown problems, properly excludes non-test files from testing, and ensures all 27 tests pass consistently. This maintenance release improves developer experience with more reliable testing infrastructure.
-
-## Key Features
-
-- Complete multi-agent system with seven specialized agents
-- Together AI integration with Llama 3.3 70B Instruct Turbo Free model
-- Frontend API compatibility layer for seamless integration
-- Advanced data analysis and visualization capabilities
-- Comprehensive report generation with Team Manager Agent
-- Full LangSmith integration for tracing and observability
-- Security features including rate limiting, JWT authentication, and input validation
-- Prometheus metrics for comprehensive monitoring
-- Structured logging with request tracking
-- Kubernetes deployment support
+The backend component of the WebAgent platform, built with FastAPI, LangGraph, and LangChain.
 
 ## Architecture
 
-The backend uses a microservice architecture with the following components:
+The WebAgent backend is built on a multi-agent architecture that leverages LangGraph for workflow orchestration. The system consists of several specialized agents that work together to process complex research tasks:
 
-- FastAPI server for REST API endpoints
-- LangGraph for agent orchestration
-- OpenAI and Together AI integration for LLMs
-- Redis for task queueing and caching
-- ChromaDB for vector storage
-- Prometheus client for metrics
-- Structured logging with JSON output
-
-## Security Features
-
-- Rate limiting to prevent abuse
-- Security HTTP headers to protect against common web vulnerabilities
-- Input validation and sanitization
-- JWT token-based authentication
-- Secure password hashing with bcrypt
-- Request size limiting
-- Middleware-based security measures
-- Environment variable isolation
-- Comprehensive error handling and logging
-
-## Monitoring & Observability
-
-- Prometheus metrics for API and LLM requests
-- Task duration and status tracking
-- Structured logging with JSON format
-- Request ID tracking across the application
-- Health check endpoints with detailed status
-- LangSmith integration for LLM tracing
-- Alert rules for critical conditions
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.10 or higher
-- Docker and Docker Compose (optional)
-- OpenAI API key
-- Together AI API key (optional)
-- Tavily API key (optional for web search)
-- LangSmith API key (optional for tracing)
-
-### Environment Configuration
-
-The application supports three deployment environments with dedicated configuration files:
-
-1. **Development (`config/dev.yaml`)**: 
-   - Debug mode enabled
-   - Local database paths
-   - Basic search depth
-   - Detailed logging
-
-2. **UAT Testing (`config/uat.yaml`)**:
-   - Production-like settings
-   - Container-aware database configuration
-   - Comprehensive search depth
-   - Increased task limits
-
-3. **Production (`config/prod.yaml`)**:
-   - Production-optimized settings
-   - Strict security parameters
-   - Cluster-aware database references
-   - Higher concurrency limits
-   - Minimal logging
-
-#### Selecting an Environment
-
-Set the `WEBAGENT_ENV` environment variable to choose which configuration to use:
-
-```bash
-# Development (default if not specified)
-export WEBAGENT_ENV=dev
-
-# User Acceptance Testing
-export WEBAGENT_ENV=uat
-
-# Production
-export WEBAGENT_ENV=prod
+```
+┌─────────────────────────────────────────────────────┐
+│                  LangGraph Workflow                 │
+│                                                     │
+│  ┌─────────┐   ┌────────────┐   ┌────────────────┐  │
+│  │Supervisor│──►│ Research   │──►│ Senior        │  │
+│  │ Agent    │   │ Agents     │   │ Research      │  │
+│  └─────────┘   └────────────┘   │ Agent         │  │
+│       │             ▲           └───────┬────────┘  │
+│       │             │                   │           │
+│       ▼             └───────────────────┘           │
+│  ┌─────────────┐            │                       │
+│  │ Document    │            ▼                       │
+│  │ Extraction  │    ┌────────────────┐              │
+│  │ Agent       │    │ Specialized    │              │
+│  └─────────────┘    │ Agents         │              │
+│       │             └───────┬────────┘              │
+│       │                     │                       │
+│       └─────────┐    ┌─────┘                       │
+│                 ▼    ▼                              │
+│          ┌───────────────────┐                      │
+│          │ Team Manager      │                      │
+│          │ Agent             │                      │
+│          └───────────────────┘                      │
+└─────────────────────────────────────────────────────┘
 ```
 
-#### Configuration Priority
+### Core Components
 
-Settings are loaded with the following priority (highest to lowest):
-1. `.env.local` file (highest priority, specifically for API keys and sensitive information)
-2. Environment variables with `WEBAGENT_` prefix 
-3. Environment-specific YAML file (`dev.yaml`, `uat.yaml`, or `prod.yaml`)
-4. `.env` file values (lowest priority, default fallback)
-5. Default values in code
+1. **Supervisor Agent**: The entry point for all requests, analyzes user queries and orchestrates the workflow
+2. **Research Agents**: Gather information from the web and internal knowledge sources
+3. **Senior Research Agent**: Evaluates research quality and can request additional research in a feedback loop
+4. **Document Extraction Agent**: Processes documents to extract structured information
+5. **Specialized Agents**: Handle specific tasks like data analysis and code generation
+6. **Team Manager Agent**: Synthesizes outputs from multiple agents into a final response
 
-The recommended practice is:
-- Store API keys and sensitive information in `.env.local` (never commit to version control)
-- Configure environment-specific settings in YAML files
-- Use environment variables for deployment-specific overrides
-- Keep fallback/default values in `.env` and code
+### Key Features
 
-### Running with Docker Compose
+- **LangGraph Workflow**: Flexible agent orchestration with conditional routing
+- **Document Processing**: Extract and analyze information from various document formats
+- **Research Loop**: Iterative research capabilities with up to 3 feedback loops
+- **API Integration**: FastAPI server with comprehensive endpoint documentation
+- **Diagnostics**: Built-in system monitoring and diagnostics
 
-The easiest way to start the backend is with Docker Compose:
+## Prerequisites
+
+- Python 3.10+
+- OpenAI API key or Anthropic API key
+- LangSmith API key (optional, for tracing)
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-org/webagent.git
+   cd webagent/backend
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Create a `.env` file with your environment variables:
+   ```
+   # Core settings
+   WEBAGENT_ENV=development
+   DEBUG_MODE=true
+   LOG_LEVEL=INFO
+   
+   # LLM Provider
+   LLM_PROVIDER=openai
+   OPENAI_API_KEY=your_openai_key_here
+   ANTHROPIC_API_KEY=your_anthropic_key_here
+   
+   # LangSmith (optional)
+   LANGSMITH_API_KEY=your_langsmith_key_here
+   LANGSMITH_PROJECT=webagent
+   LANGSMITH_ENABLED=false
+   ```
+
+## Running the Application
+
+### Development Server
+
+Start the FastAPI server with hot reloading:
 
 ```bash
-# Start with development configuration (default)
-docker-compose up
-
-# Specify environment
-WEBAGENT_ENV=uat docker-compose up
+uvicorn main:app --reload
 ```
 
-This will start the FastAPI server and Redis container.
+Access the API documentation at http://localhost:8000/api/v1/docs
 
-### Running without Docker
+### Production Server
 
-1. Create a virtual environment and install dependencies:
+For production deployments, use Gunicorn with Uvicorn workers:
 
 ```bash
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+gunicorn main:app -k uvicorn.workers.UvicornWorker -w 4 --bind 0.0.0.0:8000
 ```
 
-2. Run the FastAPI server:
+### Running with Docker
+
+Build and run the Docker container:
 
 ```bash
-# With default (dev) configuration
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-
-# With specific environment
-WEBAGENT_ENV=uat uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-## Deployment
-
-### Docker Deployment
-
-The application includes a multi-stage Dockerfile for optimized production builds:
-
-```bash
-# Build the Docker image
-docker build -t webagent-backend:2.4.0 .
+# Build the image
+docker build -t webagent-backend .
 
 # Run the container
-docker run -p 8000:8000 \
-  --env-file .env.local \
-  --env WEBAGENT_ENV=prod \
-  webagent-backend:2.4.0
+docker run -p 8000:8000 --env-file .env webagent-backend
 ```
 
-### Kubernetes Deployment
+## Diagnostics and Monitoring
 
-Kubernetes manifests are available in the `kubernetes/` directory:
+WebAgent includes built-in diagnostics for monitoring system health and performance:
 
 ```bash
-# Create the namespace
-kubectl create namespace webagent
+# Run diagnostics from the command line
+python -m app.utils.diagnostics
 
-# Create secrets (replace placeholders first)
-kubectl apply -f kubernetes/secrets.yaml
-
-# Apply the configuration
-kubectl apply -f kubernetes/configmap.yaml
-
-# Deploy the application
-kubectl apply -f kubernetes/deployment.yaml
-kubectl apply -f kubernetes/service.yaml
-kubectl apply -f kubernetes/ingress.yaml
+# Or use the diagnostic API endpoint
+curl http://localhost:8000/api/v1/health/diagnostics
 ```
 
-## Monitoring
+### Using the Example Script
 
-### Prometheus Integration
+The repository includes an example script for running various WebAgent tasks:
 
-The application exposes Prometheus metrics at the `/api/v1/metrics` endpoint. Kubernetes ServiceMonitor configuration is available in `kubernetes/monitoring/prometheus.yaml`.
+```bash
+# Run diagnostics
+python ../scripts/run_webagent.py --mode diagnostics
 
-Key metrics include:
-- HTTP request counts, latencies, and statuses
-- Task counts and durations
-- LLM request metrics and token usage
-- System resource utilization
+# Run a workflow
+python ../scripts/run_webagent.py --mode workflow --query "Research quantum computing"
 
-### Logging
+# Extract data from a document
+python ../scripts/run_webagent.py --mode direct --type document_extraction --document path/to/document.pdf
+```
 
-Logs are written to both the console and files with automatic rotation:
+## API Endpoints
 
-- Development: Human-readable format with DEBUG level
-- UAT/Production: JSON structured format with INFO/WARNING level
-- Log files are stored in the `logs/` directory
-- Production logs rotate daily and are kept for 30 days
+The WebAgent backend exposes several API endpoints:
 
-## API Documentation
+- **POST /api/v1/chat/completions**: Main endpoint for chat interactions
+- **POST /api/v1/documents/extract**: Document extraction endpoint
+- **GET /api/v1/health**: Health check endpoint
+- **GET /api/v1/health/diagnostics**: System diagnostics endpoint
+- **POST /api/v1/tasks/create**: Create an asynchronous task
+- **GET /api/v1/tasks/{task_id}**: Get task status and results
 
-When the server is running, you can access the API documentation at:
+See the OpenAPI documentation for complete details and request/response schemas.
 
-- Swagger UI: `http://localhost:8000/api/v1/docs`
-- ReDoc: `http://localhost:8000/api/v1/redoc`
-- API Reference: See the `docs/api_reference.md` file for detailed documentation
+## Testing
 
-## Project Structure
+Run the test suite:
+
+```bash
+# Run all tests
+python -m pytest
+
+# Run specific test file
+python -m pytest tests/test_senior_research.py
+
+# Run with coverage report
+python -m pytest --cov=app
+```
+
+### Testing Environment
+
+For testing, you can use a separate `.env.test` file:
+
+```bash
+cp .env .env.test
+# Edit .env.test with test configuration
+```
+
+Then run tests with:
+
+```bash
+WEBAGENT_ENV=test python -m pytest
+```
+
+## Development
+
+### Project Structure
 
 ```
 backend/
-├── app/
-│   ├── api/                # API endpoints
-│   │   ├── endpoints/
-│   │   │   ├── chat.py
-│   │   │   ├── health.py
-│   │   │   ├── tasks.py
-│   │   │   └── frontend.py
-│   │   └── router.py
-│   ├── agents/            # Agent implementations
-│   ├── core/              # Core configuration
-│   │   ├── config.py      # Settings management
-│   │   ├── logger.py      # Structured logging
-│   │   ├── metrics.py     # Prometheus metrics
-│   │   ├── middleware.py  # Security middleware
-│   │   └── security.py    # Security utilities
-│   ├── graph/             # LangGraph workflow
-│   │   └── workflows.py
-│   ├── models/            # Data models
-│   ├── services/          # Service integrations
-│   └── utils/             # Utility functions
-├── config/                # Environment configurations
-├── docs/                  # Documentation
-├── kubernetes/            # Kubernetes manifests
-├── logs/                  # Log files (gitignored)
-├── main.py                # FastAPI app entry point
-├── Dockerfile
-├── docker-compose.yml
-└── requirements.txt
+├── app/                  # Main application package
+│   ├── agents/           # Agent implementations
+│   │   ├── base_agent.py             # Base agent class
+│   │   ├── supervisor.py             # Supervisor agent
+│   │   ├── web_research.py           # Web research agent
+│   │   ├── internal_research.py      # Internal research agent
+│   │   ├── senior_research.py        # Senior research agent
+│   │   ├── document_extraction_agent.py # Document extraction
+│   │   ├── data_analysis.py          # Data analysis agent
+│   │   ├── coding_assistant.py       # Coding assistant agent
+│   │   └── team_manager.py           # Team manager agent
+│   ├── api/              # API endpoints
+│   ├── core/             # Core functionality
+│   │   ├── config.py               # Configuration loading
+│   │   ├── logger.py               # Logging setup
+│   │   ├── metrics.py              # Performance metrics
+│   │   └── middleware.py           # FastAPI middleware
+│   ├── graph/            # LangGraph workflows
+│   │   └── workflows.py            # Agent workflow definitions
+│   ├── models/           # Data models
+│   │   ├── task.py                 # Task models and workflow state
+│   │   └── chat.py                 # Chat models
+│   ├── services/         # External service integrations
+│   │   └── llm.py                  # LLM service client
+│   └── utils/            # Utility functions
+│       └── diagnostics.py          # System diagnostics
+├── tests/                # Test suite
+├── main.py               # Application entry point
+├── path_setup.py         # Path configuration utility
+├── requirements.txt      # Dependencies
+└── requirements-llm.txt  # LLM-specific dependencies
 ```
+
+### Adding a New Agent
+
+1. Create a new file in `app/agents/` for your agent
+2. Extend the `BaseAgent` class
+3. Implement the required methods
+4. Add a factory function to get your agent instance
+5. Update the workflow in `app/graph/workflows.py`
+
+Example:
+
+```python
+from app.agents.base_agent import BaseAgent
+
+class MyNewAgent(BaseAgent):
+    def __init__(self, config=None):
+        super().__init__(name="my_new_agent", config=config)
+        # Initialize your agent
+        
+    async def run(self, state):
+        # Implement agent logic
+        return updated_state
+
+# Factory function
+def get_my_new_agent():
+    return MyNewAgent()
+```
+
+### Environment Variables
+
+Key environment variables used by the application:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| WEBAGENT_ENV | Environment (development, test, production) | development |
+| DEBUG_MODE | Enable debug mode | false |
+| LOG_LEVEL | Logging level | INFO |
+| LLM_PROVIDER | LLM provider (openai, anthropic) | openai |
+| OPENAI_API_KEY | OpenAI API key | |
+| ANTHROPIC_API_KEY | Anthropic API key | |
+| LANGSMITH_ENABLED | Enable LangSmith tracing | false |
+| LANGSMITH_API_KEY | LangSmith API key | |
+| LANGSMITH_PROJECT | LangSmith project name | webagent |
+
+## Troubleshooting
+
+### Common Issues
+
+1. **API Keys**: Ensure your LLM provider API keys are correctly set in `.env`
+2. **Import Errors**: Make sure you're running from the correct directory or use `path_setup.py`
+3. **Workflow Errors**: Check the logs for details on agent errors
+
+### Diagnostic Checks
+
+Run system diagnostics to identify issues:
+
+```bash
+python -m app.utils.diagnostics
+```
+
+This will check:
+- System information
+- Dependencies and versions
+- API keys and environment configuration
+- Agent availability
+- Workflow configuration
+- Performance metrics
+
+### Logging
+
+Logs are stored in the `logs/` directory. For more detailed logs, set:
+
+```
+LOG_LEVEL=DEBUG
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit your changes: `git commit -am 'Add new feature'`
+4. Push to the branch: `git push origin feature-name`
+5. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License. 

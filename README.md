@@ -1,520 +1,221 @@
-# WebAgent Platform v2.5.6
+# WebAgent Platform
 
-WebAgent is a powerful AI platform that combines multiple specialized agents to perform complex tasks.
+A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-## What's New in v2.5.6
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.5.8-blue)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--14-brightgreen)
 
-This release streamlines the LangGraph implementation and improves testing:
+## Overview
 
-- **Optimized LangGraph Framework**: Lazy loading of agent instances for improved performance
-- **Enhanced Security**: Better error handling and protection against potential security issues
-- **Comprehensive Testing**: New test suite for LangGraph components with mock agents
-- **Streamlined Architecture**: Reduced code redundancy and improved maintainability
-- **Better Error Handling**: Centralized error handling with sensitive data filtering
+WebAgent is an advanced multi-agent AI platform that orchestrates specialized agents to process complex research tasks, document extraction, and data synthesis. It leverages LangGraph for agent workflows and provides both API access and programmatic interfaces for integration.
 
-Previous Releases:
+### Key Features
 
-- **v2.5.5**: Added advanced RAG architecture to the Internal Research Agent
-- **v2.5.4**: Consolidated supervisor implementations and improved agent architecture
-- **v2.5.3**: Added Document Extraction Agent for processing and analyzing documents
-- **v2.5.2**: Added MLflow integration for experiment tracking and hyperparameter optimization
+- **Multi-Agent System**: Integrated system of specialized agents working together to solve complex tasks
+  - Supervisor Agent: Analyzes user queries and orchestrates the workflow
+  - Research Agents: Web and internal knowledge retrieval
+  - Senior Research Agent: Evaluates research quality and produces final reports
+  - Document Extraction Agent: Processes documents and extracts structured data
+  - Team Manager Agent: Synthesizes outputs from multiple agents
+  - Specialized Agents: Data analysis and coding assistance
 
-## Document Extraction Features
+- **LangGraph Integration**: Uses LangGraph for complex agent workflow orchestration with conditional routing, parallel execution, and feedback loops
 
-The Document Extraction Agent offers three extraction methods:
+- **Advanced RAG Architecture**: Sophisticated retrieval and processing with built-in document extraction capabilities
 
-1. **LDA-based Extraction**: Uses Latent Dirichlet Allocation with Bayesian Network techniques for topic modeling and information extraction
-2. **LLM-based Extraction**: Leverages large language models for complex document understanding and structured extraction
-3. **Hybrid Approach**: Combines LDA topic modeling with LLM extraction for enhanced accuracy and performance
+- **Document Processing**: Extract, analyze, and synthesize information from PDFs, web pages, and other document formats
 
-The agent automatically selects the best method based on document characteristics or allows manual selection.
+- **Research Loop Process**: Iterative research capability that evaluates quality and performs additional research as needed:
+  1. Initial Research: Web and internal knowledge sources are queried based on the research plan
+  2. Research Evaluation: Senior Research Agent evaluates completeness and quality (scoring 1-10)
+  3. Follow-up Research: Additional targeted research based on identified gaps
+  4. Iteration: Process repeats up to 3 times until quality threshold is met
+  5. Final Synthesis: Comprehensive findings consolidated into a structured report
 
-### Example Usage
+## System Architecture
 
-```python
-from backend.app.agents.supervisor import SupervisorAgent, get_supervisor_agent
-
-# Initialize the supervisor agent (option 1: direct instantiation)
-supervisor = SupervisorAgent()
-
-# Or use the helper function (option 2: recommended for LangGraph integration)
-# supervisor = get_supervisor_agent()
-
-# Process a document with automatic method selection
-result = supervisor.process_request({
-    "request_type": "document_extraction",
-    "document_path": "/path/to/document.pdf",
-    "extraction_method": "auto",  # Options: "lda", "llm", "hybrid", "auto"
-    "route_to_team_manager": True  # Optional routing to Team Manager
-})
-
-# Access extraction results
-if result["success"]:
-    # Access extracted information
-    topics = result.get("topics", [])
-    summary = result.get("summary", "")
-    key_entities = result.get("key_entities", [])
-    
-    # Print summary
-    print(f"Document Summary: {summary}")
-    
-    # Print top topics
-    print("Top Topics:")
-    for topic in topics[:3]:
-        terms = [term["term"] for term in topic["terms"][:5]]
-        print(f"  - Topic {topic['topic_id']}: {', '.join(terms)}")
-```
-
-## Advanced RAG Features
-
-The Internal Research Agent now features a state-of-the-art Retrieval-Augmented Generation (RAG) system that dramatically improves information retrieval and answer quality.
-
-### RAG Architecture Components
-
-1. **Retriever**: Advanced hybrid retrieval system that combines:
-   - **Dense Retrieval**: Uses Contriever embeddings for semantic understanding
-   - **Sparse Retrieval**: Employs BM25 for keyword-based matching
-   - **Ensemble Approach**: Weighted combination of both methods for comprehensive coverage
-
-2. **Reranker**: Cross-encoder model that scores and prioritizes retrieved documents:
-   - Uses a cross-encoder model to deeply analyze query-document relevance
-   - Filters out less relevant information to focus the LLM on the most useful context
-   - Dramatically improves precision without sacrificing recall
-
-3. **Generator**: Leverages the LLM to synthesize information from reranked documents:
-   - Produces comprehensive, accurate answers grounded in retrieved information
-   - Cites sources and provides structured output
-   - Maintains factuality by focusing on retrieved information
-
-### Performance Monitoring
-
-The RAG system includes built-in performance monitoring:
-
-- **MLflow Integration**: Tracks experiments and metrics for each RAG component
-- **Detailed Logging**: Comprehensive logging of retrieval time, document scores, and more
-- **Memory Usage Tracking**: Monitors resource consumption for large model operations
-
-### Example Usage
-
-```python
-from backend.app.agents.internal_research import get_internal_research_agent
-from app.models.task import WorkflowState
-
-# Initialize the research agent
-research_agent = get_internal_research_agent()
-
-# Create a workflow state with a query
-state = WorkflowState(query="What are the environmental impacts of lithium mining?")
-
-# Run the agent to perform RAG-enhanced research
-result_state = await research_agent.run(state)
-
-# Get the findings
-findings = result_state.context.get("internal_research_findings")
-```
-
-### Customizing RAG Configuration
-
-The RAG system can be customized by providing configuration options:
-
-```python
-# Custom configuration
-config = {
-    "embedding_model": "facebook/contriever",  # Model for dense embeddings
-    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",  # Cross-encoder for reranking
-    "dense_k": 20,  # Number of results from dense retrieval
-    "sparse_k": 20,  # Number of results from sparse retrieval
-    "retrieve_k": 20,  # Total number of documents to retrieve
-    "rerank_top_n": 5,  # Number of documents to keep after reranking
-    "llm_model": "gpt-4-turbo"  # LLM to use for generation
-}
-
-# Initialize with custom config
-research_agent = InternalResearchAgent(config=config)
-```
-
-## Architecture
+WebAgent uses a modular architecture with a clear separation of concerns:
 
 ```
-┌─────────────┐    HTTP/REST API    ┌───────────────────────────────────────────┐
-│ Web Chat App │<------------------>│     LangGraph Multi-Agent Service         │
-│ (Frontend)   │                    │                                           │
-└─────────────┘                     │  ┌─────────────┐       ┌───────────────┐  │
-                                    │  │ Supervisor  │◄─────►│ Team Manager  │  │
-                                    │  │   Agent     │       │    Agent      │  │
-                                    │  └──────┬──────┘       └───────┬───────┘  │
-                                    │         │                      │          │
-                                    │         ▼                      ▲          │
-                                    │  ┌──────────────┐     ┌───────┴───────┐   │
-                                    │  │              │     │               │   │
-                                    │  │  Research    │     │  Data         │   │
-                                    │  │  Agents      │────►│  Analysis     │   │
-                                    │  │              │     │  Agents       │   │
-                                    │  └──────────────┘     └───────────────┘   │
-                                    │     /          \         /          \     │
-                                    │    /            \       /            \    │
-                                    │   ▼              ▼     ▼              ▼   │
-                                    │ ┌────────┐  ┌─────────┐ ┌─────────┐ ┌────┐│
-                                    │ │  Web   │  │Internal │ │  Data   │ │Code││
-                                    │ │Research│  │Research │ │Analysis │ │Asst││
-                                    │ └────┬───┘  └────┬────┘ └────┬────┘ └──┬─┘│
-                                    │      │           │           │         │  │
-                                    │      └─────┐     │      ┌────┘         │  │
-                                    │            ▼     ▼      ▼              │  │
-                                    │          ┌─────────────────┐           │  │
-                                    │          │Senior Research  │◄──────────┘  │
-                                    │          │     Agent       │              │
-                                    │          └─────────────────┘              │
-                                    └───────────────────────────────────────────┘
-                                                     │
-                                     ┌───────────────┼───────────────────┐
-                                     │               │                   │
-                                     ▼               ▼                   ▼
-                             ┌──────────────┐ ┌─────────────┐    ┌─────────────┐
-                             │  Tavily API  │ │ Vector DB   │    │ Python      │
-                             │ (Web Search) │ │ (Internal   │    │ Runtime     │
-                             │              │ │  Knowledge) │    │ (Graphing)  │
-                             └──────────────┘ └─────────────┘    └─────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                       WebAgent Platform                             │
+│                                                                     │
+│  ┌───────────┐   ┌─────────────────────────────────────────────┐   │
+│  │           │   │            LangGraph Workflow               │   │
+│  │  FastAPI  │   │  ┌─────────┐   ┌────────────┐   ┌────────┐  │   │
+│  │  Server   │◄──┼─►│Supervisor│──►│ Research  │──►│ Senior │  │   │
+│  │           │   │  │  Agent   │   │  Agents   │   │Research│  │   │
+│  └───────────┘   │  └─────────┘   └────────────┘   │  Agent │  │   │
+│        ▲         │        │              ▲         └────┬───┘  │   │
+│        │         │        │              │              │      │   │
+│        │         │        ▼              └──────────────┘      │   │
+│        │         │  ┌─────────────┐             │              │   │
+│        │         │  │  Document   │             ▼              │   │
+│        │         │  │ Extraction  │      ┌────────────┐        │   │
+│        │         │  │    Agent    │      │ Specialized│        │   │
+│  ┌───────────┐   │  └─────────────┘      │   Agents   │        │   │
+│  │           │   │         │             └─────┬──────┘        │   │
+│  │ Frontend  │   │         │                   │               │   │
+│  │  Client   │◄──┼─────────┼───────────────────┼───────────────┤   │
+│  │           │   │         │                   │               │   │
+│  └───────────┘   │         ▼                   ▼               │   │
+│                  │  ┌────────────────────────────────┐         │   │
+│                  │  │        Team Manager Agent      │         │   │
+│                  │  └────────────────────────────────┘         │   │
+│                  └─────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Features
+### Key Components
 
-- 💬 Modern chat interface with real-time communication
-- 🔍 Advanced research capabilities via specialized AI agents
-- 📊 Data analysis and visualization
-- 🌐 Web research with source verification
-- 📚 Internal knowledge base integration
-- 📝 Comprehensive report generation
-- 🧩 Microservice architecture for scalability
-- 🔄 Asynchronous task processing
-- 🎯 Type-safe implementation
-- 🛡️ Comprehensive error handling
-- 🎨 Modern UI with Tailwind CSS
-- 📱 Responsive design
+1. **API Layer**: FastAPI server exposing REST endpoints for client applications
+2. **Workflow Engine**: LangGraph orchestration of agent interactions
+3. **Agents**: Specialized autonomous agents each with a specific role
+4. **Document Processing Pipeline**: For extracting and processing document content
+5. **Integration Layer**: Connectors to external knowledge sources and APIs
+6. **Monitoring & Diagnostics**: Tools for system monitoring and performance analysis
 
-## Specialized Agents
+## Getting Started
 
-The system comprises seven specialized agents that work together:
+### Prerequisites
 
-1. **Supervisor Agent**
-   - Plans and orchestrates the research workflow
-   - Breaks down complex queries into manageable tasks
-   - Assigns tasks to specialized agents
+- Python 3.10+
+- Node.js 16+ (for frontend)
+- OpenAI API key or Anthropic API key
+- LangSmith API key (optional, for tracing)
 
-2. **Web Research Agent**
-   - Searches the web via Tavily API integration
-   - Extracts relevant information from search results
-   - Creates detailed reports with citations
-
-3. **Internal Research Agent**
-   - Queries the vector database for internal knowledge
-   - Retrieves relevant documents and information
-   - Synthesizes information into a structured report
-
-4. **Senior Research Agent**
-   - Fact-checks information from both research agents
-   - Requests additional research when necessary
-   - Creates a comprehensive, verified research summary
-
-5. **Data Analysis Agent**
-   - Identifies patterns and insights in research data
-   - Determines appropriate visualization methods
-   - Prepares data for visualization
-
-6. **Coding Assistant Agent**
-   - Creates data visualizations using Python
-   - Generates charts, graphs, and other visual elements
-   - Works with Data Analysis Agent for optimal visualization
-
-7. **Team Manager Agent**
-   - Compiles the final comprehensive report
-   - Integrates research findings, analysis, and visualizations
-   - Formats information for clarity and impact
-
-## User Guide
-
-### Getting Started
-
-1. Visit the application at [your-deployed-url.com](https://your-deployed-url.com)
-   - Or run locally following the installation instructions below
-
-2. The interface consists of:
-   - Chat history area (top)
-   - Message input field (bottom)
-   - Image upload button (bottom left)
-
-### Basic Usage
-
-1. **Text Chat**:
-   - Type your message in the input field
-   - Press Enter or click "Send"
-   - Wait for the AI's response
-   - Messages are automatically saved and persist between sessions
-
-2. **Image Analysis**:
-   - Click "Upload Image" button
-   - Select an image (JPEG, PNG, GIF, or WebP, max 5MB)
-   - Add optional text description
-   - Send to get AI's analysis
-   - Preview thumbnail appears with option to remove
-
-3. **Accessibility Features**:
-   - Toggle dark/light mode
-   - Adjust font size (normal/large/larger)
-   - Enable high contrast mode
-   - Enable reduced motion
-   - Full keyboard navigation support
-   - Screen reader optimized
-
-4. **Offline Support**:
-   - App works offline with limited functionality
-   - Previous conversations are available
-   - Banner appears when offline
-   - Auto-reconnects when back online
-
-### Tips & Tricks
-
-- **Long Conversations**: The app keeps the last 50 messages for context
-- **Image Upload**: For best results, use clear images under 5MB
-- **Mobile Use**: Fully responsive design works on all devices
-- **Keyboard Navigation**: 
-  - Tab: Navigate between elements
-  - Enter: Send message
-  - Space: Select buttons
-  - Esc: Clear image selection
-
-### Troubleshooting
-
-1. **Message Not Sending**:
-   - Check internet connection
-   - Ensure message isn't empty
-   - Check for error messages
-   - Try refreshing the page
-
-2. **Image Upload Issues**:
-   - Verify file format (JPEG, PNG, GIF, WebP)
-   - Ensure file is under 5MB
-   - Try a different image
-   - Clear browser cache
-
-3. **Display Issues**:
-   - Try toggling dark/light mode
-   - Adjust font size settings
-   - Clear browser cache
-   - Update your browser
-
-## Prerequisites
-
-- Node.js 18.0.0 or later
-- npm or yarn
-- Together AI API key (if using Together AI as provider)
-- OpenAI API key (if using OpenAI as provider)
-- For self-hosted LLM: PyTorch, transformers, and a compatible model
-
-## Installation
+### Installation
 
 1. Clone the repository:
-```bash
-git clone <repository-url>
-cd <repository-name>
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up configuration files:
-
-   a. For frontend API keys, create a `.env.local` file in the root directory:
-   ```
-TOGETHER_API_KEY=your_together_api_key_here
-```
-
-   b. For backend configuration, create both `.env` and `.env.local` files in the `backend` directory:
    ```bash
-   # Copy examples as starting points
-   cp backend/.env.example backend/.env
-   cp backend/.env.example.local backend/.env.local
+   git clone https://github.com/your-org/webagent.git
+   cd webagent
+   ```
+
+2. Install backend dependencies:
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
+
+3. Install frontend dependencies:
+   ```bash
+   cd ..
+   npm install
+   ```
+
+4. Create a `.env` file in the backend directory:
+   ```
+   # Core settings
+   WEBAGENT_ENV=development
+   DEBUG_MODE=true
+   LOG_LEVEL=INFO
    
-   # Edit .env.local with your API keys
-   # nano backend/.env.local
+   # LLM Provider
+   LLM_PROVIDER=openai
+   OPENAI_API_KEY=your_openai_key_here
+   ANTHROPIC_API_KEY=your_anthropic_key_here
+   
+   # LangSmith (optional)
+   LANGSMITH_API_KEY=your_langsmith_key_here
+   LANGSMITH_PROJECT=webagent
+   LANGSMITH_ENABLED=false
    ```
 
-   c. Review and modify configuration as needed:
+### Running the Application
+
+1. Start the backend server:
    ```bash
-   # Set the environment (dev, uat, or prod)
-   echo "WEBAGENT_ENV=dev" >> backend/.env
+   cd backend
+   uvicorn main:app --reload
    ```
 
-4. Start the development server:
-```bash
-npm run dev
-```
-
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Environment Variables
-
-### Environment Configuration
-
-The application supports three deployment environments, each with its own configuration:
-
-1. **Development (dev)**: Local development configuration with debug settings
-2. **User Acceptance Testing (uat)**: Testing environment with near-production settings
-3. **Production (prod)**: Production-ready settings optimized for performance and security
-
-Configuration is managed through a combination of:
-
-1. **YAML Files**: Environment-specific settings in `backend/config/{env}.yaml`
-2. **Environment Variables**: Override specific settings via `WEBAGENT_` prefixed variables
-3. **Default Values**: Fallback values defined in code
-
-### Configuration Priority
-
-Settings are loaded with the following priority (highest to lowest):
-1. `.env.local` file (highest priority, specifically for API keys and sensitive information)
-2. Environment variables with `WEBAGENT_` prefix 
-3. Environment-specific YAML file (`dev.yaml`, `uat.yaml`, or `prod.yaml`)
-4. `.env` file values (lowest priority, default fallback)
-5. Default values in code
-
-The recommended practice is:
-- Store API keys and sensitive information in `.env.local` (never commit to version control)
-- Configure environment-specific settings in YAML files
-- Use environment variables for deployment-specific overrides
-- Keep fallback/default values in `.env` and code
-
-### Selecting Environment
-
-Set the environment using the `WEBAGENT_ENV` variable:
-```bash
-# Development (default)
-export WEBAGENT_ENV=dev
-
-# User Acceptance Testing
-export WEBAGENT_ENV=uat
-
-# Production
-export WEBAGENT_ENV=prod
-```
-
-### Configuration Categories
-
-Each environment defines settings for:
-
-- **API**: Server host, port, debug mode
-- **CORS**: Allowed origins, methods, headers
-- **Database**: Vector DB and Redis settings
-- **LLM**: Models, temperatures, timeouts
-- **Web Search**: Provider, depth, result limits
-- **Task Management**: Concurrency, TTL settings
-- **Agents**: Model configuration for each specialized agent
-- **Logging**: Log levels, formats, file settings
-- **Security**: Token settings, algorithms
-
-### Setting Up Environment Variables
-
-1. **Local Development**:
-   Create a `.env.local` file in the root directory:
+2. Start the frontend (in a new terminal):
    ```bash
-   # Create .env.local file
-   touch .env.local
+   npm run dev
    ```
 
-2. **Add Required Variables**:
-   ```env
-   # Together AI API Configuration
-   # Get your API key from: https://api.together.xyz/settings/api-keys
-   TOGETHER_API_KEY=your_together_api_key_here
-   ```
+3. Access the application at `http://localhost:3000`
 
-3. **Get Your API Key**:
-   - Visit [Together AI Dashboard](https://api.together.xyz/settings/api-keys)
-   - Sign up or log in
-   - Navigate to API Keys section
-   - Create a new API key
-   - Copy the key
+### Example Usage
 
-4. **Security Notes**:
-   - Never commit `.env.local` to version control
-   - Keep your API key secret
-   - Rotate keys periodically
-   - Use different keys for development and production
+Here's an example of using the WebAgent platform programmatically:
 
-### Production Deployment
+```python
+# Example script to run a workflow
+from backend.path_setup import setup_path
+setup_path()
 
-For production deployment, set environment variables in your hosting platform:
+from backend.app.agents.supervisor import get_supervisor_agent
+from backend.app.graph.workflows import get_agent_workflow
+from backend.app.models.task import WorkflowState
 
-- **Vercel**:
-  - Go to Project Settings → Environment Variables
-  - Add `TOGETHER_API_KEY` with your production API key
+# Get the workflow
+workflow = get_agent_workflow()
 
-- **Other Platforms**:
-  - Follow platform-specific instructions for setting environment variables
-  - Ensure variables are encrypted at rest
+# Create initial state with a research query
+state = WorkflowState(query="What are the latest advancements in large language models?")
 
-### Accessing Environment Variables
+# Execute the workflow
+final_state = workflow.invoke(state)
 
-The API key is automatically loaded and used in the application. You can verify it's working by:
-
-1. Starting the development server
-2. Sending a test message in the chat
-3. Checking the network tab for successful API calls
-
-If you get authentication errors, verify that:
-- `.env.local` file exists in project root
-- API key is correctly copied
-- No extra spaces or quotes in the key
-- Server was restarted after adding the key
-
-## Project Structure
-
-```
-src/
-├── app/                    # Next.js app directory
-│   ├── api/               # API routes
-│   └── page.tsx           # Main page
-├── components/            # React components
-│   ├── Chat.tsx          # Chat interface
-│   └── ErrorBoundary.tsx # Error handling
-├── config/               # Configuration
-│   └── env.ts           # Environment config
-└── types/               # TypeScript types
-    ├── api.ts          # API types
-    └── chat.ts         # Chat types
+# Print the final report
+if final_state.final_report:
+    print("Final Report:")
+    print(final_state.final_report["content"])
 ```
 
-## API Integration
+### Using the CLI
 
-The application uses Together AI's API for:
-- Text chat completion
-- Image analysis
-- Multi-modal conversations
+The WebAgent platform includes a command-line interface for running tasks:
 
-## Error Handling
+```bash
+# Run diagnostics
+python scripts/run_webagent.py --mode diagnostics
 
-- Custom ApiError class for API errors
-- Error Boundary for React component errors
-- Form validation
-- File upload validation
-- Environment variable validation
+# Run a workflow
+python scripts/run_webagent.py --mode workflow --query "Research the impact of AI on healthcare"
 
-## Security
+# Extract data from a document
+python scripts/run_webagent.py --mode direct --type document_extraction --document path/to/document.pdf
+```
 
-- File type validation
-- File size limits (5MB max)
-- Environment variable protection
-- Input sanitization
-- API error handling
+## Development
 
-## Contributing
+### Project Structure
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+```
+webagent/
+├── backend/                  # Backend Python code
+│   ├── app/                  # Main application
+│   │   ├── agents/           # Agent implementations
+│   │   ├── api/              # API endpoints
+│   │   ├── core/             # Core functionality
+│   │   ├── graph/            # LangGraph workflows
+│   │   ├── models/           # Data models
+│   │   ├── services/         # Service integrations
+│   │   └── utils/            # Utility functions
+│   ├── tests/                # Test cases
+│   └── main.py               # Application entry point
+├── frontend/                 # Frontend React/Next.js code
+├── scripts/                  # Utility scripts
+└── docs/                     # Documentation
+```
+
+### Running Tests
+
+```bash
+cd backend
+python -m pytest
+```
+
+### Adding a New Agent
+
+1. Create a new agent file in `backend/app/agents/`
+2. Implement the agent class extending `BaseAgent`
+3. Add a factory function to get the agent instance
+4. Update the workflow in `backend/app/graph/workflows.py`
 
 ## License
 
@@ -522,190 +223,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- [Next.js](https://nextjs.org/)
-- [Together AI](https://www.together.ai/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [TypeScript](https://www.typescriptlang.org/)
-
-## LLM Providers
-
-WebAgent supports multiple LLM providers that can be configured based on your needs:
-
-1. **Together AI** (default)
-   - Uses Together AI's hosting of Llama 3 models
-   - Requires a Together AI API key
-   - Offers a good balance of quality and cost
-
-2. **OpenAI**
-   - Uses OpenAI's GPT models 
-   - Requires an OpenAI API key
-   - Provides high quality but at higher cost
-
-3. **Self-Hosted LLM** (new in v2.5.0)
-   - Run your own local language model
-   - No API keys required
-   - Complete data privacy
-   - Lower latency for some deployments
-   - See [Self-Hosted LLM Setup](#self-hosted-llm-setup) below
-
-### Self-Hosted LLM Setup
-
-New in version 2.5.0 (improved in 2.5.1), WebAgent can now use your own locally-hosted language models:
-
-1. **Configure WebAgent to use self-hosted LLM**:
-   
-   Edit your environment YAML file (e.g., `backend/config/dev.yaml`):
-   ```yaml
-   llm:
-     provider: "self"  # Change from "together" or "openai" to "self"
-     self_hosted_url: "http://localhost:8080"  # Update if running elsewhere
-   ```
-
-2. **Start the self-hosted LLM service**:
-   
-   Basic usage:
-   ```bash
-   python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/model" --port 8080
-   ```
-   
-   With memory optimization (new in v2.5.1):
-   ```bash
-   # Use 8-bit quantization (CUDA only)
-   python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/model" --load_in_8bit
-   
-   # Use 4-bit quantization for larger models (CUDA only)
-   python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/model" --load_in_4bit
-   ```
-   
-   Docker deployment:
-   ```bash
-   # Build the container
-   docker build -f backend/app/services/Dockerfile.llm -t webagent-llm:latest .
-   
-   # Run the container, mounting your model directory
-   docker run -p 8080:8080 \
-     -v /path/to/model:/models/llama-3 \
-     -e MODEL_PATH=/models/llama-3 \
-     webagent-llm:latest
-   ```
-
-3. **Monitor the service** (new in v2.5.1):
-   
-   Check health status:
-   ```bash
-   curl http://localhost:8080/health
-   ```
-   
-   View detailed metrics:
-   ```bash
-   curl http://localhost:8080/metrics
-   ```
-
-4. **Recommended models**:
-   - Llama 3 8B Instruct
-   - Mistral-7B-Instruct-v0.2
-   - Any model compatible with Hugging Face transformers
-
-5. **Advanced configuration**:
-   
-   For more options, including model quantization, custom prompt formats, and Docker configuration, see the [detailed self-hosted LLM documentation](backend/app/services/README_SELF_HOSTED_LLM.md).
-
-### MLflow Integration for Model Experimentation (New)
-
-The self-hosted LLM service now includes MLflow integration for tracking experiments, fine-tuning and hyperparameter optimization:
-
-1. **Setup MLflow**:
-
-   ```bash
-   # Install MLflow (already included in requirements-llm.txt)
-   pip install mlflow scikit-learn
-   
-   # Start MLflow tracking server
-   mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlflow-artifacts --host 0.0.0.0 --port 5000
-   ```
-
-2. **Start the LLM service with MLflow enabled**:
-
-   ```bash
-   python backend/app/services/self_hosted_llm_service.py \
-     --model_path "/path/to/model" \
-     --mlflow_tracking_uri "http://localhost:5000" \
-     --mlflow_experiment_name "llm-experiments"
-   ```
-
-3. **Track experiments in API calls**:
-   
-   Include experiment tracking in your requests:
-   ```json
-   {
-     "messages": [{"role": "user", "content": "Your prompt here"}],
-     "temperature": 0.7,
-     "track_experiment": true,
-     "experiment_name": "temperature-comparison",
-     "run_name": "temp-0.7-test"
-   }
-   ```
-
-4. **View experiments**:
-   
-   Access the MLflow UI at http://localhost:5000 to:
-   - Compare different model configurations
-   - Analyze performance metrics
-   - View generated responses
-   - Find optimal hyperparameters
-
-5. **Automated hyperparameter tuning**:
-   
-   The integration supports systematic optimization of:
-   - Temperature
-   - Top-p sampling
-   - Frequency/presence penalties
-   - Model quantization settings
-
-6. **Detailed documentation**:
-   
-   For comprehensive instructions on MLflow integration, experiment tracking, and hyperparameter optimization, see [MLflow Integration for Self-Hosted LLM](backend/app/services/MLFLOW_INTEGRATION.md).
-
-## Key Features
-
-### Multi-Agent System
-- **Supervisor Agent**: Analyzes queries, creates research plans, and delegates tasks
-- **Web Research Agent**: Searches the internet for relevant information
-- **Internal Research Agent**: Uses RAG to search internal knowledge bases
-- **Senior Research Agent**: Synthesizes information and evaluates research quality
-- **Advanced Agent**: Conducts specialized analysis, generates code, or creates data visualizations
-- **Enhanced Research Loop**: Senior Research Agent can evaluate research quality and request up to 3 rounds of additional, focused research
-
-### LangGraph Integration
-- Flexible workflow orchestration using directed graphs
-- Conditional routing between agents based on research requirements
-- Support for both sequential and parallel agent execution
-- State management for complex multi-agent workflows
-- Research loop capability for thorough investigation
-
-### Advanced RAG Architecture
-- Multi-stage retrieval pipeline with hybrid retrieval (dense + sparse)
-- Cross-encoder reranking to prioritize the most relevant documents
-- BM25 sparse retrieval for better keyword-based matching
-- Ensemble retrieval combining semantic and lexical search strengths
-
-### Document Processing
-- Extract and analyze information from documents
-- Support for multiple document formats (PDF, DOCX, TXT, HTML)
-- Entity extraction and topic modeling
-
-## Research Loop Process
-
-The WebAgent platform now features an enhanced research loop capability:
-
-1. **Initial Research**: Web Research and Internal Research agents gather information based on the research plan.
-
-2. **Evaluation**: The Senior Research Agent evaluates the quality and completeness of the research with a score from 1-10.
-
-3. **Follow-up Research**: If the research is incomplete or lacks critical information, the Senior Research Agent can request additional, focused research with specific questions.
-
-4. **Iteration**: The research agents focus on gathering the missing information through targeted searches.
-
-5. **Final Synthesis**: After up to 3 iterations, the Senior Research Agent produces a comprehensive final report.
-
-This iterative process ensures thorough research and high-quality answers to complex queries.
+- LangChain and LangGraph for agent frameworks
+- OpenAI and Anthropic for LLM APIs
+- FastAPI for the backend framework
+- React and Next.js for the frontend framework

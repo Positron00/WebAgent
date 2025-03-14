@@ -12,6 +12,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
 
+# Import path setup to ensure imports work correctly
+from pathlib import Path
+# Add the current directory to the path if not already there
+current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
+# Now import application modules
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.middleware import setup_middlewares, LimitSizeMiddleware, SecurityHeadersMiddleware

@@ -29,11 +29,11 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 
 # Import local modules
-from backend.app.core.config import settings
-from backend.app.agents.base_agent import BaseAgent
-from backend.app.agents.document_extraction_agent import DocumentExtractionAgent
-from backend.app.services.llm import get_llm
-from backend.app.utils.metrics import timing_decorator, log_memory_usage
+from app.core.config import settings
+from app.agents.base_agent import BaseAgent
+from app.agents.document_extraction_agent import DocumentExtractionAgent
+from app.services.llm import get_llm
+from app.utils.metrics import timing_decorator, log_memory_usage
 from app.models.task import WorkflowState
 
 # Initialize logging
