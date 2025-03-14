@@ -1915,3 +1915,4 @@
 2025-03-14 15:33:24,707 - webagent - DEBUG - Function get_agent_workflow executed in 0.0018 seconds
 2025-03-14 15:33:24,707 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
 2025-03-14 15:33:30,070 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 17:08:32,087 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log

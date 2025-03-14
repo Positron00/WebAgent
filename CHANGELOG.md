@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1] - 2025-03-14
+
+### Added
+- Comprehensive test coverage for model microservices
+  - Added tests for ModelProcessInfo class
+  - Implemented test mocks for TransformerModelService
+  - Fixed unit tests for model registry and API gateway
+  - Added test utilities for simplified testing
+
+### Fixed
+- Resolved Pydantic warning issues in model services
+- Fixed async testing in model manager tests
+- Improved test stability for model service process handling
+- Fixed issues with test mock implementations
+
 ## [2.6.0] - 2025-03-14
 
 ### Added
@@ -24,11 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed test suite compatibility with latest dependencies
 - Addressed module imports and path resolution
 - Fixed error message redaction in security tests
-
-### Changed
-- Enhanced error handling in test scenarios
-- Improved module organization for better maintainability
-- Updated API error handling to provide better diagnostics
 
 ## [2.5.11] - 2025-03-14
 

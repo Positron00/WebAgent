@@ -2,7 +2,7 @@
 
 A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-![WebAgent Platform Version](https://img.shields.io/badge/version-2.6.0-blue)
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.6.1-blue)
 ![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--14-brightgreen)
 
 ## Overview
@@ -251,8 +251,8 @@ Follow these steps to set up and run the WebAgent platform:
    # Start the model manager
    python -m backend.models.run_manager
    
-   # Or start individual model services
-   python -m backend.models.run_model_service --model-id llama2-7b
+   # Start a specific model service
+   python -m backend.models.run_service --model-id llm-model --model-type transformer --model-path /path/to/model
    ```
 
 3. Access the application:
@@ -269,24 +269,24 @@ WebAgent includes comprehensive testing and diagnostic tools.
 
 1. Run all tests:
    ```bash
-   pytest
+   python -m unittest discover backend/tests
    ```
 
-2. Run specific test modules:
+2. Run model service tests:
    ```bash
-   # Run LangGraph workflow tests
-   python -m backend.tests.test_langgraph
-   
-   # Run security tests
-   python -m backend.tests.test_security
-   
-   # Run model service tests
+   # Run model registry and API gateway tests
    python -m backend.tests.test_models
+   
+   # Run model service implementation tests
+   python -m backend.tests.test_model_services
+   
+   # Run model manager tests (simplified version)
+   python -m backend.tests.test_model_manager_simplified
    ```
 
-3. Run with coverage:
+3. Run diagnostics:
    ```bash
-   pytest --cov=backend
+   python -m backend.diagnostics.runners.run_all
    ```
 
 ### Diagnostics
