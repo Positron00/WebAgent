@@ -42,6 +42,11 @@ class WorkflowState(BaseModel):
     completed: bool = False
     error: Optional[str] = None
     
+    @property
+    def agent_outputs(self) -> Dict[str, Any]:
+        """Get agent outputs from reports for compatibility with tests."""
+        return self.reports
+    
     def update_with_agent_output(self, agent_name: str, output: Any):
         """Update state with an agent's output."""
         self.reports[agent_name] = output

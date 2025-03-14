@@ -102,7 +102,7 @@ class TestLangGraphSecurity:
             received_inputs.append(state.query)
             # Sanitize the state and continue
             state.query = state.query.replace("<script>", "&lt;script&gt;").replace("</script>", "&lt;/script&gt;")
-            return state
+            return {"state": state}
             
         mock_agents["supervisor"].run.side_effect = inspect_input
         
@@ -146,7 +146,7 @@ class TestLangGraphSecurity:
                 # For unauthorized transitions test, make web_research try to skip to team_manager
                 if agent_name == "web_research":
                     state.current_step = "team_manager"  # This should be ignored by the workflow
-                return state
+                return {"state": state}
             
             agent.run.side_effect = record_call
         
@@ -160,7 +160,11 @@ class TestLangGraphSecurity:
              patch('app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
             
             # Configure mock supervisor to route to web_research
-            mock_agents["supervisor"].run.side_effect = lambda state: asyncio.sleep(0) or setattr(state, "context", {**state.context, "research_plan": {"requires_web_search": True}}) or state
+            async def route_to_web_research(state):
+                state.context["research_plan"] = {"requires_web_search": True}
+                return {"state": state}
+            
+            mock_agents["supervisor"].run.side_effect = route_to_web_research
             
             # Build the workflow
             workflow = build_agent_workflow()
@@ -187,7 +191,7 @@ class TestLangGraphSecurity:
             # Add a secret field that should not be accessible to other agents
             state.context["secret_api_token"] = "SECRET_VALUE_12345"
             state.context["research_plan"] = {"requires_web_search": True}
-            return state
+            return {"state": state}
             
         mock_agents["supervisor"].run.side_effect = add_secret
         
@@ -196,7 +200,7 @@ class TestLangGraphSecurity:
         async def check_secret(state):
             # Try to access the secret
             accessed_secret[0] = state.context.get("secret_api_token")
-            return state
+            return {"state": state}
             
         mock_agents["web_research"].run.side_effect = check_secret
         
@@ -289,7 +293,7 @@ class TestLangGraphSecurity:
         input_size_received = [0]  # Use list to reference from closure
         async def record_input_size(state):
             input_size_received[0] = len(state.query)
-            return state
+            return {"state": state}
             
         mock_agents["supervisor"].run.side_effect = record_input_size
         

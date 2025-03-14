@@ -2,8 +2,8 @@
 
 A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-![WebAgent Platform Version](https://img.shields.io/badge/version-2.5.9-blue)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--14-brightgreen)
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.5.10-blue)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--16-brightgreen)
 
 ## Overview
 
@@ -19,9 +19,9 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   - Team Manager Agent: Synthesizes outputs from multiple agents
   - Specialized Agents: Data analysis and coding assistance
 
-- **LangGraph Integration**: Uses LangGraph for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow
+- **LangGraph Integration**: Uses LangGraph for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow, compatible with LangGraph 0.0.25+
 
-- **Advanced RAG Architecture**: Sophisticated retrieval and processing with built-in document extraction capabilities
+- **Advanced RAG Architecture**: Sophisticated retrieval and processing with built-in document extraction capabilities, enhanced BM25 lexical retrieval for improved results
 
 - **Document Processing**: Extract, analyze, and synthesize information from PDFs, web pages, and other document formats
 
@@ -32,7 +32,7 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   4. Iteration: Process repeats up to 3 times until quality threshold is met
   5. Final Synthesis: Comprehensive findings consolidated into a structured report
 
-- **Enhanced Security**: Comprehensive security measures for input validation, authentication, rate limiting, and protection against common web vulnerabilities
+- **Comprehensive Security**: Advanced security module with authentication, authorization, rate limiting, input validation, error sanitization, request size limiting, and protection against common vulnerabilities
 
 - **Advanced Observability**: Detailed diagnostics and monitoring capabilities for tracking system health, performance metrics, and execution statistics
 
@@ -108,6 +108,7 @@ WebAgent uses a modular architecture with a clear separation of concerns:
    - Parallel execution of compatible agents
    - Feedback loops for iterative refinement
    - State management and persistence
+   - Compatibility with LangGraph 0.0.25 and higher
 
 3. **Agents**: Specialized autonomous agents each with a specific role
    - Supervisor Agent: Orchestrates the workflow and analyzes queries
@@ -122,6 +123,7 @@ WebAgent uses a modular architecture with a clear separation of concerns:
    - Table and image extraction
    - Structural parsing and semantic chunking
    - Hierarchical document representation
+   - Enhanced BM25 lexical search for better keyword matching
 
 5. **Integration Layer**: Connectors to external knowledge sources and APIs
    - Web search integration (via Tavily)
@@ -135,13 +137,86 @@ WebAgent uses a modular architecture with a clear separation of concerns:
    - Detailed diagnostics for system health
    - Performance profiling and resource tracking
    - Security monitoring and alerting
+   - Comprehensive error tracking and reporting
 
 7. **Security Module**: Comprehensive security features
+   - JWT authentication and API key authorization
    - Input validation and sanitization
-   - Authentication and authorization
-   - Rate limiting and request validation
+   - Rate limiting and request size validation
+   - Error message sanitization to prevent data leakage
    - Protection against common web vulnerabilities
    - Secure configuration management
+   - Comprehensive middleware for request protection
+
+### Security Architecture
+
+WebAgent implements a multi-layered security architecture to protect against various threats:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                             Security Architecture                                    │
+│                                                                                      │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
+│  │                          Request Processing Pipeline                          │   │
+│  │                                                                              │   │
+│  │  ┌───────────┐    ┌───────────┐    ┌───────────┐    ┌───────────────────┐   │   │
+│  │  │ Rate      │    │ Request   │    │ Input     │    │                   │   │   │
+│  │  │ Limiting  │───►│ Size      │───►│ Validation│───►│  Authentication   │   │   │
+│  │  │ Middleware│    │ Validation│    │ Middleware│    │  & Authorization  │   │   │
+│  │  └───────────┘    └───────────┘    └───────────┘    └───────────────────┘   │   │
+│  │        │                                                      │              │   │
+│  │        ▼                                                      ▼              │   │
+│  │  ┌────────────────┐                                   ┌───────────────────┐ │   │
+│  │  │                │                                   │                   │ │   │
+│  │  │  Rejected if   │                                   │    JWT Token      │ │   │
+│  │  │  too many      │                                   │    Verification   │ │   │
+│  │  │  requests      │                                   │                   │ │   │
+│  │  └────────────────┘                                   └───────────────────┘ │   │
+│  │                                                              │              │   │
+│  │                                                              ▼              │   │
+│  │                                                      ┌───────────────────┐ │   │
+│  │                                                      │                   │ │   │
+│  │                                                      │    API Key        │ │   │
+│  │                                                      │    Validation     │ │   │
+│  │                                                      │                   │ │   │
+│  │                                                      └───────────────────┘ │   │
+│  │                                                                            │   │
+│  └──────────────────────────────────────────────────────────────────────────────┘   │
+│                                       │                                             │
+│                                       ▼                                             │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
+│  │                              Protected Resources                             │   │
+│  │                                                                              │   │
+│  │  ┌───────────┐    ┌───────────┐    ┌───────────┐    ┌───────────────────┐   │   │
+│  │  │ API       │    │ Agent     │    │ Document  │    │ Knowledge Base    │   │   │
+│  │  │ Endpoints │    │ Workflows │    │ Processing│    │ Access Controls   │   │   │
+│  │  │           │    │           │    │           │    │                   │   │   │
+│  │  └───────────┘    └───────────┘    └───────────┘    └───────────────────┘   │   │
+│  │                                                                              │   │
+│  └──────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                      │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
+│  │                           Error Handling & Logging                           │   │
+│  │                                                                              │   │
+│  │  ┌───────────────┐    ┌───────────────┐    ┌───────────────────────────┐    │   │
+│  │  │ Error Message │    │ Security      │    │ Comprehensive Audit       │    │   │
+│  │  │ Sanitization  │    │ Event Logging │    │ Trail                     │    │   │
+│  │  │               │    │               │    │                           │    │   │
+│  │  └───────────────┘    └───────────────┘    └───────────────────────────┘    │   │
+│  │                                                                              │   │
+│  └──────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+This security architecture ensures:
+- Prevention of DoS attacks through rate limiting
+- Protection against oversized payloads
+- Input validation to prevent injection attacks
+- Authentication via JWT tokens or API keys
+- Proper error handling without leaking sensitive data
+- Comprehensive logging for security events
+- Clear separation between authentication, authorization, and resource access
 
 ### Research Loop Architecture
 

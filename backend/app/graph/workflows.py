@@ -24,11 +24,65 @@ from app.core.metrics import timing_decorator
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Singleton instance of the agent workflow
+# Singleton workflow instance
 _workflow_instance = None
 
+def get_research_router():
+    """
+    Get the research router agent.
+    
+    This is a simple router that directs research requests to the appropriate agent.
+    It's implemented as a function returning a dict with routing logic rather than a full agent class.
+    
+    Returns:
+        A dict with routing logic for research requests
+    """
+    return {
+        "name": "research_router",
+        "description": "Routes research requests to web, internal, or senior research agents",
+        "route": lambda state: state.context.get("research_route", "web_research")
+    }
+
+def research_router(state: WorkflowState) -> str:
+    """
+    Determine which research agent to route to.
+    
+    Args:
+        state: The current workflow state
+        
+    Returns:
+        String indicating the next node
+    """
+    # Check if there's an error
+    if state.error:
+        logger.warning(f"Error detected in workflow: {state.error}")
+        return END
+        
+    # Check if the workflow is completed
+    if state.completed:
+        logger.info("Workflow is marked as completed, ending")
+        return END
+        
+    plan = state.context.get("research_plan", {})
+    
+    # Debug logging
+    logger.debug(f"Research plan: {plan}")
+    logger.debug(f"Current step: {state.current_step}")
+    
+    # Route based on the research plan from the supervisor
+    if plan.get("requires_web_search", False):
+        logger.info("Web research requested")
+        return "web_research"
+    elif plan.get("requires_internal_knowledge", False):
+        logger.info("Internal research requested")
+        return "internal_research"
+    else:
+        # Default to senior research if no specific research plan exists
+        logger.info("No specific research type specified, routing to senior research")
+        return "senior_research"
+
 @timing_decorator
-def build_agent_workflow() -> StateGraph:
+def build_agent_workflow(verbose: bool = False) -> StateGraph:
     """
     Build the agent workflow graph.
     
@@ -37,7 +91,7 @@ def build_agent_workflow() -> StateGraph:
     """
     logger.info("Building agent workflow graph")
     
-    # Initialize agents
+    # Get all agent instances
     supervisor = get_supervisor_agent()
     web_research = get_web_research_agent()
     internal_research = get_internal_research_agent()
@@ -49,136 +103,54 @@ def build_agent_workflow() -> StateGraph:
     # Create a new graph
     workflow = StateGraph(WorkflowState)
     
-    # Initialize the workflow graph
-    workflow.add_node("supervisor", supervisor.run)
-    workflow.add_node("web_research", web_research.run)
-    workflow.add_node("internal_research", internal_research.run)
-    workflow.add_node("senior_research", senior_research.run)
-    workflow.add_node("data_analysis", data_analysis.run)
-    workflow.add_node("coding_assistant", coding_assistant.run)
-    workflow.add_node("team_manager", team_manager.run)
+    # Add all agent nodes to the graph
+    workflow.add_node("supervisor", supervisor)
+    workflow.add_node("web_research", web_research)
+    workflow.add_node("internal_research", internal_research) 
+    workflow.add_node("senior_research", senior_research)
+    workflow.add_node("data_analysis", data_analysis)
+    workflow.add_node("coding_assistant", coding_assistant)
+    workflow.add_node("team_manager", team_manager)
     
-    # Define the research routing logic
-    def research_router(state: WorkflowState) -> List[str]:
-        """
-        Determine which research agents should run based on the research plan.
-        
-        Args:
-            state: The current workflow state
-            
-        Returns:
-            List of agent nodes to execute
-        """
-        # Get the research plan from the supervisor's output
-        research_plan = state.context.get("research_plan", {})
-        
-        # Check if this is a follow-up research request from senior research
-        if state.context.get("continue_research", False):
-            logger.info("Processing follow-up research request")
-            next_agents = state.context.get("next_research_agents", [])
-            if next_agents:
-                logger.info(f"Routing to additional research agents: {next_agents}")
-                return next_agents
-        
-        # Initial research routing
-        next_agents = []
-        
-        # Determine which research agents to use
-        if research_plan.get("requires_web_search", False):
-            next_agents.append("web_research")
-            
-        if research_plan.get("requires_internal_knowledge", False):
-            next_agents.append("internal_research")
-            
-        # If document extraction is required, handle it in the supervisor
-        # and move directly to senior_research for analysis
-        if research_plan.get("requires_document_extraction", False):
-            logger.info("Document extraction required - handled by supervisor")
-            
-        # If no specific research agents are needed, skip to senior_research
-        if not next_agents:
-            logger.info("No specific research agents required. Proceeding to senior research.")
-            
-        return next_agents or ["senior_research"]
-    
-    # Add the research_router node to the graph
-    workflow.add_node("research_router", research_router)
-    
-    # Define the research checkpoint condition for when all research is complete
-    def research_checkpoint(state: WorkflowState) -> str:
-        """
-        Check if all required research is complete before proceeding.
-        
-        Args:
-            state: The current workflow state
-            
-        Returns:
-            Next node name
-        """
-        # Check if additional research is needed
-        if state.context.get("continue_research", False):
-            logger.info("Additional research requested by Senior Research Agent")
-            return "research_router"
-        
-        # Default to team_manager as the next step
-        return "team_manager"
-    
-    # Define the specialized agent router
-    def specialized_agent_router(state: WorkflowState) -> str:
-        """
-        Route to specialized agents based on the research findings.
-        
-        Args:
-            state: The current workflow state
-            
-        Returns:
-            The next node to route to
-        """
-        # Check if there's an error
-        if state.error:
-            return END
-            
-        # Check if data analysis is needed
-        if "data_analysis" in state.context.get("next_steps", []):
-            return "data_analysis"
-            
-        # Check if coding assistance is needed
-        if "coding_assistant" in state.context.get("next_steps", []):
-            return "coding_assistant"
-            
-        # Default to team_manager as the next step
-        return "team_manager"
-    
-    # Set up initial edges
+    # Set up direct edges
+    # From start to supervisor
     workflow.add_edge("__start__", "supervisor")
-    workflow.add_edge("supervisor", "research_router")
     
-    # Research edges - use direct edges instead of conditional edges
-    workflow.add_edge("research_router", "web_research")
-    workflow.add_edge("research_router", "internal_research")
-    workflow.add_edge("research_router", "senior_research")
+    # From supervisor to research agents based on routing decision
+    workflow.add_conditional_edges(
+        "supervisor",
+        lambda state: research_router(state),
+        {
+            "web_research": "web_research",
+            "internal_research": "internal_research",
+            "senior_research": "senior_research"
+        }
+    )
     
-    # Research completion edges
-    for agent in ["web_research", "internal_research"]:
-        workflow.add_edge(agent, "senior_research")
+    # From research agents back to senior research for further analysis
+    workflow.add_edge("web_research", "senior_research")
+    workflow.add_edge("internal_research", "senior_research")
     
-    # Senior research edges - use direct edges instead of conditional edges
-    workflow.add_edge("senior_research", "research_router")
-    workflow.add_edge("senior_research", "team_manager")
-    workflow.add_edge("senior_research", "data_analysis")
-    workflow.add_edge("senior_research", "coding_assistant")
-    workflow.add_edge("senior_research", END)
+    # From senior research to all possible next steps
+    # Using direct edges to avoid branch name conflicts
+    workflow.add_edge("senior_research", "supervisor")  # For additional research
+    workflow.add_edge("senior_research", "data_analysis")  # For data analysis
+    workflow.add_edge("senior_research", "coding_assistant")  # For code generation
+    workflow.add_edge("senior_research", "team_manager")  # For final report
+    workflow.add_edge("senior_research", END)  # For error cases
     
-    # Add final edges
+    # From specialized agents back to team manager for final report
     workflow.add_edge("data_analysis", "team_manager")
     workflow.add_edge("coding_assistant", "team_manager")
+    
+    # Final step completes the workflow
     workflow.add_edge("team_manager", END)
     
     # Compile the workflow
-    workflow.compile()
+    compiled_workflow = workflow.compile()
     
     logger.info("Agent workflow built and compiled successfully")
-    return workflow
+    return compiled_workflow
 
 @timing_decorator
 def get_agent_workflow() -> StateGraph:

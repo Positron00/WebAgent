@@ -1,7 +1,7 @@
 {
   "name": "webagent-platform",
   "version": "2.5.9",
-  "description": "WebAgent Platform with comprehensive diagnostics, detailed architecture documentation, and enhanced security features",
+  "description": "WebAgent Platform with comprehensive diagnostics, detailed architecture documentation, and enhanced security features (2025-03-14)",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,9 @@
     "check-types": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "prepare": "husky install",
-    "diagnostics": "node scripts/run_webagent.js --mode diagnostics",
+    "diagnostics": "conda run -n agents python -m backend.diagnostics.runners.run_diagnostics",
+    "tests": "conda run -n agents python -m backend.diagnostics.runners.run_tests",
+    "check": "conda run -n agents python -m backend.diagnostics.runners.run_all",
     "research": "node scripts/run_webagent.js --mode workflow"
   },
   "dependencies": {

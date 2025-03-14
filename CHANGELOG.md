@@ -1,96 +1,95 @@
 # Changelog
 
-All notable changes to the WebAgent Platform will be documented in this file.
+All notable changes to the WebAgent project will be documented in this file.
+
+## [2.5.10] - 2025-03-14
+
+### Added
+- Implemented core security module with JWT authentication and API key validation
+- Implemented the `rank_bm25` package for improved document search capabilities
+- Enhanced error handling for the `BM25Retriever` in advanced research functions
+- Added proper JSON parsing and error handling in the `TeamManagerAgent`
+- Added additional context fields for workflow state to improve agent performance
+- Added request size limiting and sanitized error messages
+
+### Fixed
+- Resolved issues with the `TeamManagerAgent` tests by properly mocking the chain
+- Fixed JSON template in the `TeamManagerAgent` prompt to properly escape variables
+- Corrected the error handling in the `TeamManagerAgent` to ensure fallback report creation
+- Fixed `WorkflowState.agent_outputs` property to properly map to reports for compatibility
+- Updated LangGraph workflow to use the latest API (v0.0.25+)
+- Fixed conditional branching in LangGraph workflows
+
+### Changed
+- Updated dependency installation to include `rank_bm25` for document retrieval
+- Improved test mocking to better handle async chains in agent testing
+- Enhanced diagnostics to provide more detailed information about document retrieval issues
+- Standardized error handling patterns across agent implementations
+- Modernized LangGraph implementation to use entry points and conditional edges
+- Enhanced security with rate limiting, input validation, and sanitization
 
 ## [2.5.9] - 2025-03-14
 
 ### Added
-- Comprehensive LangGraph review and optimization for workflow consistency
-- Enhanced team manager with improved logging and metrics tracking
-- Detailed error tracking and reporting for tasks
-- New API endpoint for accessing detailed task error information
-- Execution time tracking with detailed metrics for all workflow operations
-- Task status reporting with enhanced diagnostic information
-
-### Enhanced
-- Improved workflow state handling with better error management
-- Optimized agent routing with direct edge connections in LangGraph
-- Better metrics collection for all agent operations
-- Task manager now provides detailed error information and better status reporting
-- TeamManagerAgent now properly marks workflow completion status
-- All API endpoints now include timing metrics
+- Comprehensive diagnostics system with modular architecture
+- New test runners for focused and flexible testing capabilities
+- TeamManagerAgent output testing with mock LLM responses
+- Dedicated test suite for LangGraph workflow components
+- Enhanced dependency checking for all required modules
 
 ### Fixed
-- Fixed inconsistent imports in workflow modules (backend.app vs app)
-- Removed unnecessary workflow files from graph directory
-- Fixed handling of END node references in workflow graph
-- Fixed potential errors in workflow graph validation
-- Corrected issues with conditional edge handling in LangGraph workflow
-- Fixed metrics collection for task completions and errors
+- BaseAgent initialization issues with missing fields
+- LangGraph workflow issues with properly defined edges
+- Edge definitions for the "senior_research" node
+- Metrics collector registry to avoid duplicate registrations
+- Updated diagnostics code to detect and report conflicts
 
-### Technical
-- Applied timing decorators to all critical workflow functions
-- Improved error handling throughout the codebase
-- Enhanced logging with more detailed information
-- Standardized imports across the codebase
-- Comprehensive review of all agent interaction code
+### Changed
+- Restructured test and diagnostic code for better maintainability
+- Updated npm scripts to include diagnostics and testing commands
+- Improved error handling in critical agent components
+- Enhanced README with detailed diagnostics documentation
+- Updated package.json to reflect new system capabilities
 
 ## [2.5.8] - 2025-03-14
 
 ### Added
-- Comprehensive architecture documentation with detailed component diagrams
-- Enhanced diagnostics module with detailed system health monitoring
-- Network connectivity validation for external services
-- Language model availability checking
-- Security status monitoring and reporting
-- Execution time metrics for each agent operation
-- Diagnostics CLI for easy system health verification
-- Example script for running the WebAgent platform
-- Detailed research loop architecture diagram and documentation
-
-### Enhanced
-- Security test suite with comprehensive web vulnerability tests
-- API security validation for authentication and authorization
-- Rate limiting and request size validation tests
-- Input sanitization for potentially dangerous inputs
-- Protection against prompt injection attacks
-- Error message sanitization to prevent sensitive data exposure
-- Workflow state isolation to prevent data leakage
-- Enforced agent sequencing to prevent unauthorized transitions
-- Memory usage tracking and reporting
-- Resource utilization monitoring
+- Support for concurrent agent execution with improved thread management
+- Metrics monitoring system with Prometheus integration
+- Enhanced security features including input validation and rate limiting
+- New debugging interface for development environments
 
 ### Fixed
-- Fixed race conditions in concurrent workflow execution
-- Addressed potential memory leaks in long-running operations
-- Corrected error handling in diagnostic checks
-- Fixed security vulnerability in error message display
-- Resolved timeout issues in network connectivity checks
-- Addressed edge cases in workflow state transitions
+- Memory leaks in long-running agent sessions
+- Improved error handling for network timeouts
+- CSS issues for mobile devices with responsive design updates
+- Agent retrieval and document handling edge cases
+
+### Changed
+- Updated to LangGraph 0.0.25 for improved workflow stability
+- Optimized document processing pipeline for faster extraction
+- Improved logging with structured JSON format
+- Enhanced developer documentation with troubleshooting guides
 
 ## [2.5.7] - 2025-03-14
 
 ### Added
-- Comprehensive security module with input validation, authentication, and rate limiting
-- Prometheus metrics integration for performance monitoring
-- Grafana dashboards for visualization of system metrics
-- Advanced authentication with JWT and API key support
-- Security headers middleware to prevent common web vulnerabilities
-- Rate limiting middleware to prevent abuse
-- Request size validation to prevent DoS attacks
-
-### Enhanced
-- Error handling with detailed error tracking
-- Documentation with security and monitoring sections
-- Logging with structured JSON format
-- Test coverage for security and performance aspects
-- Docker configuration with security hardening
-- Kubernetes deployment manifests
+- New document extraction capabilities for PDF and HTML content
+- Team Manager agent for coordinating multi-agent workflows
+- Support for streaming responses with progress indicators
+- Custom prompt templates for specialized research domains
 
 ### Fixed
-- Fixed research loop termination conditions in Senior Research Agent
-- Corrected document extraction file type detection
-- Addressed edge cases in workflow state transitions
+- Workflow graph serialization issues when saving agent state
+- Network timeout error handling for resilient operation
+- UI rendering issues with large response sets
+- Context management for long-running conversations
+
+### Changed
+- Refactored agent interface for consistent API across types
+- Updated dependency management for better compatibility
+- Improved documentation with detailed examples
+- Enhanced data formatting for external API responses
 
 ## [2.5.6] - 2025-03-14
 
@@ -432,148 +431,7 @@ All notable changes to the WebAgent Platform will be documented in this file.
 - Cleaned up API contracts documentation
 - Expanded middleware ordering documentation
 
-### Architecture
-
-The WebAgent platform uses a sophisticated multi-agent architecture with the following key components:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WebAgent Platform v2.4.2                          │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌────────────────┐                         ┌─────────────────────────────┐ │
-│  │                │      REST API           │                             │ │
-│  │  Frontend      │◄────────────────────────┤  Backend API Layer          │ │
-│  │  Next.js       │                         │  FastAPI + Middleware       │ │
-│  │  React         │─────────────────────────►  • Security                 │ │
-│  │  TailwindCSS   │                         │  • Rate Limiting            │ │
-│  │                │                         │  • Metrics                  │ │
-│  └────────────────┘                         └───────────────┬─────────────┘ │
-│           │                                                 │               │
-│           │        ┌──────────────────┐                     │               │
-│           └────────┤ State Management │                     │               │
-│                    └──────────────────┘                     ▼               │
-│                                                  ┌─────────────────────────┐ │
-│  ┌────────────────────────────────────────────┐ │                         │ │
-│  │             Monitoring & Observability     │ │  Task Manager           │ │
-│  │  • Prometheus Metrics                      │ │  • Async Processing     │ │
-│  │  • Grafana Dashboards                      │ │  • Task State Storage   │ │
-│  │  • Structured Logging                      │ │  • Result Caching       │ │
-│  │  • LangSmith Tracing                       │ │                         │ │
-│  └──────────────────┬─────────────────────────┘ └───────────┬─────────────┘ │
-│                     │                                       │               │
-│                     ▼                                       ▼               │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                       LangGraph Orchestration                          │ │
-│  │                                                                        │ │
-│  │  ┌─────────┐        ┌─────────────┐         ┌────────────┐            │ │
-│  │  │         │        │             │         │            │            │ │
-│  │  │Supervisor◄───────┤Team Manager ◄─────────┤Senior      │            │ │
-│  │  │Agent    │        │Agent        │         │Research    │            │ │
-│  │  │         ├──┐     │             │         │Agent       │            │ │
-│  │  └─────────┘  │     └─────────────┘         └────────────┘            │ │
-│  │               │            ▲                      ▲                    │ │
-│  │               │            │                      │                    │ │
-│  │               ▼            │                      │                    │ │
-│  │  ┌─────────────────────────┴──────────────────────┴───────────────┐   │ │
-│  │  │                                                                │   │ │
-│  │  │  ┌─────────────┐    ┌─────────────┐     ┌────────────┐        │   │ │
-│  │  │  │             │    │             │     │            │        │   │ │
-│  │  │  │Web Research │    │Internal     │     │Data        │        │   │ │
-│  │  │  │Agent        │    │Research     │     │Analysis    │        │   │ │
-│  │  │  │             │    │Agent        │     │Agent       │        │   │ │
-│  │  │  └─────────────┘    └─────────────┘     └────────────┘        │   │ │
-│  │  │         │                  │                   │               │   │ │
-│  │  │         └──────────────────┴───────────────────┘               │   │ │
-│  │  │                            │                                   │   │ │
-│  │  └────────────────────────────┼───────────────────────────────────┘   │ │
-│  └─────────────────────────────────────────────────────────────────────────┘ │
-│                                  │                                           │
-│    ┌─────────────────────────────┼───────────────────────────────────────┐   │
-│    │                             │  External Integrations                │   │
-│    │                             ▼                                       │   │
-│    │  ┌──────────────┐    ┌─────────────┐    ┌─────────────────┐        │   │
-│    │  │              │    │             │    │                 │        │   │
-│    │  │ Together AI  │    │ OpenAI API  │    │ Tavily Search   │        │   │
-│    │  │ Llama 3.3    │    │ GPT-4       │    │                 │        │   │
-│    │  │              │    │             │    │                 │        │   │
-│    │  └──────────────┘    └─────────────┘    └─────────────────┘        │   │
-│    └───────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Key Architecture Components
-
-1. **Frontend Layer**:
-   - Next.js 14.2+ with React 18
-   - TailwindCSS for styling
-   - TypeScript for type safety
-   - State management with React Context API
-   - RESTful API client with axios
-
-2. **Backend API Layer**:
-   - FastAPI with async/await support
-   - Security middleware (rate limiting, input validation)
-   - Prometheus instrumentation
-   - Custom exception handling
-   - JWT authentication
-
-3. **Task Management**:
-   - Asynchronous task processing
-   - State tracking and persistence
-   - Result caching
-   - Error handling and recovery
-
-4. **LangGraph Orchestration**:
-   - Agent workflow definition
-   - Dynamic routing between agents
-   - State management
-   - Error handling and retry logic
-
-5. **Agent Implementation**:
-   - Supervisor Agent for task planning
-   - Research Agents (Web and Internal)
-   - Analysis Agents for data processing
-   - Team Manager for result aggregation
-
-6. **External Integrations**:
-   - Together AI (Llama 3.3 70B Instruct Turbo Free)
-   - OpenAI API
-   - Tavily Search API
-   - Vector database for internal knowledge
-
-7. **Monitoring & Observability**:
-   - Prometheus metrics
-   - Structured JSON logging
-   - Grafana dashboards
-   - LangSmith tracing for LLM interactions
-   - Health check endpoints
-
-### Communication Flow
-
-1. User submits query through frontend
-2. Backend API validates and creates a new task
-3. Task Manager initiates asynchronous processing
-4. Supervisor Agent analyzes query and plans approach
-5. Research Agents gather information in parallel
-6. Senior Research Agent synthesizes findings
-7. Data Analysis Agent processes the information
-8. Team Manager creates final report
-9. Result is returned to frontend for display
-
-### Resilience Features
-
-- Comprehensive error handling
-- Rate limiting to prevent abuse
-- Circuit breakers for external services
-- Fallback mechanisms for LLM providers
-- Graceful degradation modes
-- Asynchronous processing with retries
-
-This architecture provides a scalable, maintainable, and robust platform for AI-powered research and analysis workflows.
-
-## [2.4.1] - 2025-02-22
+## [2.4.1] - 2025-03-08
 
 ### Fixed
 - Resolved ChatContext provider error

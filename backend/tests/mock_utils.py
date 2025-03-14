@@ -26,7 +26,8 @@ def create_mock_agent(name: str) -> MagicMock:
     Returns:
         Mock agent with .run() method as AsyncMock
     """
-    mock_agent = MagicMock()
+    # Create an AsyncMock for the agent
+    mock_agent = AsyncMock()
     mock_agent.name = name
     mock_agent.agent_id = f"mock-{name}-12345678"
     
@@ -36,9 +37,29 @@ def create_mock_agent(name: str) -> MagicMock:
     # Configure the default behavior to echo back the state
     async def default_run(state):
         state.update_with_agent_output(name, {"status": "completed"})
-        return state
+        return {"state": state}
     
     mock_agent.run.side_effect = default_run
+    
+    # For LangGraph 0.3.5 compatibility - configure the agent itself as an async callable
+    async def async_call(state_dict):
+        # In LangGraph 0.3.5, the state might be passed directly
+        from app.models.task import WorkflowState
+        
+        # Check if state_dict is already a WorkflowState
+        if isinstance(state_dict, WorkflowState):
+            state = state_dict
+        else:
+            # Extract the state from the input dictionary
+            state = state_dict.get("state")
+            
+        # Process the state with the agent's run method
+        result = await mock_agent.run(state)
+        # Return the updated state in the same format
+        return result
+    
+    # Set the side_effect directly on the AsyncMock
+    mock_agent.side_effect = async_call
     
     # Add other standard methods and attributes
     mock_agent.get_status = MagicMock(return_value={

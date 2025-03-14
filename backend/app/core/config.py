@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     PROJECT_DESCRIPTION: str = "Multi-Agent Research and Analysis Platform"
     VERSION: str = "2.3.1"
     
+    # Environment
+    WEBAGENT_ENV: str = os.getenv("WEBAGENT_ENV", "dev")
+    
     # Server settings
     HOST: str = os.getenv("WEBAGENT_API_HOST", "0.0.0.0")
     PORT: int = int(os.getenv("WEBAGENT_API_PORT", "8000"))
@@ -94,6 +97,25 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("WEBAGENT_SECURITY_SECRET_KEY", "insecure_key_for_dev_only_change_in_production")
     ALGORITHM: str = os.getenv("WEBAGENT_SECURITY_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("WEBAGENT_SECURITY_TOKEN_EXPIRE_MINUTES", "30"))
+    
+    # Rate limiting settings
+    RATE_LIMIT_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_RATE_LIMIT_ENABLED", "True").lower() == "true"
+    RATE_LIMIT_MAX_REQUESTS: int = int(os.getenv("WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS", "60"))  # requests per window
+    RATE_LIMIT_WINDOW_SIZE: int = int(os.getenv("WEBAGENT_SECURITY_RATE_LIMIT_WINDOW_SIZE", "60"))  # window size in seconds
+    RATE_LIMIT_BURST_LIMIT: int = int(os.getenv("WEBAGENT_SECURITY_RATE_LIMIT_BURST_LIMIT", "120"))  # burst limit
+    
+    # Request size limiting
+    REQUEST_SIZE_LIMIT: int = int(os.getenv("WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT", "10485760"))  # 10MB default
+    
+    # Authentication settings
+    JWT_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_JWT_ENABLED", "False").lower() == "true"
+    API_KEY_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_API_KEY_ENABLED", "False").lower() == "true"
+    
+    # Anthropic API
+    ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
+    
+    # MLflow tracking
+    MLFLOW_TRACKING_URI: Optional[str] = os.getenv("MLFLOW_TRACKING_URI")
 
     class Config:
         """Pydantic config class"""
@@ -113,6 +135,9 @@ if app_config:
         PORT: int = api_config.port
         DEBUG_MODE: bool = api_config.debug_mode
         
+        # Environment
+        WEBAGENT_ENV: str = getattr(app_config, 'env', 'dev') if app_config else 'dev'
+        
         # CORS
         CORS_ORIGINS: List[str] = cors_config.origins
         
@@ -125,6 +150,21 @@ if app_config:
         REDIS_PORT: int = db_config.redis.port
         REDIS_DB: int = db_config.redis.db
         REDIS_PASSWORD: Optional[str] = db_config.redis.password
+        
+        # Security settings from YAML if available
+        RATE_LIMIT_ENABLED: bool = getattr(app_config.security, 'rate_limit_enabled', True) if hasattr(app_config, 'security') else True
+        RATE_LIMIT_MAX_REQUESTS: int = getattr(app_config.security, 'rate_limit_max_requests', 60) if hasattr(app_config, 'security') else 60
+        RATE_LIMIT_WINDOW_SIZE: int = getattr(app_config.security, 'rate_limit_window_size', 60) if hasattr(app_config, 'security') else 60
+        RATE_LIMIT_BURST_LIMIT: int = getattr(app_config.security, 'rate_limit_burst_limit', 120) if hasattr(app_config, 'security') else 120
+        REQUEST_SIZE_LIMIT: int = getattr(app_config.security, 'request_size_limit', 10485760) if hasattr(app_config, 'security') else 10485760
+        JWT_ENABLED: bool = getattr(app_config.security, 'jwt_enabled', False) if hasattr(app_config, 'security') else False
+        API_KEY_ENABLED: bool = getattr(app_config.security, 'api_key_enabled', False) if hasattr(app_config, 'security') else False
+        
+        # Anthropic API
+        ANTHROPIC_API_KEY: Optional[str] = getattr(app_config.security, 'anthropic_api_key', None) if hasattr(app_config, 'security') else None
+        
+        # MLflow tracking
+        MLFLOW_TRACKING_URI: Optional[str] = getattr(app_config.security, 'mlflow_tracking_uri', None) if hasattr(app_config, 'security') else None
     
     # Create settings instance with YAML values
     settings = YAMLConfigSettings()

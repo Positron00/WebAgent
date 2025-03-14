@@ -132,11 +132,58 @@ class RAGRetriever:
             )
             
             # Create BM25 sparse retriever for keyword-based search
-            self.sparse_retriever = BM25Retriever.from_documents(
-                self.advanced_vectordb.get(),
-                preprocess_func=lambda text: text.lower().split(),
-                k=self.config.get("sparse_k", 20)
-            )
+            try:
+                # Create a proper Document object with page_content
+                from langchain.schema import Document
+                
+                # Get documents from vector DB or create empty placeholder
+                try:
+                    documents = self.advanced_vectordb.get()
+                    # Ensure documents are proper Document objects
+                    if documents:
+                        # Check if documents are strings and convert if needed
+                        if isinstance(documents[0], str):
+                            documents = [Document(page_content=doc, metadata={}) for doc in documents]
+                    else:
+                        # Create minimal document collection
+                        documents = [Document(page_content="Empty repository placeholder", metadata={})]
+                except Exception as doc_err:
+                    logger.warning(f"Error getting documents: {str(doc_err)}. Creating placeholder document.")
+                    documents = [Document(page_content="Empty repository placeholder", metadata={})]
+                
+                # Create the sparse retriever
+                self.sparse_retriever = BM25Retriever.from_documents(
+                    documents,
+                    preprocess_func=lambda text: text.lower().split(),
+                    k=self.config.get("sparse_k", 20)
+                )
+            except Exception as e:
+                logger.error(f"Error creating BM25Retriever: {str(e)}")
+                # Create a mock retriever that returns empty results
+                try:
+                    # Try multiple import paths for backward/forward compatibility
+                    try:
+                        from langchain.schema.retriever import BaseRetriever
+                    except ImportError:
+                        try:
+                            from langchain.retrievers.base import BaseRetriever
+                        except ImportError:
+                            from langchain._retriever_base import BaseRetriever
+                    
+                    class EmptyRetriever(BaseRetriever):
+                        def _get_relevant_documents(self, query, **kwargs):
+                            return []
+                    self.sparse_retriever = EmptyRetriever()
+                except Exception as inner_e:
+                    # Last resort fallback - just create a minimal fake retriever
+                    logger.error(f"Error creating retriever: {str(inner_e)}. Using minimal mock retriever.")
+                    from langchain.schema import Document
+                    
+                    class MinimalRetriever:
+                        def get_relevant_documents(self, query, **kwargs):
+                            return [Document(page_content="Empty result", metadata={})]
+                        
+                    self.sparse_retriever = MinimalRetriever()
             
             # Create an ensemble retriever that combines both approaches
             self.ensemble_retriever = EnsembleRetriever(
@@ -178,11 +225,26 @@ class RAGRetriever:
                 # Convert to the expected format
                 results = []
                 for doc in docs:
-                    results.append({
-                        "page_content": doc.page_content,
-                        "metadata": doc.metadata,
-                        "score": 1.0  # Placeholder score for ensemble retriever
-                    })
+                    # Handle different document types appropriately
+                    if hasattr(doc, 'page_content'):
+                        # LangChain Document objects have page_content attribute
+                        results.append({
+                            "page_content": doc.page_content,
+                            "metadata": doc.metadata,
+                            "score": 1.0  # Placeholder score for ensemble retriever
+                        })
+                    elif isinstance(doc, dict):
+                        # If it's already a dictionary, ensure it has page_content
+                        if "page_content" not in doc and "content" in doc:
+                            doc["page_content"] = doc["content"]
+                        results.append(doc)
+                    elif isinstance(doc, str):
+                        # If it's just a string, wrap it as a document
+                        results.append({
+                            "page_content": doc,
+                            "metadata": {},
+                            "score": 1.0
+                        })
             else:
                 # Fall back to basic retriever
                 results = await retrieve_documents(query, k=k)

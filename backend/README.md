@@ -48,7 +48,46 @@ The WebAgent backend is built on a multi-agent architecture that leverages LangG
 - **Document Processing**: Extract and analyze information from various document formats
 - **Research Loop**: Iterative research capabilities with up to 3 feedback loops
 - **API Integration**: FastAPI server with comprehensive endpoint documentation
-- **Diagnostics**: Built-in system monitoring and diagnostics
+
+### Diagnostics & Testing System
+
+The WebAgent platform includes a comprehensive diagnostics and testing system to ensure reliability and proper functioning of all components:
+
+- **Consolidated Diagnostics**: All diagnostics utilities are organized in the `backend/diagnostics` directory
+- **System Health Checks**: Verify environment, dependencies, agents, workflow, and network connectivity
+- **Performance Monitoring**: Track memory usage, CPU utilization, and execution times for all components
+- **Automated Tests**: Comprehensive test suite covering all aspects of the platform
+- **LangGraph Testing**: Specialized tests for the LangGraph workflow and agent interactions
+
+#### Running Diagnostics and Tests
+
+The following commands are available to run diagnostics and tests:
+
+```bash
+# Run all diagnostics checks
+npm run diagnostics
+
+# Run all tests
+npm run tests
+
+# Run both diagnostics and tests
+npm run check
+
+# Run directly from Python
+conda activate agents
+python -m backend.diagnostics.runners.run_all
+
+# Additional options
+python -m backend.diagnostics.runners.run_diagnostics --check-network --export-json=report.json
+python -m backend.diagnostics.runners.run_tests --verbose --test-file=test_langgraph.py
+```
+
+The diagnostics can help identify issues with:
+- Missing dependencies or environment variables
+- LangGraph workflow configuration problems
+- Agent initialization or communication issues
+- Network connectivity to external services
+- LLM availability and configuration
 
 ## Prerequisites
 
