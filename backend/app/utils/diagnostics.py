@@ -262,16 +262,16 @@ class SystemDiagnostics:
     @timing_decorator
     def check_workflow(self) -> Dict[str, Any]:
         """
-        Check workflow configuration.
+        Check the agent workflow graph.
         
         Returns:
-            Dictionary with workflow information
+            Dict with workflow information
         """
         logger.info("Checking workflow")
         start_time = time.time()
         
         try:
-            from app.graph.workflows import get_agent_workflow
+            from backend.app.graph.workflows import get_agent_workflow
             workflow = get_agent_workflow()
             
             # Basic workflow information
@@ -279,43 +279,29 @@ class SystemDiagnostics:
                 "nodes": list(workflow.nodes),
                 "compiled": hasattr(workflow, "_compiled") and workflow._compiled,
                 "root_node": "__start__" in workflow.nodes,
-                "end_node": "end" in workflow.nodes
             }
             
-            # Get edge information
-            edges = []
-            for source in workflow.nodes:
-                for target in workflow.get_out_edges(source):
-                    if isinstance(target, str):
-                        edges.append({"source": source, "target": target, "type": "direct"})
-                    else:
-                        # For conditional edges, just note that they exist
-                        edges.append({"source": source, "target": "conditional", "type": "conditional"})
-            
-            workflow_info["edges"] = edges
+            # Since get_out_edges is not available, we'll skip edge information
             workflow_info["node_count"] = len(workflow.nodes)
-            workflow_info["edge_count"] = len(edges)
             
             # Check if the workflow has the expected critical nodes
             expected_nodes = ["supervisor", "web_research", "internal_research", 
-                              "senior_research", "team_manager"]
-            missing_nodes = [node for node in expected_nodes if node not in workflow.nodes]
+                             "senior_research", "team_manager"]
+            workflow_info["missing_nodes"] = [node for node in expected_nodes 
+                                             if node not in workflow.nodes]
             
-            if missing_nodes:
-                workflow_info["missing_critical_nodes"] = missing_nodes
-                logger.warning(f"Workflow missing critical nodes: {missing_nodes}")
-            else:
-                workflow_info["missing_critical_nodes"] = []
-                logger.info("Workflow contains all critical nodes")
-            
+            self.check_results["workflow"] = workflow_info
+            self.check_times["workflow"] = time.time() - start_time
+            return workflow_info
         except Exception as e:
             error_msg = f"Error checking workflow: {str(e)}"
-            workflow_info = {"error": error_msg, "traceback": traceback.format_exc()}
-            logger.error(error_msg, exc_info=True)
-        
-        self.check_results["workflow"] = workflow_info
-        self.check_times["workflow"] = time.time() - start_time
-        return workflow_info
+            workflow_info = {"error": error_msg}
+            logger.error(error_msg)
+            logger.exception(e)
+            
+            self.check_results["workflow"] = workflow_info
+            self.check_times["workflow"] = time.time() - start_time
+            return workflow_info
     
     @timing_decorator
     def check_performance_metrics(self) -> Dict[str, Any]:
@@ -626,11 +612,10 @@ def print_diagnostics_report(run_checks=True) -> None:
             print(f"Nodes: {', '.join(workflow.get('nodes', []))}")
             print(f"Compiled: {workflow.get('compiled', False)}")
             print(f"Node Count: {workflow.get('node_count', 0)}")
-            print(f"Edge Count: {workflow.get('edge_count', 0)}")
             
-            missing = workflow.get("missing_critical_nodes", [])
+            missing = workflow.get("missing_nodes", [])
             if missing:
-                print(f"Missing Critical Nodes: {', '.join(missing)}")
+                print(f"Missing Nodes: {', '.join(missing)}")
     
     # Network Connectivity
     if "network_connectivity" in report:

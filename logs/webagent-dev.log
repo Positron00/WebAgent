@@ -59,3 +59,319 @@
 2025-03-14 09:05:34,139 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
 2025-03-14 09:05:34,239 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
 2025-03-14 09:05:34,239 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:31:08,190 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:31:08,314 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:31:08,314 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:35:04,806 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:35:05,420 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:35:05,420 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:35:05,421 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:35:05,421 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:35:05,448 - webagent - DEBUG - Function check_system_info executed in 0.0268 seconds
+2025-03-14 11:35:05,448 - webagent - DEBUG - Function check_system_info executed in 0.0268 seconds
+2025-03-14 11:35:05,636 - webagent - DEBUG - Function check_dependencies executed in 0.1884 seconds
+2025-03-14 11:35:05,636 - webagent - DEBUG - Function check_dependencies executed in 0.1884 seconds
+2025-03-14 11:35:05,637 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:35:05,637 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:35:05,641 - webagent - DEBUG - Function check_agents executed in 0.0045 seconds
+2025-03-14 11:35:05,641 - webagent - DEBUG - Function check_agents executed in 0.0045 seconds
+2025-03-14 11:35:05,642 - webagent - DEBUG - Function check_workflow executed in 0.0012 seconds
+2025-03-14 11:35:05,642 - webagent - DEBUG - Function check_workflow executed in 0.0012 seconds
+2025-03-14 11:35:05,853 - webagent - DEBUG - Function check_performance_metrics executed in 0.2105 seconds
+2025-03-14 11:35:05,853 - webagent - DEBUG - Function check_performance_metrics executed in 0.2105 seconds
+2025-03-14 11:35:05,854 - webagent - DEBUG - Function check_security_status executed in 0.0012 seconds
+2025-03-14 11:35:05,854 - webagent - DEBUG - Function check_security_status executed in 0.0012 seconds
+2025-03-14 11:35:05,854 - webagent - DEBUG - Function run_all_checks executed in 0.4338 seconds
+2025-03-14 11:35:05,854 - webagent - DEBUG - Function run_all_checks executed in 0.4338 seconds
+2025-03-14 11:35:43,207 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:35:43,311 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:35:43,311 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:35:43,312 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:35:43,312 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:35:43,336 - webagent - DEBUG - Function check_system_info executed in 0.0237 seconds
+2025-03-14 11:35:43,336 - webagent - DEBUG - Function check_system_info executed in 0.0237 seconds
+2025-03-14 11:35:43,414 - webagent - DEBUG - Function check_dependencies executed in 0.0778 seconds
+2025-03-14 11:35:43,414 - webagent - DEBUG - Function check_dependencies executed in 0.0778 seconds
+2025-03-14 11:35:43,414 - webagent - DEBUG - Function check_environment executed in 0.0005 seconds
+2025-03-14 11:35:43,414 - webagent - DEBUG - Function check_environment executed in 0.0005 seconds
+2025-03-14 11:35:43,415 - webagent - DEBUG - Function check_agents executed in 0.0007 seconds
+2025-03-14 11:35:43,415 - webagent - DEBUG - Function check_agents executed in 0.0007 seconds
+2025-03-14 11:36:23,574 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:36:23,694 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:36:23,694 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:36:27,268 - webagent - DEBUG - Function check_workflow executed in 43.8528 seconds
+2025-03-14 11:36:27,268 - webagent - DEBUG - Function check_workflow executed in 43.8528 seconds
+2025-03-14 11:36:27,474 - webagent - DEBUG - Function check_performance_metrics executed in 0.2057 seconds
+2025-03-14 11:36:27,474 - webagent - DEBUG - Function check_performance_metrics executed in 0.2057 seconds
+2025-03-14 11:36:27,476 - webagent - DEBUG - Function check_security_status executed in 0.0016 seconds
+2025-03-14 11:36:27,476 - webagent - DEBUG - Function check_security_status executed in 0.0016 seconds
+2025-03-14 11:36:27,476 - webagent - DEBUG - Function run_all_checks executed in 44.1638 seconds
+2025-03-14 11:36:27,476 - webagent - DEBUG - Function run_all_checks executed in 44.1638 seconds
+2025-03-14 11:40:43,468 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:40:43,590 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:40:43,590 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:40:43,591 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:40:43,591 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:40:43,616 - webagent - DEBUG - Function check_system_info executed in 0.0247 seconds
+2025-03-14 11:40:43,616 - webagent - DEBUG - Function check_system_info executed in 0.0247 seconds
+2025-03-14 11:40:43,743 - webagent - DEBUG - Function check_dependencies executed in 0.1267 seconds
+2025-03-14 11:40:43,743 - webagent - DEBUG - Function check_dependencies executed in 0.1267 seconds
+2025-03-14 11:40:43,743 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:40:43,743 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:40:43,744 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:40:43,744 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:40:58,063 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:40:58,190 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:40:58,190 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:41:09,889 - webagent - DEBUG - Function check_workflow executed in 26.1451 seconds
+2025-03-14 11:41:09,889 - webagent - DEBUG - Function check_workflow executed in 26.1451 seconds
+2025-03-14 11:41:10,100 - webagent - DEBUG - Function check_performance_metrics executed in 0.2106 seconds
+2025-03-14 11:41:10,100 - webagent - DEBUG - Function check_performance_metrics executed in 0.2106 seconds
+2025-03-14 11:41:10,101 - webagent - DEBUG - Function check_security_status executed in 0.0010 seconds
+2025-03-14 11:41:10,101 - webagent - DEBUG - Function check_security_status executed in 0.0010 seconds
+2025-03-14 11:41:10,101 - webagent - DEBUG - Function run_all_checks executed in 26.5100 seconds
+2025-03-14 11:41:10,101 - webagent - DEBUG - Function run_all_checks executed in 26.5100 seconds
+2025-03-14 11:42:41,503 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:42:41,619 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:42:41,619 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:42:41,619 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:42:41,619 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:42:41,646 - webagent - DEBUG - Function check_system_info executed in 0.0267 seconds
+2025-03-14 11:42:41,646 - webagent - DEBUG - Function check_system_info executed in 0.0267 seconds
+2025-03-14 11:42:41,778 - webagent - DEBUG - Function check_dependencies executed in 0.1317 seconds
+2025-03-14 11:42:41,778 - webagent - DEBUG - Function check_dependencies executed in 0.1317 seconds
+2025-03-14 11:42:41,779 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:42:41,779 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:42:41,780 - webagent - DEBUG - Function check_agents executed in 0.0010 seconds
+2025-03-14 11:42:41,780 - webagent - DEBUG - Function check_agents executed in 0.0010 seconds
+2025-03-14 11:42:43,213 - webagent - DEBUG - Function check_workflow executed in 1.4335 seconds
+2025-03-14 11:42:43,213 - webagent - DEBUG - Function check_workflow executed in 1.4335 seconds
+2025-03-14 11:42:43,420 - webagent - DEBUG - Function check_performance_metrics executed in 0.2064 seconds
+2025-03-14 11:42:43,420 - webagent - DEBUG - Function check_performance_metrics executed in 0.2064 seconds
+2025-03-14 11:42:43,421 - webagent - DEBUG - Function check_security_status executed in 0.0007 seconds
+2025-03-14 11:42:43,421 - webagent - DEBUG - Function check_security_status executed in 0.0007 seconds
+2025-03-14 11:42:43,421 - webagent - DEBUG - Function run_all_checks executed in 1.8011 seconds
+2025-03-14 11:42:43,421 - webagent - DEBUG - Function run_all_checks executed in 1.8011 seconds
+2025-03-14 11:42:47,306 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:42:47,425 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:42:47,425 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:46:30,223 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:46:30,344 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:46:30,344 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:46:30,344 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:46:30,344 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:46:30,372 - webagent - DEBUG - Function check_system_info executed in 0.0272 seconds
+2025-03-14 11:46:30,372 - webagent - DEBUG - Function check_system_info executed in 0.0272 seconds
+2025-03-14 11:46:30,511 - webagent - DEBUG - Function check_dependencies executed in 0.1386 seconds
+2025-03-14 11:46:30,511 - webagent - DEBUG - Function check_dependencies executed in 0.1386 seconds
+2025-03-14 11:46:30,511 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:46:30,511 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:46:30,512 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:46:30,512 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:46:31,848 - webagent - DEBUG - Function check_workflow executed in 1.3359 seconds
+2025-03-14 11:46:31,848 - webagent - DEBUG - Function check_workflow executed in 1.3359 seconds
+2025-03-14 11:46:32,059 - webagent - DEBUG - Function check_performance_metrics executed in 0.2107 seconds
+2025-03-14 11:46:32,059 - webagent - DEBUG - Function check_performance_metrics executed in 0.2107 seconds
+2025-03-14 11:46:32,059 - webagent - DEBUG - Function check_security_status executed in 0.0006 seconds
+2025-03-14 11:46:32,059 - webagent - DEBUG - Function check_security_status executed in 0.0006 seconds
+2025-03-14 11:46:32,059 - webagent - DEBUG - Function run_all_checks executed in 1.7151 seconds
+2025-03-14 11:46:32,059 - webagent - DEBUG - Function run_all_checks executed in 1.7151 seconds
+2025-03-14 11:46:36,745 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:46:36,872 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:46:36,872 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:48:29,232 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:48:29,339 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:48:29,339 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:48:29,340 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:48:29,340 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:48:29,364 - webagent - DEBUG - Function check_system_info executed in 0.0239 seconds
+2025-03-14 11:48:29,364 - webagent - DEBUG - Function check_system_info executed in 0.0239 seconds
+2025-03-14 11:48:29,480 - webagent - DEBUG - Function check_dependencies executed in 0.1160 seconds
+2025-03-14 11:48:29,480 - webagent - DEBUG - Function check_dependencies executed in 0.1160 seconds
+2025-03-14 11:48:29,481 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:48:29,481 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:48:29,482 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:48:29,482 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:48:30,556 - webagent - DEBUG - Function check_workflow executed in 1.0740 seconds
+2025-03-14 11:48:30,556 - webagent - DEBUG - Function check_workflow executed in 1.0740 seconds
+2025-03-14 11:48:30,764 - webagent - DEBUG - Function check_performance_metrics executed in 0.2083 seconds
+2025-03-14 11:48:30,764 - webagent - DEBUG - Function check_performance_metrics executed in 0.2083 seconds
+2025-03-14 11:48:30,765 - webagent - DEBUG - Function check_security_status executed in 0.0007 seconds
+2025-03-14 11:48:30,765 - webagent - DEBUG - Function check_security_status executed in 0.0007 seconds
+2025-03-14 11:48:30,765 - webagent - DEBUG - Function run_all_checks executed in 1.4251 seconds
+2025-03-14 11:48:30,765 - webagent - DEBUG - Function run_all_checks executed in 1.4251 seconds
+2025-03-14 11:48:34,191 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:48:34,301 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:48:34,301 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:49:27,173 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:49:27,281 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:49:27,281 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:49:27,281 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:49:27,281 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:49:27,304 - webagent - DEBUG - Function check_system_info executed in 0.0224 seconds
+2025-03-14 11:49:27,304 - webagent - DEBUG - Function check_system_info executed in 0.0224 seconds
+2025-03-14 11:49:27,421 - webagent - DEBUG - Function check_dependencies executed in 0.1169 seconds
+2025-03-14 11:49:27,421 - webagent - DEBUG - Function check_dependencies executed in 0.1169 seconds
+2025-03-14 11:49:27,421 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:49:27,421 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:49:27,422 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:49:27,422 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:49:28,435 - webagent - DEBUG - Function check_workflow executed in 1.0130 seconds
+2025-03-14 11:49:28,435 - webagent - DEBUG - Function check_workflow executed in 1.0130 seconds
+2025-03-14 11:49:28,646 - webagent - DEBUG - Function check_performance_metrics executed in 0.2101 seconds
+2025-03-14 11:49:28,646 - webagent - DEBUG - Function check_performance_metrics executed in 0.2101 seconds
+2025-03-14 11:49:28,647 - webagent - DEBUG - Function check_security_status executed in 0.0007 seconds
+2025-03-14 11:49:28,647 - webagent - DEBUG - Function check_security_status executed in 0.0007 seconds
+2025-03-14 11:49:28,647 - webagent - DEBUG - Function run_all_checks executed in 1.3653 seconds
+2025-03-14 11:49:28,647 - webagent - DEBUG - Function run_all_checks executed in 1.3653 seconds
+2025-03-14 11:49:32,191 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:49:32,307 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:49:32,307 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:51:43,494 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:51:43,623 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:51:43,623 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:51:43,624 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:51:43,624 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:51:43,649 - webagent - DEBUG - Function check_system_info executed in 0.0251 seconds
+2025-03-14 11:51:43,649 - webagent - DEBUG - Function check_system_info executed in 0.0251 seconds
+2025-03-14 11:51:43,813 - webagent - DEBUG - Function check_dependencies executed in 0.1635 seconds
+2025-03-14 11:51:43,813 - webagent - DEBUG - Function check_dependencies executed in 0.1635 seconds
+2025-03-14 11:51:43,813 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-14 11:51:43,813 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-14 11:51:43,814 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:51:43,814 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:51:45,247 - webagent - DEBUG - Function check_workflow executed in 1.4325 seconds
+2025-03-14 11:51:45,247 - webagent - DEBUG - Function check_workflow executed in 1.4325 seconds
+2025-03-14 11:51:45,453 - webagent - DEBUG - Function check_performance_metrics executed in 0.2059 seconds
+2025-03-14 11:51:45,453 - webagent - DEBUG - Function check_performance_metrics executed in 0.2059 seconds
+2025-03-14 11:51:45,454 - webagent - DEBUG - Function check_security_status executed in 0.0007 seconds
+2025-03-14 11:51:45,454 - webagent - DEBUG - Function check_security_status executed in 0.0007 seconds
+2025-03-14 11:51:45,454 - webagent - DEBUG - Function run_all_checks executed in 1.8296 seconds
+2025-03-14 11:51:45,454 - webagent - DEBUG - Function run_all_checks executed in 1.8296 seconds
+2025-03-14 11:51:49,954 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:51:50,074 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:51:50,074 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:52:53,456 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:52:53,576 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:52:53,576 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:52:53,577 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:52:53,577 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:52:53,600 - webagent - DEBUG - Function check_system_info executed in 0.0233 seconds
+2025-03-14 11:52:53,600 - webagent - DEBUG - Function check_system_info executed in 0.0233 seconds
+2025-03-14 11:52:53,709 - webagent - DEBUG - Function check_dependencies executed in 0.1081 seconds
+2025-03-14 11:52:53,709 - webagent - DEBUG - Function check_dependencies executed in 0.1081 seconds
+2025-03-14 11:52:53,709 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:52:53,709 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:52:53,710 - webagent - DEBUG - Function check_agents executed in 0.0008 seconds
+2025-03-14 11:52:53,710 - webagent - DEBUG - Function check_agents executed in 0.0008 seconds
+2025-03-14 11:52:54,798 - webagent - DEBUG - Function check_workflow executed in 1.0878 seconds
+2025-03-14 11:52:54,798 - webagent - DEBUG - Function check_workflow executed in 1.0878 seconds
+2025-03-14 11:52:55,006 - webagent - DEBUG - Function check_performance_metrics executed in 0.2077 seconds
+2025-03-14 11:52:55,006 - webagent - DEBUG - Function check_performance_metrics executed in 0.2077 seconds
+2025-03-14 11:52:55,007 - webagent - DEBUG - Function check_security_status executed in 0.0012 seconds
+2025-03-14 11:52:55,007 - webagent - DEBUG - Function check_security_status executed in 0.0012 seconds
+2025-03-14 11:52:55,007 - webagent - DEBUG - Function run_all_checks executed in 1.4301 seconds
+2025-03-14 11:52:55,007 - webagent - DEBUG - Function run_all_checks executed in 1.4301 seconds
+2025-03-14 11:52:58,491 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:52:58,602 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:52:58,602 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:55:34,690 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:55:34,791 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:55:34,791 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:55:34,792 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:55:34,792 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:55:34,813 - webagent - DEBUG - Function check_system_info executed in 0.0216 seconds
+2025-03-14 11:55:34,813 - webagent - DEBUG - Function check_system_info executed in 0.0216 seconds
+2025-03-14 11:55:34,923 - webagent - DEBUG - Function check_dependencies executed in 0.1099 seconds
+2025-03-14 11:55:34,923 - webagent - DEBUG - Function check_dependencies executed in 0.1099 seconds
+2025-03-14 11:55:34,924 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:55:34,924 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:55:34,925 - webagent - DEBUG - Function check_agents executed in 0.0008 seconds
+2025-03-14 11:55:34,925 - webagent - DEBUG - Function check_agents executed in 0.0008 seconds
+2025-03-14 11:55:36,312 - webagent - DEBUG - Function check_workflow executed in 1.3874 seconds
+2025-03-14 11:55:36,312 - webagent - DEBUG - Function check_workflow executed in 1.3874 seconds
+2025-03-14 11:55:36,523 - webagent - DEBUG - Function check_performance_metrics executed in 0.2105 seconds
+2025-03-14 11:55:36,523 - webagent - DEBUG - Function check_performance_metrics executed in 0.2105 seconds
+2025-03-14 11:55:36,524 - webagent - DEBUG - Function check_security_status executed in 0.0016 seconds
+2025-03-14 11:55:36,524 - webagent - DEBUG - Function check_security_status executed in 0.0016 seconds
+2025-03-14 11:55:36,524 - webagent - DEBUG - Function run_all_checks executed in 1.7328 seconds
+2025-03-14 11:55:36,524 - webagent - DEBUG - Function run_all_checks executed in 1.7328 seconds
+2025-03-14 11:55:39,700 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:55:39,807 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:55:39,807 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:56:10,332 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:56:10,453 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:56:10,453 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:56:10,454 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:56:10,454 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:56:10,476 - webagent - DEBUG - Function check_system_info executed in 0.0225 seconds
+2025-03-14 11:56:10,476 - webagent - DEBUG - Function check_system_info executed in 0.0225 seconds
+2025-03-14 11:56:10,555 - webagent - DEBUG - Function check_dependencies executed in 0.0781 seconds
+2025-03-14 11:56:10,555 - webagent - DEBUG - Function check_dependencies executed in 0.0781 seconds
+2025-03-14 11:56:10,555 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:56:10,555 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:56:10,556 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:56:10,556 - webagent - DEBUG - Function check_agents executed in 0.0009 seconds
+2025-03-14 11:56:15,572 - webagent - DEBUG - Function check_workflow executed in 5.0162 seconds
+2025-03-14 11:56:15,572 - webagent - DEBUG - Function check_workflow executed in 5.0162 seconds
+2025-03-14 11:56:15,783 - webagent - DEBUG - Function check_performance_metrics executed in 0.2105 seconds
+2025-03-14 11:56:15,783 - webagent - DEBUG - Function check_performance_metrics executed in 0.2105 seconds
+2025-03-14 11:56:15,784 - webagent - DEBUG - Function check_security_status executed in 0.0010 seconds
+2025-03-14 11:56:15,784 - webagent - DEBUG - Function check_security_status executed in 0.0010 seconds
+2025-03-14 11:56:15,784 - webagent - DEBUG - Function run_all_checks executed in 5.3305 seconds
+2025-03-14 11:56:15,784 - webagent - DEBUG - Function run_all_checks executed in 5.3305 seconds
+2025-03-14 11:56:19,379 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:56:19,489 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:56:19,489 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:57:21,184 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:57:21,547 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:57:21,547 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:57:21,548 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:57:21,548 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 11:57:21,572 - webagent - DEBUG - Function check_system_info executed in 0.0241 seconds
+2025-03-14 11:57:21,572 - webagent - DEBUG - Function check_system_info executed in 0.0241 seconds
+2025-03-14 11:57:21,653 - webagent - DEBUG - Function check_dependencies executed in 0.0803 seconds
+2025-03-14 11:57:21,653 - webagent - DEBUG - Function check_dependencies executed in 0.0803 seconds
+2025-03-14 11:57:21,653 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:57:21,653 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 11:57:21,654 - webagent - DEBUG - Function check_agents executed in 0.0007 seconds
+2025-03-14 11:57:21,654 - webagent - DEBUG - Function check_agents executed in 0.0007 seconds
+2025-03-14 11:57:22,772 - webagent - DEBUG - Function check_workflow executed in 1.1185 seconds
+2025-03-14 11:57:22,772 - webagent - DEBUG - Function check_workflow executed in 1.1185 seconds
+2025-03-14 11:57:22,981 - webagent - DEBUG - Function check_performance_metrics executed in 0.2085 seconds
+2025-03-14 11:57:22,981 - webagent - DEBUG - Function check_performance_metrics executed in 0.2085 seconds
+2025-03-14 11:57:22,982 - webagent - DEBUG - Function check_security_status executed in 0.0012 seconds
+2025-03-14 11:57:22,982 - webagent - DEBUG - Function check_security_status executed in 0.0012 seconds
+2025-03-14 11:57:22,982 - webagent - DEBUG - Function run_all_checks executed in 1.4343 seconds
+2025-03-14 11:57:22,982 - webagent - DEBUG - Function run_all_checks executed in 1.4343 seconds
+2025-03-14 11:57:26,528 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:57:26,633 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 11:57:26,633 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 12:13:08,967 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 12:13:09,389 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 12:13:09,389 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 12:13:09,393 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 12:13:09,393 - webagent.webagent_example - INFO - Running WebAgent diagnostics
+2025-03-14 12:13:09,420 - webagent - DEBUG - Function check_system_info executed in 0.0264 seconds
+2025-03-14 12:13:09,420 - webagent - DEBUG - Function check_system_info executed in 0.0264 seconds
+2025-03-14 12:13:09,555 - webagent - DEBUG - Function check_dependencies executed in 0.1346 seconds
+2025-03-14 12:13:09,555 - webagent - DEBUG - Function check_dependencies executed in 0.1346 seconds
+2025-03-14 12:13:09,555 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 12:13:09,555 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-14 12:13:09,556 - webagent - DEBUG - Function check_agents executed in 0.0010 seconds
+2025-03-14 12:13:09,556 - webagent - DEBUG - Function check_agents executed in 0.0010 seconds
+2025-03-14 12:13:10,884 - webagent - DEBUG - Function build_agent_workflow executed in 1.3282 seconds
+2025-03-14 12:13:10,884 - webagent - DEBUG - Function build_agent_workflow executed in 1.3282 seconds
+2025-03-14 12:13:10,885 - webagent - DEBUG - Function get_agent_workflow executed in 1.3284 seconds
+2025-03-14 12:13:10,885 - webagent - DEBUG - Function get_agent_workflow executed in 1.3284 seconds
+2025-03-14 12:13:10,885 - webagent - DEBUG - Function check_workflow executed in 1.3285 seconds
+2025-03-14 12:13:10,885 - webagent - DEBUG - Function check_workflow executed in 1.3285 seconds
+2025-03-14 12:13:11,095 - webagent - DEBUG - Function check_performance_metrics executed in 0.2100 seconds
+2025-03-14 12:13:11,095 - webagent - DEBUG - Function check_performance_metrics executed in 0.2100 seconds
+2025-03-14 12:13:11,096 - webagent - DEBUG - Function check_security_status executed in 0.0013 seconds
+2025-03-14 12:13:11,096 - webagent - DEBUG - Function check_security_status executed in 0.0013 seconds
+2025-03-14 12:13:11,096 - webagent - DEBUG - Function run_all_checks executed in 1.7029 seconds
+2025-03-14 12:13:11,096 - webagent - DEBUG - Function run_all_checks executed in 1.7029 seconds
+2025-03-14 12:13:14,767 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 12:13:14,784 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-14 12:13:14,784 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log

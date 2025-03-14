@@ -2,6 +2,39 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## [2.5.9] - 2025-03-14
+
+### Added
+- Comprehensive LangGraph review and optimization for workflow consistency
+- Enhanced team manager with improved logging and metrics tracking
+- Detailed error tracking and reporting for tasks
+- New API endpoint for accessing detailed task error information
+- Execution time tracking with detailed metrics for all workflow operations
+- Task status reporting with enhanced diagnostic information
+
+### Enhanced
+- Improved workflow state handling with better error management
+- Optimized agent routing with direct edge connections in LangGraph
+- Better metrics collection for all agent operations
+- Task manager now provides detailed error information and better status reporting
+- TeamManagerAgent now properly marks workflow completion status
+- All API endpoints now include timing metrics
+
+### Fixed
+- Fixed inconsistent imports in workflow modules (backend.app vs app)
+- Removed unnecessary workflow files from graph directory
+- Fixed handling of END node references in workflow graph
+- Fixed potential errors in workflow graph validation
+- Corrected issues with conditional edge handling in LangGraph workflow
+- Fixed metrics collection for task completions and errors
+
+### Technical
+- Applied timing decorators to all critical workflow functions
+- Improved error handling throughout the codebase
+- Enhanced logging with more detailed information
+- Standardized imports across the codebase
+- Comprehensive review of all agent interaction code
+
 ## [2.5.8] - 2025-03-14
 
 ### Added
@@ -540,342 +573,21 @@ The WebAgent platform uses a sophisticated multi-agent architecture with the fol
 
 This architecture provides a scalable, maintainable, and robust platform for AI-powered research and analysis workflows.
 
-## [2.4.1] - 2025-03-09
-
-### Added
-- Enhanced error reporting in integration tests with detailed context
-- Improved configuration validation with tracking metrics
-- Extended logging for API key validation failures
-- New metrics for configuration validation and memory usage
-- Memory usage monitoring via Prometheus metrics
-
-### Changed
-- Updated rate limiting implementation for better scalability with Redis support
-- Enhanced input sanitization with comprehensive pattern matching and HTML escaping
-- Improved middleware ordering for more accurate request tracking and security
-- Optimized metrics collection to reduce performance impact
-- Normalized path patterns in metrics to prevent high cardinality
+## [2.4.1] - 2025-02-22
 
 ### Fixed
-- Issue with test_integration.py masking real failures in CI/CD
-- JWT token expiration handling with specific error messages
-- Middleware recursion potential in monitoring endpoints
-- LLM metrics tracking for different model and provider combinations
-- Error handling in token counting and other metrics collection
-
-## [2.4.0] - 2025-03-09
-
-### Added
-- Production Readiness
-  - Security hardening with rate limiting and request validation
-  - JWT authentication support with bcrypt password hashing
-  - Prometheus metrics for API, task, and LLM monitoring
-  - Structured logging with JSON format and request tracking
-  - Security middleware for HTTP headers and input sanitization
-  - Kubernetes deployment configurations
-  - Multi-stage Docker builds for optimized images
-  - Comprehensive API documentation
+- Resolved ChatContext provider error
+  - Added ChatProvider to root layout
+  - Implemented sendMessage functionality in ChatContext
+  - Fixed context initialization and state management
+  - Added proper error handling for chat operations
+  - Integrated rate limiting in chat context
 
 ### Changed
-- Enhanced middleware stack
-  - Added request size limiting
-  - Added security headers
-  - Added request ID tracking
-  - Added Prometheus metrics integration
-- Improved error handling
-  - Centralized exception handling
-  - Detailed error responses with tracking IDs
-  - Enhanced logging for all errors
-- Updated configuration management
-  - Simplified priority logic
-  - Better documentation
-
-### Security
-- Added rate limiting to prevent abuse
-- Added request size limiting to prevent DoS attacks
-- Added security headers to protect against common web vulnerabilities
-- Added input validation and sanitization
-- Added JWT token-based authentication
-- Added secure password hashing with bcrypt
-- Added environment variable isolation
-- Added secure deployment guidance
-
-## [2.3.1] - 2025-03-09
-
-### Added
-- Enhanced configuration management
-  - Added support for loading API keys from .env.local file
-  - Implemented prioritized configuration loading: .env.local (highest) > YAML config > .env (lowest)
-  - Improved API key management with better security isolation
-
-### Changed
-- Refined environment configuration handling
-  - Updated configuration loading sequence for better security
-  - Enhanced documentation for environment setup
-  - Improved error messages for configuration issues
-
-### Fixed
-- Integration test reliability improvements
-  - Enhanced error handling in test_integration.py
-  - Fixed configuration loading in testing scenarios
-  - Added graceful fallbacks when API keys are missing
-
-## [2.3.0] - 2025-03-09
-
-### Added
-- Phase 4: Integration & Testing implementation
-  - Together AI integration with Llama 3.3 70B Instruct Turbo Free model
-  - Frontend API compatibility layer for seamless integration
-  - End-to-end testing framework for workflow validation
-  - Performance optimization for multi-agent workflows
-- Enhanced API capabilities
-  - New frontend-compatible endpoints for chat completions
-  - Status polling mechanism for long-running tasks
-  - Improved error handling and reporting
-- Comprehensive testing suite
-  - Integration tests for external services
-  - End-to-end workflow testing
-  - Performance benchmarking tools
-
-### Changed
-- Switched default LLM provider from OpenAI to Together AI
-  - Updated all agent configurations to use Llama 3.3 70B model
-  - Optimized prompt templates for Llama model capabilities
-  - Improved token efficiency for cost optimization
-- Enhanced frontend integration
-  - Redesigned API client for better compatibility
-  - Added polling mechanism for asynchronous tasks
-  - Improved error handling and recovery
-- Updated Docker configuration
-  - Added Together API key environment variable
-  - Optimized container resource allocation
-  - Improved startup sequence for faster deployment
-
-### Fixed
-- Resolved workflow routing issues in complex agent interactions
-- Fixed token counting and rate limiting for Together AI
-- Improved error handling in asynchronous task execution
-- Enhanced stability of long-running research workflows
-
-## [2.2.1] - 2025-03-09
-
-### Added
-- Phase 3: Advanced Agents implementation
-  - Enhanced Senior Research Agent for information synthesis
-  - Data Analysis Agent for identifying patterns and insights
-  - Coding Assistant Agent for data visualization and analysis
-  - Team Manager Agent for comprehensive report generation
-- Complete multi-agent workflow integration
-  - Advanced conditional routing between agents
-  - Sequential execution of specialized tasks
-  - Advanced checkpoints for workflow coordination
-  - Metadata-rich final reports with multiple sections
-- Extended LangSmith tracing for all new agents
-  - Comprehensive observability across the entire agent workflow
-  - Detailed tracking of agent interactions and outputs
-  - Performance metrics for advanced agent operations
-
-### Changed
-- Enhanced workflow coordination
-  - Refactored workflow to support new agents
-  - Improved state management for data sharing between agents
-  - Added conditional paths based on task requirements
-  - Better error handling throughout the agent workflow
-- Updated prompts for all agents
-  - More precise task definitions
-  - Better context preservation between agents
-  - Improved format instructions
-  - Enhanced knowledge sharing between specialized agents
-
-### Fixed
-- Improved error handling in agent workflow
-- Fixed issues with agent coordination and sequential execution
-- Resolved data passage between agents
-- Enhanced readability of final reports
-
-## [2.2.0] - 2025-03-09
-
-### Added
-- Phase 2: Agent Development implementation
-  - Supervisor Agent for research planning and workflow orchestration
-  - Web Research Agent with Tavily API integration
-  - Internal Research Agent with vector database integration
-  - Senior Research Agent for information verification and synthesis
-- Agent coordination systems
-  - Research-based workflow routing
-  - Conditional execution based on research needs
-  - Parallel execution of research agents
-  - Synthesis of findings into a comprehensive report
-- Advanced integration services
-  - Tavily web search implementation for real-time information
-  - Enhanced vector database integration for internal knowledge
-  - Better error handling for all agent operations
-  - State management across the agent workflow
-- LangSmith integration for observability
-  - Tracing and monitoring of agent workflows
-  - Performance metrics for LLM calls
-  - Environment-specific project configurations
-  - Detailed logging of agent interactions
-  - Debugging tools for complex workflows
-
-### Changed
-- Complete redesign of the workflow coordination
-  - Moved from a placeholder implementation to a fully functional agent system
-  - Enhanced workflow graph with conditional paths based on research requirements
-  - Improved state management throughout the agent workflow
-  - Added checkpoint functionality for parallel agent completion
-- Enhanced LLM utilization
-  - Specialized prompts for each agent's unique role
-  - Better context management between agents
-  - Improved final synthesis process
-  - More effective use of gpt-4-turbo across agents
-
-### Fixed
-- Report formatting in the final synthesis
-- Type errors and interface compliance issues in the TypeScript frontend
-- Workflow termination conditions to properly handle errors
-- Various bugs in the agent coordination system
-
-## [2.1.1] - 2025-03-09
-
-### Fixed
-- Resolved TypeScript errors for improved build stability
-  - Updated ChatMessage interface to include id and timestamp properties
-  - Fixed error handling in ChatContext to use undefined instead of null
-  - Corrected incorrect method reference from trackRequest() to addRequest() in rate limiter
-  - Fixed ApiClient usage by removing redundant getInstance() calls
-  - Added proper type annotations to prevent implicit 'any' types
-- Enhanced TypeScript type safety across components
-  - Improved error state handling in chat functionality
-  - Fixed interface compliance for message handling
-  - Strengthened type definitions for API responses
-
-## [2.1.0] - 2025-03-09
-
-### Added
-- Phase 1: Core Infrastructure implementation
-  - Well-organized Python backend directory structure
-  - FastAPI server with proper routing and API endpoints
-  - LangGraph workflow framework with state management
-  - Robust error handling and async support
-  - Python packaging with proper module initialization
-- Environment-based YAML configuration system
-  - Three environment configurations (dev, uat, prod)
-  - Structured settings with type validation via Pydantic 2
-  - Agent-specific configuration for each environment
-  - Environment-aware settings for API, database, LLM, etc.
-  - Automatic loading of appropriate configuration
-- Enhanced configuration management
-  - Fallback mechanism for environment variables
-  - Export of config values to environment variables
-  - Type-safe access to configuration sections
-  - Comprehensive validation of settings
-  - Consistent naming conventions
-
-### Changed
-- Improved settings handling with priority system
-  - YAML configurations (highest priority)
-  - Environment variables with WEBAGENT_ prefix
-  - .env file values (lowest priority)
-- Enhanced dependency management
-  - Added PyYAML for configuration parsing
-  - Added pydantic-settings for environment integration
-- Updated Docker and Docker Compose configuration
-  - Dynamic environment handling
-  - Proper volume mounting for configuration
-  - Container-specific environment configurations
-
-### Notable Environment Differences
-- Development: 
-  - Debug mode enabled
-  - Extensive logging at DEBUG level
-  - Local database paths
-  - Basic web search depth
-- UAT:
-  - Production-like settings with tighter security
-  - More comprehensive web searches
-  - Increased task concurrency and retention
-  - Container-aware database configurations
-- Production:
-  - Strict security settings
-  - Performance-optimized configurations
-  - Cluster-aware database connections
-  - Higher concurrency limits
-  - Minimal logging (WARNING level only)
-
-## [2.0.0] - 2025-03-09
-
-### Added
-- Complete microservice architecture separating frontend and backend
-- Integration with LangGraph Multi-Agent framework
-- Seven specialized intelligent agents:
-  - Supervisor Agent for planning and orchestration
-  - Web Research Agent with Tavily integration
-  - Internal Research Agent for vector database search
-  - Senior Research Agent for fact-checking and synthesis
-  - Data Analysis Agent for pattern identification
-  - Coding Assistant Agent for visualization
-  - Team Manager Agent for final reporting
-- Enhanced workflow with sequential and conditional agent collaboration
-- Tavily API integration for web search
-- Vector database integration for internal knowledge
-- Python runtime service for executing data visualization code
-- Asynchronous API endpoints with status checking
-- Structured report types for different stages of analysis
-
-### Changed
-- Renamed project from "web-chat-app" to "web-agent-app"
-- Migrated to LangGraph for agent orchestration
-- Updated API contract with task-based asynchronous design
-- Enhanced error handling and fallback mechanisms
-- Improved state management for complex multi-stage workflows
-
-### Architecture
-```
-┌─────────────┐    HTTP/REST API    ┌───────────────────────────────────────────┐
-│ Web Chat App │<------------------>│     LangGraph Multi-Agent Service         │
-│ (Frontend)   │                    │                                           │
-└─────────────┘                     │  ┌─────────────┐       ┌───────────────┐  │
-                                    │  │ Supervisor  │◄─────►│ Team Manager  │  │
-                                    │  │   Agent     │       │    Agent      │  │
-                                    │  └──────┬──────┘       └───────┬───────┘  │
-                                    │         │                      │          │
-                                    │         ▼                      ▲          │
-                                    │  ┌──────────────┐     ┌───────┴───────┐   │
-                                    │  │              │     │               │   │
-                                    │  │  Research    │     │  Data         │   │
-                                    │  │  Agents      │────►│  Analysis     │   │
-                                    │  │              │     │  Agents       │   │
-                                    │  └──────────────┘     └───────────────┘   │
-                                    │     /          \         /          \     │
-                                    │    /            \       /            \    │
-                                    │   ▼              ▼     ▼              ▼   │
-                                    │ ┌────────┐  ┌─────────┐ ┌─────────┐ ┌────┐│
-                                    │ │  Web   │  │Internal │ │  Data   │ │Code││
-                                    │ │Research│  │Research │ │Analysis │ │Asst││
-                                    │ └────┬───┘  └────┬────┘ └────┬────┘ └──┬─┘│
-                                    │      │           │           │         │  │
-                                    │      └─────┐     │      ┌────┘         │  │
-                                    │            ▼     ▼      ▼              │  │
-                                    │          ┌─────────────────┐           │  │
-                                    │          │Senior Research  │◄──────────┘  │
-                                    │          │     Agent       │              │
-                                    │          └─────────────────┘              │
-                                    └───────────────────────────────────────────┘
-                                                     │
-                                     ┌───────────────┼───────────────────┐
-                                     │               │                   │
-                                     ▼               ▼                   ▼
-                             ┌──────────────┐ ┌─────────────┐    ┌─────────────┐
-                             │  Tavily API  │ │ Vector DB   │    │ Python      │
-                             │ (Web Search) │ │ (Internal   │    │ Runtime     │
-                             │              │ │  Knowledge) │    │ (Graphing)  │
-                             └──────────────┘ └─────────────┘    └─────────────┘
-```
-
-### Fixed
-- Various stability issues in multi-agent coordination
-- Memory management for long research sessions
+- Development server now uses port 3001 when 3000 is occupied
+- Enhanced error handling in chat operations
+- Improved message state management
+- Better integration with rate limiter
 
 ## [1.15.7] - 2025-03-08
 
@@ -1159,13 +871,6 @@ This architecture provides a scalable, maintainable, and robust platform for AI-
   - No "Cited Sources" badge shown for real API responses
   - Enhanced citeSources toggle to control both API behavior and UI display
 
-### Changed
-- Enhanced source citation control
-  - Better integration between UI and backend for citation settings
-  - More consistent behavior when toggling citation mode
-  - Improved user experience with clearer source/no-source modes
-  - Added proper logging for API request decisions
-
 ## [1.14.8] - 2025-03-08
 
 ### Changed
@@ -1186,21 +891,11 @@ This architecture provides a scalable, maintainable, and robust platform for AI-
   - Extended accessibility settings with citeSources flag
   - Added proper API integration for toggling citation behavior
 
-### Changed
-- Enhanced settings dropdown organization
-  - Added dedicated "Sources" section in settings panel
-  - Improved toggle styling and descriptive text
-  - Better separation between appearance settings and content settings
-
 ## [1.14.6] - 2025-03-08
 
 ### Added
 - New dedicated "Style" button in the toolbar next to the "Focus" button
 - Moved AI response style options from settings to a dedicated dropdown
-
-### Changed
-- Improved UI organization by grouping related controls - Style and Focus buttons are now adjacent
-- Simplified settings panel by moving style options to the toolbar for easier access
 
 ## [1.14.5] - 2025-03-08
 

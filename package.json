@@ -1,6 +1,6 @@
 {
   "name": "webagent-platform",
-  "version": "2.5.8",
+  "version": "2.5.9",
   "description": "WebAgent Platform with comprehensive diagnostics, detailed architecture documentation, and enhanced security features",
   "private": true,
   "scripts": {

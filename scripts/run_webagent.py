@@ -30,6 +30,7 @@ from backend.app.models.task import WorkflowState
 from backend.app.core.logger import setup_logger
 from backend.app.core.config import settings
 from backend.app.utils.diagnostics import print_diagnostics_report, get_diagnostics
+from backend.app.core.metrics import get_metric_statistics, timing_decorator, log_memory_usage
 
 # Set up logging
 logger = setup_logger("webagent_example", log_level=logging.INFO)

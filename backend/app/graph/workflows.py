@@ -10,15 +10,16 @@ from typing import Dict, List, Optional, Any
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 
-from backend.app.models.task import WorkflowState
-from backend.app.agents.supervisor import get_supervisor_agent
-from backend.app.agents.web_research import get_web_research_agent
-from backend.app.agents.internal_research import get_internal_research_agent
-from backend.app.agents.senior_research import get_senior_research_agent
-from backend.app.agents.data_analysis import get_data_analysis_agent
-from backend.app.agents.coding_assistant import get_coding_assistant_agent
-from backend.app.agents.team_manager import get_team_manager_agent
-from backend.app.core.config import settings
+from app.models.task import WorkflowState
+from app.agents.supervisor import get_supervisor_agent
+from app.agents.web_research import get_web_research_agent
+from app.agents.internal_research import get_internal_research_agent
+from app.agents.senior_research import get_senior_research_agent
+from app.agents.data_analysis import get_data_analysis_agent
+from app.agents.coding_assistant import get_coding_assistant_agent
+from app.agents.team_manager import get_team_manager_agent
+from app.core.config import settings
+from app.core.metrics import timing_decorator
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 # Singleton instance of the agent workflow
 _workflow_instance = None
 
+@timing_decorator
 def build_agent_workflow() -> StateGraph:
     """
     Build the agent workflow graph.
@@ -99,6 +101,9 @@ def build_agent_workflow() -> StateGraph:
             
         return next_agents or ["senior_research"]
     
+    # Add the research_router node to the graph
+    workflow.add_node("research_router", research_router)
+    
     # Define the research checkpoint condition for when all research is complete
     def research_checkpoint(state: WorkflowState) -> str:
         """
@@ -131,7 +136,7 @@ def build_agent_workflow() -> StateGraph:
         """
         # Check if there's an error
         if state.error:
-            return "end"
+            return END
             
         # Check if data analysis is needed
         if "data_analysis" in state.context.get("next_steps", []):
@@ -148,53 +153,34 @@ def build_agent_workflow() -> StateGraph:
     workflow.add_edge("__start__", "supervisor")
     workflow.add_edge("supervisor", "research_router")
     
-    # Research edges
-    workflow.add_conditional_edges(
-        "research_router",
-        research_router,
-        {
-            "web_research": lambda x: "web_research" in x,
-            "internal_research": lambda x: "internal_research" in x,
-            "senior_research": lambda x: "senior_research" in x
-        }
-    )
+    # Research edges - use direct edges instead of conditional edges
+    workflow.add_edge("research_router", "web_research")
+    workflow.add_edge("research_router", "internal_research")
+    workflow.add_edge("research_router", "senior_research")
     
     # Research completion edges
     for agent in ["web_research", "internal_research"]:
         workflow.add_edge(agent, "senior_research")
     
-    # Senior research edge with conditional routing for research loop
-    workflow.add_conditional_edges(
-        "senior_research",
-        research_checkpoint,
-        {
-            "research_router": lambda x: x == "research_router",
-            "team_manager": lambda x: x == "team_manager",
-        }
-    )
-    
-    # Senior research edge with conditional routing for specialized agents
-    workflow.add_conditional_edges(
-        "senior_research",
-        specialized_agent_router,
-        {
-            "data_analysis": lambda x: x == "data_analysis",
-            "coding_assistant": lambda x: x == "coding_assistant",
-            "team_manager": lambda x: x == "team_manager",
-            "end": lambda x: x == "end"
-        }
-    )
+    # Senior research edges - use direct edges instead of conditional edges
+    workflow.add_edge("senior_research", "research_router")
+    workflow.add_edge("senior_research", "team_manager")
+    workflow.add_edge("senior_research", "data_analysis")
+    workflow.add_edge("senior_research", "coding_assistant")
+    workflow.add_edge("senior_research", END)
     
     # Add final edges
     workflow.add_edge("data_analysis", "team_manager")
     workflow.add_edge("coding_assistant", "team_manager")
-    workflow.add_edge("team_manager", "end")
+    workflow.add_edge("team_manager", END)
     
     # Compile the workflow
     workflow.compile()
     
+    logger.info("Agent workflow built and compiled successfully")
     return workflow
 
+@timing_decorator
 def get_agent_workflow() -> StateGraph:
     """
     Get the agent workflow instance (singleton pattern).

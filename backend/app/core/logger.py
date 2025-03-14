@@ -65,7 +65,7 @@ class JsonFormatter(logging.Formatter):
 class StructuredLogger(logging.Logger):
     """Logger that supports structured logging with extra fields."""
     
-    def _log_with_extra(self, level: int, msg: str, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
+    def _log_with_extra(self, level: int, msg: str, *args, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
         """Log with extra fields."""
         if extra is None:
             extra = {}
@@ -73,28 +73,28 @@ class StructuredLogger(logging.Logger):
         # Add extra fields
         kwargs["extra"] = {"extra": extra}
         
-        # Call parent method
-        super().log(level, msg, **kwargs)
+        # Call parent method with all arguments
+        super().log(level, msg, *args, **kwargs)
     
-    def debug(self, msg: str, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
+    def debug(self, msg: str, *args, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
         """Log a debug message with extra fields."""
-        self._log_with_extra(logging.DEBUG, msg, extra, **kwargs)
+        self._log_with_extra(logging.DEBUG, msg, *args, extra=extra, **kwargs)
     
-    def info(self, msg: str, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
+    def info(self, msg: str, *args, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
         """Log an info message with extra fields."""
-        self._log_with_extra(logging.INFO, msg, extra, **kwargs)
+        self._log_with_extra(logging.INFO, msg, *args, extra=extra, **kwargs)
     
-    def warning(self, msg: str, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
+    def warning(self, msg: str, *args, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
         """Log a warning message with extra fields."""
-        self._log_with_extra(logging.WARNING, msg, extra, **kwargs)
+        self._log_with_extra(logging.WARNING, msg, *args, extra=extra, **kwargs)
     
-    def error(self, msg: str, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
+    def error(self, msg: str, *args, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
         """Log an error message with extra fields."""
-        self._log_with_extra(logging.ERROR, msg, extra, **kwargs)
+        self._log_with_extra(logging.ERROR, msg, *args, extra=extra, **kwargs)
     
-    def critical(self, msg: str, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
+    def critical(self, msg: str, *args, extra: Optional[Dict[str, Any]] = None, **kwargs) -> None:
         """Log a critical message with extra fields."""
-        self._log_with_extra(logging.CRITICAL, msg, extra, **kwargs)
+        self._log_with_extra(logging.CRITICAL, msg, *args, extra=extra, **kwargs)
 
 # Register custom logger class
 logging.setLoggerClass(StructuredLogger)

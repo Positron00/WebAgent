@@ -5,6 +5,7 @@ This module uses the Prometheus client library to expose metrics
 for monitoring the application's performance and health.
 """
 import time
+import os
 from functools import wraps
 from typing import Callable, Dict, Optional, List, Set
 
@@ -23,6 +24,9 @@ from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from app.core.logger import logger
 
+# Create our own registry instance to avoid conflicts
+WEBAGENT_REGISTRY = CollectorRegistry()
+
 # Define endpoints that should be excluded from metrics collection
 METRICS_EXCLUDED_ENDPOINTS: Set[str] = {
     "/api/v1/metrics",
@@ -31,81 +35,93 @@ METRICS_EXCLUDED_ENDPOINTS: Set[str] = {
     "/api/v1/health/detailed"
 }
 
-# Create metrics
+# Create metrics using our custom registry
 REQUEST_COUNT = Counter(
     "http_requests_total",
     "Total number of HTTP requests",
-    ["method", "endpoint", "status_code"]
+    ["method", "endpoint", "status_code"],
+    registry=WEBAGENT_REGISTRY
 )
 
 REQUEST_LATENCY = Histogram(
     "http_request_duration_seconds",
     "HTTP request latency in seconds",
     ["method", "endpoint"],
-    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30)
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30),
+    registry=WEBAGENT_REGISTRY
 )
 
 REQUESTS_IN_PROGRESS = Gauge(
     "http_requests_in_progress",
     "Number of HTTP requests in progress",
-    ["method", "endpoint"]
+    ["method", "endpoint"],
+    registry=WEBAGENT_REGISTRY
 )
 
 TASK_COUNT = Counter(
     "webagent_tasks_total",
     "Total number of WebAgent tasks",
-    ["status"]
+    ["status"],
+    registry=WEBAGENT_REGISTRY
 )
 
 TASK_DURATION = Histogram(
     "webagent_task_duration_seconds",
     "Duration of WebAgent tasks in seconds",
     ["status"],
-    buckets=(1, 5, 10, 30, 60, 120, 300, 600, 1800, 3600)
+    buckets=(1, 5, 10, 30, 60, 120, 300, 600, 1800, 3600),
+    registry=WEBAGENT_REGISTRY
 )
 
 LLM_REQUEST_COUNT = Counter(
     "llm_requests_total",
     "Total number of LLM requests",
-    ["provider", "model", "status"]
+    ["provider", "model", "status"],
+    registry=WEBAGENT_REGISTRY
 )
 
 LLM_REQUEST_LATENCY = Histogram(
     "llm_request_duration_seconds",
     "LLM request latency in seconds",
     ["provider", "model"],
-    buckets=(0.1, 0.5, 1, 3, 5, 10, 30, 60, 120)
+    buckets=(0.1, 0.5, 1, 3, 5, 10, 30, 60, 120),
+    registry=WEBAGENT_REGISTRY
 )
 
 LLM_TOKEN_COUNT = Counter(
     "llm_tokens_total",
     "Total number of tokens processed by LLMs",
-    ["provider", "model", "type"]  # type = prompt or completion
+    ["provider", "model", "type"],  # type = prompt or completion
+    registry=WEBAGENT_REGISTRY
 )
 
 # New metrics for v2.4.1
 CONFIG_VALIDATION_COUNT = Counter(
     "config_validation_total",
     "Total number of configuration validations",
-    ["status", "component"]
+    ["status", "component"],
+    registry=WEBAGENT_REGISTRY
 )
 
 API_KEY_VALIDATION_COUNT = Counter(
     "api_key_validation_total",
     "Total number of API key validations",
-    ["status", "service"]
+    ["status", "service"],
+    registry=WEBAGENT_REGISTRY
 )
 
 ERROR_COUNT = Counter(
     "error_total",
     "Total number of errors",
-    ["type", "component"]
+    ["type", "component"],
+    registry=WEBAGENT_REGISTRY
 )
 
 MEMORY_USAGE = Gauge(
     "memory_usage_bytes",
     "Memory usage in bytes",
-    ["type"]
+    ["type"],
+    registry=WEBAGENT_REGISTRY
 )
 
 # Middleware for tracking HTTP requests
@@ -314,7 +330,7 @@ def setup_metrics(app: FastAPI):
         update_memory_usage()
         
         return Response(
-            content=generate_latest(REGISTRY),
+            content=generate_latest(WEBAGENT_REGISTRY),
             media_type="text/plain"
         )
 

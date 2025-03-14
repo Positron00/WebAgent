@@ -14,6 +14,7 @@ from langchain.schema.output_parser import StrOutputParser
 from app.models.task import WorkflowState
 from app.services.llm import get_llm
 from app.agents.base_agent import BaseAgent
+from app.core.metrics import timing_decorator, track_task_completion
 
 logger = logging.getLogger(__name__)
 
@@ -56,13 +57,14 @@ class TeamManagerAgent(BaseAgent):
     
     def __init__(self):
         """Initialize the Team Manager Agent."""
-        super().__init__(agent_name="team_manager")
+        super().__init__(name="team_manager")
         self.prompt = ChatPromptTemplate.from_template(TEAM_MANAGER_PROMPT)
         self.llm = get_llm("gpt-4-turbo")
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)
         
+    @timing_decorator
     async def run(self, state: WorkflowState) -> WorkflowState:
         """
         Run the Team Manager Agent on the current workflow state.
@@ -73,6 +75,9 @@ class TeamManagerAgent(BaseAgent):
         Returns:
             Updated workflow state with the final compiled report
         """
+        start_time = datetime.now()
+        task_id = f"team_manager_{start_time.timestamp()}"
+        
         try:
             logger.info(f"Team Manager Agent processing query: {state.query}")
             
@@ -80,6 +85,11 @@ class TeamManagerAgent(BaseAgent):
             research_synthesis = state.context.get("verified_findings", "No research synthesis available.")
             data_analysis = state.context.get("data_insights", "No data analysis available.")
             visualization_code = state.context.get("visualization_code", "No visualization code available.")
+            
+            # Log sources availability
+            logger.debug(f"Research synthesis available: {len(research_synthesis) > 50}")
+            logger.debug(f"Data analysis available: {len(data_analysis) > 50}")
+            logger.debug(f"Visualization code available: {len(visualization_code) > 50}")
             
             logger.debug("Compiling final report from all agent outputs")
             
@@ -90,6 +100,9 @@ class TeamManagerAgent(BaseAgent):
                 "data_analysis": data_analysis,
                 "visualization_code": visualization_code
             })
+            
+            # Log report size for monitoring
+            logger.info(f"Generated final report with {len(final_report_content)} characters")
             
             # Create the team manager report
             team_manager_report = {
@@ -118,12 +131,28 @@ class TeamManagerAgent(BaseAgent):
             # Update the final report in the state
             state.final_report = final_report
             
+            # Mark the task as completed
+            state.completed = True
+            
+            # Log successful completion
             logger.info("Team Manager Agent completed final report successfully")
+            
+            # Execution time tracking for metrics
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            track_task_completion(task_id, duration, "completed")
+            
             return state
             
         except Exception as e:
             logger.error(f"Error in Team Manager Agent: {str(e)}", exc_info=True)
             state.error = f"Team Manager Agent error: {str(e)}"
+            
+            # Track error in metrics
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            track_task_completion(task_id, duration, "error")
+            
             return state
 
 

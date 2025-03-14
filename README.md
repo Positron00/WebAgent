@@ -2,7 +2,7 @@
 
 A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-![WebAgent Platform Version](https://img.shields.io/badge/version-2.5.8-blue)
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.5.9-blue)
 ![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--14-brightgreen)
 
 ## Overview
@@ -19,7 +19,7 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   - Team Manager Agent: Synthesizes outputs from multiple agents
   - Specialized Agents: Data analysis and coding assistance
 
-- **LangGraph Integration**: Uses LangGraph for complex agent workflow orchestration with conditional routing, parallel execution, and feedback loops
+- **LangGraph Integration**: Uses LangGraph for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow
 
 - **Advanced RAG Architecture**: Sophisticated retrieval and processing with built-in document extraction capabilities
 

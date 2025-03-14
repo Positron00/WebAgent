@@ -318,14 +318,18 @@ def get_together_llm(model_name: Optional[str] = None):
         raise ValueError("TOGETHER_API_KEY not set in environment variables")
     
     try:
+        # Create TogetherLLM without the parameters that cause validation errors
         llm = TogetherLLM(
             model=model,
             temperature=llm_config.temperature,
             max_tokens=llm_config.max_tokens,
             together_api_key=together_api_key,
-            timeout=llm_config.timeout_seconds,
-            max_retries=llm_config.retry_attempts
+            # Note: timeout and max_retries are no longer supported by TogetherLLM
+            # and have to be handled differently in newer versions of langchain-together
         )
+        
+        # Log successful creation
+        logger.info(f"Created TogetherLLM with model: {model}")
         return llm
     except Exception as e:
         logger.error(f"Error creating Together AI LLM: {str(e)}")

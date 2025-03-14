@@ -48,7 +48,7 @@ class DataAnalysisAgent(BaseAgent):
     
     def __init__(self):
         """Initialize the Data Analysis Agent."""
-        super().__init__(agent_name="data_analysis")
+        super().__init__(name="data_analysis")
         self.prompt = ChatPromptTemplate.from_template(DATA_ANALYSIS_PROMPT)
         self.llm = get_llm("gpt-4-turbo")
         self.parser = StrOutputParser()

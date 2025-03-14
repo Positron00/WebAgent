@@ -52,7 +52,7 @@ class CodingAssistantAgent(BaseAgent):
     
     def __init__(self):
         """Initialize the Coding Assistant Agent."""
-        super().__init__(agent_name="coding_assistant")
+        super().__init__(name="coding_assistant")
         self.prompt = ChatPromptTemplate.from_template(CODING_ASSISTANT_PROMPT)
         self.llm = get_llm("gpt-4-turbo")
         self.parser = StrOutputParser()
