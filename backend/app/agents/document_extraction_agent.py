@@ -333,9 +333,10 @@ class DocumentExtractionAgent(BaseAgent):
         template = params.get("extraction_template") if params else None
         if not template:
             template = """
-            Extract the most important information from the following document.
-            Structure your response as JSON with these fields:
-            - main_topics: List of main topics covered
+            You are an expert document analyst. Extract structured information from the following document.
+            
+            Your response must be ONLY a valid JSON object with these fields:
+            - main_topics: List of main topics covered in the document
             - key_entities: Important entities mentioned (people, organizations, etc.)
             - summary: A concise summary (max 5 sentences)
             - key_points: List of the 5 most important points
@@ -344,7 +345,17 @@ class DocumentExtractionAgent(BaseAgent):
             Document:
             {text}
             
-            JSON Response:
+            VERY IMPORTANT: Your response MUST be a single valid JSON object only, with no additional text, explanation, comments, or code blocks. 
+            For example, your full response should look exactly like:
+            {{
+              "main_topics": ["Topic 1", "Topic 2"],
+              "key_entities": ["Entity 1", "Entity 2"],
+              "summary": "This is a summary of the document.",
+              "key_points": ["Point 1", "Point 2", "Point 3", "Point 4", "Point 5"],
+              "document_type": "Report"
+            }}
+            
+            Do not include any other text outside of this single JSON object.
             """
         
         # Truncate text if too long (based on model context limits)
@@ -357,34 +368,65 @@ class DocumentExtractionAgent(BaseAgent):
         prompt = template.format(text=text)
         
         try:
-            # Call the LLM with a simpler interface
+            # Call the LLM using the method that works with the TogetherAI API
+            # Different LLM providers may have different response formats, so handle appropriately
             response_text = self.llm(prompt)
             
-            # Extract JSON from response
+            # If the response is an object with a content attribute, extract it
+            if hasattr(response_text, 'content'):
+                response_text = response_text.content
+            
+            # Try to extract JSON from the response using a more robust approach
             try:
-                # Try to find JSON in the response
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}")
-                
-                if json_start >= 0 and json_end >= 0:
-                    json_str = response_text[json_start:json_end+1]
-                    extraction_data = json.loads(json_str)
-                else:
-                    # If no JSON found, structure the response manually
-                    extraction_data = {
-                        "main_topics": [],
-                        "key_entities": [],
-                        "summary": response_text[:500],  # Use first 500 chars as summary
-                        "key_points": [],
-                        "document_type": "unknown"
+                # First try direct JSON parsing of the whole response
+                try:
+                    extraction_data = json.loads(response_text.strip())
+                    return {
+                        "extraction_data": extraction_data,
+                        "extraction_type": "llm"
                     }
+                except json.JSONDecodeError:
+                    # If that fails, try to find and extract the JSON portion
+                    import re
+                    
+                    # Find any JSON-like structure using regex - use a more robust pattern
+                    json_match = re.search(r'(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})', response_text, re.DOTALL)
+                    if json_match:
+                        try:
+                            json_str = json_match.group(1)
+                            extraction_data = json.loads(json_str)
+                            return {
+                                "extraction_data": extraction_data,
+                                "extraction_type": "llm"
+                            }
+                        except json.JSONDecodeError:
+                            pass
+                    
+                    # If we still can't parse, let's extract the content more aggressively
+                    # Try to find content between triple backticks
+                    code_block_match = re.search(r'```(?:json)?(.*?)```', response_text, re.DOTALL)
+                    if code_block_match:
+                        try:
+                            code_block = code_block_match.group(1).strip()
+                            extraction_data = json.loads(code_block)
+                            return {
+                                "extraction_data": extraction_data,
+                                "extraction_type": "llm"
+                            }
+                        except json.JSONDecodeError:
+                            pass
                 
+                # If all parsing attempts fail, create a structured response from the raw text
+                logger.warning("Failed to parse JSON from LLM response - creating structured response manually")
+                # Return structured data extracted from text response
+                extraction_data = self._extract_structured_data_from_text(response_text)
                 return {
                     "extraction_data": extraction_data,
                     "extraction_type": "llm"
                 }
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse JSON from LLM response")
+                
+            except Exception as parse_error:
+                logger.warning(f"Failed to parse JSON from LLM response: {str(parse_error)}")
                 # Return raw response as fallback
                 return {
                     "extraction_data": {
@@ -402,6 +444,67 @@ class DocumentExtractionAgent(BaseAgent):
                 },
                 "extraction_type": "llm"
             }
+            
+    def _extract_structured_data_from_text(self, text: str) -> Dict[str, Any]:
+        """
+        Extract structured data from the LLM text response when JSON parsing fails.
+        
+        Args:
+            text: The raw text response from the LLM
+            
+        Returns:
+            A structured dictionary with the extracted information
+        """
+        # Initialize default structure
+        data = {
+            "main_topics": [],
+            "key_entities": [],
+            "summary": "",
+            "key_points": [],
+            "document_type": "unknown"
+        }
+        
+        try:
+            import re
+            
+            # Try to extract main topics
+            topics_match = re.search(r'"main_topics":\s*\[(.*?)\]', text, re.DOTALL)
+            if topics_match:
+                topics_text = topics_match.group(1)
+                topics = re.findall(r'"([^"]+)"', topics_text)
+                if topics:
+                    data["main_topics"] = topics
+            
+            # Try to extract key entities
+            entities_match = re.search(r'"key_entities":\s*\[(.*?)\]', text, re.DOTALL)
+            if entities_match:
+                entities_text = entities_match.group(1)
+                entities = re.findall(r'"([^"]+)"', entities_text)
+                if entities:
+                    data["key_entities"] = entities
+            
+            # Try to extract summary
+            summary_match = re.search(r'"summary":\s*"(.*?)"', text, re.DOTALL)
+            if summary_match:
+                data["summary"] = summary_match.group(1)
+            
+            # Try to extract key points
+            points_match = re.search(r'"key_points":\s*\[(.*?)\]', text, re.DOTALL)
+            if points_match:
+                points_text = points_match.group(1)
+                points = re.findall(r'"([^"]+)"', points_text)
+                if points:
+                    data["key_points"] = points
+            
+            # Try to extract document type
+            doc_type_match = re.search(r'"document_type":\s*"(.*?)"', text, re.DOTALL)
+            if doc_type_match:
+                data["document_type"] = doc_type_match.group(1)
+                
+        except Exception as e:
+            logger.warning(f"Error during text extraction: {str(e)}")
+            
+        return data
     
     @timing_decorator
     def extract_with_hybrid_approach(self, text: str, params: Dict = None) -> Dict[str, Any]:
