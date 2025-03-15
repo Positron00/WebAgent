@@ -15,7 +15,7 @@ import uuid
 import shutil
 import tempfile
 
-from langchain.document_loaders import (
+from langchain_community.document_loaders import (
     PyPDFLoader,
     TextLoader, 
     Docx2txtLoader,
@@ -148,8 +148,8 @@ class DocumentLoaderService:
             )
             chunks = text_splitter.split_documents(documents)
             
-            # Add to vector database
-            await self.vector_db.add_documents(chunks)
+            # Add to vector database (not async, so don't use await)
+            self.vector_db.add_documents(chunks)
             
             logger.info(f"Document loaded successfully: {file_path}, ID: {artifact_id}")
             return artifact_id
@@ -166,6 +166,7 @@ class DocumentLoaderService:
         Args:
             directory_path: Path to the directory containing documents
             glob_pattern: Pattern to match files (default: "*.*")
+                          Can be comma-separated patterns like "*.pdf,*.txt"
             metadata: Optional metadata to associate with all documents
             
         Returns:
@@ -176,8 +177,18 @@ class DocumentLoaderService:
         if not directory_path.exists() or not directory_path.is_dir():
             raise NotADirectoryError(f"Directory not found: {directory_path}")
         
-        # Find all matching files
-        matching_files = list(directory_path.glob(glob_pattern))
+        # Find all matching files - handle comma-separated patterns
+        matching_files = []
+        
+        # Split by comma if present
+        patterns = glob_pattern.split(',')
+        for pattern in patterns:
+            pattern = pattern.strip()
+            matching_files.extend(list(directory_path.glob(pattern)))
+        
+        # Remove duplicates and sort
+        matching_files = sorted(set(matching_files))
+        
         if not matching_files:
             logger.warning(f"No files matching pattern '{glob_pattern}' found in {directory_path}")
             return {}

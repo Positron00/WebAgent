@@ -14,6 +14,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from app.core.config import settings
 from app.services.graphdb import get_graph_db_service
+from app.utils.metrics import timing_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ class VectorDBService:
             self.error = str(e)
     
     @timing_decorator
-    async def add_documents(self, documents: List[Document]) -> List[str]:
+    def add_documents(self, documents: List[Document]) -> List[str]:
         """
         Add documents to the vector database and graph database.
         
@@ -78,7 +79,7 @@ class VectorDBService:
             return []
         
         try:
-            # Add to vector database
+            # Add to vector database (not async, so don't use await)
             doc_ids = self.vectordb.add_documents(documents)
             
             # Add to graph database and track document relationships

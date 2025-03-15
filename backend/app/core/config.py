@@ -25,6 +25,9 @@ from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
 
+# Define the base directory for the project
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Priority order for configuration:
 # 1. .env.local file (highest priority for API keys)
 # 2. YAML configuration (high priority for non-API key settings)
@@ -109,6 +112,12 @@ class Settings(BaseSettings):
     ARTIFACTS_REGISTRY_URL: Optional[str] = Field(
         default=None,
         description="URL to remote artifact registry"
+    )
+    
+    # Database settings
+    DATABASE_GRAPH_DB_URL: Optional[str] = Field(
+        default=None,
+        description="URL to the graph database (Neo4j)"
     )
     
     # Redis
