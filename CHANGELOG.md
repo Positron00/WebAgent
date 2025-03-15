@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2025-03-15
+
+### Added
+- Introduced FineTuneService for applying fine-tuning to self-hosted models in the ModelRegistry.
+- Enabled fine-tuning via a dummy training loop for demonstration (to be replaced with real data in production).
+- Updated API endpoints to support fine-tuning operations.
+
 ## [2.6.6] - 2025-03-15
 
 ### Fixed
