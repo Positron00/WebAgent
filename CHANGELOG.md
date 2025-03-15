@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.4] - 2025-03-15
+
+### Added
+- Dark mode support for document extraction results visualization
+- Theme switching capability in the document extraction demo
+- Improved section formatting with more prominent headings in extraction results
+
+### Enhanced
+- Suppressed warning messages in the document extraction demo for cleaner output
+- Added better separation between sections in the extraction results visualization
+- Improved error handling for LLM response parsing
+
 ## [2.8.3] - 2025-03-15
 
 ### Added
