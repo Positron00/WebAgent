@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.2] - 2025-03-15
+
+### Added
+- Integrated MLflow experiment tracking with FineTuneService for comprehensive model training monitoring
+- Added model metrics tracking including loss, accuracy, and inference time
+- Created backend/demos directory with ft_demo.py script for demonstrating fine-tuning as a service
+- Added model artifact logging and versioning through MLflow
+- Implemented save_fine_tuned_model method for preserving trained models
+
+### Enhanced
+- Improved FineTuneService with detailed parameter logging and experiment tracking
+- Enhanced evaluation capabilities with detailed metrics collection
+- Added support for continuing MLflow runs across training and evaluation steps
+
 ## [2.7.1] - 2025-03-15
 
 ### Added

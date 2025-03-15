@@ -9,7 +9,8 @@ import copy
 import numpy as np
 import random
 import tqdm
-from typing import Dict, Any, List, Tuple
+import mlflow
+from typing import Dict, Any, List, Tuple, Optional
 from collections import defaultdict
 
 from .base_model_service import BaseModelService, ModelServiceConfig
@@ -272,12 +273,33 @@ def add_prefixes(x: List[str], y: List[str], dataset: str) -> Tuple[List[str], L
 
 
 class FineTuneService(BaseModelService):
+    def __init__(self, config: ModelServiceConfig):
+        super().__init__(config)
+        self.mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
+        self.experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME", "model-fine-tuning")
+        self.run_id = None
+        
+        # Initialize MLflow
+        mlflow.set_tracking_uri(self.mlflow_tracking_uri)
+        
+        # Create experiment if it doesn't exist
+        try:
+            self.experiment_id = mlflow.create_experiment(
+                self.experiment_name,
+                artifact_location=os.environ.get("MLFLOW_ARTIFACT_LOCATION", "./mlruns")
+            )
+        except mlflow.exceptions.MlflowException:
+            self.experiment_id = mlflow.get_experiment_by_name(self.experiment_name).experiment_id
+            
+        logger.info(f"MLflow tracking initialized with experiment: {self.experiment_name} (ID: {self.experiment_id})")
+
     async def load_model(self) -> None:
         # Use the same loading mechanism as the base service
         await super().load_model()
 
     async def fine_tune(self, dataset: str, mode: str, epochs: int = 1, learning_rate: float = 1e-4, 
-                        batch_size: int = 8, grad_accum: int = 4) -> Dict[str, Any]:
+                        batch_size: int = 8, grad_accum: int = 4, 
+                        run_name: Optional[str] = None) -> Dict[str, Any]:
         """
         Fine-tune the model using the specified dataset and mode.
         
@@ -288,6 +310,7 @@ class FineTuneService(BaseModelService):
             learning_rate: Learning rate for optimization
             batch_size: Batch size for training
             grad_accum: Gradient accumulation steps
+            run_name: Optional name for the MLflow run
             
         Returns:
             Dictionary with fine-tuning results
@@ -295,128 +318,211 @@ class FineTuneService(BaseModelService):
         if self.model is None:
             raise HTTPException(status_code=500, detail="Model not loaded")
         
-        # Create a copy of the model for fine-tuning
-        model = copy.deepcopy(self.model)
+        # Start MLflow run
+        run_name = run_name or f"{self.model_id}_{mode}_{dataset}_{time.strftime('%Y%m%d-%H%M%S')}"
         
-        # Apply LoRA if specified in mode
-        if mode.startswith('lora'):
-            lora_rank = int(mode[4:])
-            logger.info(f"Applying LoRA with rank {lora_rank}")
+        with mlflow.start_run(experiment_id=self.experiment_id, run_name=run_name) as run:
+            self.run_id = run.info.run_id
+            logger.info(f"Started MLflow run: {run_name} (ID: {self.run_id})")
             
-            if hasattr(model, "transformer") and hasattr(model.transformer, "h"):
-                for m in model.transformer.h:
-                    if hasattr(m, "mlp") and hasattr(m.mlp, "c_fc"):
-                        m.mlp.c_fc = LoRAConv1DWrapper(m.mlp.c_fc, lora_rank)
-                        m.mlp.c_proj = LoRAConv1DWrapper(m.mlp.c_proj, lora_rank)
-                    
-                    if hasattr(m, "attn") and hasattr(m.attn, "c_attn"):
-                        m.attn.c_attn = LoRAConv1DWrapper(m.attn.c_attn, lora_rank)
-            else:
-                raise HTTPException(status_code=500, detail="Model architecture not compatible with LoRA")
-        
-        # Move model to device
-        model.to(DEVICE)
-        
-        # Select parameters to fine-tune based on the given mode
-        params = list(parameters_to_fine_tune(model, mode))
-        if not params:
-            raise HTTPException(status_code=400, detail="No parameters selected for fine-tuning")
-        
-        # Set up optimizer
-        optimizer = torch.optim.Adam(params, lr=learning_rate)
-        
-        # Dummy training data - in a real implementation, this would be loaded from the dataset
-        # This is just for demonstration purposes
-        x_train = ["This is a sample input text " + str(i) for i in range(100)]
-        y_train = ["This is a sample output " + str(i) for i in range(100)]
-        
-        # Add prefixes based on dataset type
-        x_train, y_train = add_prefixes(x_train, y_train, dataset)
-        
-        # Training loop
-        model.train()
-        total_loss = 0.0
-        steps = 0
-        
-        # Create progress tracking
-        max_steps = min(epochs * len(x_train) // batch_size, 1000)  # Cap at 1000 steps
-        
-        # Tokenizer should be available from the base model
-        tokenizer = self.tokenizer
-        if tokenizer is None:
-            raise HTTPException(status_code=500, detail="Tokenizer not available")
-        
-        # Determine if we're doing classification or generation based on model type
-        is_causal_lm = hasattr(model, "transformer") and not hasattr(model, "classifier")
-        
-        try:
-            for step in range(max_steps):
-                # Sample batch
-                batch_indices = np.random.randint(0, len(x_train), batch_size)
-                x_batch = [x_train[i] for i in batch_indices]
-                y_batch = [y_train[i] for i in batch_indices]
+            # Log parameters
+            mlflow.log_params({
+                "model_id": self.model_id,
+                "dataset": dataset,
+                "mode": mode,
+                "epochs": epochs,
+                "learning_rate": learning_rate,
+                "batch_size": batch_size,
+                "grad_accum": grad_accum,
+                "device": str(DEVICE)
+            })
+            
+            # Create a copy of the model for fine-tuning
+            model = copy.deepcopy(self.model)
+            
+            # Apply LoRA if specified in mode
+            if mode.startswith('lora'):
+                lora_rank = int(mode[4:])
+                logger.info(f"Applying LoRA with rank {lora_rank}")
+                mlflow.log_param("lora_rank", lora_rank)
                 
-                # Process batch based on model type
-                if is_causal_lm:
-                    # For generative models like GPT-2
-                    batch = tokenize_gpt2_batch(tokenizer, x_batch, y_batch)
-                    outputs = model(**batch, use_cache=False)
-                    loss = get_loss(outputs.logits, batch['labels'])
+                if hasattr(model, "transformer") and hasattr(model.transformer, "h"):
+                    for m in model.transformer.h:
+                        if hasattr(m, "mlp") and hasattr(m.mlp, "c_fc"):
+                            m.mlp.c_fc = LoRAConv1DWrapper(m.mlp.c_fc, lora_rank)
+                            m.mlp.c_proj = LoRAConv1DWrapper(m.mlp.c_proj, lora_rank)
+                        
+                        if hasattr(m, "attn") and hasattr(m.attn, "c_attn"):
+                            m.attn.c_attn = LoRAConv1DWrapper(m.attn.c_attn, lora_rank)
                 else:
-                    # For classification models like BERT
-                    inputs = tokenizer(x_batch, return_tensors='pt', padding=True, truncation=True, max_length=512).to(DEVICE)
-                    labels = torch.tensor([int(y) for y in y_batch], device=DEVICE)
-                    outputs = model(**inputs)
-                    loss = get_loss(outputs.logits, labels)
-                
-                # Scale loss for gradient accumulation
-                loss = loss / grad_accum
-                loss.backward()
-                
-                # Update weights after accumulating gradients
-                if (step + 1) % grad_accum == 0:
-                    optimizer.step()
-                    optimizer.zero_grad()
-                
-                total_loss += loss.item() * grad_accum
-                steps += 1
-                
-                # Log progress
-                if step % 10 == 0:
-                    logger.info(f"Step {step}/{max_steps}, Loss: {loss.item() * grad_accum:.6f}")
-                
-                # Early stopping based on loss
-                if loss.item() < 0.01:
-                    logger.info("Early stopping due to low loss")
-                    break
+                    error_msg = "Model architecture not compatible with LoRA"
+                    logger.error(error_msg)
+                    mlflow.log_param("error", error_msg)
+                    raise HTTPException(status_code=500, detail=error_msg)
+            
+            # Move model to device
+            model.to(DEVICE)
+            
+            # Select parameters to fine-tune based on the given mode
+            params = list(parameters_to_fine_tune(model, mode))
+            if not params:
+                error_msg = "No parameters selected for fine-tuning"
+                logger.error(error_msg)
+                mlflow.log_param("error", error_msg)
+                raise HTTPException(status_code=400, detail=error_msg)
+            
+            # Log number of trainable parameters
+            num_trainable_params = sum(p.numel() for p in params)
+            total_params = sum(p.numel() for p in model.parameters())
+            mlflow.log_param("trainable_parameters", num_trainable_params)
+            mlflow.log_param("total_parameters", total_params)
+            mlflow.log_param("trainable_percentage", 100 * num_trainable_params / total_params)
+            
+            # Set up optimizer
+            optimizer = torch.optim.Adam(params, lr=learning_rate)
+            
+            # Dummy training data - in a real implementation, this would be loaded from the dataset
+            # This is just for demonstration purposes
+            x_train = ["This is a sample input text " + str(i) for i in range(100)]
+            y_train = ["This is a sample output " + str(i) for i in range(100)]
+            
+            # Add prefixes based on dataset type
+            x_train, y_train = add_prefixes(x_train, y_train, dataset)
+            
+            # Training loop
+            model.train()
+            total_loss = 0.0
+            steps = 0
+            
+            # Create progress tracking
+            max_steps = min(epochs * len(x_train) // batch_size, 1000)  # Cap at 1000 steps
+            
+            # Tokenizer should be available from the base model
+            tokenizer = self.tokenizer
+            if tokenizer is None:
+                error_msg = "Tokenizer not available"
+                logger.error(error_msg)
+                mlflow.log_param("error", error_msg)
+                raise HTTPException(status_code=500, detail=error_msg)
+            
+            # Determine if we're doing classification or generation based on model type
+            is_causal_lm = hasattr(model, "transformer") and not hasattr(model, "classifier")
+            mlflow.log_param("model_type", "causal_lm" if is_causal_lm else "classification")
+            
+            try:
+                for step in range(max_steps):
+                    # Sample batch
+                    batch_indices = np.random.randint(0, len(x_train), batch_size)
+                    x_batch = [x_train[i] for i in batch_indices]
+                    y_batch = [y_train[i] for i in batch_indices]
                     
-        except Exception as e:
-            logger.error(f"Error during fine-tuning: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Fine-tuning failed: {str(e)}")
-        
-        # Set model back to evaluation mode
-        model.eval()
-        
-        # Replace the original model with the fine-tuned one
-        self.model = model
-        
-        # Return fine-tuning results
-        return {
-            "status": "fine-tuning completed",
-            "dataset": dataset,
-            "mode": mode,
-            "epochs": epochs,
-            "steps_completed": steps,
-            "average_loss": total_loss / steps if steps > 0 else 0,
-            "parameters_updated": sum(1 for _ in params)
-        }
+                    # Process batch based on model type
+                    if is_causal_lm:
+                        # For generative models like GPT-2
+                        batch = tokenize_gpt2_batch(tokenizer, x_batch, y_batch)
+                        outputs = model(**batch, use_cache=False)
+                        loss = get_loss(outputs.logits, batch['labels'])
+                        
+                        # Calculate accuracy
+                        accuracy = get_acc(outputs.logits, batch['labels'])
+                    else:
+                        # For classification models like BERT
+                        inputs = tokenizer(x_batch, return_tensors='pt', padding=True, truncation=True, max_length=512).to(DEVICE)
+                        labels = torch.tensor([int(y) for y in y_batch], device=DEVICE)
+                        outputs = model(**inputs)
+                        loss = get_loss(outputs.logits, labels)
+                        
+                        # Calculate accuracy
+                        accuracy = get_acc(outputs.logits, labels)
+                    
+                    # Scale loss for gradient accumulation
+                    loss = loss / grad_accum
+                    loss.backward()
+                    
+                    # Update weights after accumulating gradients
+                    if (step + 1) % grad_accum == 0:
+                        optimizer.step()
+                        optimizer.zero_grad()
+                    
+                    # Track metrics
+                    step_loss = loss.item() * grad_accum
+                    total_loss += step_loss
+                    steps += 1
+                    
+                    # Log metrics to MLflow
+                    mlflow.log_metrics({
+                        "loss": step_loss,
+                        "accuracy": accuracy
+                    }, step=step)
+                    
+                    # Log progress
+                    if step % 10 == 0:
+                        logger.info(f"Step {step}/{max_steps}, Loss: {step_loss:.6f}, Accuracy: {accuracy:.4f}")
+                    
+                    # Early stopping based on loss
+                    if loss.item() < 0.01:
+                        logger.info("Early stopping due to low loss")
+                        mlflow.log_param("early_stopping", True)
+                        mlflow.log_param("early_stopping_step", step)
+                        break
+                        
+            except Exception as e:
+                error_msg = f"Error during fine-tuning: {str(e)}"
+                logger.error(error_msg)
+                mlflow.log_param("error", error_msg)
+                raise HTTPException(status_code=500, detail=f"Fine-tuning failed: {str(e)}")
+            
+            # Set model back to evaluation mode
+            model.eval()
+            
+            # Save model artifacts
+            model_path = f"models/{self.model_id}_{mode}_{dataset}"
+            os.makedirs(model_path, exist_ok=True)
+            
+            # Save model state dict
+            torch.save(model.state_dict(), f"{model_path}/model.pt")
+            
+            # Log model artifacts to MLflow
+            mlflow.log_artifact(f"{model_path}/model.pt")
+            
+            # Log final metrics
+            avg_loss = total_loss / steps if steps > 0 else 0
+            mlflow.log_metrics({
+                "final_loss": avg_loss,
+                "steps_completed": steps
+            })
+            
+            # Replace the original model with the fine-tuned one
+            self.model = model
+            
+            # Return fine-tuning results with MLflow run info
+            results = {
+                "status": "fine-tuning completed",
+                "dataset": dataset,
+                "mode": mode,
+                "epochs": epochs,
+                "steps_completed": steps,
+                "average_loss": avg_loss,
+                "parameters_updated": num_trainable_params,
+                "mlflow_run_id": self.run_id,
+                "mlflow_experiment_id": self.experiment_id,
+                "model_path": model_path
+            }
+            
+            # Log results as JSON artifact
+            with open(f"{model_path}/results.json", "w") as f:
+                json.dump(results, f, indent=2)
+            mlflow.log_artifact(f"{model_path}/results.json")
+            
+            return results
     
-    async def evaluate(self, test_inputs: List[str]) -> Dict[str, Any]:
+    async def evaluate(self, test_inputs: List[str], run_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Evaluate the fine-tuned model on test inputs
         
         Args:
             test_inputs: List of test input strings
+            run_id: Optional MLflow run ID to associate with this evaluation
             
         Returns:
             Dictionary with evaluation results
@@ -425,32 +531,133 @@ class FineTuneService(BaseModelService):
             raise HTTPException(status_code=500, detail="Model not loaded")
         
         results = []
+        metrics = {}
         
-        try:
-            self.model.eval()
-            with torch.inference_mode():
-                for input_text in test_inputs:
-                    # Tokenize input
-                    inputs = self.tokenizer(input_text, return_tensors='pt', padding=True, truncation=True).to(DEVICE)
-                    
-                    # Generate output
-                    outputs = self.model.generate(
-                        **inputs,
-                        max_length=100,
-                        num_return_sequences=1,
-                        temperature=0.7,
-                        do_sample=True
-                    )
-                    
-                    # Decode output
-                    generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-                    results.append(generated_text)
-        
-        except Exception as e:
-            logger.error(f"Error during evaluation: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
+        # Start or continue MLflow run
+        with mlflow.start_run(run_id=run_id or self.run_id) as run:
+            eval_run_id = run.info.run_id
+            
+            try:
+                self.model.eval()
+                with torch.inference_mode():
+                    for i, input_text in enumerate(test_inputs):
+                        # Tokenize input
+                        inputs = self.tokenizer(input_text, return_tensors='pt', padding=True, truncation=True).to(DEVICE)
+                        
+                        # Track inference time
+                        start_time = time.time()
+                        
+                        # Generate output
+                        outputs = self.model.generate(
+                            **inputs,
+                            max_length=100,
+                            num_return_sequences=1,
+                            temperature=0.7,
+                            do_sample=True
+                        )
+                        
+                        # Calculate inference time
+                        inference_time = time.time() - start_time
+                        
+                        # Decode output
+                        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                        
+                        # Store result
+                        result = {
+                            "input": input_text,
+                            "output": generated_text,
+                            "inference_time": inference_time
+                        }
+                        results.append(result)
+                        
+                        # Log individual result metrics
+                        mlflow.log_metrics({
+                            f"inference_time_{i}": inference_time,
+                            f"output_length_{i}": len(generated_text.split())
+                        })
+                
+                # Calculate aggregate metrics
+                avg_inference_time = sum(r["inference_time"] for r in results) / len(results)
+                avg_output_length = sum(len(r["output"].split()) for r in results) / len(results)
+                
+                metrics = {
+                    "avg_inference_time": avg_inference_time,
+                    "avg_output_length": avg_output_length,
+                    "num_samples": len(results)
+                }
+                
+                # Log aggregate metrics
+                mlflow.log_metrics(metrics)
+                
+                # Save results as artifact
+                results_path = f"evaluations/results_{time.strftime('%Y%m%d-%H%M%S')}.json"
+                os.makedirs(os.path.dirname(results_path), exist_ok=True)
+                with open(results_path, "w") as f:
+                    json.dump({"results": results, "metrics": metrics}, f, indent=2)
+                
+                mlflow.log_artifact(results_path)
+            
+            except Exception as e:
+                error_msg = f"Error during evaluation: {str(e)}"
+                logger.error(error_msg)
+                mlflow.log_param("evaluation_error", error_msg)
+                raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
         
         return {
             "status": "evaluation completed",
-            "results": results
+            "results": results,
+            "metrics": metrics,
+            "mlflow_run_id": eval_run_id
+        }
+    
+    async def save_fine_tuned_model(self, model_name: str, description: str = "") -> Dict[str, Any]:
+        """
+        Save the fine-tuned model for later use
+        
+        Args:
+            model_name: Name to save the model as
+            description: Optional description of the fine-tuned model
+            
+        Returns:
+            Dictionary with save results
+        """
+        if self.model is None:
+            raise HTTPException(status_code=500, detail="Model not loaded")
+        
+        # Create save directory
+        save_dir = f"models/fine_tuned/{model_name}"
+        os.makedirs(save_dir, exist_ok=True)
+        
+        # Save model state dict
+        model_path = f"{save_dir}/model.pt"
+        torch.save(self.model.state_dict(), model_path)
+        
+        # Save tokenizer if available
+        if self.tokenizer is not None:
+            self.tokenizer.save_pretrained(save_dir)
+        
+        # Save metadata
+        metadata = {
+            "model_id": self.model_id,
+            "fine_tuned_name": model_name,
+            "description": description,
+            "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "mlflow_run_id": self.run_id
+        }
+        
+        with open(f"{save_dir}/metadata.json", "w") as f:
+            json.dump(metadata, f, indent=2)
+        
+        # Log to MLflow if a run is active
+        if self.run_id:
+            with mlflow.start_run(run_id=self.run_id):
+                mlflow.log_artifact(model_path)
+                mlflow.log_artifact(f"{save_dir}/metadata.json")
+                mlflow.log_param("saved_model_name", model_name)
+        
+        return {
+            "status": "model saved",
+            "model_name": model_name,
+            "save_path": save_dir,
+            "mlflow_run_id": self.run_id
         } 

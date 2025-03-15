@@ -11,6 +11,7 @@ langgraph>=0.0.20
 langchain-community==0.0.19
 langsmith>=0.0.83
 langchain-together==0.0.3
+mlflow>=2.10.0
 
 # RAG components
 sentence-transformers==2.2.2
