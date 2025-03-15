@@ -83,6 +83,35 @@ class SupervisorAgent(BaseAgent):
         
         logger.info("Supervisor Agent initialized with both LangGraph and direct service capabilities")
     
+    # Make the agent callable for LangGraph compatibility
+    def __call__(self, state: WorkflowState) -> WorkflowState:
+        """
+        Make the agent compatible with LangGraph by providing a __call__ method.
+        
+        Args:
+            state: The current workflow state
+            
+        Returns:
+            Updated workflow state
+        """
+        # This is a synchronous wrapper around the async run method
+        import asyncio
+        try:
+            # Use a new event loop if needed
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            # Run the async method and return the result
+            return loop.run_until_complete(self.run(state))
+        except Exception as e:
+            logger.error(f"Error in SupervisorAgent.__call__: {e}")
+            # Handle the error appropriately and return updated state
+            state.error = str(e)
+            state.status = "error"
+            return state
+    
     async def run(self, state: WorkflowState) -> WorkflowState:
         """
         Execute the Supervisor Agent to analyze the query and create a research plan.

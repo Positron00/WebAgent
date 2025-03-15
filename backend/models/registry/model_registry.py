@@ -220,6 +220,9 @@ class ModelRegistry:
                     if last_check:
                         model_data["last_check"] = datetime.fromisoformat(last_check)
                     
+                    # Remove model_id from model_data to prevent duplicate argument
+                    model_data.pop("model_id", None)
+                    
                     model_info = ModelInfo(
                         model_id=model_id,
                         capabilities=set(capabilities),

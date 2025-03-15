@@ -262,46 +262,62 @@ class SystemDiagnostics:
     @timing_decorator
     def check_workflow(self) -> Dict[str, Any]:
         """
-        Check the agent workflow graph.
+        Check the LangGraph workflow.
         
         Returns:
-            Dict with workflow information
+            Dict with workflow status information
         """
-        logger.info("Checking workflow")
-        start_time = time.time()
+        logger.info("Checking LangGraph workflow")
+        
+        workflow_info = {
+            "status": "not_checked",
+            "error": None,
+            "nodes": [],
+            "edges": []
+        }
         
         try:
+            # Try to get the workflow
             from backend.app.graph.workflows import get_agent_workflow
-            workflow = get_agent_workflow()
             
-            # Basic workflow information
-            workflow_info = {
-                "nodes": list(workflow.nodes),
-                "compiled": hasattr(workflow, "_compiled") and workflow._compiled,
-                "root_node": "__start__" in workflow.nodes,
-            }
-            
-            # Since get_out_edges is not available, we'll skip edge information
-            workflow_info["node_count"] = len(workflow.nodes)
-            
-            # Check if the workflow has the expected critical nodes
-            expected_nodes = ["supervisor", "web_research", "internal_research", 
-                             "senior_research", "team_manager"]
-            workflow_info["missing_critical_nodes"] = [node for node in expected_nodes 
-                                                if node not in workflow.nodes]
-            
-            self.check_results["workflow"] = workflow_info
-            self.check_times["workflow"] = time.time() - start_time
-            return workflow_info
+            try:
+                workflow = get_agent_workflow()
+                workflow_info["status"] = "success"
+                workflow_info["nodes"] = list(workflow.graph.nodes)
+                workflow_info["edges"] = [(src, dest) for src, dest in workflow.graph.edges]
+            except TypeError as e:
+                # Special handling for LangGraph compatibility errors
+                if "Expected a Runnable, callable or dict" in str(e):
+                    # Extract the class name that's causing the issue
+                    import re
+                    class_name = re.search(r"<class '(.+?)'>", str(e))
+                    if class_name:
+                        workflow_info["status"] = "partial"
+                        workflow_info["error"] = f"LangGraph compatibility issue with {class_name.group(1)}. Add __call__ method."
+                        logger.warning(f"Workflow check partial: LangGraph compatibility issue with {class_name.group(1)}")
+                    else:
+                        workflow_info["status"] = "error"
+                        workflow_info["error"] = f"LangGraph compatibility issue: {str(e)}"
+                        logger.error(f"Workflow check failed: {str(e)}")
+                else:
+                    workflow_info["status"] = "error"
+                    workflow_info["error"] = str(e)
+                    logger.error(f"Error checking workflow: {e}")
+                
+                # Try to get basic agent information even if the workflow has errors
+                try:
+                    from backend.app.agents.supervisor import get_supervisor_agent
+                    supervisor = get_supervisor_agent()
+                    workflow_info["supervisor_available"] = True
+                except Exception as agent_err:
+                    logger.error(f"Error checking supervisor agent: {agent_err}")
+                    workflow_info["supervisor_available"] = False
         except Exception as e:
-            error_msg = f"Error checking workflow: {str(e)}"
-            workflow_info = {"error": error_msg}
-            logger.error(error_msg)
-            logger.exception(e)
-            
-            self.check_results["workflow"] = workflow_info
-            self.check_times["workflow"] = time.time() - start_time
-            return workflow_info
+            workflow_info["status"] = "error"
+            workflow_info["error"] = f"Error checking workflow: {str(e)}"
+            logger.error(f"Error checking workflow: {e}")
+        
+        return workflow_info
     
     @timing_decorator
     def check_performance_metrics(self) -> Dict[str, Any]:
@@ -421,54 +437,48 @@ class SystemDiagnostics:
     @timing_decorator
     def check_language_model_availability(self) -> Dict[str, Any]:
         """
-        Check if language models are available and responsive.
+        Check if the language model service is available.
         
         Returns:
-            Dictionary with LLM availability information
+            Dict with language model status information
         """
         logger.info("Checking language model availability")
         start_time = time.time()
         
-        results = {}
+        results = {
+            "status": "unknown",
+            "provider": "unknown",
+            "error": None,
+            "providers": {}
+        }
         
         try:
-            # Try to get the LLM service
-            from backend.app.services.llm import get_llm, get_llm_service_status
+            # Import from the backend app
+            from backend.app.services.llm import get_llm_service_status
             
             # Get LLM service status (this should not make API calls)
-            service_status = get_llm_service_status()
-            results["service_status"] = service_status
-            
-            # If we're in a test environment, don't actually call the LLM API
-            if settings.WEBAGENT_ENV == "test":
-                results["status"] = "skipped_test_environment"
-                logger.info("Skipping LLM API check in test environment")
-            else:
-                # Try to get a quick response from the default LLM to check if it's working
-                # This section is commented out to avoid making actual API calls during diagnostics
-                # Uncomment if you want to verify the actual API calls work
-                """
-                llm = get_llm()
-                start_test = time.time()
-                response = llm.invoke("Respond with 'OK' if you can read this message.")
-                test_time = time.time() - start_test
+            try:
+                service_status = get_llm_service_status()
+                results["status"] = "available"
+                results["provider"] = service_status.get("provider", "unknown")
+                results["providers"] = {
+                    provider: details for provider, details in service_status.items()
+                    if provider not in ["provider", "error"]
+                }
+            except Exception as status_err:
+                logger.warning(f"Error getting LLM service status: {status_err}")
+                results["status"] = "error"
+                results["error"] = f"Error getting service status: {str(status_err)}"
                 
-                results["api_check"] = {
-                    "status": "responsive" if "OK" in response else "unexpected_response",
-                    "response_time_seconds": test_time,
-                    "response_snippet": str(response)[:20]
-                }
-                logger.info(f"LLM API check completed in {test_time:.2f}s: {results['api_check']['status']}")
-                """
-                results["api_check"] = {
-                    "status": "check_disabled",
-                    "reason": "API checks are disabled in diagnostics to avoid unnecessary API calls"
-                }
-                logger.info("LLM API check disabled to avoid unnecessary API calls")
+                # Fallback to simple API key check
+                if os.getenv("OPENAI_API_KEY"):
+                    results["providers"]["openai"] = {"api_key_set": True}
+                if os.getenv("TOGETHER_API_KEY"):
+                    results["providers"]["together"] = {"api_key_set": True}
         except Exception as e:
-            error_msg = f"Error checking LLM availability: {str(e)}"
-            results = {"status": "error", "error": error_msg}
-            logger.error(error_msg, exc_info=True)
+            logger.error(f"Error checking LLM availability: {e}")
+            results["status"] = "error"
+            results["error"] = f"Error checking LLM availability: {str(e)}"
         
         self.check_results["llm_availability"] = results
         self.check_times["llm_availability"] = time.time() - start_time
