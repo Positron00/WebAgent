@@ -94,6 +94,14 @@ agents:
   team_manager:
     model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
     temperature: 0.4
+  document_extraction:
+    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    temperature: 0.2
+    lda_num_topics: 10
+    lda_passes: 15
+    lda_iterations: 50
+    lda_chunksize: 100
+    lda_random_state: 42
 
 # Logging configuration
 logging:

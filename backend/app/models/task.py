@@ -37,6 +37,8 @@ class WorkflowState(BaseModel):
     context: Dict[str, Any] = Field(default_factory=dict)
     history: List[Dict[str, Any]] = Field(default_factory=list)
     reports: Dict[str, Any] = Field(default_factory=dict)
+    inputs: Dict[str, Any] = Field(default_factory=dict)
+    output: Optional[Dict[str, Any]] = None
     final_report: Optional[Dict[str, Any]] = None
     current_step: str = "planning"
     completed: bool = False

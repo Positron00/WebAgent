@@ -114,30 +114,94 @@ class VectorDBService:
             logger.error(f"Error adding documents to database: {str(e)}")
             return []
     
+    @timing_decorator
     async def search(self, query: str, k: int = 5):
         """
-        Search for documents related to the query.
+        Search for documents similar to the query.
         
         Args:
-            query: The search query
+            query: The query string
             k: Number of results to return
             
         Returns:
-            List of documents
+            List of documents and their similarity scores
         """
-        if not self.initialized:
-            logger.error("Vector database not initialized")
-            return []
-        
         try:
-            results = await self.vectordb.asimilarity_search_with_score(
-                query=query,
-                k=k
-            )
+            results = self.vectordb.similarity_search_with_score(query, k=k)
             return results
         except Exception as e:
             logger.error(f"Error searching vector database: {str(e)}")
             return []
+            
+    @timing_decorator
+    def get_document(self, document_id: str) -> Optional[Document]:
+        """
+        Retrieve a document by its ID.
+        
+        Args:
+            document_id: The ID of the document to retrieve
+            
+        Returns:
+            The document if found, None otherwise
+        """
+        try:
+            # Get the document from the collection
+            results = self.vectordb._collection.get(ids=[document_id])
+            
+            if not results or not results['documents'] or len(results['documents']) == 0:
+                logger.warning(f"Document with ID {document_id} not found in vector database")
+                return None
+                
+            # Create a Document object from the retrieved data
+            metadata = results['metadatas'][0] if results['metadatas'] else {}
+            content = results['documents'][0]
+            
+            document = Document(
+                page_content=content,
+                metadata=metadata
+            )
+            
+            return document
+        except Exception as e:
+            logger.error(f"Error retrieving document from vector database: {str(e)}")
+            return None
+            
+    @timing_decorator
+    def get_document_by_artifact_id(self, artifact_id: str) -> Optional[Document]:
+        """
+        Retrieve document chunks by artifact ID and combine them.
+        
+        Args:
+            artifact_id: The artifact ID of the document
+            
+        Returns:
+            Combined document if found, None otherwise
+        """
+        try:
+            # Query for documents with matching artifact_id in metadata
+            results = self.vectordb._collection.get(
+                where={"artifact_id": artifact_id}
+            )
+            
+            if not results or not results['documents'] or len(results['documents']) == 0:
+                logger.warning(f"No documents found with artifact_id {artifact_id}")
+                return None
+                
+            # Combine all chunks into a single document
+            combined_content = "\n".join(results['documents'])
+            
+            # Use metadata from the first chunk
+            metadata = results['metadatas'][0] if results['metadatas'] else {}
+            
+            document = Document(
+                page_content=combined_content,
+                metadata=metadata
+            )
+            
+            return document
+        except Exception as e:
+            logger.error(f"Error retrieving document by artifact_id: {str(e)}")
+            return None
 
 # Create instance
 _db_service = None

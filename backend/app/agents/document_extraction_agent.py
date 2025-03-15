@@ -29,7 +29,8 @@ from gensim.models import LdaModel, CoherenceModel
 
 # Import ML libraries
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.decomposition import LatentDirichletAllocation, NMF
+from sklearn.metrics import silhouette_score
 
 # Import local modules
 from app.core.config import settings
@@ -39,6 +40,9 @@ from app.utils.metrics import timing_decorator, log_memory_usage
 from app.utils.document_utils import extract_text_from_document
 from langchain.output_parsers import PydanticOutputParser
 from langchain.schema.runnable import RunnableLambda
+from app.core.logger import logger, get_logger
+from app.models.task import WorkflowState
+from app.services.document_loader import get_document_loader_service
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -80,11 +84,11 @@ class DocumentExtractionAgent(BaseAgent):
         
         # Set default parameters for LDA
         self.lda_params = {
-            "num_topics": config.get("lda_num_topics", 10),
-            "passes": config.get("lda_passes", 15),
-            "iterations": config.get("lda_iterations", 50),
-            "chunksize": config.get("lda_chunksize", 100),
-            "random_state": config.get("lda_random_state", 42)
+            "num_topics": config.get("lda_num_topics", 10) if config else 10,
+            "passes": config.get("lda_passes", 15) if config else 15,
+            "iterations": config.get("lda_iterations", 50) if config else 50,
+            "chunksize": config.get("lda_chunksize", 100) if config else 100,
+            "random_state": config.get("lda_random_state", 42) if config else 42
         }
         
         logger.info(f"Document Extraction Agent initialized with {len(self.extraction_methods)} methods")
@@ -349,63 +353,52 @@ class DocumentExtractionAgent(BaseAgent):
             logger.warning(f"Document text too long ({len(text)} chars), truncating to {max_length}")
             text = text[:max_length] + "...[truncated]"
         
-        # Call the LLM
+        # Prepare the prompt
         prompt = template.format(text=text)
         
-        llm_response = self.llm.generate(
-            messages=[
-                {"role": "system", "content": "You are a document analysis expert. Extract structured information from documents accurately."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=params.get("temperature", 0.1),
-            top_p=params.get("top_p", 0.95),
-            max_tokens=params.get("max_tokens", 1500)
-        )
-        
-        response_text = llm_response.choices[0].message.content
-        
-        # Extract JSON from response
         try:
-            # Try to find JSON in the response
-            json_start = response_text.find("{")
-            json_end = response_text.rfind("}")
+            # Call the LLM with a simpler interface
+            response_text = self.llm(prompt)
             
-            if json_start >= 0 and json_end >= 0:
-                json_str = response_text[json_start:json_end+1]
-                extraction_data = json.loads(json_str)
-            else:
-                # If no JSON found, structure the response manually
-                extraction_data = {
-                    "main_topics": [],
-                    "key_entities": [],
-                    "summary": response_text[:500],  # Use first 500 chars as summary
-                    "key_points": [],
-                    "document_type": "unknown"
+            # Extract JSON from response
+            try:
+                # Try to find JSON in the response
+                json_start = response_text.find("{")
+                json_end = response_text.rfind("}")
+                
+                if json_start >= 0 and json_end >= 0:
+                    json_str = response_text[json_start:json_end+1]
+                    extraction_data = json.loads(json_str)
+                else:
+                    # If no JSON found, structure the response manually
+                    extraction_data = {
+                        "main_topics": [],
+                        "key_entities": [],
+                        "summary": response_text[:500],  # Use first 500 chars as summary
+                        "key_points": [],
+                        "document_type": "unknown"
+                    }
+                
+                return {
+                    "extraction_data": extraction_data,
+                    "extraction_type": "llm"
+                }
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse JSON from LLM response")
+                # Return raw response as fallback
+                return {
+                    "extraction_data": {
+                        "raw_response": response_text,
+                        "error": "Failed to parse structured data"
+                    },
+                    "extraction_type": "llm"
                 }
                 
-            extraction_data["llm_usage"] = {
-                "prompt_tokens": llm_response.usage.prompt_tokens,
-                "completion_tokens": llm_response.usage.completion_tokens,
-                "total_tokens": llm_response.usage.total_tokens
-            }
-            
-            return {
-                "extraction_data": extraction_data,
-                "extraction_type": "llm"
-            }
-            
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse JSON from LLM response")
-            # Return raw response as fallback
+        except Exception as e:
+            logger.error(f"Error in LLM extraction: {str(e)}")
             return {
                 "extraction_data": {
-                    "raw_response": response_text,
-                    "error": "Failed to parse structured data"
-                },
-                "llm_usage": {
-                    "prompt_tokens": llm_response.usage.prompt_tokens,
-                    "completion_tokens": llm_response.usage.completion_tokens,
-                    "total_tokens": llm_response.usage.total_tokens
+                    "error": f"Failed to extract information: {str(e)}"
                 },
                 "extraction_type": "llm"
             }
@@ -490,6 +483,66 @@ class DocumentExtractionAgent(BaseAgent):
         # )
         
         # Return handling would be implemented as needed 
+
+    async def run(self, state: WorkflowState) -> WorkflowState:
+        """
+        Run the document extraction agent on the given workflow state.
+        
+        Args:
+            state: Current workflow state with query and document_id
+            
+        Returns:
+            Updated workflow state with extraction results
+        """
+        document_id = state.inputs.get("document_id")
+        if not document_id:
+            state.error = "Document ID is required for extraction"
+            return state
+            
+        # Get the document content from the vector database
+        doc_service = get_document_loader_service()
+        
+        # Since we don't have a direct get_document method, we'll use the vector database
+        # to retrieve the document content
+        from app.services.vectordb import get_vectordb_service
+        vectordb = get_vectordb_service()
+        
+        # Retrieve document from vector database
+        try:
+            document = vectordb.get_document_by_artifact_id(document_id)
+            if not document:
+                state.error = f"Document with ID {document_id} not found in vector database"
+                return state
+                
+            # Extract text content from document
+            text = document.page_content
+            
+            # Select extraction method
+            method = state.inputs.get("extraction_method", "auto")
+            if method == "auto":
+                method = self._select_extraction_method(text)
+            
+            # Extract information using selected method
+            extraction_params = state.inputs.get("extraction_params", {})
+            
+            if method not in self.extraction_methods:
+                state.error = f"Unknown extraction method: {method}"
+                return state
+                
+            # Execute extraction
+            extraction_result = self.extraction_methods[method](text, extraction_params)
+            
+            # Update state with results
+            state.output = extraction_result
+            
+            # Route to team manager if requested
+            if state.inputs.get("route_to_team_manager", False):
+                self._route_to_team_manager(extraction_result)
+                
+            return state
+        except Exception as e:
+            state.error = f"Error retrieving document: {str(e)}"
+            return state
 
 def get_document_extraction_agent() -> DocumentExtractionAgent:
     """

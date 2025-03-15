@@ -101,6 +101,26 @@ async def run_document_extraction_demo():
     """Run the document extraction agent demo."""
     logger.info("Starting Document Extraction Agent Demo")
     
+    # Ask for user confirmation to connect to the TogetherAI LLM
+    print("\n" + "=" * 80)
+    print("This demo will connect to the TogetherAI LLM API using your configured API key.")
+    try:
+        model_info = settings.LLM_PROVIDER if hasattr(settings, 'LLM_PROVIDER') else 'together'
+        model_name = settings.DEFAULT_MODEL if hasattr(settings, 'DEFAULT_MODEL') else 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free'
+        print(f"The model that will be used is: {model_name} (Provider: {model_info})")
+    except AttributeError:
+        print("Using default TogetherAI LLM configuration")
+    print("=" * 80)
+    
+    confirmation = input("\nDo you want to continue and connect to the LLM API? (y/n): ")
+    if confirmation.lower() not in ["y", "yes"]:
+        logger.info("User declined to connect to the LLM API. Demo aborted.")
+        print("Demo aborted by user.")
+        return
+    
+    logger.info("User confirmed to connect to the LLM API.")
+    print("\nConnecting to TogetherAI LLM API...")
+    
     # Create a sample document if needed
     sample_doc_path = create_sample_document()
     

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.3] - 2025-03-15
+
+### Added
+- Connected Document Extraction Agent demo to the TogetherAI LLM API
+- Added interactive user confirmation before connecting to the LLM API
+- Implemented proper JSON parsing for LLM extraction responses
+- Enhanced error handling for LLM API interactions
+
+### Enhanced
+- Improved document retrieval from vector database with artifact_id support
+- Updated document extraction pipeline with better logging and error handling
+- Optimized LLM prompt for better structured data extraction
+
 ## [2.8.2] - 2025-03-15
 
 ### Added
