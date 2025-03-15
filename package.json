@@ -1,7 +1,7 @@
 {
   "name": "webagent-platform",
-  "version": "2.6.2",
-  "description": "WebAgent Platform with model microservices, improved test coverage, and fixed Pydantic warnings (2025-03-14)",
+  "version": "2.6.3",
+  "description": "WebAgent Platform with improved test reliability, fixed AsyncTestCase issues, and ModelManager optimizations (2025-03-14)",
   "private": true,
   "scripts": {
     "dev": "next dev",

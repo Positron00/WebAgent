@@ -48,34 +48,27 @@ class ModelManager:
         """Initialize the model manager"""
         self.config = load_models_config()
         self.processes: Dict[str, ModelProcessInfo] = {}
-        self.gateway: Optional[ModelAPIGateway] = None
-        self.gateway_thread: Optional[threading.Thread] = None
-        self.running = False
+        self.running = True
         self._init_registry()
     
     def _init_registry(self) -> None:
         """Initialize the model registry"""
-        # This initializes the singleton registry
-        registry = get_model_registry()
-        logger.info("Model registry initialized")
+        # Initialize model registry
+        self.registry = get_model_registry()
     
     def start_gateway(self, host: str = "localhost", port: int = 8000) -> None:
         """
-        Start the API gateway
+        Start the model API gateway
         
         Args:
-            host: Host to run the gateway on
-            port: Port to run the gateway on
+            host: Host address to bind to
+            port: Port to listen on
         """
-        if self.gateway_thread is not None and self.gateway_thread.is_alive():
-            logger.warning("Gateway already running")
-            return
-        
-        self.gateway = ModelAPIGateway(host=host, port=port)
+        self.gateway = ModelAPIGateway(host, port)
         
         def run_gateway():
+            """Run the API gateway in a separate thread"""
             try:
-                logger.info(f"Starting API gateway on {host}:{port}")
                 self.gateway.run()
             except Exception as e:
                 logger.exception(f"Error running API gateway: {e}")
@@ -94,40 +87,8 @@ class ModelManager:
         Returns:
             bool: True if the model was started successfully
         """
-        if model_id not in self.config["models"]:
-            logger.error(f"Model {model_id} not found in configuration")
-            return False
-        
-        # Get model configuration
-        model_config = self.config["models"][model_id]
-        model_type = model_config.get("model_type", "llm")
-        
-        # Create default configuration for the service
-        default_config = DEFAULT_MODEL_CONFIG.copy()
-        default_config.update(model_config)
-        
-        # Create model service configuration
-        service_config = ModelServiceConfig(
-            model_id=model_id,
-            display_name=model_config.get("display_name", model_id),
-            model_type=model_type,
-            host=model_config.get("host", "localhost"),
-            port=model_config.get("port", 8500),
-            model_path=model_config.get("model_path"),
-            device=model_config.get("device", "cpu"),
-            capabilities=model_config.get("capabilities", ["text-generation"]),
-            parameters=model_config.get("parameters", {})
-        )
-        
-        # Create and run the model service
-        if model_type in ["llm", "embedding"]:
-            # Run the service
-            service = TransformerModelService(service_config)
-            service.run()
-            return True
-        else:
-            logger.error(f"Unsupported model type: {model_type}")
-            return False
+        # Start the model service
+        return self.start_model_service_subprocess(model_id)
     
     def start_model_service_subprocess(self, model_id: str) -> bool:
         """
@@ -256,7 +217,7 @@ class ModelManager:
         # Send SIGTERM
         logger.info(f"Stopping model service {model_id}")
         try:
-            process_info.process.terminate()
+            os.kill(process_info.process.pid, signal.SIGTERM)
             
             # Wait for process to terminate
             for _ in range(5):  # Wait up to 5 seconds
@@ -267,11 +228,14 @@ class ModelManager:
             # Force kill if still running
             if process_info.is_running():
                 logger.warning(f"Model service {model_id} did not terminate, sending SIGKILL")
-                process_info.process.kill()
+                os.kill(process_info.process.pid, signal.SIGKILL)
             
             # Update registry
             registry = get_model_registry()
             registry.update_model_status(model_id, "offline")
+            
+            # Remove from processes
+            del self.processes[model_id]
             
             logger.info(f"Stopped model service {model_id}")
             return True
@@ -306,8 +270,8 @@ class ModelManager:
                     else:
                         logger.error(f"Model service {model_id} failed to start after multiple attempts")
             
-            # Check every 10 seconds
-            time.sleep(10)
+            # Check every 5 seconds instead of 10 for faster tests
+            time.sleep(5)
     
     def get_status(self) -> Dict[str, Any]:
         """

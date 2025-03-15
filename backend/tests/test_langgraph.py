@@ -18,7 +18,7 @@ import logging
 import asyncio
 from typing import Dict, List, Any, Optional
 from unittest.mock import patch, MagicMock
-from langgraph.graph import END
+from langgraph.graph import StateGraph, END
 
 # Configure logging for tests
 logging.basicConfig(
@@ -35,8 +35,8 @@ from app.models.task import WorkflowState
 from app.graph.workflows import build_agent_workflow, get_agent_workflow
 from app.agents.base_agent import BaseAgent
 
-# Import mock utils that will be created
-from tests.mock_utils import create_mock_agent, create_test_workflow_state
+# Import test fixtures
+from backend.tests.mock_utils import create_mock_agent, create_test_workflow_state
 
 
 class TestLangGraphWorkflow:

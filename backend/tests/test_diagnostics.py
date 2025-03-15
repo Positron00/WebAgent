@@ -35,7 +35,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import diagnostics module
 from app.utils.diagnostics import get_diagnostics, print_diagnostics_report, SystemDiagnostics
-from tests.mock_utils import setup_test_environment
+from backend.tests.mock_utils import setup_test_environment
 
 class TestDiagnosticsUtility:
     """Tests for the diagnostics utility module."""

@@ -9,14 +9,14 @@ import json
 
 from app.agents.senior_research import SeniorResearchAgent, ResearchEvaluation
 from app.models.task import WorkflowState
-from .mock_utils import create_test_workflow_state
+
+# Import test utilities
+from backend.tests.mock_utils import create_test_workflow_state
 
 # Mock responses for testing
 EVALUATION_RESPONSE = """```evaluation
 score: 6
 missing_information: ["detailed statistics on market growth", "competitor analysis"]
-requires_additional_research: yes
-research_questions: ["What are the detailed market growth statistics for AI assistants?", "Who are the top competitors in this space?"]
 ```
 
 Based on the research conducted, here is a synthesized report addressing the query about AI assistant market trends:

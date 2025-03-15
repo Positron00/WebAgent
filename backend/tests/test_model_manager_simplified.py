@@ -108,9 +108,7 @@ class TestModelManager(unittest.TestCase):
         
         # Check if manager is initialized correctly
         self.assertEqual(manager.config, self.mock_config)
-        self.assertIsNone(manager.gateway)
-        self.assertIsNone(manager.gateway_thread)
-        self.assertFalse(manager.running)
+        self.assertTrue(manager.running)
         self.assertEqual(len(manager.processes), 0)
 
 

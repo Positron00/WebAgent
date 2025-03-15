@@ -44,7 +44,7 @@ from app.core.middleware import SecurityHeadersMiddleware, LimitSizeMiddleware
 from app.core.config import settings
 
 # Import test utilities
-from tests.mock_utils import create_mock_agent, create_test_workflow_state, setup_test_environment
+from backend.tests.mock_utils import create_mock_agent, create_test_workflow_state, setup_test_environment
 
 # Import the FastAPI app for testing API security
 try:

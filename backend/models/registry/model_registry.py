@@ -22,20 +22,27 @@ class ModelEndpoint(BaseModel):
     port: int = Field(..., description="Port number for the model service")
     url_path: str = Field("/v1/completions", description="API endpoint path")
     
+    model_config = {
+        "protected_namespaces": ()
+    }
+    
     @property
     def endpoint_url(self) -> str:
-        """Get the full endpoint URL for the model"""
+        """Generate the full URL for the model endpoint"""
         return f"http://{self.host}:{self.port}{self.url_path}"
     
     def to_dict(self) -> Dict:
         """Convert to dictionary format"""
-        return {
-            "service_name": self.service_name,
-            "host": self.host,
-            "port": self.port,
-            "url_path": self.url_path,
-            "endpoint_url": self.endpoint_url
-        }
+        try:
+            # Try using model_dump (Pydantic v2)
+            result = self.model_dump(exclude={"url_path"})
+        except AttributeError:
+            # Fallback to dict (Pydantic v1)
+            result = self.dict(exclude={"url_path"})
+            
+        result["url_path"] = self.url_path
+        result["endpoint_url"] = self.endpoint_url
+        return result
 
 class ModelInfo(BaseModel):
     """Information about a model"""
@@ -50,9 +57,19 @@ class ModelInfo(BaseModel):
     status: str = Field("offline", description="Model status (online/offline/error)")
     last_check: Optional[datetime] = Field(None, description="Last status check time")
     
+    model_config = {
+        "protected_namespaces": ()
+    }
+    
     def to_dict(self) -> Dict:
         """Convert to dictionary format"""
-        result = self.dict(exclude={"endpoint", "capabilities", "last_check"})
+        try:
+            # Try using model_dump (Pydantic v2)
+            result = self.model_dump(exclude={"endpoint", "capabilities", "last_check"})
+        except AttributeError:
+            # Fallback to dict (Pydantic v1)
+            result = self.dict(exclude={"endpoint", "capabilities", "last_check"})
+            
         result["endpoint"] = self.endpoint.to_dict()
         result["capabilities"] = list(self.capabilities)
         result["last_check"] = self.last_check.isoformat() if self.last_check else None

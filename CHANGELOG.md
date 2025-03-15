@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.3] - 2025-03-14
+
+### Fixed
+- Resolved hanging issues in test_model_manager.py with proper mocking
+- Fixed asynchronous test cases in model manager tests
+- Corrected AsyncTestCase implementation to properly handle coroutines
+- Addressed incorrect imports in test_senior_research.py
+- Fixed model manager test initialization assertions
+- Improved ModelProcessInfo class testing reliability
+
+### Changed
+- Enhanced test isolation to prevent infinite loops during testing
+- Optimized test execution with better mocking strategies
+- Standardized model manager test structure for improved maintainability
+- Updated test framework to handle mock loops safely
+
 ## [2.6.2] - 2025-03-14
 
 ### Fixed

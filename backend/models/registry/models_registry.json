@@ -2,37 +2,21 @@
   "test-model": {
     "model_id": "test-model",
     "display_name": "Test Model",
-    "model_type": "test",
-    "description": "Model service for Test Model",
+    "model_type": "llm",
+    "description": "",
     "version": "1.0.0",
     "parameters": {},
-    "status": "initializing",
+    "status": "ready",
     "endpoint": {
-      "service_name": "test-model-service",
+      "service_name": "test-service",
       "host": "localhost",
       "port": 8500,
       "url_path": "/v1/completions",
       "endpoint_url": "http://localhost:8500/v1/completions"
     },
-    "capabilities": [],
-    "last_check": null
-  },
-  "test-transformer": {
-    "model_id": "test-transformer",
-    "display_name": "Test Transformer",
-    "model_type": "transformer",
-    "description": "Model service for Test Transformer",
-    "version": "1.0.0",
-    "parameters": {},
-    "status": "initializing",
-    "endpoint": {
-      "service_name": "test-transformer-service",
-      "host": "localhost",
-      "port": 8501,
-      "url_path": "/v1/completions",
-      "endpoint_url": "http://localhost:8501/v1/completions"
-    },
-    "capabilities": [],
-    "last_check": null
+    "capabilities": [
+      "text-generation"
+    ],
+    "last_check": "2025-03-14T23:00:02.337819"
   }
 }

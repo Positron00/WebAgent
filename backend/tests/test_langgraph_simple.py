@@ -23,9 +23,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import the modules to test
 from app.models.task import WorkflowState
 from app.graph.workflows import build_agent_workflow, get_agent_workflow
+from langgraph.graph import StateGraph, END
 
 # Import mock utils
-from tests.mock_utils import create_mock_agent
+from backend.tests.mock_utils import create_mock_agent
 
 class TestLangGraphWorkflow:
     """Tests for the LangGraph workflow implementation."""

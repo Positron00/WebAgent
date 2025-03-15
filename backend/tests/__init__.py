@@ -18,4 +18,7 @@ if backend_dir.name == 'backend' and str(backend_dir) not in sys.path:
 # Function to get the root directory of the project
 def get_project_root() -> Path:
     """Returns the absolute path to the project root directory."""
-    return Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
+    return Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import common test utilities so they can be imported from tests directly
+from .mock_utils import create_mock_agent, create_test_workflow_state, setup_test_environment 

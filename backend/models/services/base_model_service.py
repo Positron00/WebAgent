@@ -32,12 +32,20 @@ class CompletionRequest(BaseModel):
     top_p: float = Field(0.9, description="Nucleus sampling parameter")
     stop: Optional[List[str]] = Field(None, description="Stop sequences to end generation")
     
+    model_config = {
+        "protected_namespaces": ()
+    }
+
 class CompletionResponse(BaseModel):
     """Common response format for model completions"""
     text: str = Field(..., description="The generated text")
     model: str = Field(..., description="The model used for generation")
     usage: Dict[str, int] = Field(..., description="Token usage information")
     finish_reason: str = Field("stop", description="The reason generation stopped")
+    
+    model_config = {
+        "protected_namespaces": ()
+    }
 
 class ModelServiceConfig(BaseModel):
     """Configuration for a model service"""
@@ -50,6 +58,10 @@ class ModelServiceConfig(BaseModel):
     device: str = Field("cpu", description="Device to run the model on (cpu, cuda)")
     capabilities: List[str] = Field(default_factory=list, description="Model capabilities")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Additional model parameters")
+    
+    model_config = {
+        "protected_namespaces": ()
+    }
 
 class BaseModelService(ABC):
     """Base class for all model services"""
