@@ -489,8 +489,8 @@ async def run_document_extraction_demo():
         print("Using default TogetherAI LLM configuration")
     print("=" * 80)
     
-    confirmation = input("\nDo you want to continue and connect to the LLM API? (y/n): ")
-    if confirmation.lower() not in ["y", "yes"]:
+    confirmation = input("\nDo you want to continue and connect to the LLM API? (Y/n): ")
+    if confirmation.lower() not in ["y", "yes",""]:
         logger.info("User declined to connect to the LLM API. Demo aborted.")
         print("Demo aborted by user.")
         return
