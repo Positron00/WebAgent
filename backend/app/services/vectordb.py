@@ -2,12 +2,15 @@
 Vector database service for the WebAgent backend.
 Provides document storage and retrieval.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import logging
 import os
+from pathlib import Path
+from functools import lru_cache
 
-from langchain_community.vectorstores import Chroma
+from langchain.schema.document import Document
 from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)

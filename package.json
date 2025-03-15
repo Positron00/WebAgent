@@ -1,6 +1,6 @@
 {
-  "name": "webagent-platform",
-  "version": "2.6.4",
+  "name": "webagent",
+  "version": "2.6.6",
   "description": "WebAgent Platform with improved test reliability, fixed AsyncTestCase issues, and ModelManager optimizations (2025-03-14)",
   "private": true,
   "scripts": {

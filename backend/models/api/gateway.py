@@ -12,6 +12,7 @@ import json
 import asyncio
 import os
 from datetime import datetime
+from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Response
@@ -47,23 +48,38 @@ class ModelListResponse(BaseModel):
 class ModelAPIGateway:
     """API gateway for model services"""
     
-    def __init__(self, host: str = "localhost", port: int = 8000):
+    def __init__(self, host: str = "0.0.0.0", port: int = 8000):
         """Initialize the API gateway"""
         self.host = host
         self.port = port
+        self.health_check_task = None
+        
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            # Start health check task on startup
+            task = asyncio.create_task(self._health_check_loop())
+            yield
+            # Cancel health check task on shutdown
+            if task:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+        
         self.app = FastAPI(
             title="Model API Gateway",
             description="API Gateway for model services",
-            version="1.0.0"
+            version="1.0.0",
+            lifespan=lifespan
         )
         self.start_time = datetime.now()
         self.request_count = 0
         self.error_count = 0
-        self._setup_api()
-        self._setup_cors()
-        self._start_health_check_task()
+        self._configure_routes()
+        self._configure_middleware()
     
-    def _setup_api(self) -> None:
+    def _configure_routes(self) -> None:
         """Set up the FastAPI routes"""
         
         @self.app.get("/", tags=["Status"])
@@ -190,22 +206,16 @@ class ModelAPIGateway:
             
             return metrics_data
     
-    def _setup_cors(self) -> None:
-        """Set up CORS middleware"""
+    def _configure_middleware(self) -> None:
+        """Configure middleware for the API"""
+        # CORS middleware for cross-origin requests
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],  # In production, restrict this to specific domains
+            allow_origins=["*"],
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
         )
-    
-    def _start_health_check_task(self) -> None:
-        """Start the health check background task"""
-        @self.app.on_event("startup")
-        async def start_health_check():
-            """Start the health check task on startup"""
-            asyncio.create_task(self._health_check_loop())
     
     async def _health_check_loop(self) -> None:
         """Continuously check the health of model services"""
@@ -300,4 +310,8 @@ class ModelAPIGateway:
 def run_gateway(host: str = "localhost", port: int = 8000):
     """Run the API gateway"""
     gateway = ModelAPIGateway(host=host, port=port)
-    gateway.run() 
+    gateway.run()
+
+if __name__ == "__main__":
+    print("Starting Model API Gateway...")
+    run_gateway() 
