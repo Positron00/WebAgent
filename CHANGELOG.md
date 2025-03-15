@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.2] - 2025-03-15
+
+### Added
+- Created comprehensive demo scripts for all agent types in backend/demos directory:
+  - Document Extraction Agent demo (document_extraction_demo.py)
+  - Web Research Agent demo (web_research_demo.py)
+  - Internal Research Agent demo (internal_research_demo.py)
+  - Coding Assistant Agent demo (coding_assistant_demo.py)
+  - Data Analysis Agent demo (data_analysis_demo.py)
+- Added detailed documentation for demo scripts with README.md
+- Implemented sample data generation for testing each agent
+- Added visualization capabilities to data analysis demo
+
+### Enhanced
+- Updated demo directory structure with support for output files and sample data
+- Improved demo execution with comprehensive error handling and logging
+- Enhanced documentation with clear usage instructions for all demos
+
 ## [2.8.1] - 2025-03-15
 
 ### Fixed

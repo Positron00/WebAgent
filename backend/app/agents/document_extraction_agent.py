@@ -490,3 +490,12 @@ class DocumentExtractionAgent(BaseAgent):
         # )
         
         # Return handling would be implemented as needed 
+
+def get_document_extraction_agent() -> DocumentExtractionAgent:
+    """
+    Factory function to get a configured DocumentExtractionAgent.
+    
+    Returns:
+        DocumentExtractionAgent: A configured instance of the DocumentExtractionAgent.
+    """
+    return DocumentExtractionAgent() 
