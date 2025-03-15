@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2025-03-15
+
+### Added
+- Added batch document loading functionality with support for multiple file formats
+- Created a new document loader service for efficient document processing
+- Implemented chunking and vector database storage for better retrieval
+- Added graph database integration for document relationships
+- Created a command-line script for batch document loading
+- Implemented data-as-a-service API endpoints for document operations
+- Added support for publishing to artifact registries
+- Created comprehensive test suite for document loader functionality
+
+### Enhanced
+- Improved vector database service with graph database integration
+- Enhanced storage architecture with artifact management
+- Added config settings for document processing customization
+
 ## [2.7.2] - 2025-03-15
 
 ### Added

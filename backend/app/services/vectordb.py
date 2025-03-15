@@ -7,11 +7,13 @@ import logging
 import os
 from pathlib import Path
 from functools import lru_cache
+import uuid
 
 from langchain.schema.document import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from app.core.config import settings
+from app.services.graphdb import get_graph_db_service
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +49,69 @@ class VectorDBService:
                 embedding_function=self.embeddings
             )
             
+            # Get graph database service
+            self.graph_db = get_graph_db_service()
+            
             self.initialized = True
             logger.info(f"Vector database initialized at {settings.VECTOR_DB_PATH}")
         except Exception as e:
             logger.error(f"Error initializing vector database: {str(e)}")
             self.error = str(e)
+    
+    @timing_decorator
+    async def add_documents(self, documents: List[Document]) -> List[str]:
+        """
+        Add documents to the vector database and graph database.
+        
+        Args:
+            documents: List of documents to add
+            
+        Returns:
+            List of document IDs
+        """
+        if not self.initialized:
+            logger.error("Vector database not initialized")
+            return []
+        
+        if not documents:
+            logger.warning("No documents provided to add_documents")
+            return []
+        
+        try:
+            # Add to vector database
+            doc_ids = self.vectordb.add_documents(documents)
+            
+            # Add to graph database and track document relationships
+            for i, doc in enumerate(documents):
+                doc_id = doc_ids[i] if doc_ids else f"doc_{i}_{uuid.uuid4()}"
+                
+                # Add document node to graph
+                if self.graph_db.initialized:
+                    # Extract metadata for graph
+                    metadata = doc.metadata.copy() if hasattr(doc, 'metadata') else {}
+                    metadata['content_preview'] = doc.page_content[:100] + "..." if len(doc.page_content) > 100 else doc.page_content
+                    
+                    # Add document node
+                    self.graph_db.add_document(doc_id, metadata)
+                    
+                    # Link related documents (if they're from the same source)
+                    if 'source' in metadata:
+                        # Find other documents with same source
+                        for j, other_doc in enumerate(documents):
+                            if i != j and 'source' in other_doc.metadata and other_doc.metadata['source'] == metadata['source']:
+                                other_id = doc_ids[j] if doc_ids else f"doc_{j}_{uuid.uuid4()}"
+                                self.graph_db.add_relationship(
+                                    doc_id, 
+                                    other_id, 
+                                    "SAME_SOURCE", 
+                                    {"source": metadata['source']}
+                                )
+            
+            logger.info(f"Added {len(documents)} documents to vector database and graph database")
+            return doc_ids
+        except Exception as e:
+            logger.error(f"Error adding documents to database: {str(e)}")
+            return []
     
     async def search(self, query: str, k: int = 5):
         """

@@ -2,7 +2,7 @@
 
 A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-![WebAgent Platform Version](https://img.shields.io/badge/version-2.7.2-blue)
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.8.0-blue)
 ![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--15-brightgreen)
 
 ## Overview
@@ -18,6 +18,13 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   - Document Extraction Agent: Processes documents and extracts structured data
   - Team Manager Agent: Synthesizes outputs from multiple agents
   - Specialized Agents: Data analysis and coding assistance
+
+- **Document Processing Pipeline**: Comprehensive document ingestion and knowledge management
+  - Batch document loading with multiple format support (PDF, docx, txt, md, html, csv, json)
+  - Artifact registry integration for document versioning and distribution
+  - Intelligent document chunking and embedding for vector database storage
+  - Graph database integration for document relationship tracking
+  - Data-as-a-Service API for document operations
 
 - **LangGraph Integration**: Uses LangGraph for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow, compatible with LangGraph 0.0.25+
 
@@ -337,3 +344,52 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - OpenAI and Anthropic for LLM APIs
 - FastAPI for the backend framework
 - React and Next.js for the frontend framework
+
+## Working with Documents
+
+### Batch Document Loading
+
+WebAgent now includes a powerful batch document loader for ingesting documents into the system. The documents are processed, chunked, and stored in both vector and graph databases for efficient retrieval.
+
+To use the batch document loader from the command line:
+
+```bash
+# Load all PDFs from a directory
+python scripts/batch_document_loader.py --dir /path/to/documents --pattern "*.pdf"
+
+# Load a single document with metadata
+python scripts/batch_document_loader.py --file /path/to/document.pdf --metadata '{"category": "reports", "tags": ["financial", "quarterly"]}'
+
+# Load documents and publish to an artifact registry
+python scripts/batch_document_loader.py --dir /path/to/documents --registry my-registry
+```
+
+### Document Data-as-a-Service API
+
+The platform provides a RESTful API for document operations:
+
+- **Upload a Document**: `POST /api/v1/documents/upload`
+- **Search Documents**: `POST /api/v1/documents/search`
+- **Get Document by ID**: `GET /api/v1/documents/document/{document_id}`
+- **Find Related Documents**: `GET /api/v1/documents/related/{document_id}`
+
+Example API usage with curl:
+
+```bash
+# Upload a document
+curl -X POST "http://localhost:8000/api/v1/documents/upload" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/path/to/document.pdf" \
+  -F 'metadata_json={"category": "reports", "tags": ["financial"]}'
+
+# Search documents
+curl -X POST "http://localhost:8000/api/v1/documents/search" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "financial report 2024", "limit": 5, "include_content": true}'
+```
+
+### Graph Database Integration
+
+WebAgent now tracks document relationships in a graph database, allowing for sophisticated relationship queries. By default, documents from the same source are linked, and additional relationships can be created programmatically.
+
+The system supports both Neo4j for production use and includes a NetworkX-based fallback for development environments. Configure the graph database URL in your environment settings.

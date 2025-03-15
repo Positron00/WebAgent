@@ -38,6 +38,8 @@ class VectorDBConfig(BaseModel):
     path: str = Field(default="./data/vectordb")
     embedding_dimension: int = Field(default=1536)
     distance_metric: str = Field(default="cosine")
+    document_chunk_size: int = Field(default=1000, description="Size of document chunks for storage")
+    document_chunk_overlap: int = Field(default=200, description="Overlap between document chunks")
 
 
 class RedisConfig(BaseModel):
@@ -49,10 +51,19 @@ class RedisConfig(BaseModel):
     key_prefix: str = Field(default="webagent:")
 
 
+class ArtifactsConfig(BaseModel):
+    """Artifacts storage configuration."""
+    path: str = Field(default="./data/artifacts")
+    registry_url: str = Field(default=None, description="URL to remote artifact registry")
+    enable_versioning: bool = Field(default=True)
+
+
 class DatabaseConfig(BaseModel):
     """Database configuration."""
     vector_db: VectorDBConfig = Field(default_factory=VectorDBConfig)
     redis: RedisConfig = Field(default_factory=RedisConfig)
+    artifacts: ArtifactsConfig = Field(default_factory=ArtifactsConfig)
+    graph_db_url: Optional[str] = Field(default=None)
 
 
 class LLMConfig(BaseModel):

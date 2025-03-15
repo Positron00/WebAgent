@@ -1,7 +1,7 @@
 {
   "name": "webagent",
-  "version": "2.7.2",
-  "description": "WebAgent Platform with MLflow experiment tracking, enhanced fine-tuning capabilities, improved test reliability, fixed AsyncTestCase issues, and ModelManager optimizations (2025-03-15)",
+  "version": "2.8.0",
+  "description": "WebAgent Platform with document batch loading, vector database integration, graph database for document relationships, data-as-a-service, improved artifact management and comprehensive testing (2025-03-15)",
   "private": true,
   "scripts": {
     "dev": "next dev",

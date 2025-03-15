@@ -19,6 +19,7 @@ Configuration Priority:
 """
 import os
 from typing import List, Optional
+from pydantic import Field
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
@@ -85,7 +86,30 @@ class Settings(BaseSettings):
     TOGETHER_API_KEY: Optional[str] = os.getenv("TOGETHER_API_KEY")
     
     # Vector database settings
-    VECTOR_DB_PATH: str = os.getenv("WEBAGENT_DATABASE_VECTOR_DB_PATH", "./data/vectordb")
+    VECTOR_DB_PATH: str = Field(
+        default=os.path.join(BASE_DIR, "data", "vectordb"),
+        description="Path to the vector database",
+    )
+    
+    # Document processing settings
+    DOCUMENT_CHUNK_SIZE: int = Field(
+        default=1000,
+        description="Size of document chunks for storage"
+    )
+    DOCUMENT_CHUNK_OVERLAP: int = Field(
+        default=200,
+        description="Overlap between document chunks"
+    )
+    
+    # Artifacts storage settings
+    ARTIFACTS_PATH: str = Field(
+        default=os.path.join(BASE_DIR, "data", "artifacts"),
+        description="Path to store document artifacts"
+    )
+    ARTIFACTS_REGISTRY_URL: Optional[str] = Field(
+        default=None,
+        description="URL to remote artifact registry"
+    )
     
     # Redis
     REDIS_HOST: str = os.getenv("WEBAGENT_DATABASE_REDIS_HOST", "localhost")
