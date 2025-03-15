@@ -2,8 +2,8 @@
 
 A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-![WebAgent Platform Version](https://img.shields.io/badge/version-2.7.0-blue)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--14-brightgreen)
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.7.1-blue)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--15-brightgreen)
 
 ## Overview
 
@@ -326,10 +326,6 @@ WebAgent includes comprehensive testing and diagnostic tools.
    - Ensure rate limiting is properly configured
    - Check error message redaction in security module
    - Verify middleware ordering in FastAPI application
-
-## Contributing
-
-We welcome contributions to the WebAgent platform. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 

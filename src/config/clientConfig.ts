@@ -9,7 +9,7 @@ export const clientConfig = {
   environment: typeof window !== 'undefined' 
     ? (process.env.NODE_ENV || 'development') 
     : 'server',
-  version: '2.7.0',
+  version: '2.7.1',
   isProduction: typeof window !== 'undefined' 
     ? process.env.NODE_ENV === 'production' 
     : false,

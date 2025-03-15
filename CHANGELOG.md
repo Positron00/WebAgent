@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.1] - 2025-03-15
+
+### Added
+- Enhanced FineTuneService with comprehensive fine-tuning capabilities
+- Added support for multiple fine-tuning modes: 'all', 'last', 'first', 'middle', and 'loraN'
+- Implemented LoRA (Low-Rank Adaptation) for efficient fine-tuning with minimal parameter updates
+- Added proper loss and accuracy calculation for both classification and generation tasks
+- Improved tokenization for sequence-to-sequence tasks with GPT-2 style models
+- Added evaluation capabilities for fine-tuned models
+
+### Changed
+- Refactored device detection to use a more robust approach
+- Improved error handling and logging during fine-tuning process
+- Enhanced parameter selection logic for different fine-tuning modes
+
 ## [2.7.0] - 2025-03-15
 
 ### Added
