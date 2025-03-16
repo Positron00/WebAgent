@@ -307,8 +307,19 @@ def get_together_llm(model_name: Optional[str] = None):
     Returns:
         A configured TogetherLLM instance
     """
-    model = model_name or TOGETHER_DEFAULT_MODEL
+    # Check environment variables for model name
+    model = model_name or os.getenv("TOGETHER_MODEL") or TOGETHER_DEFAULT_MODEL
+    
+    # Ensure we're using a valid Together AI model name
+    # If a GPT model name is passed (like gpt-4-turbo), use the default Together model instead
+    if model.startswith("gpt-"):
+        logger.warning(f"Model name '{model}' appears to be an OpenAI model. Using default Together model instead.")
+        model = TOGETHER_DEFAULT_MODEL
+        
     llm_config = get_llm_config()
+    
+    # Log the model being used
+    logger.info(f"Creating TogetherLLM with model: {model}")
     
     # Check for Together API key in environment variables
     together_api_key = os.getenv("TOGETHER_API_KEY")
@@ -318,23 +329,57 @@ def get_together_llm(model_name: Optional[str] = None):
         raise ValueError("TOGETHER_API_KEY not set in environment variables")
     
     try:
-        # Create TogetherLLM without the parameters that cause validation errors
+        # The TogetherLLM may have changed its API endpoints or parameters
+        # Let's use the more recent parameter names and configuration
         llm = TogetherLLM(
             model=model,
             temperature=llm_config.temperature,
             max_tokens=llm_config.max_tokens,
             together_api_key=together_api_key,
-            # Note: timeout and max_retries are no longer supported by TogetherLLM
-            # and have to be handled differently in newer versions of langchain-together
+            timeout=llm_config.timeout_seconds,
+            max_retries=llm_config.retry_attempts
         )
         
+        # Test the API connection with a simple query to verify it works correctly
+        # This ensures the API connection and authentication work before proceeding
+        try:
+            logger.debug("Testing TogetherAI API connection...")
+            # Just a basic test that won't cost many tokens
+            test_response = llm.invoke("Hello")
+            logger.debug("TogetherAI API connection test successful")
+        except Exception as test_err:
+            logger.warning(f"TogetherAI API connection test failed: {str(test_err)}")
+            # If the test fails with a specific error, we might want to fall back immediately
+            if "401" in str(test_err) or "Unauthorized" in str(test_err):
+                logger.error("TogetherAI API key appears to be invalid or expired")
+                raise ValueError(f"TogetherAI API authentication failed: {str(test_err)}")
+            elif "429" in str(test_err) or "Too Many Requests" in str(test_err):
+                logger.error("TogetherAI API rate limit exceeded")
+                raise ValueError(f"TogetherAI API rate limit exceeded: {str(test_err)}")
+            elif "503" in str(test_err) or "Service Unavailable" in str(test_err):
+                logger.error("TogetherAI API service is currently unavailable")
+                raise ValueError(f"TogetherAI API service unavailable: {str(test_err)}")
+            # Continue anyway for other types of errors as this was just a test
+        
         # Log successful creation
-        logger.info(f"Created TogetherLLM with model: {model}")
+        logger.info(f"Successfully initialized TogetherLLM with model: {model}")
         return llm
     except Exception as e:
-        logger.error(f"Error creating Together AI LLM: {str(e)}")
+        error_msg = str(e)
+        logger.error(f"Error creating Together AI LLM: {error_msg}")
         logger.error(traceback.format_exc())
-        raise
+        
+        # Provide more specific error messages based on the exception
+        if "401" in error_msg or "Unauthorized" in error_msg:
+            raise ValueError(f"TogetherAI API authentication failed: {error_msg}")
+        elif "429" in error_msg or "Too Many Requests" in error_msg:
+            raise ValueError(f"TogetherAI API rate limit exceeded: {error_msg}")
+        elif "503" in error_msg or "Service Unavailable" in error_msg:
+            raise ValueError(f"TogetherAI API service unavailable: {error_msg}")
+        elif "Connection" in error_msg or "Timeout" in error_msg:
+            raise ValueError(f"TogetherAI API connection error: {error_msg}")
+        else:
+            raise ValueError(f"Error initializing TogetherAI LLM: {error_msg}")
 
 @log_llm_request(provider="self")
 def get_self_hosted_llm(model_name: Optional[str] = None):
@@ -382,31 +427,58 @@ def get_llm(model_name: Optional[str] = None):
     
     logger.info(f"Creating LLM instance with provider: {provider}")
     
-    try:
-        if provider == "together":
-            return get_together_llm(model_name)
-        elif provider == "openai":
-            return get_openai_llm(model_name)
-        elif provider == "self":
-            return get_self_hosted_llm(model_name)
-        else:
-            logger.error(f"Unsupported LLM provider: {provider}")
-            raise ValueError(f"Unsupported LLM provider: {provider}")
-    except ValueError as e:
-        # Handle fallback logic
-        if provider == "together" and "TOGETHER_API_KEY not set" in str(e):
-            logger.warning("Together AI not available, falling back to OpenAI")
-            return get_openai_llm(model_name)
-        elif provider == "self" and "Self-hosted LLM service unavailable" in str(e):
-            logger.warning("Self-hosted LLM not available, falling back to Together AI or OpenAI")
-            # Try Together AI first, then fall back to OpenAI
-            try:
+    # Define fallback order
+    fallback_order = []
+    
+    # Set up the fallback order based on the initial provider
+    if provider == "together":
+        fallback_order = ["together", "openai", "self"]
+    elif provider == "openai":
+        fallback_order = ["openai", "together", "self"]
+    elif provider == "self":
+        fallback_order = ["self", "together", "openai"]
+    else:
+        # Default fallback order
+        fallback_order = ["together", "openai", "self"]
+        logger.warning(f"Unknown provider '{provider}', using default fallback order: {fallback_order}")
+    
+    # Track errors for detailed reporting
+    provider_errors = {}
+    
+    # Try each provider in the fallback order
+    for current_provider in fallback_order:
+        try:
+            logger.info(f"Attempting to initialize LLM with provider: {current_provider}")
+            
+            if current_provider == "together":
                 return get_together_llm(model_name)
-            except ValueError:
-                logger.warning("Together AI not available, falling back to OpenAI")
+            elif current_provider == "openai":
                 return get_openai_llm(model_name)
-        else:
-            raise
+            elif current_provider == "self":
+                return get_self_hosted_llm(model_name)
+            
+        except Exception as e:
+            error_msg = str(e)
+            provider_errors[current_provider] = error_msg
+            logger.warning(f"Failed to initialize {current_provider} LLM: {error_msg}")
+            
+            # Continue to the next provider in the fallback order
+            continue
+    
+    # If we get here, all providers failed
+    error_details = "\n".join([f"- {p}: {e}" for p, e in provider_errors.items()])
+    error_message = f"All LLM providers failed. Details:\n{error_details}"
+    logger.error(error_message)
+    
+    # As a last resort, try to create a minimal mock LLM that won't crash the application
+    try:
+        logger.warning("Creating emergency fallback mock LLM")
+        from langchain.llms.fake import FakeListLLM
+        return FakeListLLM(responses=["I apologize, but all LLM providers are currently unavailable. Please try again later."])
+    except Exception as mock_error:
+        # If even this fails, we have no choice but to raise an exception
+        logger.critical(f"Failed to create mock LLM: {str(mock_error)}")
+        raise RuntimeError(f"Unable to initialize any LLM provider. {error_message}")
 
 async def get_llm_status():
     """

@@ -87,6 +87,7 @@ class Settings(BaseSettings):
     
     # Together AI for LLM services
     TOGETHER_API_KEY: Optional[str] = os.getenv("TOGETHER_API_KEY")
+    TOGETHER_MODEL_NAME: Optional[str] = os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
     
     # Vector database settings
     VECTOR_DB_PATH: str = Field(

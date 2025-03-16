@@ -385,7 +385,14 @@ class InternalResearchAgent(BaseAgent):
         
         # Initialize LLM and chain
         self.prompt = ChatPromptTemplate.from_template(INTERNAL_RESEARCH_PROMPT)
-        self.llm = get_llm(self.config.get("llm_model", "gpt-4-turbo"))
+        
+        try:
+            self.llm = get_llm(self.config.get("llm_model", "gpt-4-turbo"))
+        except Exception as e:
+            logger.error(f"Error initializing LLM: {str(e)}")
+            logger.warning("Using fallback OpenAI LLM due to initialization error")
+            self.llm = get_llm("gpt-3.5-turbo")  # Fallback to more reliable model
+            
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)
@@ -545,12 +552,21 @@ class InternalResearchAgent(BaseAgent):
             
             # 3. Generate answer using the LLM with reranked documents as context
             logger.info("Generating research findings")
-            analysis = await self.chain.ainvoke({
-                "query": state.query,
-                "research_plan": research_plan.get("analysis", "No research plan provided."),
-                "documents": formatted_docs,
-                "feedback_section": feedback_section
-            })
+            try:
+                analysis = await self.chain.ainvoke({
+                    "query": state.query,
+                    "research_plan": research_plan.get("analysis", "No research plan provided."),
+                    "documents": formatted_docs,
+                    "feedback_section": feedback_section
+                })
+                
+                # Check if we got a valid response
+                if not analysis or len(analysis.strip()) == 0:
+                    logger.warning("Empty research findings from LLM.")
+                    analysis = "The research agent was unable to generate a response. This may be due to rate limiting or API issues."
+            except Exception as e:
+                logger.error(f"Error in Internal Research Agent: {str(e)}")
+                analysis = f"Error generating research findings: {str(e)}"
             
             # Create the internal research report
             internal_research_report = {

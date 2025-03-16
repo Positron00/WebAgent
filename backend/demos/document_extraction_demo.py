@@ -157,6 +157,10 @@ async def run_document_extraction_demo():
         logger.error(f"Error loading document: {e}")
         return
     
+    # Add delay to avoid rate limits
+    await asyncio.sleep(1.5)
+    print("Waiting 1.5 seconds to avoid API rate limits...")
+    
     # Create workflow state
     state = WorkflowState(
         query="Extract financial metrics and department budgets from the Q1 2025 financial report",
@@ -179,6 +183,10 @@ async def run_document_extraction_demo():
             
     except Exception as e:
         logger.error(f"Error running document extraction agent: {e}")
+    
+    # Add delay to avoid rate limits
+    await asyncio.sleep(1.5)
+    print("Waiting 1.5 seconds to avoid API rate limits...")
     
     # Try another extraction with different query
     logger.info("\nRunning another extraction with different query...")
