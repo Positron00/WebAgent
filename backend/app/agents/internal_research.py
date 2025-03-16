@@ -597,13 +597,25 @@ class InternalResearchAgent(BaseAgent):
                 
                 return state
             
-            # 2. Rerank documents to prioritize the most relevant ones
-            logger.info("Reranking retrieved documents")
-            reranked_documents = await self.reranker.rerank(
-                query=search_query,
-                documents=retrieved_documents,
-                top_n=self.config.get("rerank_top_n", 5)
-            )
+            # 1.5 Deduplicate retrieved documents
+            logger.info(f"Deduplicating {len(retrieved_documents)} retrieved documents")
+            retrieved_documents = self._deduplicate_documents(retrieved_documents)
+            logger.info(f"After deduplication: {len(retrieved_documents)} documents")
+            
+            # Get rerank_top_n configuration
+            rerank_top_n = self.config.get("rerank_top_n", 5)
+            
+            # 2. Rerank documents if we have more than rerank_top_n documents
+            if len(retrieved_documents) <= rerank_top_n:
+                logger.info(f"Skipping reranking as we have fewer than {rerank_top_n} documents")
+                reranked_documents = retrieved_documents
+            else:
+                logger.info("Reranking retrieved documents")
+                reranked_documents = await self.reranker.rerank(
+                    query=search_query,
+                    documents=retrieved_documents,
+                    top_n=rerank_top_n
+                )
             
             # Format internal documents for the prompt
             formatted_docs = self._format_internal_documents(reranked_documents)
@@ -670,6 +682,39 @@ class InternalResearchAgent(BaseAgent):
                 mlflow.end_run()
                 
             return state
+
+    def _deduplicate_documents(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Deduplicate documents based on content similarity.
+        
+        Args:
+            documents: List of documents to deduplicate
+            
+        Returns:
+            List of deduplicated documents
+        """
+        if not documents:
+            return []
+            
+        # Use a set to track unique document content hashes
+        unique_docs = []
+        content_hashes = set()
+        
+        for doc in documents:
+            # Get document content
+            content = doc.get("page_content", "")
+            
+            # Create a simple hash of the content (first 100 chars + length + last 100 chars)
+            # This is a simple but effective way to identify near-duplicate content
+            content_preview = f"{content[:100]}_{len(content)}_{content[-100:]}"
+            content_hash = hash(content_preview)
+            
+            # If this content hash is new, add the document
+            if content_hash not in content_hashes:
+                content_hashes.add(content_hash)
+                unique_docs.append(doc)
+        
+        return unique_docs
 
 
 def get_internal_research_agent() -> InternalResearchAgent:
