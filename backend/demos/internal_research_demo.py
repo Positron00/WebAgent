@@ -954,7 +954,7 @@ async def run_internal_research_demo(debug_mode=False):
         
         # Ask for API confirmation if using an external LLM
         if llm_provider in ["together", "groq", "openai"]:
-            print("\n" + "=" * 80)
+            print("\n" + "=" * 120)
             print(f"This demo will connect to the {llm_provider.upper()} API using your configured API key.")
             try:
                 model_info = settings.LLM_PROVIDER if hasattr(settings, 'LLM_PROVIDER') else llm_provider
@@ -967,7 +967,7 @@ async def run_internal_research_demo(debug_mode=False):
                 print(f"The model that will be used is: {model_name} (Provider: {model_info})")
             except AttributeError:
                 print(f"Using default {llm_provider.upper()} configuration")
-            print("=" * 80)
+            print("=" * 120)
             
             confirmation = input("\nDo you want to continue and connect to the LLM API? (Y/n): ")
             if confirmation.lower() not in ["y", "yes",""]:

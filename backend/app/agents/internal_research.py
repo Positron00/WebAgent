@@ -105,10 +105,11 @@ class RAGRetriever:
         # Get basic vector DB service (using OpenAI embeddings)
         self.vectordb_service = get_vectordb_service()
         
-        # Initialize a more advanced dense retriever with Contriever or another modern embedding model
+        # Initialize a more advanced dense retriever with a better model
         try:
-            # Using Contriever for better semantic understanding
-            model_name = self.config.get("embedding_model", "facebook/contriever")
+            # Using all-mpnet-base-v2 which is one of the best sentence transformer models
+            # for retrieval with native support in the sentence-transformers library
+            model_name = self.config.get("embedding_model", "sentence-transformers/all-mpnet-base-v2")
             self.advanced_embeddings = HuggingFaceEmbeddings(
                 model_name=model_name,
                 model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
@@ -297,8 +298,9 @@ class RAGReranker:
     def initialize_reranker(self):
         """Initialize the cross-encoder reranker model."""
         try:
-            # Use a cross-encoder model for reranking
-            model_name = self.config.get("reranker_model", "cross-encoder/ms-marco-MiniLM-L-6-v2")
+            # Use a better cross-encoder model for reranking
+            # ms-marco-MiniLM-L12-v2 has better performance than L6-v2 (NDCG@10: 74.31 vs 74.30)
+            model_name = self.config.get("reranker_model", "cross-encoder/ms-marco-MiniLM-L12-v2")
             
             # Direct initialization for more control
             self.reranker = CrossEncoder(
