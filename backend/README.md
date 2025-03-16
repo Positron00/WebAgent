@@ -352,4 +352,25 @@ LOG_LEVEL=DEBUG
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.
+
+### Services
+
+The backend includes several services for data management and infrastructure:
+
+- **Vector Database Service**: Manages document storage and retrieval using ChromaDB
+- **Document Ingestion Service**: Handles generation and ingestion of sample documents into the vector database. Provides unified methods for creating and accessing sample documents across the application.
+- **Document Loader Service**: Processes and loads documents into the system
+- **Graph Database Service**: Manages knowledge graph relationships between documents
+- **LLM Service**: Provides access to large language models
+
+#### Environment Variables
+
+Vector database and data storage locations can be configured using environment variables:
+
+```bash
+# Data storage configuration
+WEBAGENT_DATA_DIR=/path/to/data             # Base directory for all data
+WEBAGENT_VECTOR_DB_PATH=/path/to/vectordb   # Vector database location
+WEBAGENT_ARTIFACTS_PATH=/path/to/artifacts  # Document artifacts location
+``` 

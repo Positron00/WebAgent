@@ -164,6 +164,9 @@ class RAGRetriever:
                 except Exception as doc_err:
                     logger.warning(f"Error accessing vector database: {str(doc_err)}. Creating placeholder document.")
                     documents = [Document(page_content="Empty repository placeholder", metadata={})]
+
+                # Store the document count for later checks
+                self.vector_db_document_count = len(documents) if documents and not any("Empty repository placeholder" in getattr(doc, "page_content", "") for doc in documents) else 0
                 
                 # Create the sparse retriever
                 self.sparse_retriever = BM25Retriever.from_documents(
@@ -198,6 +201,9 @@ class RAGRetriever:
                             return [Document(page_content="Empty result", metadata={})]
                         
                     self.sparse_retriever = MinimalRetriever()
+                
+                # Set document count to 0 since we encountered an error
+                self.vector_db_document_count = 0
             
             # Create an ensemble retriever that combines both approaches
             self.ensemble_retriever = EnsembleRetriever(
@@ -212,6 +218,132 @@ class RAGRetriever:
             logger.error(f"Error initializing advanced retrievers: {str(e)}")
             # Fall back to basic retriever
             self.initialized = False
+            self.vector_db_document_count = 0
+    
+    async def ensure_vector_db_has_documents(self):
+        """
+        Check if the vector database has documents and populate it if necessary.
+        
+        Returns:
+            Boolean indicating if the vector database now has documents
+        """
+        # Check if vector DB has documents
+        if self.vector_db_document_count > 0:
+            logger.info(f"Vector database already has {self.vector_db_document_count} documents")
+            return True
+        
+        # Vector DB is empty, need to generate and ingest documents
+        logger.info("Vector database is empty. Generating and ingesting documents.")
+        
+        try:
+            # Import the document ingestion service
+            from app.services.document_ingestion_service import get_document_ingestion_service
+            
+            # Get the document ingestion service
+            document_ingestion_service = get_document_ingestion_service()
+            
+            # Run the document ingestion process
+            logger.info("Running document ingestion process")
+            result = await document_ingestion_service.run_document_ingestion()
+            
+            if result["status"] == "success":
+                logger.info(f"Document ingestion completed successfully. Created {result['num_created']} documents, ingested {result['num_ingested']} documents")
+                
+                # Try using the shared vectordb service directly
+                try:
+                    # Import retrieve_documents function which is the actual API
+                    from app.services.vectordb import retrieve_documents
+                    
+                    # Try a test retrieval
+                    test_docs = await retrieve_documents("ethics", k=5)
+                    
+                    if test_docs and len(test_docs) > 0:
+                        logger.info(f"Successfully retrieved {len(test_docs)} documents using retrieve_documents")
+                        
+                        # Update the document count
+                        self.vector_db_document_count = len(test_docs)
+                        
+                        # If using the vectordb service works, just use that for retrieval
+                        self.initialized = True
+                        return True
+                except Exception as retrieve_err:
+                    logger.error(f"Error retrieving documents after ingestion: {str(retrieve_err)}")
+                
+                # Try directly accessing the Chroma database in the default location
+                try:
+                    # The default vectordb path might be different from what we expect
+                    # Try various potential paths
+                    potential_db_paths = [
+                        settings.VECTOR_DB_PATH,
+                        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "vectordb"),
+                        "./data/vectordb"
+                    ]
+                    
+                    for db_path in potential_db_paths:
+                        if os.path.exists(db_path):
+                            logger.info(f"Found vector database at {db_path}")
+                            
+                            # Try to initialize with this path
+                            try:
+                                # Reinitialize with this path
+                                from langchain_chroma import Chroma
+                                
+                                self.advanced_vectordb = Chroma(
+                                    persist_directory=db_path,
+                                    embedding_function=self.advanced_embeddings
+                                )
+                                
+                                # Check if it has documents
+                                collection_info = self.advanced_vectordb._collection.count()
+                                
+                                if collection_info > 0:
+                                    logger.info(f"Vector database at {db_path} has {collection_info} documents")
+                                    
+                                    # Update the retrievers
+                                    self.dense_retriever = self.advanced_vectordb.as_retriever(
+                                        search_type="similarity",
+                                        search_kwargs={"k": self.config.get("dense_k", 20)}
+                                    )
+                                    
+                                    # Create a simple sparse retriever
+                                    from langchain.schema import Document
+                                    try:
+                                        # Try to create BM25Retriever
+                                        self.sparse_retriever = BM25Retriever.from_documents(
+                                            [Document(page_content="Dummy content for BM25", metadata={})],
+                                            preprocess_func=lambda text: text.lower().split(),
+                                            k=self.config.get("sparse_k", 20)
+                                        )
+                                        
+                                        # Create ensemble retriever
+                                        self.ensemble_retriever = EnsembleRetriever(
+                                            retrievers=[self.dense_retriever, self.sparse_retriever],
+                                            weights=[0.9, 0.1]  # Heavily favor dense retrieval
+                                        )
+                                    except Exception as sparse_err:
+                                        logger.error(f"Error creating sparse retriever: {str(sparse_err)}")
+                                        # Just use the dense retriever directly
+                                        self.ensemble_retriever = self.dense_retriever
+                                    
+                                    # Update state
+                                    self.vector_db_document_count = collection_info
+                                    self.initialized = True
+                                    return True
+                            except Exception as db_init_err:
+                                logger.error(f"Error initializing vector database at {db_path}: {str(db_init_err)}")
+                except Exception as path_err:
+                    logger.error(f"Error trying alternative database paths: {str(path_err)}")
+                
+                # If we get here, we couldn't access the vector database after ingestion
+                logger.error("Could not access vector database after document ingestion")
+                return False
+            else:
+                logger.error(f"Document ingestion failed: {result.get('error', 'Unknown error')}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error ensuring vector database has documents: {str(e)}")
+            return False
     
     @timing_decorator
     async def retrieve(self, query: str, k: int = 20) -> List[Dict]:
@@ -229,6 +361,11 @@ class RAGRetriever:
         start_time = time.time()
         
         try:
+            # First, ensure the vector database has documents
+            if not await self.ensure_vector_db_has_documents():
+                logger.warning("Vector database has no documents even after ingestion attempt")
+                return []
+            
             if self.initialized:
                 # Use the ensemble retriever for better results
                 docs = await asyncio.to_thread(

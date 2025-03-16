@@ -89,9 +89,15 @@ class Settings(BaseSettings):
     TOGETHER_API_KEY: Optional[str] = os.getenv("TOGETHER_API_KEY")
     TOGETHER_MODEL_NAME: Optional[str] = os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
     
+    # Data directory settings
+    DATA_DIR: str = Field(
+        default=os.getenv("WEBAGENT_DATA_DIR", os.path.join(BASE_DIR, "data")),
+        description="Base directory for all data storage",
+    )
+    
     # Vector database settings
     VECTOR_DB_PATH: str = Field(
-        default=os.path.join(BASE_DIR, "data", "vectordb"),
+        default=os.getenv("WEBAGENT_VECTOR_DB_PATH", os.path.join(BASE_DIR, "data", "vectordb")),
         description="Path to the vector database",
     )
     
@@ -107,7 +113,7 @@ class Settings(BaseSettings):
     
     # Artifacts storage settings
     ARTIFACTS_PATH: str = Field(
-        default=os.path.join(BASE_DIR, "data", "artifacts"),
+        default=os.getenv("WEBAGENT_ARTIFACTS_PATH", os.path.join(BASE_DIR, "data", "artifacts")),
         description="Path to store document artifacts"
     )
     ARTIFACTS_REGISTRY_URL: Optional[str] = Field(
