@@ -138,17 +138,30 @@ class RAGRetriever:
                 
                 # Get documents from vector DB or create empty placeholder
                 try:
-                    documents = self.advanced_vectordb.get()
-                    # Ensure documents are proper Document objects
-                    if documents:
-                        # Check if documents are strings and convert if needed
-                        if isinstance(documents[0], str):
-                            documents = [Document(page_content=doc, metadata={}) for doc in documents]
-                    else:
-                        # Create minimal document collection
+                    # The get() method might not return the expected format
+                    # Check if the collection is empty first
+                    collection_info = self.advanced_vectordb._collection.count()
+                    if collection_info == 0:
+                        logger.info("Vector database is empty. Using placeholder document.")
                         documents = [Document(page_content="Empty repository placeholder", metadata={})]
+                    else:
+                        # Try to get documents with proper error handling
+                        try:
+                            documents = self.advanced_vectordb.get()
+                            if not documents or not documents.get('documents'):
+                                logger.warning("No documents found in vector database. Using placeholder document.")
+                                documents = [Document(page_content="Empty repository placeholder", metadata={})]
+                            else:
+                                # Convert to Document objects
+                                doc_content = documents.get('documents', [])
+                                doc_metadata = documents.get('metadatas', [{} for _ in doc_content])
+                                documents = [Document(page_content=content, metadata=meta) 
+                                            for content, meta in zip(doc_content, doc_metadata)]
+                        except Exception as get_err:
+                            logger.warning(f"Error retrieving documents: {str(get_err)}. Using placeholder document.")
+                            documents = [Document(page_content="Empty repository placeholder", metadata={})]
                 except Exception as doc_err:
-                    logger.warning(f"Error getting documents: {str(doc_err)}. Creating placeholder document.")
+                    logger.warning(f"Error accessing vector database: {str(doc_err)}. Creating placeholder document.")
                     documents = [Document(page_content="Empty repository placeholder", metadata={})]
                 
                 # Create the sparse retriever
@@ -387,7 +400,17 @@ class InternalResearchAgent(BaseAgent):
         self.prompt = ChatPromptTemplate.from_template(INTERNAL_RESEARCH_PROMPT)
         
         try:
-            self.llm = get_llm(self.config.get("llm_model", "gpt-4-turbo"))
+            # Use the default model from settings instead of hardcoded "gpt-4-turbo"
+            # which is not supported by TogetherAI
+            from app.core.config import settings
+            default_model = settings.DEFAULT_MODEL
+            # Only use the model specified in config if it's not "gpt-4-turbo"
+            model_name = self.config.get("llm_model")
+            if not model_name or model_name.startswith("gpt-"):
+                model_name = default_model
+                logger.info(f"Using default model from settings: {model_name}")
+            
+            self.llm = get_llm(model_name)
         except Exception as e:
             logger.error(f"Error initializing LLM: {str(e)}")
             logger.warning("Using fallback OpenAI LLM due to initialization error")
@@ -440,6 +463,42 @@ class InternalResearchAgent(BaseAgent):
             missing_information=missing_info_str,
             research_questions=questions_str
         )
+    
+    async def _generate_findings_with_retry(self, prompt_inputs: dict, max_retries: int = 3) -> str:
+        """
+        Generate research findings with retry logic for rate limiting.
+        
+        Args:
+            prompt_inputs: The inputs for the LLM prompt
+            max_retries: Maximum number of retry attempts
+            
+        Returns:
+            The generated findings or an error message
+        """
+        attempts = 0
+        base_delay = 2  # Start with 2 seconds delay
+        
+        while attempts < max_retries:
+            try:
+                # Generate the research findings using the LLM
+                return await self.chain.ainvoke(prompt_inputs)
+            except Exception as e:
+                error_msg = str(e)
+                attempts += 1
+                
+                # Check for rate limiting errors
+                if "429" in error_msg or "Too Many Requests" in error_msg:
+                    delay = base_delay * (2 ** attempts)  # Exponential backoff
+                    logger.warning(f"Rate limit hit. Retrying in {delay}s (attempt {attempts}/{max_retries})")
+                    await asyncio.sleep(delay)
+                    continue
+                
+                # For other errors, return an error message
+                logger.error(f"Error generating research findings: {error_msg}")
+                return f"Error generating research findings: {error_msg}"
+                
+        # If we've exhausted retries
+        return "Error generating research findings: Rate limit exceeded after multiple retries."
     
     @timing_decorator
     @log_memory_usage
@@ -552,21 +611,20 @@ class InternalResearchAgent(BaseAgent):
             
             # 3. Generate answer using the LLM with reranked documents as context
             logger.info("Generating research findings")
-            try:
-                analysis = await self.chain.ainvoke({
-                    "query": state.query,
-                    "research_plan": research_plan.get("analysis", "No research plan provided."),
-                    "documents": formatted_docs,
-                    "feedback_section": feedback_section
-                })
-                
-                # Check if we got a valid response
-                if not analysis or len(analysis.strip()) == 0:
-                    logger.warning("Empty research findings from LLM.")
-                    analysis = "The research agent was unable to generate a response. This may be due to rate limiting or API issues."
-            except Exception as e:
-                logger.error(f"Error in Internal Research Agent: {str(e)}")
-                analysis = f"Error generating research findings: {str(e)}"
+            prompt_inputs = {
+                "query": state.query,
+                "research_plan": research_plan.get("analysis", "No research plan provided."),
+                "documents": formatted_docs,
+                "feedback_section": feedback_section
+            }
+            
+            # Generate findings with retry logic
+            analysis = await self._generate_findings_with_retry(prompt_inputs)
+            
+            # Check if we got a valid response
+            if not analysis or len(analysis.strip()) == 0:
+                logger.warning("Empty research findings from LLM.")
+                analysis = "The research agent was unable to generate a response. This may be due to rate limiting or API issues."
             
             # Create the internal research report
             internal_research_report = {

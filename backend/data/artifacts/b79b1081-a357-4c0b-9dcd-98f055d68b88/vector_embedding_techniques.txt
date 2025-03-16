@@ -1,0 +1,65 @@
+
+Vector Embedding Techniques for Document Retrieval
+================================================
+
+Document Embedding Models
+-----------------------
+Our system uses multiple embedding models optimized for different aspects of semantic search:
+
+1. E5-large Model
+   - Architecture: Transformer encoder-only (Large)
+   - Dimensions: 1024
+   - Training corpus: 1.4B filtered web pages + academic papers
+   - Contrastive learning with supervised fine-tuning
+   - Specialized for long document representation
+   - Support for up to 512 tokens with hierarchical pooling
+
+2. SBERT Model
+   - Architecture: Siamese BERT networks
+   - Dimensions: 768
+   - Training approach: Triplet loss with hard negative mining
+   - Optimized for sentence-level similarity
+   - Language support: 50+ languages with multilingual alignment
+   - Special handling for technical terminology and domain concepts
+
+3. Domain-Adaptive Embeddings
+   - Base model: ContriverCL
+   - Fine-tuned on domain-specific corpus (2.3M documents)
+   - Hierarchical pooling strategy for document sectioning
+   - Adversarial training for robustness to wording variations
+   - Length-invariant representations with adaptive normalization
+
+Embedding Enhancement Techniques
+------------------------------
+1. Query-Document Interaction
+   - Cross-attention mechanisms for query-aware embeddings
+   - Late interaction modules for efficient retrieval
+   - Attention-based pooling for query-dependent weighting
+   - Token importance weighting based on IDF statistics
+
+2. Dimensionality Reduction
+   - PCA with whitening for decorrelation
+   - Product quantization for storage efficiency (32x compression)
+   - Random projection with Johnson-Lindenstrauss guarantees
+   - Sparse embedding representations with top-k activation
+
+3. Contextual Embedding
+   - Sliding window approach for long documents
+   - Hierarchical embedding with section-level aggregation
+   - Positional weighting based on document structure
+   - Entity-centric embedding with higher weights for named entities
+
+4. Multi-Modal Integration
+   - Cross-modal alignment for text and image embeddings
+   - Joint space mapping with contrastive objectives
+   - Modal importance weighting based on query characteristics
+   - Fallback mechanisms for single-modal queries
+
+Retrieval Optimizations
+---------------------
+- Approximate nearest neighbor search with HNSW graph
+- In-memory index with SSD extension for large collections
+- Asynchronous index updates with versioning
+- Query expansion using lightweight language models
+- Cached embedding for frequent queries and documents
+        

@@ -857,7 +857,7 @@ async def process_vector_only_query(query, retriever, reranker, top_n=5):
     try:
         # 1. Retrieve documents
         logger.info("Retrieving documents")
-        documents = await retriever.get_relevant_documents(query)
+        documents = await retriever.retrieve(query, k=20)
         
         if not documents:
             logger.warning("No documents found")
@@ -1171,11 +1171,11 @@ async def run_internal_research_demo(debug_mode=False):
     # Define research queries
     research_queries = [
         "What are our guidelines for AI ethics?",
-        "What is the technical architecture of WebAgent?",
-        "What products are we planning to release in 2025?",
-        "How does our hybrid retrieval system work?",
-        "What are the capabilities of our research agent?",
-        "How does our document processing pipeline work?",
+        #"What is the technical architecture of WebAgent?",
+        #"What products are we planning to release in 2025?",
+        #"How does our hybrid retrieval system work?",
+        #"What are the capabilities of our research agent?",
+        #"How does our document processing pipeline work?",
         # Add a simple test query that should clearly match documents we know exist
         "ethics AI" if debug_mode else None  
     ]
@@ -1259,8 +1259,8 @@ async def run_internal_research_demo(debug_mode=False):
                 updated_state = await research_agent.run(state)
                 
                 # Try to extract result data
-                agent_output = updated_state.get_agent_output("internal_research") or {}
-                result_data = agent_output.get("report", None)
+                agent_output = updated_state.reports.get("internal_research", {})
+                result_data = agent_output.get("findings", None)
                 documents = agent_output.get("documents", [])
                 
                 if not result_data:
