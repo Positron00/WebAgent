@@ -298,30 +298,25 @@ def get_openai_llm(model_name: Optional[str] = None):
 
 @log_llm_request(provider="together")
 def get_together_llm(model_name: Optional[str] = None):
-    """
-    Get a LangChain TogetherLLM instance.
+    """Get a TogetherLLM instance for text generation.
+    
+    This function initializes a connection to the TogetherAI API
+    and returns a configured LLM.
     
     Args:
-        model_name: Optional model name to use (defaults to TOGETHER_DEFAULT_MODEL)
-        
+        model_name: Optional name of the TogetherAI model to use.
+                  If not provided, will use the configured default.
+                  
     Returns:
-        A configured TogetherLLM instance
+        A configured TogetherLLM instance ready for use.
     """
-    # Check environment variables for model name
-    model = model_name or os.getenv("TOGETHER_MODEL") or TOGETHER_DEFAULT_MODEL
-    
-    # Ensure we're using a valid Together AI model name
-    # If a GPT model name is passed (like gpt-4-turbo), use the default Together model instead
-    if model.startswith("gpt-"):
-        logger.warning(f"Model name '{model}' appears to be an OpenAI model. Using default Together model instead.")
-        model = TOGETHER_DEFAULT_MODEL
-        
+    start_time = time.time()
+    provider = "together"
     llm_config = get_llm_config()
     
-    # Log the model being used
-    logger.info(f"Creating TogetherLLM with model: {model}")
+    # Use provided model or default to configured TOGETHER_MODEL_NAME
+    model = model_name or settings.TOGETHER_MODEL_NAME
     
-    # Check for Together API key in environment variables
     together_api_key = os.getenv("TOGETHER_API_KEY")
     
     if not together_api_key:
@@ -329,15 +324,12 @@ def get_together_llm(model_name: Optional[str] = None):
         raise ValueError("TOGETHER_API_KEY not set in environment variables")
     
     try:
-        # The TogetherLLM may have changed its API endpoints or parameters
-        # Let's use the more recent parameter names and configuration
+        # Remove timeout and max_retries parameters which are not supported
         llm = TogetherLLM(
             model=model,
             temperature=llm_config.temperature,
             max_tokens=llm_config.max_tokens,
-            together_api_key=together_api_key,
-            timeout=llm_config.timeout_seconds,
-            max_retries=llm_config.retry_attempts
+            together_api_key=together_api_key
         )
         
         # Test the API connection with a simple query to verify it works correctly

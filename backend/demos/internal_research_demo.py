@@ -1339,7 +1339,7 @@ async def run_internal_research_demo(debug_mode=False):
     except Exception as e:
         logger.error(f"Error displaying results in GUI: {e}")
 
-def check_for_nan_scores(ranked_docs):
+def check_for_nan_scores(ranked_docs): # not being used?
     """
     Check if any of the ranked documents have NaN scores.
     
@@ -1377,7 +1377,7 @@ def custom_rank_documents(query, documents, top_n=10):
         return []
         
     # Break query into terms
-    query_terms = [term.lower() for term in query.split() if len(term) > 2]
+    query_terms = [term.lower() for term in query.split() if len(term) > 2] # need to preprocess query to remove special characters and stop words
     
     # Score each document
     scored_docs = []
