@@ -516,8 +516,11 @@ async def run_internal_research_demo(debug_mode=False):
     all_results = []
     all_errors = []
     
+    # Control whether to display results in GUI during processing
+    display_results = True
+    
     total_queries = len(research_queries)
-    print(f"\nProcessing {total_queries} research queries using hybrid retrieval mode...\n")
+    print(f"\nProcessing {total_queries} research queries using {retrieval_mode} retrieval mode...\n")
     
     for idx, query in enumerate(research_queries):
         logger.info(f"\n\n=== QUERY {idx+1}: {query} ===\n")
@@ -546,51 +549,125 @@ async def run_internal_research_demo(debug_mode=False):
             print("Using direct vector retrieval without LLM processing")
             try:
                 start_time = datetime.now()
+                documents = []
                 
-                # Get documents directly from vectorstore
-                retriever = getattr(research_agent, "_retriever", None)
-                if not retriever:
-                    raise ValueError("Retriever not available for vector-only mode")
+                # Try multiple approaches to get documents
+                try:
+                    # First try: Use the vectordb service directly
+                    print("Attempting to retrieve documents via vectordb service...")
+                    from backend.app.services.vectordb import retrieve_documents
+                    documents = await retrieve_documents(query, k=10)
+                    if documents and len(documents) > 0:
+                        print(f"Retrieved {len(documents)} documents via vectordb service")
+                except Exception as e1:
+                    print(f"Error using vectordb service: {e1}")
+                    
+                    # Second try: Get from research agent's retriever
+                    try:
+                        print("Attempting to retrieve documents via research agent's retriever...")
+                        if hasattr(research_agent, "_retriever") and research_agent._retriever:
+                            documents = await research_agent._retriever.get_relevant_documents(query)
+                            if documents and len(documents) > 0:
+                                print(f"Retrieved {len(documents)} documents via agent's retriever")
+                    except Exception as e2:
+                        print(f"Error using agent's retriever: {e2}")
+                        
+                        # Third try: Direct vectordb access
+                        try:
+                            print("Attempting direct vectordb access...")
+                            from backend.app.services.vectordb import get_vectordb_service
+                            vectordb_service = get_vectordb_service()
+                            if hasattr(vectordb_service, "_vectordb") and vectordb_service._vectordb:
+                                documents = await asyncio.to_thread(
+                                    vectordb_service._vectordb.similarity_search,
+                                    query, k=10
+                                )
+                                if documents and len(documents) > 0:
+                                    print(f"Retrieved {len(documents)} documents via direct vectordb access")
+                        except Exception as e3:
+                            print(f"Error using direct vectordb access: {e3}")
                 
-                # Get documents
-                print("\nRetrieving documents from vector database...")
-                documents = await retriever.get_relevant_documents(query)
-                print(f"Retrieved {len(documents)} documents")
+                # If we still don't have documents, try one last approach with a simple search
+                if not documents or len(documents) == 0:
+                    print("No documents found through standard methods. Trying manual search...")
+                    
+                    # Create a simple search function
+                    def simple_search(query, sample_docs):
+                        results = []
+                        query_terms = query.lower().split()
+                        for doc in sample_docs:
+                            content = doc["content"].lower()
+                            # Check if any query term is in the content
+                            if any(term in content for term in query_terms):
+                                from langchain.schema import Document
+                                results.append(Document(
+                                    page_content=doc["content"],
+                                    metadata={"source": doc["filename"]}
+                                ))
+                        return results
+                    
+                    # Use our sample documents as a last resort
+                    documents = simple_search(query, SAMPLE_DOCS)
+                    if documents and len(documents) > 0:
+                        print(f"Found {len(documents)} documents via manual search")
                 
-                # Simple processing of results
-                if documents:
-                    # Create simple result with available documents
-                    summary = f"Found {len(documents)} documents related to '{query}'"
-                    contexts = [doc.page_content for doc in documents]
-                    key_points = []
-                    
-                    # Extract some key points from the document content
-                    for i, doc in enumerate(documents):
-                        if hasattr(doc, "page_content"):
-                            # Try to extract a few sentences as key points
-                            content = doc.page_content
-                            sentences = [s.strip() for s in content.split('.') if len(s.strip()) > 20]
-                            if sentences:
-                                # Take up to 2 sentences from each document
-                                for s in sentences[:2]:
-                                    key_points.append(s + ".")
-                    
-                    # Create output data
-                    result_data = {
-                        "summary": summary,
-                        "contexts": contexts,
-                        "key_points": key_points[:5],  # Limit to 5 key points
-                        "source": "vector_only_mode"
-                    }
-                    
-                    # Create result state
-                    result_state = WorkflowState(
-                        query=query,
-                        output=result_data
-                    )
-                else:
-                    raise ValueError("No documents found in vector database")
-                    
+                if not documents or len(documents) == 0:
+                    raise ValueError("No documents found through any retrieval method")
+                
+                # Convert documents to a consistent format if needed
+                processed_docs = []
+                for doc in documents:
+                    if hasattr(doc, "page_content"):
+                        # LangChain Document objects
+                        processed_docs.append(doc)
+                    elif isinstance(doc, dict) and "page_content" in doc:
+                        # Dictionary with page_content
+                        from langchain.schema import Document
+                        processed_docs.append(Document(
+                            page_content=doc["page_content"],
+                            metadata=doc.get("metadata", {})
+                        ))
+                    elif isinstance(doc, str):
+                        # Plain text string
+                        from langchain.schema import Document
+                        processed_docs.append(Document(
+                            page_content=doc,
+                            metadata={}
+                        ))
+                
+                # Use the processed documents from now on
+                documents = processed_docs
+                
+                # Create simple result with available documents
+                summary = f"Found {len(documents)} documents related to '{query}'"
+                contexts = [doc.page_content for doc in documents]
+                key_points = []
+                
+                # Extract some key points from the document content
+                for i, doc in enumerate(documents):
+                    if hasattr(doc, "page_content"):
+                        # Try to extract a few sentences as key points
+                        content = doc.page_content
+                        sentences = [s.strip() for s in content.split('.') if len(s.strip()) > 20]
+                        if sentences:
+                            # Take up to 2 sentences from each document
+                            for s in sentences[:2]:
+                                key_points.append(s + ".")
+                
+                # Create output data
+                result_data = {
+                    "summary": summary,
+                    "contexts": contexts,
+                    "key_points": key_points[:5],  # Limit to 5 key points
+                    "source": "vector_only_mode"
+                }
+                
+                # Create result state
+                result_state = WorkflowState(
+                    query=query,
+                    output=result_data
+                )
+                
                 duration = (datetime.now() - start_time).total_seconds()
                 print(f"Vector retrieval completed in {duration:.2f}s")
                 
