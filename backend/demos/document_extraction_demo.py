@@ -85,7 +85,7 @@ async def run_document_extraction_demo():
     results = []
     
     # Ask for user confirmation to connect to the TogetherAI LLM
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 120)
     print("This demo will connect to the TogetherAI LLM API using your configured API key.")
     try:
         model_info = settings.LLM_PROVIDER if hasattr(settings, 'LLM_PROVIDER') else 'together'
@@ -93,7 +93,7 @@ async def run_document_extraction_demo():
         print(f"The model that will be used is: {model_name} (Provider: {model_info})")
     except AttributeError:
         print("Using default TogetherAI LLM configuration")
-    print("=" * 80)
+    print("=" * 120)
     
     confirmation = input("\nDo you want to continue and connect to the LLM API? (Y/n): ")
     if confirmation.lower() not in ["y", "yes",""]:

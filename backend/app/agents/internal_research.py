@@ -116,13 +116,15 @@ class RAGRetriever:
                 encode_kwargs={"normalize_embeddings": True}
             )
             
-            # Create a persistent directory for the advanced vector store
-            advanced_persist_dir = os.path.join(settings.VECTOR_DB_PATH, "advanced")
-            os.makedirs(advanced_persist_dir, exist_ok=True)
+            # Use the same vectordb path as the rest of the application
+            # Don't create a separate 'advanced' subdirectory to avoid path inconsistencies
+            vectordb_path = settings.VECTOR_DB_PATH
+            os.makedirs(vectordb_path, exist_ok=True)
+            logger.info(f"Using vector database path: {vectordb_path}")
             
-            # Initialize the advanced vector store
+            # Initialize the vector store with the standard path
             self.advanced_vectordb = Chroma(
-                persist_directory=advanced_persist_dir,
+                persist_directory=vectordb_path,
                 embedding_function=self.advanced_embeddings
             )
             
@@ -137,38 +139,39 @@ class RAGRetriever:
                 # Create a proper Document object with page_content
                 from langchain.schema import Document
                 
-                # Get documents from vector DB or create empty placeholder
+                # Check if the collection exists and has documents directly
                 try:
-                    # The get() method might not return the expected format
-                    # Check if the collection is empty first
+                    # First check the collection count
                     collection_info = self.advanced_vectordb._collection.count()
-                    if collection_info == 0:
+                    logger.info(f"Vector database has {collection_info} documents")
+                    
+                    # Set initial document count based on collection info
+                    self.vector_db_document_count = collection_info
+                    
+                    # If the collection exists but we need doc content for BM25
+                    if collection_info > 0:
+                        documents = self.advanced_vectordb.get()
+                        if documents and documents.get('documents'):
+                            # Convert to Document objects
+                            doc_content = documents.get('documents', [])
+                            doc_metadata = documents.get('metadatas', [{} for _ in doc_content])
+                            documents = [Document(page_content=content, metadata=meta) 
+                                        for content, meta in zip(doc_content, doc_metadata)]
+                        else:
+                            # If we couldn't get documents but collection count > 0, create dummy document
+                            logger.warning("Collection count > 0 but couldn't retrieve documents. Using dummy document.")
+                            documents = [Document(page_content="Document content placeholder", metadata={})]
+                    else:
                         logger.info("Vector database is empty. Using placeholder document.")
                         documents = [Document(page_content="Empty repository placeholder", metadata={})]
-                    else:
-                        # Try to get documents with proper error handling
-                        try:
-                            documents = self.advanced_vectordb.get()
-                            if not documents or not documents.get('documents'):
-                                logger.warning("No documents found in vector database. Using placeholder document.")
-                                documents = [Document(page_content="Empty repository placeholder", metadata={})]
-                            else:
-                                # Convert to Document objects
-                                doc_content = documents.get('documents', [])
-                                doc_metadata = documents.get('metadatas', [{} for _ in doc_content])
-                                documents = [Document(page_content=content, metadata=meta) 
-                                            for content, meta in zip(doc_content, doc_metadata)]
-                        except Exception as get_err:
-                            logger.warning(f"Error retrieving documents: {str(get_err)}. Using placeholder document.")
-                            documents = [Document(page_content="Empty repository placeholder", metadata={})]
+                        self.vector_db_document_count = 0
                 except Exception as doc_err:
-                    logger.warning(f"Error accessing vector database: {str(doc_err)}. Creating placeholder document.")
-                    documents = [Document(page_content="Empty repository placeholder", metadata={})]
-
-                # Store the document count for later checks
-                self.vector_db_document_count = len(documents) if documents and not any("Empty repository placeholder" in getattr(doc, "page_content", "") for doc in documents) else 0
+                    logger.warning(f"Error accessing vector database: {str(doc_err)}. Using placeholder document.")
+                    documents = [Document(page_content="Error accessing repository", metadata={})]
+                    # Don't assume 0 documents just because of an error
+                    self.vector_db_document_count = None  # None means "unknown" rather than definitely empty
                 
-                # Create the sparse retriever
+                # Create the sparse retriever with available documents
                 self.sparse_retriever = BM25Retriever.from_documents(
                     documents,
                     preprocess_func=lambda text: text.lower().split(),
@@ -201,9 +204,6 @@ class RAGRetriever:
                             return [Document(page_content="Empty result", metadata={})]
                         
                     self.sparse_retriever = MinimalRetriever()
-                
-                # Set document count to 0 since we encountered an error
-                self.vector_db_document_count = 0
             
             # Create an ensemble retriever that combines both approaches
             self.ensemble_retriever = EnsembleRetriever(
@@ -218,7 +218,7 @@ class RAGRetriever:
             logger.error(f"Error initializing advanced retrievers: {str(e)}")
             # Fall back to basic retriever
             self.initialized = False
-            self.vector_db_document_count = 0
+            self.vector_db_document_count = None  # Unknown instead of definitely empty
     
     async def ensure_vector_db_has_documents(self):
         """
@@ -228,13 +228,40 @@ class RAGRetriever:
             Boolean indicating if the vector database now has documents
         """
         # Check if vector DB has documents
-        if self.vector_db_document_count > 0:
+        if self.vector_db_document_count is not None and self.vector_db_document_count > 0:
             logger.info(f"Vector database already has {self.vector_db_document_count} documents")
             return True
+            
+        # If document count is None (unknown), try to verify directly
+        if self.vector_db_document_count is None:
+            try:
+                # Direct check of vectordb service
+                try:
+                    # Try to perform a test retrieval to check if documents exist
+                    from app.services.vectordb import retrieve_documents
+                    test_docs = await retrieve_documents("test", k=1)
+                    
+                    if test_docs and len(test_docs) > 0:
+                        logger.info(f"Vector database verification successful: found {len(test_docs)} documents")
+                        self.vector_db_document_count = len(test_docs)
+                        return True
+                except Exception as verify_err:
+                    logger.warning(f"Vector database verification failed: {str(verify_err)}")
+                
+                # Try to check the collection count directly
+                if hasattr(self.advanced_vectordb, "_collection") and hasattr(self.advanced_vectordb._collection, "count"):
+                    count = self.advanced_vectordb._collection.count()
+                    if count > 0:
+                        logger.info(f"Direct collection count check: {count} documents found")
+                        self.vector_db_document_count = count
+                        return True
+            except Exception as e:
+                logger.warning(f"Failed to verify vector database contents: {str(e)}")
         
-        # Vector DB is empty, need to generate and ingest documents
-        logger.info("Vector database is empty. Generating and ingesting documents.")
+        # Vector DB is empty or verification failed, need to generate and ingest documents
+        logger.info("Vector database appears empty. Generating and ingesting documents.")
         
+        # Continue with the existing document ingestion process
         try:
             # Import the document ingestion service
             from app.services.document_ingestion_service import get_document_ingestion_service
@@ -760,13 +787,34 @@ class InternalResearchAgent(BaseAgent):
             # Format feedback section if this is a follow-up research
             feedback_section = self._format_feedback(state)
             
+            # Validate reranked documents before generating findings
+            if not reranked_documents:
+                logger.warning("No documents available after reranking. Cannot generate findings.")
+                state.update_with_agent_output("internal_research", {
+                    "status": "completed",
+                    "documents": [],
+                    "findings": "No relevant documents were found to answer this query.",
+                    "timestamp": datetime.now().isoformat()
+                })
+                return state
+                
+            # Log information about reranked documents for debugging
+            logger.info(f"Reranked documents summary (top {len(reranked_documents)}):")
+            for i, doc in enumerate(reranked_documents):
+                doc_id = doc.get("id", "unknown")
+                score = doc.get("score", 0)
+                source = doc.get("metadata", {}).get("source", "unknown")
+                content_preview = doc.get("page_content", "")[:100] + "..." if len(doc.get("page_content", "")) > 100 else doc.get("page_content", "")
+                logger.info(f"  [{i+1}] ID: {doc_id}, Score: {score:.4f}, Source: {source}")
+                logger.info(f"      Preview: {content_preview}")
+            
             # 3. Generate answer using the LLM with reranked documents as context
             logger.info("Generating research findings")
-            prompt_inputs = {
-                "query": state.query,
+            prompt_inputs = {                
                 "research_plan": research_plan.get("analysis", "No research plan provided."),
                 "documents": formatted_docs,
-                "feedback_section": feedback_section
+                "feedback_section": feedback_section,
+                "query": state.query
             }
             
             # Generate findings with retry logic
