@@ -178,11 +178,19 @@ class ResultsWindow(QMainWindow):
         for i, result in enumerate(self.results):
             tab = QTextBrowser()
             tab.setOpenExternalLinks(True)
-            tab.setFont(QFont("Helvetica", 12))
+            tab.setFont(QFont("Helvetica", 16))  # Increase font size from 14 to 16
             
             # Set markdown content
             markdown_content = format_result(result, self.dark_mode)
             tab.setMarkdown(markdown_content)
+            
+            # Improve readability with better text spacing
+            tab.setLineWrapMode(QTextBrowser.WidgetWidth)
+            tab.setLineWidth(800)  # Wider line width for better readability
+            
+            # Add zoom capabilities
+            tab.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard | Qt.LinksAccessibleByMouse)
+            tab.zoomIn(2)  # Zoom in by 2 steps to make content larger
             
             # Create shortened tab title from query
             query = result.query
@@ -190,6 +198,22 @@ class ResultsWindow(QMainWindow):
                 query = query[:27] + "..."
             
             self.tabs.addTab(tab, f"Query {i+1}: {query}")
+        
+        # Make tabs more visible and larger
+        self.tabs.setTabPosition(QTabWidget.North)
+        self.tabs.setMinimumHeight(500)  # Ensure tab content has enough vertical space
+        self.tabs.setTabsClosable(False)
+        self.tabs.setMovable(True)  # Allow tab reordering
+        
+        # Style tabs with CSS to make them more prominent
+        self.tabs.setStyleSheet("""
+            QTabBar::tab {
+                min-width: 200px;
+                min-height: 35px;
+                font-size: 13px;
+                font-weight: bold;
+            }
+        """)
         
         # Add display options layout
         options_layout = QHBoxLayout()
@@ -265,6 +289,8 @@ class ResultsWindow(QMainWindow):
                     margin-right: 2px;
                     border-top-left-radius: 4px;
                     border-top-right-radius: 4px;
+                    font-size: 13px;
+                    font-weight: bold;
                 }
                 QTabBar::tab:selected {
                     background-color: #2d2d2d;
@@ -293,9 +319,12 @@ class ResultsWindow(QMainWindow):
                     border-radius: 4px;
                     selection-background-color: #0c6fc0;
                     selection-color: white;
+                    font-size: 14px;
+                    line-height: 1.5;
                 }
                 QLabel {
                     color: #e0e0e0;
+                    font-size: 14px;
                 }
                 QComboBox {
                     background-color: #3a3a3a;
@@ -303,6 +332,7 @@ class ResultsWindow(QMainWindow):
                     border: 1px solid #4a4a4a;
                     border-radius: 4px;
                     padding: 4px;
+                    font-size: 14px;
                 }
                 QComboBox::drop-down {
                     border: none;
@@ -313,6 +343,22 @@ class ResultsWindow(QMainWindow):
                     selection-background-color: #0c6fc0;
                 }
             """)
+            
+            # Apply additional custom styling for markdown content
+            for i in range(self.tabs.count()):
+                tab = self.tabs.widget(i)
+                tab.document().setDefaultStyleSheet("""
+                    h1 { color: #3498db; font-size: 34px; margin-top: 20px; margin-bottom: 14px; }
+                    h2 { color: #2ecc71; font-size: 28px; margin-top: 16px; margin-bottom: 12px; }
+                    h3 { color: #f39c12; font-size: 24px; margin-top: 14px; margin-bottom: 10px; }
+                    p { line-height: 1.6; margin-top: 10px; margin-bottom: 10px; font-size: 16px; }
+                    code { background-color: #3a3a3a; color: #e74c3c; padding: 2px 4px; border-radius: 3px; font-size: 16px; }
+                    pre { background-color: #3a3a3a; padding: 12px; border-radius: 5px; margin: 12px 0; 
+                          border-left: 3px solid #3498db; font-size: 16px; }
+                    ul, ol { margin-left: 24px; }
+                    li { margin: 8px 0; font-size: 16px; }
+                    a { color: #3498db; text-decoration: underline; }
+                """)
         else:
             # Light theme
             self.setStyleSheet("""
@@ -331,6 +377,8 @@ class ResultsWindow(QMainWindow):
                     margin-right: 2px;
                     border-top-left-radius: 4px;
                     border-top-right-radius: 4px;
+                    font-size: 13px;
+                    font-weight: bold;
                 }
                 QTabBar::tab:selected {
                     background-color: white;
@@ -359,9 +407,12 @@ class ResultsWindow(QMainWindow):
                     border-radius: 4px;
                     selection-background-color: #3498db;
                     selection-color: white;
+                    font-size: 14px;
+                    line-height: 1.5;
                 }
                 QLabel {
                     color: #2c3e50;
+                    font-size: 14px;
                 }
                 QComboBox {
                     background-color: white;
@@ -369,6 +420,7 @@ class ResultsWindow(QMainWindow):
                     border: 1px solid #cccccc;
                     border-radius: 4px;
                     padding: 4px;
+                    font-size: 14px;
                 }
                 QComboBox::drop-down {
                     border: none;
@@ -379,6 +431,22 @@ class ResultsWindow(QMainWindow):
                     selection-background-color: #3498db;
                 }
             """)
+            
+            # Apply additional custom styling for markdown content
+            for i in range(self.tabs.count()):
+                tab = self.tabs.widget(i)
+                tab.document().setDefaultStyleSheet("""
+                    h1 { color: #2c3e50; font-size: 34px; margin-top: 20px; margin-bottom: 14px; }
+                    h2 { color: #16a085; font-size: 28px; margin-top: 16px; margin-bottom: 12px; }
+                    h3 { color: #d35400; font-size: 24px; margin-top: 14px; margin-bottom: 10px; }
+                    p { line-height: 1.6; margin-top: 10px; margin-bottom: 10px; font-size: 16px; }
+                    code { background-color: #f0f0f0; color: #e74c3c; padding: 2px 4px; border-radius: 3px; font-size: 16px; }
+                    pre { background-color: #f8f8f8; padding: 12px; border-radius: 5px; margin: 12px 0; 
+                          border-left: 3px solid #2980b9; font-size: 16px; }
+                    ul, ol { margin-left: 24px; }
+                    li { margin: 8px 0; font-size: 16px; }
+                    a { color: #2980b9; text-decoration: underline; }
+                """)
         
     def center(self):
         """Center window on screen"""
