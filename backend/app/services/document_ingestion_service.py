@@ -371,15 +371,64 @@ class DocumentIngestionService:
             List of artifact IDs for the ingested documents
         """
         artifact_ids = []
+        skipped_docs = []
         
         logger.info("INGESTING DOCUMENTS INTO VECTOR DATABASE")
+        
+        # Get vector database service
+        from app.services.vectordb import get_vectordb_service
+        vector_db = get_vectordb_service()
         
         for i, doc_path in enumerate(doc_paths):
             try:
                 doc_name = os.path.basename(doc_path)
-                logger.info(f"[{i+1}/{len(doc_paths)}] Ingesting: {doc_name}")
+                logger.info(f"[{i+1}/{len(doc_paths)}] Processing: {doc_name}")
                 
-                # Load the document into vector database
+                # Check if document already exists in the vector database
+                # First, calculate a simple content hash to use as a check
+                try:
+                    with open(doc_path, 'r') as f:
+                        content = f.read()
+                    
+                    # Extract metadata to help identify duplicates
+                    doc_metadata = {
+                        "source": doc_name,
+                        "filename": doc_name,
+                        "content_hash": hash(content[:200] + str(len(content)) + content[-200:]) if len(content) > 400 else hash(content)
+                    }
+                    
+                    # Try to search for similar content in the vector database
+                    search_query = content[:300]  # Use beginning of the document as search query
+                    results = await vector_db.search(search_query, k=5)
+                    
+                    # Check if any results match our document by filename or content similarity
+                    doc_exists = False
+                    for doc, score in results:
+                        result_filename = doc.metadata.get("source", "").split("/")[-1] if isinstance(doc.metadata.get("source", ""), str) else ""
+                        
+                        # Check if filenames match exactly
+                        if result_filename == doc_name:
+                            logger.info(f"Document '{doc_name}' already exists in vector database (filename match)")
+                            doc_exists = True
+                            break
+                            
+                        # Check if content is very similar (first 200 + last 200 chars)
+                        if len(doc.page_content) > 400 and len(content) > 400:
+                            if doc.page_content[:200] == content[:200] and doc.page_content[-200:] == content[-200:]:
+                                logger.info(f"Document '{doc_name}' already exists in vector database (content match)")
+                                doc_exists = True
+                                break
+                    
+                    if doc_exists:
+                        logger.info(f"Skipping document '{doc_name}' as it already exists in vector database")
+                        skipped_docs.append(doc_name)
+                        continue
+                    
+                except Exception as check_err:
+                    logger.warning(f"Error checking if document exists: {str(check_err)}. Proceeding with ingestion.")
+                
+                # Document doesn't exist, load it into vector database
+                logger.info(f"Ingesting new document: {doc_name}")
                 artifact_id = await doc_loader.load_document(doc_path)
                 
                 artifact_ids.append(artifact_id)
@@ -391,7 +440,9 @@ class DocumentIngestionService:
                 logger.error(f"Error: {str(e)}")
         
         logger.info("Document ingestion complete.")
-        logger.info(f"Successfully ingested {len(artifact_ids)} out of {len(doc_paths)} documents.")
+        if skipped_docs:
+            logger.info(f"Skipped {len(skipped_docs)} documents that already exist in the vector database: {', '.join(skipped_docs)}")
+        logger.info(f"Successfully ingested {len(artifact_ids)} new documents out of {len(doc_paths)} documents.")
         
         return artifact_ids
     
