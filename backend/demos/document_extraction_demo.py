@@ -55,12 +55,8 @@ from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.utils.metrics import timing_decorator
 
-# Import PyQt5 for GUI
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QTextBrowser, QVBoxLayout, QWidget, 
-                           QTabWidget, QPushButton, QHBoxLayout, QFileDialog, QMessageBox,
-                           QCheckBox, QLabel, QComboBox)
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QFont, QIcon, QColor, QPalette
+# Import the research results display
+from backend.demos.research_results_display import display_research_results
 
 # Path to demo documents
 DEMO_DOCS_DIR = os.path.join(current_dir, "demo_docs")
@@ -113,361 +109,6 @@ platform and expanding to three new international markets.
             """)
         logger.info(f"Created sample document: {sample_path}")
     return sample_path
-
-
-def format_extraction_result(result, dark_mode=False):
-    """
-    Format extraction result as Markdown
-    
-    Args:
-        result: The extraction result dictionary
-        dark_mode: Whether to use dark mode formatting
-        
-    Returns:
-        Formatted Markdown string
-    """
-    if not result:
-        return "No results available."
-    
-    # Set colors based on dark/light mode
-    divider = "* * *" if dark_mode else "---"
-    
-    # For error cases
-    if result.get("error"):
-        return f"# Error\n\n{result['error']}"
-    
-    # Handle LLM extraction result
-    extraction_data = result.get("extraction_data", {})
-    extraction_type = result.get("extraction_type", "unknown")
-    
-    markdown = f"# Document Extraction Results\n\n"
-    markdown += f"**Extraction Type**: {extraction_type}\n\n"
-    markdown += f"{divider}\n\n"
-    
-    if extraction_type == "llm":
-        # Format LLM extraction with improved section formatting
-        if "main_topics" in extraction_data:
-            markdown += "# Main Topics\n\n"
-            for topic in extraction_data.get("main_topics", []):
-                markdown += f"• {topic}\n"
-            markdown += f"\n{divider}\n\n"
-        
-        if "key_entities" in extraction_data:
-            markdown += "# Key Entities\n\n"
-            for entity in extraction_data.get("key_entities", []):
-                markdown += f"• {entity}\n"
-            markdown += f"\n{divider}\n\n"
-        
-        if "summary" in extraction_data:
-            markdown += "# Summary\n\n"
-            markdown += f"{extraction_data.get('summary')}\n\n"
-            markdown += f"{divider}\n\n"
-        
-        if "key_points" in extraction_data:
-            markdown += "# Key Points\n\n"
-            for i, point in enumerate(extraction_data.get("key_points", []), 1):
-                markdown += f"{i}. {point}\n"
-            markdown += f"\n{divider}\n\n"
-        
-        if "document_type" in extraction_data:
-            markdown += f"# Document Type\n\n{extraction_data.get('document_type')}\n\n"
-            markdown += f"{divider}\n\n"
-    
-    elif extraction_type == "lda":
-        # Format LDA extraction with improved section formatting
-        markdown += "# Topics\n\n"
-        for topic in result.get("topics", []):
-            topic_id = topic.get("topic_id", 0)
-            terms = topic.get("terms", [])
-            terms_str = ", ".join([f"{term[0]} ({term[1]:.2f})" for term in terms])
-            markdown += f"**Topic {topic_id}**: {terms_str}\n\n"
-        
-        markdown += f"{divider}\n\n"
-        
-        markdown += "# Important Sentences\n\n"
-        for i, sentence in enumerate(result.get("important_sentences", []), 1):
-            markdown += f"{i}. {sentence}\n"
-        markdown += f"\n{divider}\n\n"
-        
-        markdown += f"# Analysis Metrics\n\n**Coherence Score**: {result.get('coherence_score', 0):.4f}\n\n"
-        markdown += f"{divider}\n\n"
-    
-    # Add timestamp
-    markdown += f"*Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*"
-    
-    return markdown
-
-
-class ResultsWindow(QMainWindow):
-    """
-    Window to display extraction results
-    """
-    def __init__(self, results, document_path):
-        super().__init__()
-        self.results = results
-        self.document_path = document_path
-        self.dark_mode = False
-        self.setWindowTitle("Document Extraction Results")
-        self.setMinimumSize(950, 700)
-        
-        self.setup_ui()
-        
-    def setup_ui(self):
-        """Setup the UI components"""
-        # Create main widget and layout
-        main_widget = QWidget()
-        self.setCentralWidget(main_widget)
-        main_layout = QVBoxLayout(main_widget)
-        
-        # Add document info
-        doc_name = os.path.basename(self.document_path)
-        self.info_label = QTextBrowser()
-        self.info_label.setMaximumHeight(60)
-        self.info_label.setMarkdown(f"## Document: {doc_name}")
-        main_layout.addWidget(self.info_label)
-        
-        # Create tab widget
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
-        main_layout.addWidget(self.tabs)
-        
-        # Add results to tabs
-        for i, (title, result) in enumerate(self.results):
-            tab = QTextBrowser()
-            tab.setOpenExternalLinks(True)
-            tab.setFont(QFont("Helvetica", 12))
-            
-            # Set markdown content
-            markdown_content = format_extraction_result(result, self.dark_mode)
-            tab.setMarkdown(markdown_content)
-            
-            self.tabs.addTab(tab, title)
-        
-        # Add display options layout
-        options_layout = QHBoxLayout()
-        
-        # Add theme selection
-        theme_label = QLabel("Theme:")
-        self.theme_combo = QComboBox()
-        self.theme_combo.addItems(["Light", "Dark"])
-        self.theme_combo.currentIndexChanged.connect(self.toggle_theme)
-        
-        options_layout.addWidget(theme_label)
-        options_layout.addWidget(self.theme_combo)
-        options_layout.addStretch()
-        
-        main_layout.addLayout(options_layout)
-        
-        # Add buttons layout
-        buttons_layout = QHBoxLayout()
-        
-        # Add save button
-        save_btn = QPushButton("Save Results")
-        save_btn.setIcon(QIcon.fromTheme("document-save"))
-        save_btn.clicked.connect(self.save_results)
-        buttons_layout.addWidget(save_btn)
-        
-        # Add close button
-        close_btn = QPushButton("Close")
-        close_btn.setIcon(QIcon.fromTheme("window-close"))
-        close_btn.clicked.connect(self.close)
-        buttons_layout.addWidget(close_btn)
-        
-        main_layout.addLayout(buttons_layout)
-        
-        # Apply initial light theme
-        self.apply_theme(dark=False)
-        
-        # Center window
-        self.center()
-    
-    def toggle_theme(self, index):
-        """Toggle between light and dark themes"""
-        self.dark_mode = (index == 1)  # Dark mode is index 1
-        self.apply_theme(dark=self.dark_mode)
-        
-        # Update content with new theme
-        for i in range(self.tabs.count()):
-            tab = self.tabs.widget(i)
-            title = self.tabs.tabText(i)
-            for result_title, result in self.results:
-                if result_title == title:
-                    markdown_content = format_extraction_result(result, self.dark_mode)
-                    tab.setMarkdown(markdown_content)
-                    break
-    
-    def apply_theme(self, dark=False):
-        """Apply light or dark theme to the application"""
-        if dark:
-            # Dark theme
-            self.setStyleSheet("""
-                QMainWindow, QWidget {
-                    background-color: #1e1e1e;
-                    color: #e0e0e0;
-                }
-                QTabWidget::pane {
-                    border: 1px solid #4a4a4a;
-                    background-color: #2d2d2d;
-                    border-radius: 4px;
-                }
-                QTabBar::tab {
-                    background-color: #3a3a3a;
-                    color: #b0b0b0;
-                    padding: 8px 12px;
-                    margin-right: 2px;
-                    border-top-left-radius: 4px;
-                    border-top-right-radius: 4px;
-                }
-                QTabBar::tab:selected {
-                    background-color: #2d2d2d;
-                    color: #ffffff;
-                    border: 1px solid #4a4a4a;
-                    border-bottom-color: #2d2d2d;
-                }
-                QPushButton {
-                    background-color: #0c6fc0;
-                    color: white;
-                    padding: 6px 12px;
-                    border: none;
-                    border-radius: 4px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #1a86e0;
-                }
-                QPushButton:pressed {
-                    background-color: #0a5aa0;
-                }
-                QTextBrowser {
-                    background-color: #2d2d2d;
-                    color: #e0e0e0;
-                    border: 1px solid #4a4a4a;
-                    border-radius: 4px;
-                    selection-background-color: #0c6fc0;
-                    selection-color: white;
-                }
-                QLabel {
-                    color: #e0e0e0;
-                }
-                QComboBox {
-                    background-color: #3a3a3a;
-                    color: #e0e0e0;
-                    border: 1px solid #4a4a4a;
-                    border-radius: 4px;
-                    padding: 4px;
-                }
-                QComboBox::drop-down {
-                    border: none;
-                }
-                QComboBox QAbstractItemView {
-                    background-color: #3a3a3a;
-                    color: #e0e0e0;
-                    selection-background-color: #0c6fc0;
-                }
-            """)
-        else:
-            # Light theme
-            self.setStyleSheet("""
-                QMainWindow {
-                    background-color: #f5f5f5;
-                }
-                QTabWidget::pane {
-                    border: 1px solid #cccccc;
-                    background-color: white;
-                    border-radius: 4px;
-                }
-                QTabBar::tab {
-                    background-color: #e0e0e0;
-                    color: #505050;
-                    padding: 8px 12px;
-                    margin-right: 2px;
-                    border-top-left-radius: 4px;
-                    border-top-right-radius: 4px;
-                }
-                QTabBar::tab:selected {
-                    background-color: white;
-                    color: #2c3e50;
-                    border: 1px solid #cccccc;
-                    border-bottom-color: white;
-                }
-                QPushButton {
-                    background-color: #3498db;
-                    color: white;
-                    padding: 6px 12px;
-                    border: none;
-                    border-radius: 4px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #2980b9;
-                }
-                QPushButton:pressed {
-                    background-color: #1c6ea4;
-                }
-                QTextBrowser {
-                    background-color: white;
-                    color: #2c3e50;
-                    border: 1px solid #e0e0e0;
-                    border-radius: 4px;
-                    selection-background-color: #3498db;
-                    selection-color: white;
-                }
-                QLabel {
-                    color: #2c3e50;
-                }
-                QComboBox {
-                    background-color: white;
-                    color: #2c3e50;
-                    border: 1px solid #cccccc;
-                    border-radius: 4px;
-                    padding: 4px;
-                }
-                QComboBox::drop-down {
-                    border: none;
-                }
-                QComboBox QAbstractItemView {
-                    background-color: white;
-                    color: #2c3e50;
-                    selection-background-color: #3498db;
-                }
-            """)
-        
-    def center(self):
-        """Center window on screen"""
-        screen = QApplication.primaryScreen().geometry()
-        size = self.geometry()
-        self.move(
-            (screen.width() - size.width()) // 2,
-            (screen.height() - size.height()) // 2
-        )
-    
-    def save_results(self):
-        """Save results to a file"""
-        current_tab = self.tabs.currentIndex()
-        title = self.tabs.tabText(current_tab)
-        
-        # Get default filename based on document and extraction type
-        doc_name = os.path.splitext(os.path.basename(self.document_path))[0]
-        default_name = f"{doc_name}_{title.lower().replace(' ', '_')}_extraction.md"
-        
-        # Open file dialog
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Results", default_name, "Markdown Files (*.md);;Text Files (*.txt);;All Files (*)"
-        )
-        
-        if file_path:
-            try:
-                # Get current tab content
-                tab = self.tabs.currentWidget()
-                content = tab.toMarkdown()
-                
-                # Save to file
-                with open(file_path, 'w') as f:
-                    f.write(content)
-                
-                QMessageBox.information(self, "Success", f"Results saved to {file_path}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to save file: {str(e)}")
 
 
 @timing_decorator
@@ -562,11 +203,26 @@ async def run_document_extraction_demo():
     
     # Show results in GUI
     if results:
-        # Create Qt application
-        app = QApplication([])
-        window = ResultsWindow(results, sample_doc_path)
-        window.show()
-        app.exec_()
+        # Prepare data for display
+        queries = []
+        extraction_results = []
+        errors = []
+        
+        for title, result in results:
+            queries.append(title)
+            extraction_results.append(result)
+            errors.append(None)
+        
+        try:
+            # Display results using the generic display function
+            display_research_results(
+                queries=queries,
+                results=extraction_results,
+                errors=errors,
+                title="Document Extraction Results"
+            )
+        except Exception as e:
+            logger.error(f"Error displaying results in GUI: {e}")
 
 if __name__ == "__main__":
     # Run the demo

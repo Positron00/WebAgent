@@ -44,6 +44,9 @@ from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.utils.metrics import timing_decorator
 
+# Import the research results display
+from backend.demos.research_results_display import display_research_results
+
 # Path to demo documents
 DEMO_DOCS_DIR = os.path.join(current_dir, "demo_docs")
 os.makedirs(DEMO_DOCS_DIR, exist_ok=True)
@@ -232,6 +235,10 @@ async def run_internal_research_demo():
         "What security measures are in place in our system?"
     ]
     
+    # Store results and errors for display
+    all_results = []
+    all_errors = []
+    
     for idx, query in enumerate(research_queries):
         logger.info(f"\n\n=== QUERY {idx+1}: {query} ===\n")
         
@@ -265,13 +272,27 @@ async def run_internal_research_demo():
                         print(f"{idx+1}. {source[:100]}...")
                 else:
                     pprint(result_state.output)
+                
+                # Store the result
+                all_results.append(result_state.output)
+                all_errors.append(None)
             else:
                 logger.warning("No research results returned.")
+                all_results.append(None)
+                all_errors.append(None)
                 
         except Exception as e:
             logger.error(f"Error running internal research agent: {e}")
+            all_results.append(None)
+            all_errors.append(str(e))
     
     logger.info("Internal Research Agent Demo completed.")
+    
+    # Show results in GUI
+    try:
+        display_research_results(research_queries, results=all_results, errors=all_errors, title="Internal Research Results")
+    except Exception as e:
+        logger.error(f"Error displaying results in GUI: {e}")
 
 if __name__ == "__main__":
     # Run the demo
