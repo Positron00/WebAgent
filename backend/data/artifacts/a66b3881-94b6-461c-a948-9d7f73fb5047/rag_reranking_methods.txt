@@ -1,0 +1,58 @@
+
+RAG Reranking Methods Technical Specification
+===========================================
+
+Overview
+--------
+This document details the reranking methods used in our Retrieval-Augmented Generation (RAG) pipeline to 
+improve the relevance of retrieved documents before they are provided to the language model.
+
+Cross-Encoder Architecture
+-------------------------
+Our primary reranking is based on a cross-encoder architecture that directly compares query-document pairs.
+
+1. Model Architecture
+   - Base model: Distilled RoBERTa (135M parameters)
+   - Input format: [CLS] query [SEP] document [SEP]
+   - Attention mechanism: Full cross-attention between query and document
+   - Output layer: Linear projection to scalar relevance score
+   - Training objective: Pointwise MSE loss with teacher distillation
+
+2. Training Methodology
+   - Training data: 2.4M query-document pairs with human relevance judgments
+   - Negative sampling: Hard negatives from BM25 top 100 results
+   - Curriculum learning: Progressive introduction of harder examples
+   - Optimization: AdamW with cosine learning rate schedule
+   - Regularization: Dropout (0.1) and weight decay (0.01)
+
+3. Score Calibration
+   - Raw scores normalized using logistic function
+   - Temperature scaling for confidence calibration
+   - Score aggregation using exponentially weighted average
+   - Threshold determination via precision-recall analysis
+
+Integration with Vector Retrieval
+-------------------------------
+1. Two-stage Retrieval Process
+   - Stage 1: High-recall vector retrieval (top-k=50)
+   - Stage 2: High-precision reranking (top-k=5)
+   
+2. Hybrid Score Computation
+   - Weighted combination: λ * vector_score + (1-λ) * reranker_score
+   - Adaptive λ based on query characteristics
+   - Score normalization using min-max scaling
+   - Rank-based fusion for multi-modal queries
+
+3. Performance Optimization
+   - Batched inference for reranking (batch size=32)
+   - Document caching for frequent queries
+   - Incremental reranking for long documents
+   - Asynchronous processing pipeline
+
+Evaluation Metrics
+----------------
+- MRR: 0.87 (vs. 0.73 for vector-only retrieval)
+- NDCG@10: 0.92 (vs. 0.78 for vector-only retrieval)
+- MAP: 0.84 (vs. 0.69 for vector-only retrieval)
+- Latency overhead: +45ms at p95 per query
+        
