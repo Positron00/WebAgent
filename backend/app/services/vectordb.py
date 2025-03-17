@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from functools import lru_cache
 import uuid
+import time
 
 from langchain.schema.document import Document
 from langchain_openai import OpenAIEmbeddings
@@ -15,6 +16,13 @@ from langchain_chroma import Chroma
 from app.core.config import settings
 from app.services.graphdb import get_graph_db_service
 from app.utils.metrics import timing_decorator
+from app.core.observability import (
+    track_vectordb_query,
+    record_data_quality,
+    VECTORDB_QUERY_COUNT,
+    VECTORDB_QUERY_LATENCY,
+    log_to_mlflow
+)
 
 logger = logging.getLogger(__name__)
 
@@ -114,25 +122,116 @@ class VectorDBService:
             logger.error(f"Error adding documents to database: {str(e)}")
             return []
     
-    @timing_decorator
-    async def search(self, query: str, k: int = 5):
+    @track_vectordb_query()
+    async def search(self, query: str, top_k: int = 5, namespace: str = None):
         """
-        Search for documents similar to the query.
+        Search for documents most similar to the query.
         
         Args:
             query: The query string
-            k: Number of results to return
+            top_k: Number of results to return
+            namespace: Optional namespace to search in
             
         Returns:
-            List of documents and their similarity scores
+            List of document chunks and their similarity scores
         """
+        start_time = time.time()
         try:
-            results = self.vectordb.similarity_search_with_score(query, k=k)
-            return results
-        except Exception as e:
-            logger.error(f"Error searching vector database: {str(e)}")
-            return []
+            logger.debug(f"Searching vector database for: '{query}'")
             
+            # Get embeddings for the query
+            embedding = await self.get_embedding(query)
+            
+            if not embedding:
+                logger.error("Failed to generate embedding for query")
+                return []
+                
+            # Get the vector database client
+            if not self.client:
+                await self.connect()
+                
+            # Search the vector database
+            results = await self.client.search(
+                collection_name=self.collection_name,
+                query_vector=embedding,
+                top_k=top_k,
+                namespace=namespace or self.namespace
+            )
+            
+            processing_time = time.time() - start_time
+            
+            # Log to MLflow
+            log_to_mlflow(
+                metrics={
+                    "search_latency": processing_time,
+                    "search_result_count": len(results) if results else 0
+                },
+                params={
+                    "query_length": len(query),
+                    "top_k": top_k,
+                    "namespace": namespace or self.namespace
+                },
+                experiment_name="vectordb_operations"
+            )
+            
+            # Record the latency in our metrics
+            VECTORDB_QUERY_LATENCY.observe(processing_time)
+            
+            logger.debug(f"Vector search completed in {processing_time:.4f}s with {len(results)} results")
+            
+            if not results:
+                logger.warning(f"No results found for query: '{query}'")
+                VECTORDB_QUERY_COUNT.labels(status="empty").inc()
+                return []
+                
+            # Format results for return
+            formatted_results = []
+            for result in results:
+                metadata = result.get("metadata", {})
+                formatted_results.append({
+                    "score": float(result.get("score", 0)),
+                    "text": result.get("payload", {}).get("text", ""),
+                    "metadata": {
+                        "document_id": metadata.get("document_id", ""),
+                        "source": metadata.get("source", ""),
+                        "chunk_id": metadata.get("chunk_id", ""),
+                        "page_number": metadata.get("page_number", 0)
+                    }
+                })
+                
+            # Track successful query
+            VECTORDB_QUERY_COUNT.labels(status="success").inc()
+            
+            # Basic quality check
+            if formatted_results:
+                top_score = formatted_results[0]["score"]
+                quality_score = min(max(top_score * 100, 0), 100)  
+                record_data_quality("vector_search", "relevance", quality_score)
+                
+            return formatted_results
+            
+        except Exception as e:
+            processing_time = time.time() - start_time
+            logger.error(f"Error searching vector database: {str(e)}")
+            
+            # Track failed query
+            VECTORDB_QUERY_COUNT.labels(status="error").inc()
+            
+            # Log to MLflow
+            log_to_mlflow(
+                metrics={
+                    "search_latency": processing_time,
+                    "search_error": 1
+                },
+                params={
+                    "error_type": type(e).__name__,
+                    "error_message": str(e)
+                },
+                experiment_name="vectordb_operations"
+            )
+            
+            return []
+    
     @timing_decorator
     def get_document(self, document_id: str) -> Optional[Document]:
         """

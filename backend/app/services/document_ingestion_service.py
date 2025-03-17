@@ -14,6 +14,12 @@ from pathlib import Path
 import asyncio
 
 from app.core.config import settings
+from app.core.observability import (
+    track_document_processing,
+    record_document_size,
+    record_data_quality,
+    log_to_mlflow
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -308,6 +314,14 @@ class DocumentIngestionService:
         """Initialize the document ingestion service."""
         self.sample_docs_dir = os.path.join(settings.DATA_DIR, "sample_docs")
         os.makedirs(self.sample_docs_dir, exist_ok=True)
+        self.docs_directory = settings.SAMPLE_DOCS_DIR
+        self.metrics = {
+            "documents_processed": 0,
+            "documents_failed": 0,
+            "total_tokens": 0,
+            "total_chunks": 0,
+            "processing_time_seconds": 0
+        }
     
     def get_sample_document_path(self, filename):
         """
@@ -338,6 +352,7 @@ class DocumentIngestionService:
         
         return doc_path
     
+    @track_document_processing(doc_type="sample")
     async def create_sample_documents(self):
         """
         Create sample documents for ingestion.
@@ -345,20 +360,31 @@ class DocumentIngestionService:
         Returns:
             Tuple of (list of document paths, number of created files)
         """
-        created_files = []
+        logger.info(f"Creating sample documents in {self.docs_directory}")
+        os.makedirs(self.docs_directory, exist_ok=True)
+        
+        doc_paths = []
         
         for doc in SAMPLE_DOCS:
-            doc_path = os.path.join(self.sample_docs_dir, doc["filename"])
-            
-            if not os.path.exists(doc_path):
+            doc_path = self.get_sample_document_path(doc["filename"])
+            try:
                 with open(doc_path, "w") as f:
                     f.write(doc["content"])
-                logger.info(f"Created sample document: {doc_path}")
-            
-            created_files.append(doc_path)
-            
-        return created_files, len(created_files)
+                
+                doc_paths.append(doc_path)
+                
+                # Record document size for metrics
+                file_size = os.path.getsize(doc_path)
+                record_document_size(doc_type="sample", size_bytes=file_size)
+                
+                logger.debug(f"Created sample document: {doc_path}")
+            except Exception as e:
+                logger.error(f"Error creating sample document {doc_path}: {e}")
+        
+        logger.info(f"Created {len(doc_paths)} sample documents")
+        return doc_paths, len(doc_paths)
     
+    @track_document_processing(doc_type="ingestion")
     async def ingest_documents(self, doc_loader, doc_paths):
         """
         Ingest documents into the vector database using the document loader.
@@ -370,10 +396,13 @@ class DocumentIngestionService:
         Returns:
             List of artifact IDs for the ingested documents
         """
-        artifact_ids = []
-        skipped_docs = []
+        start_time = time.time()
+        logger.info(f"Ingesting {len(doc_paths)} documents into vector database")
         
-        logger.info("INGESTING DOCUMENTS INTO VECTOR DATABASE")
+        successful = 0
+        failed = 0
+        total_tokens = 0
+        total_chunks = 0
         
         # Get vector database service
         from app.services.vectordb import get_vectordb_service
@@ -421,7 +450,7 @@ class DocumentIngestionService:
                     
                     if doc_exists:
                         logger.info(f"Skipping document '{doc_name}' as it already exists in vector database")
-                        skipped_docs.append(doc_name)
+                        failed += 1
                         continue
                     
                 except Exception as check_err:
@@ -429,22 +458,71 @@ class DocumentIngestionService:
                 
                 # Document doesn't exist, load it into vector database
                 logger.info(f"Ingesting new document: {doc_name}")
-                artifact_id = await doc_loader.load_document(doc_path)
+                result = await doc_loader.ingest_document(doc_path)
                 
-                artifact_ids.append(artifact_id)
-                logger.info(f"Document loaded. Artifact ID: {artifact_id}")
-                logger.info(f"Successfully ingested document: {doc_name} (ID: {artifact_id})")
+                successful += 1
+                total_tokens += result.get("tokens", 0)
+                total_chunks += result.get("chunks", 0)
+                
+                # Basic data quality check - evaluate chunk quality
+                if result.get("chunks", 0) > 0:
+                    avg_chunk_size = result.get("tokens", 0) / result.get("chunks", 0)
+                    # Score is 0-100, higher is better
+                    # Assuming ideal chunk size is between 200-500 tokens
+                    if 150 <= avg_chunk_size <= 600:
+                        quality_score = 100
+                    elif 100 <= avg_chunk_size < 150 or 600 < avg_chunk_size <= 800:
+                        quality_score = 80
+                    elif 50 <= avg_chunk_size < 100 or 800 < avg_chunk_size <= 1000:
+                        quality_score = 60
+                    else:
+                        quality_score = 40
+                    
+                    record_data_quality(
+                        dataset="document_chunks", 
+                        metric_type="chunk_size", 
+                        score=quality_score
+                    )
+                
+                logger.info(f"Successfully ingested document: {doc_name} (ID: {result.get('artifact_id')})")
             except Exception as e:
+                failed += 1
                 logger.error(f"Error loading document {doc_path}: {e}")
                 logger.error(f"Failed to ingest document: {doc_path}")
-                logger.error(f"Error: {str(e)}")
+        
+        # Calculate processing time
+        processing_time = time.time() - start_time
+        
+        # Update metrics
+        self.metrics["documents_processed"] += successful
+        self.metrics["documents_failed"] += failed
+        self.metrics["total_tokens"] += total_tokens
+        self.metrics["total_chunks"] += total_chunks
+        self.metrics["processing_time_seconds"] += processing_time
+        
+        # Log to MLflow if available
+        log_to_mlflow(
+            metrics={
+                "documents_processed": successful,
+                "documents_failed": failed,
+                "total_tokens": total_tokens,
+                "total_chunks": total_chunks,
+                "processing_time_seconds": processing_time,
+                "avg_tokens_per_document": total_tokens / max(1, successful),
+                "avg_chunks_per_document": total_chunks / max(1, successful),
+                "documents_per_second": successful / max(0.1, processing_time)
+            },
+            params={
+                "document_count": len(doc_paths),
+                "document_type": "sample"
+            },
+            experiment_name="document_ingestion"
+        )
         
         logger.info("Document ingestion complete.")
-        if skipped_docs:
-            logger.info(f"Skipped {len(skipped_docs)} documents that already exist in the vector database: {', '.join(skipped_docs)}")
-        logger.info(f"Successfully ingested {len(artifact_ids)} new documents out of {len(doc_paths)} documents.")
+        logger.info(f"Successfully ingested {successful} documents out of {len(doc_paths)} documents.")
         
-        return artifact_ids
+        return successful
     
     async def generate_and_ingest_documents(self):
         """
@@ -465,7 +543,7 @@ class DocumentIngestionService:
         
         # Ingest documents into vector database
         logger.info("Ingesting documents into vector database")
-        artifact_ids = await self.ingest_documents(doc_loader, sample_doc_paths)
+        num_ingested = await self.ingest_documents(doc_loader, sample_doc_paths)
         
         # Display document information
         logger.info("LOADED DOCUMENTS:")
@@ -474,7 +552,7 @@ class DocumentIngestionService:
             doc_size = os.path.getsize(doc_path)
             logger.info(f"{i+1}. {doc_name} ({doc_size/1024:.1f} KB)")
         
-        return num_created, len(artifact_ids)
+        return num_created, num_ingested
     
     async def run_document_ingestion(self):
         """

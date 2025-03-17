@@ -1,6 +1,6 @@
 {
   "name": "webagent",
-  "version": "2.8.6",
+  "version": "2.9.0",
   "description": "WebAgent Platform with comprehensive agent demos, document batch loading, vector database integration, graph database for document relationships, enhanced agent testing capabilities, and visualization features (2025-03-17)",
   "private": true,
   "scripts": {

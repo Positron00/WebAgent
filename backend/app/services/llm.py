@@ -18,6 +18,15 @@ from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from app.core.config import settings
 from app.core.loadEnvYAML import get_llm_config
 
+# Import observability tools
+from app.core.observability import (
+    track_model_prediction,
+    MODEL_PREDICTION_COUNT,
+    MODEL_LATENCY,
+    record_data_drift,
+    log_to_mlflow
+)
+
 logger = logging.getLogger(__name__)
 
 # Define model constants - these should match config.py
@@ -55,11 +64,31 @@ class LLMMetrics:
             if provider in self.provider_stats:
                 self.provider_stats[provider]["requests"] += 1
                 self.provider_stats[provider]["tokens"] += tokens
+                
+            # Track in Prometheus metrics too for real-time monitoring
+            MODEL_PREDICTION_COUNT.labels(
+                model_name=provider, 
+                task_type="chat", 
+                status="success"
+            ).inc()
+            
+            if latency > 0:
+                MODEL_LATENCY.labels(
+                    model_name=provider,
+                    task_type="chat"
+                ).observe(latency)
         else:
             self.failed_requests += 1
             
             if provider in self.provider_stats:
                 self.provider_stats[provider]["errors"] += 1
+                
+            # Track in Prometheus metrics
+            MODEL_PREDICTION_COUNT.labels(
+                model_name=provider, 
+                task_type="chat", 
+                status="error"
+            ).inc()
     
     def get_metrics(self) -> Dict[str, Any]:
         """Get all metrics as a dictionary."""
@@ -96,6 +125,7 @@ def log_llm_request(provider: str = "unknown"):
     """Decorator to log LLM requests and record metrics."""
     def decorator(func):
         @wraps(func)
+        @track_model_prediction(model_name=provider, task_type="llm_initialization")
         def wrapper(*args, **kwargs):
             start_time = time.time()
             logger.info(f"LLM request to {provider} initiated")
@@ -114,12 +144,41 @@ def log_llm_request(provider: str = "unknown"):
                 
                 logger.info(f"LLM request to {provider} completed in {elapsed_time:.2f}s with {tokens} tokens")
                 metrics.record_request(provider, True, tokens, elapsed_time)
+                
+                # Record MLflow metrics if available
+                log_to_mlflow(
+                    metrics={
+                        "initialization_success": 1,
+                        "initialization_time": elapsed_time
+                    },
+                    params={
+                        "provider": provider,
+                        "model_name": kwargs.get("model_name", "default")
+                    },
+                    experiment_name="llm_service"
+                )
+                
                 return result
             except Exception as e:
                 elapsed_time = time.time() - start_time
                 logger.error(f"LLM request to {provider} failed after {elapsed_time:.2f}s: {str(e)}")
                 metrics.record_request(provider, False, 0, elapsed_time)
-                raise
+                
+                # Record MLflow metrics if available
+                log_to_mlflow(
+                    metrics={
+                        "initialization_success": 0,
+                        "initialization_time": elapsed_time
+                    },
+                    params={
+                        "provider": provider,
+                        "model_name": kwargs.get("model_name", "default"),
+                        "error": str(e)
+                    },
+                    experiment_name="llm_service"
+                )
+                
+                raise e
         
         return wrapper
     
@@ -147,6 +206,14 @@ class SelfHostedChatModel(BaseChatModel):
         self.max_tokens = max_tokens
         self.timeout = timeout
         self.retry_attempts = retry_attempts
+        
+        # Track initialization in metrics
+        metrics.record_request("self", success=True)
+        MODEL_PREDICTION_COUNT.labels(
+            model_name="self", 
+            task_type="initialization", 
+            status="success"
+        ).inc()
         
         # Check if the service is available
         self._check_health()
@@ -195,76 +262,114 @@ class SelfHostedChatModel(BaseChatModel):
     )
     def _generate(self, messages, stop=None, run_manager=None, **kwargs):
         """Generate a response from the self-hosted LLM."""
-        # Convert LangChain messages to API format
-        api_messages = [self._convert_message_to_dict(message) for message in messages]
+        start_time = time.time()
+        request_id = kwargs.get("request_id", "unknown")
         
-        # Prepare the request payload
-        payload = {
-            "messages": api_messages,
-            "max_tokens": self.max_tokens,
-            "temperature": self.temperature,
-            "timeout": self.timeout,
-            **kwargs
+        headers = {
+            "Content-Type": "application/json"
         }
         
-        start_time = time.time()
-        request_id = hex(int(start_time * 10000000))[2:]
+        # Convert messages to dict format
+        messages_dicts = [self._convert_message_to_dict(m) for m in messages]
         
-        logger.info(f"Sending request to self-hosted LLM [id={request_id}]")
+        # Construct the request
+        request_data = {
+            "model": self.model,
+            "messages": messages_dicts,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+        }
         
-        # Make the API request
+        if stop:
+            request_data["stop"] = stop
+            
+        # Optional parameters
+        if "top_p" in kwargs:
+            request_data["top_p"] = kwargs["top_p"]
+        if "frequency_penalty" in kwargs:
+            request_data["frequency_penalty"] = kwargs["frequency_penalty"]
+        if "presence_penalty" in kwargs:
+            request_data["presence_penalty"] = kwargs["presence_penalty"]
+            
+        # Log the length of the prompt for monitoring
+        prompt_length = sum(len(m.get("content", "")) for m in messages_dicts)
+        logger.debug(f"Request {request_id}: prompt length {prompt_length} chars")
+        
         try:
+            logger.debug(f"Sending request to self-hosted LLM at {self.base_url}/v1/chat/completions")
+            
             response = requests.post(
                 f"{self.base_url}/v1/chat/completions",
-                json=payload,
-                timeout=self.timeout + 5  # Add a buffer to the timeout
+                headers=headers,
+                json=request_data,
+                timeout=self.timeout
             )
             
-            # Log the response status
-            elapsed_time = time.time() - start_time
-            logger.info(f"Received response from self-hosted LLM [id={request_id}] in {elapsed_time:.2f}s (status={response.status_code})")
+            # Get response time for metrics
+            latency = time.time() - start_time
             
-            # Raise exception for 4xx/5xx status codes
+            # Check for errors
             response.raise_for_status()
+            response_data = response.json()
             
-            # Parse the response
-            data = response.json()
+            # Extract token usage if available
+            token_usage = 0
+            usage = response_data.get("usage", {})
+            if usage:
+                prompt_tokens = usage.get("prompt_tokens", 0)
+                completion_tokens = usage.get("completion_tokens", 0)
+                token_usage = prompt_tokens + completion_tokens
+                logger.debug(f"Request {request_id}: used {prompt_tokens} prompt tokens, {completion_tokens} completion tokens")
+                
+            # Record in metrics
+            metrics.record_request("self", success=True, tokens=token_usage, latency=latency)
             
-            # Extract the assistant's message
-            if "choices" in data and len(data["choices"]) > 0:
-                content = data["choices"][0]["message"]["content"]
-                usage = data.get("usage", {})
+            # Log to MLflow
+            log_to_mlflow(
+                metrics={
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": token_usage,
+                    "response_time": latency
+                },
+                experiment_name="llm_inference"
+            )
+            
+            # Extract the assistant message
+            try:
+                choice = response_data["choices"][0]
+                message = choice["message"]
+                content = message["content"]
                 
-                # Log token usage
-                if "total_tokens" in usage:
-                    logger.info(f"Self-hosted LLM tokens used [id={request_id}]: {usage['total_tokens']}")
+                if not content:
+                    logger.warning(f"Empty response from LLM for request {request_id}")
                 
-                # Return the generated message
-                return {
-                    "generations": [{
-                        "text": content,
-                        "message": AIMessage(content=content)
-                    }],
-                    "llm_output": {
-                        "token_usage": usage,
-                        "model_name": self.model,
-                        "request_id": request_id,
-                        "latency_seconds": elapsed_time
-                    }
-                }
-            else:
-                raise ValueError(f"Unexpected response format from self-hosted LLM [id={request_id}]")
+                # Check for potential model drift by monitoring unusual responses
+                if len(content) < 5 and prompt_length > 100:
+                    record_data_drift("llm_response", 0.8)  # High drift score for unusually short responses
+                    logger.warning(f"Unusually short response from LLM for request {request_id}")
                 
-        except requests.exceptions.Timeout:
-            logger.error(f"Timeout error connecting to self-hosted LLM [id={request_id}] after {self.timeout}s")
-            raise ValueError(f"Self-hosted LLM request timed out after {self.timeout} seconds")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Network error connecting to self-hosted LLM [id={request_id}]: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Error generating text with self-hosted LLM [id={request_id}]: {str(e)}")
-            logger.error(traceback.format_exc())
-            raise
+                return AIMessage(content=content)
+            except (KeyError, IndexError) as e:
+                logger.error(f"Error parsing response: {e}")
+                logger.error(f"Response data: {response_data}")
+                raise ValueError(f"Invalid response format: {str(e)}")
+                
+        except requests.RequestException as e:
+            error_msg = f"Error connecting to self-hosted LLM: {str(e)}"
+            logger.error(error_msg)
+            
+            # Record in metrics
+            metrics.record_request("self", success=False)
+            
+            # Log to MLflow
+            log_to_mlflow(
+                metrics={"request_failed": 1, "response_time": time.time() - start_time},
+                params={"error_type": type(e).__name__, "error_message": str(e)},
+                experiment_name="llm_inference"
+            )
+            
+            raise e
     
     @property
     def _llm_type(self) -> str:

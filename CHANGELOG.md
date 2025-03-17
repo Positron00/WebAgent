@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2025-03-17
+
+### Added
+- Comprehensive ML observability framework for monitoring model performance and data quality
+- Drift detection module for detecting model and data drift over time
+- Metrics registry for tracking model, pipeline, and data quality metrics
+- Integration with MLflow for experiment tracking and metric logging
+- Real-time alerts for model degradation and data quality issues
+- API endpoints for accessing observability metrics and drift statistics
+- Grafana dashboards for visualizing model drift and performance metrics
+- Automatic alerting when model retraining is recommended
+- Thread-safe metrics collection with baseline comparison capabilities
+
 ## [2.8.6] - 2025-03-17
 
 ### Enhanced
