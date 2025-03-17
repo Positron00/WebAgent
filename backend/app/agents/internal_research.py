@@ -176,6 +176,8 @@ class RAGRetriever:
                         model="text-embedding-ada-002"  # 1536 dimensions
                     )
                     logger.info("Successfully initialized OpenAI embeddings")
+                    # Set the model_name for logging purposes
+                    model_name = "text-embedding-ada-002"
                 except Exception as oai_err:
                     logger.warning(f"Could not initialize OpenAI embeddings: {str(oai_err)}")
                     # Fallback to a HuggingFace model with dimension transformation
@@ -368,6 +370,10 @@ class RAGRetriever:
                 weights=[0.7, 0.3]  # Favor dense retrieval but include sparse results
             )
             
+            # Ensure model_name is defined in all code paths
+            if not locals().get('model_name'):
+                model_name = "default-embedding-model"
+                
             logger.info(f"Advanced RAG Retriever initialized with {model_name}")
             self.initialized = True
             
@@ -581,8 +587,51 @@ class RAGRetriever:
                             "score": 1.0
                         })
             else:
-                # Fall back to basic retriever
-                results = await retrieve_documents(query, k=k)
+                # Fall back to basic retriever - which may return [(doc, score), ...] tuples
+                result_tuples = await retrieve_documents(query, k=k)
+                
+                # Convert tuple results to consistent dictionary format
+                results = []
+                for item in result_tuples:
+                    if isinstance(item, tuple) and len(item) == 2:
+                        # Handle (doc, score) tuple format
+                        doc, score = item
+                        if hasattr(doc, 'page_content') and hasattr(doc, 'metadata'):
+                            # Convert Document object to dictionary
+                            results.append({
+                                "page_content": doc.page_content,
+                                "metadata": doc.metadata,
+                                "score": float(score)
+                            })
+                        else:
+                            # Handle other tuple formats
+                            logger.warning(f"Unexpected document format in tuple: {type(doc)}")
+                            results.append({
+                                "page_content": str(doc),
+                                "metadata": {},
+                                "score": float(score)
+                            })
+                    elif isinstance(item, dict):
+                        # Already in dictionary format
+                        results.append(item)
+                    else:
+                        # Unknown format, attempt conversion
+                        logger.warning(f"Unexpected result format: {type(item)}")
+                        try:
+                            if hasattr(item, 'page_content'):
+                                results.append({
+                                    "page_content": item.page_content,
+                                    "metadata": getattr(item, 'metadata', {}),
+                                    "score": 1.0
+                                })
+                            else:
+                                results.append({
+                                    "page_content": str(item),
+                                    "metadata": {},
+                                    "score": 1.0
+                                })
+                        except Exception as conv_err:
+                            logger.error(f"Error converting result: {str(conv_err)}")
             
             retrieval_time = time.time() - start_time
             

@@ -12,6 +12,7 @@ import os
 import sys
 import logging
 from datetime import datetime
+import re
 
 # Set up logging
 logging.basicConfig(
@@ -81,8 +82,46 @@ def format_result(query_result, dark_mode=False):
     # Format actual results
     result = query_result.result
     
+    # Handle internal research agent state
+    if hasattr(result, 'reports') and 'internal_research' in result.reports:
+        internal_research = result.reports.get('internal_research', {})
+        findings = internal_research.get('findings', '')
+        documents = internal_research.get('documents', [])
+        
+        # Clean up findings by removing HTML tags and extra whitespace
+        if findings:
+            # Remove HTML tags
+            findings = re.sub(r'<[^>]+>', '', findings)
+            # Fix multiple newlines
+            findings = re.sub(r'\n{3,}', '\n\n', findings)
+            # Remove redundant "FINDINGS:" prefix if present
+            findings = re.sub(r'^FINDINGS:\s*', '', findings)
+            
+            markdown += "# Research Findings\n\n"
+            markdown += f"{findings}\n\n"
+            markdown += f"{divider}\n\n"
+        
+        # Add source documents if available
+        if documents:
+            # Suppress the full source document contents, just show a count
+            markdown += f"# Source Documents\n\n"
+            markdown += f"Found {len(documents)} relevant documents.\n\n"
+            # Add a brief summary of the top 3 sources without the full content
+            top_docs = documents[:3]  # Only show top 3
+            for i, doc in enumerate(top_docs, 1):
+                if isinstance(doc, dict):
+                    metadata = doc.get('metadata', {})
+                    source = metadata.get('source', 'Unknown')
+                    score = doc.get('score', None)
+                    
+                    markdown += f"**Source {i}**: {source}"
+                    if score is not None:
+                        markdown += f" (Relevance: {score:.2f})"
+                    markdown += "\n\n"
+            
+            markdown += f"{divider}\n\n"
     # If result is a dictionary with summary and contexts
-    if isinstance(result, dict):
+    elif isinstance(result, dict):
         if "summary" in result:
             markdown += "# Summary\n\n"
             markdown += f"{result['summary']}\n\n"
@@ -131,8 +170,53 @@ def format_result(query_result, dark_mode=False):
                     for i, point in enumerate(extraction_data.get("key_points", []), 1):
                         markdown += f"{i}. {point}\n"
                     markdown += f"\n{divider}\n\n"
+        
+        # Handle findings directly
+        if "findings" in result:
+            findings = result["findings"]
+            # Clean up findings
+            if isinstance(findings, str):
+                # Remove HTML tags
+                findings = re.sub(r'<[^>]+>', '', findings)
+                # Fix multiple newlines
+                findings = re.sub(r'\n{3,}', '\n\n', findings)
+                # Remove redundant "FINDINGS:" prefix if present
+                findings = re.sub(r'^FINDINGS:\s*', '', findings)
+            
+            markdown += "# Research Findings\n\n"
+            markdown += f"{findings}\n\n"
+            markdown += f"{divider}\n\n"
+        
+        # Handle documents directly
+        if "documents" in result:
+            documents = result["documents"]
+            if documents:
+                # Suppress the full source document contents, just show a count
+                markdown += f"# Source Documents\n\n"
+                markdown += f"Found {len(documents)} relevant documents.\n\n"
+                # Add a brief summary of the top 3 sources without the full content
+                top_docs = documents[:3]  # Only show top 3
+                for i, doc in enumerate(top_docs, 1):
+                    if isinstance(doc, dict):
+                        metadata = doc.get('metadata', {})
+                        source = metadata.get('source', 'Unknown')
+                        score = doc.get('score', None)
+                        
+                        markdown += f"**Source {i}**: {source}"
+                        if score is not None:
+                            markdown += f" (Relevance: {score:.2f})"
+                        markdown += "\n\n"
+                
+                markdown += f"{divider}\n\n"
     else:
         # Just display the result as is
+        # Clean up the text if it's a string
+        if isinstance(result, str):
+            # Remove HTML tags
+            result = re.sub(r'<[^>]+>', '', result)
+            # Fix multiple newlines
+            result = re.sub(r'\n{3,}', '\n\n', result)
+        
         markdown += "# Results\n\n"
         markdown += f"{result}\n\n"
     

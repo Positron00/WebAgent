@@ -366,7 +366,7 @@ async def run_internal_research_demo(debug_mode=False):
     # Use the service to create and get documents
     sample_doc_paths, num_created = await doc_ingestion_service.create_sample_documents()
     logger.info(f"Created {num_created} sample documents")
-    print(f"\nCreated {num_created} sample documents in {doc_ingestion_service.sample_docs_dir}")
+    #print(f"\nCreated {num_created} sample documents in {doc_ingestion_service.sample_docs_dir}")
     
     # Get document loader service
     doc_loader = get_document_loader_service()
@@ -587,14 +587,20 @@ async def run_internal_research_demo(debug_mode=False):
                 # Display the results using the result display module
                 if display_results:
                     print(f"Displaying results for query: {query}")
-                    display_research_results(result)
-                    
+                    # Comment out the individual result display to avoid extra popups
+                    # display_research_results(result)
             except Exception as e:
                 error_msg = str(e)
                 logger.error(f"Error in vector-only processing: {error_msg}")
                 print(f"ERROR: {error_msg}")
                 all_results.append(None)
                 all_errors.append(error_msg)
+                
+                # Display the results
+                if display_results:
+                    print(f"Displaying vector-only results for query: {query}")
+                    # Comment out the individual result display to avoid extra popups
+                    # display_research_results(result)
         else:
             # Use the research agent
             print("\nRunning full RAG pipeline (retrieve -> rerank -> generate)...")
@@ -647,7 +653,8 @@ async def run_internal_research_demo(debug_mode=False):
                     # Display the results using the result display module
                     if display_results and result_data:
                         print(f"Displaying results for query: {query}")
-                        display_research_results(result_data)
+                        # Comment out the individual result display to avoid extra popups
+                        # display_research_results(result_data)
             except Exception as e:
                 error_msg = str(e)
                 logger.error(f"Error in Internal Research Agent: {error_msg}")
@@ -665,7 +672,8 @@ async def run_internal_research_demo(debug_mode=False):
                     # Display the results
                     if display_results:
                         print(f"Displaying vector-only results for query: {query}")
-                        display_research_results(result)
+                        # Comment out the individual result display to avoid extra popups
+                        # display_research_results(result)
                 except Exception as fallback_error:
                     logger.error(f"Error in vector-only fallback: {fallback_error}")
                     print(f"ERROR in fallback: {fallback_error}")

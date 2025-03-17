@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.5] - 2025-03-16
+
+### Enhanced
+- Improved research results display in the internal research agent demo
+- Fixed research results popup to display only one window instead of multiple
+- Simplified source document display in research results to show only a count and top sources
+- Enhanced formatting of research findings with better HTML tag handling
+- Improved overall readability of research results with cleaner text formatting
+- Added handling for empty vector databases with better error messaging
+
+### Fixed
+- Fixed issue with multiple popup windows appearing during internal research demo
+- Removed the duplicate block of source document text when displaying research results
+- Fixed redundant display of raw HTML tags in research findings
+- Adjusted the document ingestion path handling for improved consistency
+- Fixed error where vector database was incorrectly detected as empty
+
 ## [2.8.4] - 2025-03-15
 
 ### Added

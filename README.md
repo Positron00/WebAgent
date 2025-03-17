@@ -2,8 +2,8 @@
 
 A comprehensive multi-agent platform for web research, document processing, and knowledge synthesis.
 
-![WebAgent Platform Version](https://img.shields.io/badge/version-2.8.4-blue)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--15-brightgreen)
+![WebAgent Platform Version](https://img.shields.io/badge/version-2.8.5-blue)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--16-brightgreen)
 
 ## Overview
 
