@@ -70,6 +70,7 @@ from backend.app.services.document_ingestion_service import get_document_ingesti
 from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.utils.metrics import timing_decorator
+from backend.app.services.llm import confirm_llm_selection
 
 # Import the research results display
 from backend.demos.research_results_display import display_research_results
@@ -269,93 +270,49 @@ async def run_internal_research_demo(debug_mode=False):
     # LLM provider selection - only if not in vector-only mode
     if retrieval_mode != "vector":
         print("\n" + "=" * 80)
-        print("SELECT LLM PROVIDER")
+        print("INTERNAL RESEARCH AGENT DEMO")
         print("=" * 80)
-        print("1. TogetherAI (default)")
-        print("2. Groq")
-        print("3. OpenAI")
-        print("4. Local Ollama (deepseek-r1:8b)")
+        print("This demo requires an LLM for processing research results.")
+        print("The default LLM provider is TogetherAI with the Llama-3.3-70B model.")
         
-        provider_choice = input("\nSelect LLM provider (1-4, default=1): ").strip()
-        
-        llm_provider = "together"
-        if provider_choice == "2":
-            llm_provider = "groq"
-            print("\nSelected Groq as the LLM provider")
-        elif provider_choice == "3":
-            llm_provider = "openai"
-            print("\nSelected OpenAI as the LLM provider")
-        elif provider_choice == "4":
-            llm_provider = "ollama"
-            print("\nSelected local Ollama as the LLM provider")
-        else:
-            print("\nSelected TogetherAI as the LLM provider")
-        
-        # Ask for API confirmation if using an external LLM
-        if llm_provider in ["together", "groq", "openai"]:
-            print("\n" + "=" * 120)
-            print(f"This demo will connect to the {llm_provider.upper()} API using your configured API key.")
-            try:
-                model_info = settings.LLM_PROVIDER if hasattr(settings, 'LLM_PROVIDER') else llm_provider
-                model_name = settings.DEFAULT_MODEL if hasattr(settings, 'DEFAULT_MODEL') else {
-                    'together': 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
-                    'groq': 'llama3-70b-8192',
-                    'openai': 'gpt-3.5-turbo',
-                    'ollama': 'deepseek-r1:8b'
-                }.get(llm_provider, 'unknown')
-                print(f"The model that will be used is: {model_name} (Provider: {model_info})")
-            except AttributeError:
-                print(f"Using default {llm_provider.upper()} configuration")
-            print("=" * 120)
+        # Use standardized LLM selection function
+        try:
+            provider, model = confirm_llm_selection()
+            logger.info(f"User selected LLM provider: {provider}")
+            logger.info(f"User selected model: {model}")
             
-            confirmation = input("\nDo you want to continue and connect to the LLM API? (Y/n): ")
-            if confirmation.lower() not in ["y", "yes",""]:
-                logger.info("User declined to connect to the LLM API. Demo aborted.")
-                print("Demo aborted by user.")
-                return
+            # Set environment variable for research agent
+            os.environ["LLM_PROVIDER"] = provider
+            os.environ["RESEARCH_LLM_PROVIDER"] = provider
             
-            logger.info(f"User confirmed to connect to the {llm_provider.upper()} API.")
-            print(f"\nConnecting to {llm_provider.upper()} API...")
-        elif llm_provider == "ollama":
-            print("\n" + "=" * 80)
-            print("This demo will connect to your local Ollama instance.")
-            print("Make sure you have Ollama running with the deepseek-r1:8b model pulled.")
-            print("=" * 80)
-            
-            confirmation = input("\nDo you want to continue and connect to Ollama? (Y/n): ")
-            if confirmation.lower() not in ["y", "yes",""]:
-                logger.info("User declined to connect to Ollama. Demo aborted.")
-                print("Demo aborted by user.")
-                return
-            
-            logger.info("User confirmed to connect to Ollama.")
-            print("\nConnecting to local Ollama instance...")
-        
-        # Set environment variables to control which provider to use
-        os.environ["LLM_PROVIDER"] = llm_provider
+            # Set provider-specific model environment variables
+            if provider == "together":
+                os.environ["TOGETHER_MODEL"] = model
+            elif provider == "groq":
+                os.environ["GROQ_MODEL"] = model
+            elif provider == "openai":
+                os.environ["OPENAI_MODEL"] = model
+            elif provider == "anthropic":
+                os.environ["ANTHROPIC_MODEL"] = model
+            elif provider == "gemini":
+                os.environ["GEMINI_MODEL"] = model
+            elif provider == "ollama" or provider == "self":
+                os.environ["OLLAMA_MODEL"] = model
+                os.environ["SELF_HOSTED_MODEL"] = model
+        except Exception as e:
+            logger.error(f"Error during LLM selection: {str(e)}")
+            print(f"Error selecting LLM: {e}")
+            print("Falling back to vector-only mode.")
+            retrieval_mode = "vector"
     else:
         # In vector-only mode, we don't need an LLM provider
         print("\nVector-only mode selected. No LLM API connection required.")
-        llm_provider = "none"
+        provider = "none"
+        model = "none"
         os.environ["LLM_PROVIDER"] = "none"
     
     # Set retrieval mode environment variable
     os.environ["RETRIEVAL_MODE"] = retrieval_mode
-    
-    # Set additional environment variables for specific providers
-    if llm_provider == "together":
-        # Make sure the environment has the right keys for Together AI
-        os.environ["RESEARCH_LLM_PROVIDER"] = "together"
-        # Use the free Llama 3.3 model which is reliable
-        os.environ["TOGETHER_MODEL"] = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
-        print(f"Using TogetherAI model: {os.environ.get('TOGETHER_MODEL', 'default')}")
-    elif llm_provider == "openai":
-        os.environ["RESEARCH_LLM_PROVIDER"] = "openai"
-    elif llm_provider == "groq":
-        os.environ["RESEARCH_LLM_PROVIDER"] = "groq"
-    elif llm_provider == "ollama":
-        os.environ["RESEARCH_LLM_PROVIDER"] = "ollama"
-        os.environ["OLLAMA_MODEL"] = "deepseek-r1:8b"
     
     # Create sample documents
     logger.info("Getting sample documents from document ingestion service")

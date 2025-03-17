@@ -112,115 +112,173 @@ class WebResearchAgent(BaseAgent):
         )
         
     async def run(self, state: WorkflowState) -> WorkflowState:
-        """
-        Execute the Web Research Agent to search and analyze information.
+        """Execute the Web Research Agent to search and analyze information."""
+        query = state.context.get("query", "")
+        logger.info(f"Processing query: {query}")
+
+        # Update workflow state with current step
+        state = state.with_current_step("web_research")
+
+        # Get the research plan from the state context
+        research_plan = state.context.get("research_plan", {})
         
-        Args:
-            state: The current workflow state
+        # Get the research iteration from the context
+        iteration = state.context.get("research_iteration", 1)
+        is_followup = iteration > 1
+        
+        # Check if the research plan doesn't require a web search
+        if not research_plan.get("requires_web_search", True):
+            logger.info("Research plan does not require a web search")
+            return state.with_context({
+                **state.context,
+                "web_search_results": [],
+                "web_research_results": {
+                    "skipped": True,
+                    "reasoning": "The research question doesn't require a web search."
+                }
+            })
+        
+        # Use a different search query for follow-up research
+        search_query = query
+        if is_followup:
+            feedback = state.context.get("research_feedback", {})
             
-        Returns:
-            Updated workflow state with web research results
-        """
-        logger.info(f"Web Research Agent running for query: {state.query}")
-        state.current_step = "web_research"
-        
+            # Use a specific question from feedback if available
+            questions = feedback.get("research_questions", [])
+            if questions and isinstance(questions, list) and len(questions) > 0:
+                search_query = questions[0]
+                logger.info(f"Using feedback question for search: {search_query}")
+            else:
+                search_query = feedback.get("search_query", query)
+                logger.info(f"Using feedback search query: {search_query}")
+                
+        # Perform the web search
+        logger.info(f"Performing web search (iteration {iteration})")
         try:
-            # Get the research plan
-            research_plan = state.context.get("research_plan", {})
+            # Map the search depth to valid values
+            depth = "basic"  # Default to basic for reliability
+            if research_plan.get("search_depth") == "deep":
+                depth = "comprehensive"
             
-            # Get the current research iteration
-            iteration = state.context.get("research_iteration", 1)
-            is_followup = iteration > 1
+            logger.debug(f"Using search depth: {depth}")
             
-            # If web search is not required, skip this step
-            if not research_plan.get("requires_web_search", True):
-                logger.info("Web search not required by research plan. Skipping.")
-                state.update_with_agent_output("web_research", {
-                    "status": "skipped",
-                    "reason": "Web search not required by research plan",
-                    "timestamp": datetime.now().isoformat()
-                })
-                return state
-                
-            # Modify search query if this is a follow-up research request
-            search_query = state.query
-            if is_followup:
-                feedback = state.context.get("research_feedback", {})
-                questions = feedback.get("research_questions", [])
-                
-                # If there are specific questions, use the first one as the search query
-                if questions:
-                    search_query = questions[0]
-                    logger.info(f"Using follow-up question for search: {search_query}")
-            
-            # Perform the web search
-            logger.info(f"Performing web search (iteration {iteration})")
             search_results = await perform_web_search(
                 query=search_query,
-                search_depth="comprehensive",
-                max_results=7
+                search_depth=depth,
+                max_results=5  # Reduced from 7 to avoid overloading
             )
             
-            # If follow-up research, get additional results for other questions
-            if is_followup:
-                feedback = state.context.get("research_feedback", {})
-                questions = feedback.get("research_questions", [])[1:2]  # Get next question if there are more
+            # If we couldn't get results, try a simplified query
+            if not search_results:
+                logger.warning(f"No results for query: '{search_query}'. Trying simplified query.")
+                # Extract just main keywords for a simpler query
+                simplified_query = " ".join(search_query.split()[:6])
+                logger.info(f"Simplified query: {simplified_query}")
                 
-                for question in questions:
-                    logger.info(f"Performing additional search for: {question}")
+                search_results = await perform_web_search(
+                    query=simplified_query,
+                    search_depth="basic",  # Always use basic for fallback
+                    max_results=3
+                )
+        except Exception as search_error:
+            logger.error(f"Error during web search: {str(search_error)}")
+            # Create empty results to continue with
+            search_results = []
+        
+        # If follow-up research, get additional results for other questions
+        if is_followup and search_results:  # Only try additional if first search worked
+            feedback = state.context.get("research_feedback", {})
+            questions = feedback.get("research_questions", [])[1:2]  # Get next question if there are more
+            
+            for question in questions:
+                logger.info(f"Performing additional search for: {question}")
+                try:
                     additional_results = await perform_web_search(
                         query=question,
-                        search_depth="focused",
+                        search_depth="basic",  # Changed from "focused" to valid "basic"
                         max_results=3
                     )
                     search_results.extend(additional_results)
+                except Exception as additional_error:
+                    logger.error(f"Error during additional search: {str(additional_error)}")
+        
+        # Handle the case where no search results are found
+        if not search_results:
+            logger.warning("No relevant search results found")
+            return state.with_context({
+                **state.context,
+                "web_search_results": [],
+                "web_research_results": {
+                    "analysis": "No relevant information found on the web for this query.",
+                    "sources": []
+                }
+            })
+        
+        # Format the search results for the prompt
+        formatted_results = self._format_search_results(search_results)
+        
+        # Prepare the prompt with the research plan and results
+        messages = [
+            {"role": "system", "content": self.prompt},
+            {"role": "user", "content": f"""
+# Research Question
+{query}
+
+# Research Plan
+{research_plan.get("plan", "No specific research plan provided.")}
+
+# Web Search Results
+{formatted_results}
+
+{self._format_feedback(state.context.get("research_feedback", {}))}
+"""}
+        ]
+        
+        # Call the language model to analyze the results
+        try:
+            response = await self.llm_chain.acall(messages)
+            assistant_message = response["content"] if response and isinstance(response, dict) else str(response)
             
-            if not search_results:
-                logger.warning("No search results found.")
-                state.update_with_agent_output("web_research", {
-                    "status": "completed",
-                    "results": [],
-                    "findings": "No relevant information found through web search.",
-                    "timestamp": datetime.now().isoformat()
+            # Parse the response
+            parsed_response = self.output_parser.parse(assistant_message)
+            
+            # Add the sources from the search results
+            sources = []
+            for result in search_results:
+                sources.append({
+                    "title": result.get("title", "Unknown title"),
+                    "url": result.get("url", ""),
+                    "content_snippet": result.get("content", "")[:150] + "..." if result.get("content") else ""
                 })
-                return state
             
-            # Format search results for the prompt
-            formatted_results = self._format_search_results(search_results)
+            parsed_response["sources"] = sources
             
-            # Format feedback section if this is a follow-up research
-            feedback_section = self._format_feedback(state)
-            
-            # Run the LLM chain to analyze the search results
-            analysis = await self.chain.ainvoke({
-                "query": state.query,
-                "research_plan": research_plan.get("analysis", "No research plan provided."),
-                "search_results": formatted_results,
-                "feedback_section": feedback_section
+            # Update the workflow state with the research results
+            return state.with_context({
+                **state.context,
+                "web_search_results": search_results,
+                "web_research_results": parsed_response
             })
             
-            # Create the research report
-            web_research_report = {
-                "status": "completed",
-                "results": search_results,
-                "findings": analysis,
-                "iteration": iteration,
-                "timestamp": datetime.now().isoformat()
-            }
-            
-            # Update the state with the web research report
-            state.update_with_agent_output("web_research", web_research_report)
-            
-            # Add the findings to the context for other agents to use
-            state.context["web_research_findings"] = analysis
-            
-            logger.info(f"Web Research completed with {len(search_results)} results (iteration {iteration}).")
-            return state
-            
         except Exception as e:
-            logger.error(f"Error in Web Research Agent: {str(e)}")
-            state.mark_error(f"Web Research Agent failed: {str(e)}")
-            return state
+            logger.error(f"Error in web research analysis: {str(e)}")
+            # Provide a basic fallback response with the sources in case of error
+            sources = []
+            for result in search_results:
+                sources.append({
+                    "title": result.get("title", "Unknown title"),
+                    "url": result.get("url", ""),
+                    "content_snippet": result.get("content", "")[:150] + "..." if result.get("content") else ""
+                })
+                
+            return state.with_context({
+                **state.context,
+                "web_search_results": search_results,
+                "web_research_results": {
+                    "analysis": "Error occurred during analysis. Please review the sources directly.",
+                    "sources": sources
+                }
+            })
 
 
 def get_web_research_agent() -> WebResearchAgent:

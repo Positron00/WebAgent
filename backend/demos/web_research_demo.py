@@ -18,6 +18,7 @@ import os
 import sys
 import asyncio
 import logging
+import traceback
 from datetime import datetime
 import json
 from pprint import pprint
@@ -35,6 +36,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger("web_research_demo")
 
+# Create file handler to save logs
+log_dir = os.path.join(current_dir, "logs")
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, f"web_research_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+file_handler = logging.FileHandler(log_file)
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+logger.addHandler(file_handler)
+logger.setLevel(logging.DEBUG)  # Enable debug logging
+
 # Import agents and services
 from backend.app.agents.web_research import get_web_research_agent
 from backend.app.models.task import WorkflowState
@@ -47,22 +58,51 @@ from backend.demos.research_results_display import display_research_results
 async def run_web_research_demo():
     """Run the web research agent demo with various queries."""
     logger.info("Starting Web Research Agent Demo")
+    logger.debug(f"Script path: {os.path.abspath(__file__)}")
+    logger.debug(f"Current directory: {os.getcwd()}")
+    logger.debug(f"Environment: {settings.WEBAGENT_ENV}")
+    
+    # Log available API keys (without revealing the actual keys)
+    logger.debug(f"Tavily API key configured: {bool(settings.TAVILY_API_KEY)}")
+    logger.debug(f"Together API key configured: {bool(settings.TOGETHER_API_KEY)}")
+    logger.debug(f"OpenAI API key configured: {bool(settings.OPENAI_API_KEY)}")
+    logger.debug(f"Anthropic API key configured: {bool(settings.ANTHROPIC_API_KEY)}")
     
     # Ask user to confirm LLM provider and model selection
+    logger.info("Prompting user for LLM provider and model selection")
     print("\n" + "=" * 80)
     print("WEB RESEARCH AGENT DEMO")
     print("=" * 80)
     print("This demo requires an LLM for processing web search results.")
     print("The default LLM provider is TogetherAI with the Llama-3.3-70B model.")
     
-    # Confirm LLM provider and model
-    provider, model = confirm_llm_selection()
+    try:
+        # Confirm LLM provider and model
+        logger.debug("Calling confirm_llm_selection() to get provider and model")
+        provider, model = confirm_llm_selection()
+        logger.info(f"User selected LLM provider: {provider}")
+        logger.info(f"User selected model: {model}")
+    except Exception as e:
+        logger.error(f"Error during LLM selection: {str(e)}")
+        logger.error(traceback.format_exc())
+        print(f"Error during LLM selection: {e}")
+        return
     
     # Get web research agent
     print("\nInitializing Web Research Agent...")
-    web_agent = get_web_research_agent()
+    logger.info("Initializing Web Research Agent")
+    
+    try:
+        web_agent = get_web_research_agent()
+        logger.debug("Web Research Agent successfully initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize Web Research Agent: {str(e)}")
+        logger.error(traceback.format_exc())
+        print(f"ERROR: Failed to initialize Web Research Agent: {e}")
+        return
     
     # Define research queries to test
+    logger.info("Prompting user to select a research query")
     print("\n" + "=" * 80)
     print("RESEARCH QUERIES")
     print("=" * 80)
@@ -72,19 +112,26 @@ async def run_web_research_demo():
     print("4. Custom query")
     
     query_choice = input("\nSelect a query (1-4, default=1): ").strip()
+    logger.debug(f"User selected query choice: {query_choice}")
     
     if query_choice == "2":
         query = "How have graph databases evolved in the past year?"
+        logger.info("Selected query about graph databases")
     elif query_choice == "3":
         query = "What are the best practices for document processing in RAG systems?"
+        logger.info("Selected query about RAG systems")
     elif query_choice == "4":
         query = input("\nEnter your custom research query: ").strip()
+        logger.info(f"User entered custom query: {query}")
     else:
         query = "What are the latest developments in generative AI in 2025?"
+        logger.info("Selected default query about generative AI")
     
     print(f"\nSelected research query: {query}")
+    logger.info(f"Final query: {query}")
     
     # Ask about research parameters
+    logger.info("Prompting user for research parameters")
     print("\n" + "=" * 80)
     print("RESEARCH PARAMETERS")
     print("=" * 80)
@@ -93,6 +140,7 @@ async def run_web_research_demo():
     print("3. Quick (faster, fewer sources)")
     
     param_choice = input("\nSelect research approach (1-3, default=1): ").strip()
+    logger.debug(f"User selected parameter choice: {param_choice}")
     
     research_priority = "balanced"
     max_sources = 3
@@ -103,15 +151,21 @@ async def run_web_research_demo():
         max_sources = 5
         search_depth = "deep"
         print("\nSelected comprehensive research approach")
+        logger.info("Selected comprehensive research approach")
     elif param_choice == "3":
         research_priority = "speed"
         max_sources = 2
         search_depth = "quick"
         print("\nSelected quick research approach")
+        logger.info("Selected quick research approach")
     else:
         print("\nSelected standard research approach")
+        logger.info("Selected standard research approach")
+    
+    logger.debug(f"Research parameters: priority={research_priority}, max_sources={max_sources}, depth={search_depth}")
     
     # Create a workflow state for this query
+    logger.debug("Creating workflow state")
     state = WorkflowState(
         query=query,
         context={
@@ -120,6 +174,7 @@ async def run_web_research_demo():
             "search_depth": search_depth
         }
     )
+    logger.debug(f"Workflow state created: {state}")
     
     # Run web research agent
     logger.info(f"Running web research for: {query}")
@@ -127,9 +182,39 @@ async def run_web_research_demo():
     print(f"Research priority: {research_priority}, Max sources: {max_sources}")
     
     try:
+        logger.debug("Starting web_agent.run()")
         start_time = datetime.now()
+        
+        # Record environment variables that might affect search
+        logger.debug(f"Current TAVILY_API_KEY status: {'Set' if os.getenv('TAVILY_API_KEY') else 'Not set'}")
+        logger.debug(f"Current LLM_PROVIDER: {os.getenv('LLM_PROVIDER', 'Not set')}")
+        logger.debug(f"Current TOGETHER_MODEL: {os.getenv('TOGETHER_MODEL', 'Not set')}")
+        
         result_state = await web_agent.run(state)
         duration = (datetime.now() - start_time).total_seconds()
+        logger.info(f"Web research completed in {duration:.2f} seconds")
+        
+        # Log detailed information about the result
+        if result_state.output:
+            if isinstance(result_state.output, dict):
+                logger.debug(f"Output contains {len(result_state.output.get('sources', []))} sources")
+                logger.debug(f"Output contains {len(result_state.output.get('facts', []))} facts")
+                summary_length = len(result_state.output.get('summary', ''))
+                logger.debug(f"Summary length: {summary_length} characters")
+                
+                # Log source domains for analysis
+                source_domains = []
+                for source in result_state.output.get('sources', []):
+                    url = source.get('url', '')
+                    if url:
+                        try:
+                            from urllib.parse import urlparse
+                            domain = urlparse(url).netloc
+                            source_domains.append(domain)
+                        except Exception as domain_error:
+                            logger.warning(f"Could not parse domain from url {url}: {domain_error}")
+                if source_domains:
+                    logger.debug(f"Source domains: {', '.join(source_domains)}")
         
         # Print results
         print("\n" + "=" * 80)
@@ -155,11 +240,11 @@ async def run_web_research_demo():
             else:
                 pprint(result_state.output)
         else:
-            logger.warning("No research results returned.")
+            logger.warning("No research results returned")
             print("No research results were returned.")
             
         # Display results in GUI
-        logger.info("\nDisplaying results in GUI...")
+        logger.info("Displaying results in GUI")
         try:
             display_research_results(
                 queries=[query],
@@ -167,25 +252,73 @@ async def run_web_research_demo():
                 errors=[None],
                 title="Web Research Results"
             )
+            logger.debug("Successfully displayed results in GUI")
         except Exception as e:
-            logger.error(f"Error displaying results in GUI: {e}")
+            logger.error(f"Error displaying results in GUI: {str(e)}")
+            logger.error(traceback.format_exc())
+            print(f"Error displaying results in GUI: {e}")
     except Exception as e:
-        logger.error(f"Error running web research agent: {e}")
+        logger.error(f"Error running web research agent: {str(e)}")
+        logger.error(traceback.format_exc())
         print(f"\nERROR: {e}")
+        
+        # Try to get more detailed error info
+        error_type = type(e).__name__
+        logger.error(f"Error type: {error_type}")
+        
+        # Check for specific error types
+        if "Tavily" in str(e):
+            logger.error("This appears to be a Tavily API error. Check your API key and network connection.")
+        elif "TogetherAI" in str(e) or "Together AI" in str(e):
+            logger.error("This appears to be a Together API error. Check your API key and selected model.")
+        elif "OpenAI" in str(e):
+            logger.error("This appears to be an OpenAI API error. Check your API key and selected model.")
         
         # Display error in GUI
         try:
+            logger.info("Displaying error in GUI")
             display_research_results(
                 queries=[query],
                 results=[None],
                 errors=[str(e)],
                 title="Web Research Results"
             )
+            logger.debug("Successfully displayed error in GUI")
         except Exception as display_error:
-            logger.error(f"Error displaying results in GUI: {display_error}")
+            logger.error(f"Error displaying results in GUI: {str(display_error)}")
+            logger.error(traceback.format_exc())
     
+    # Save a copy of the results for analysis
+    try:
+        output_dir = os.path.join(current_dir, "results")
+        os.makedirs(output_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        result_file = os.path.join(output_dir, f"web_research_result_{timestamp}.json")
+        
+        logger.info(f"Saving research results to {result_file}")
+        with open(result_file, "w") as f:
+            if 'result_state' in locals() and hasattr(result_state, 'output') and result_state.output:
+                json.dump(result_state.output, f, indent=2)
+            else:
+                json.dump({"error": "No results available"}, f)
+    except Exception as save_error:
+        logger.error(f"Error saving results: {str(save_error)}")
+    
+    logger.info("Web Research Agent Demo completed")
     print("\nWeb Research Agent Demo completed.")
+    print(f"Logs saved to: {log_file}")
+    print(f"Check the logs directory for detailed execution information.")
 
 if __name__ == "__main__":
     # Run the demo
-    asyncio.run(run_web_research_demo()) 
+    try:
+        logger.debug("Starting asyncio.run(run_web_research_demo())")
+        asyncio.run(run_web_research_demo())
+    except KeyboardInterrupt:
+        logger.warning("Demo interrupted by user")
+        print("\nDemo interrupted by user")
+    except Exception as e:
+        logger.critical(f"Unhandled exception in main: {str(e)}")
+        logger.critical(traceback.format_exc())
+        print(f"Critical error: {e}")
+        print("See logs for details") 
