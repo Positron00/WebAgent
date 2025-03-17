@@ -13,6 +13,18 @@ Requirements:
     - Configured environment variables (check .env.example)
     - Properly set up vector database with some documents
 
+Environment Variables:
+---------------------
+This demo uses the following environment variables:
+- LLM_PROVIDER: Which LLM provider to use (together, openai, groq, anthropic, etc.)
+- RESEARCH_LLM_PROVIDER: Specific provider for research operations
+- RETRIEVAL_MODE: How to retrieve documents (vector, hybrid, keyword, llm)
+- TOGETHER_MODEL, OPENAI_MODEL, etc.: Model names for specific providers
+- OLLAMA_MODEL: For local Ollama models
+- SELF_HOSTED_MODEL: For other self-hosted models
+
+All these variables are documented in .env.demos.example
+
 Robustness Improvements:
 -----------------------
 1. Multiple retrieval modes:

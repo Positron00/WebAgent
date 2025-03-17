@@ -12,6 +12,15 @@ Usage:
 Requirements:
     - Configured environment variables (check .env.example)
     - API keys for web search providers (Tavily or alternative)
+
+Environment Variables:
+---------------------
+This demo uses the following environment variables:
+- TAVILY_API_KEY: API key for Tavily web search
+- LLM_PROVIDER: Which LLM provider to use (together, openai, groq, etc.)
+- TOGETHER_MODEL: Model name for Together AI (if using Together provider)
+
+All these variables are documented in .env.example and .env.demos.example
 """
 
 import os

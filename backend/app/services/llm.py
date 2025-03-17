@@ -20,8 +20,12 @@ from app.core.loadEnvYAML import get_llm_config
 
 logger = logging.getLogger(__name__)
 
-# Define model constants
+# Define model constants - these should match config.py
 TOGETHER_DEFAULT_MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+OPENAI_DEFAULT_MODEL = "gpt-4o-mini-2024-07-18"
+GROQ_DEFAULT_MODEL = "meta-llama/Llama-3.2-1B"
+ANTHROPIC_DEFAULT_MODEL = "claude-3-5-sonnet-20240620"
+GEMINI_DEFAULT_MODEL = "gemini-1.5-flash-002"
 SELF_HOSTED_DEFAULT_URL = "http://localhost:8080"
 
 # Define service metrics
@@ -568,10 +572,10 @@ async def get_llm_metrics():
     Returns:
         Dict[str, Any]: LLM service metrics
     """
-    metrics = llm_metrics.get_metrics()
+    metrics_data = metrics.get_metrics()
     
     # Add extra provider configuration information
-    metrics["providers"] = {
+    metrics_data["providers"] = {
         "openai": {
             "enabled": settings.LLM_PROVIDER == "openai" or settings.LLM_PROVIDER == "all",
             "api_key_set": bool(os.getenv("OPENAI_API_KEY")),
@@ -590,7 +594,7 @@ async def get_llm_metrics():
         }
     }
     
-    return metrics
+    return metrics_data
 
 def get_llm_service_status() -> Dict[str, Any]:
     """
@@ -649,7 +653,7 @@ def confirm_llm_selection():
     """
     # Default to TogetherAI and Llama-3.3-70B
     default_provider = settings.LLM_DEFAULT_PROVIDER or "together"
-    default_model = settings.LLM_DEFAULT_MODEL or "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    default_model = settings.LLM_DEFAULT_MODEL or TOGETHER_DEFAULT_MODEL
     
     print("\n" + "=" * 80)
     print("SELECT LLM PROVIDER")
@@ -684,32 +688,32 @@ def confirm_llm_selection():
     
     # Default model based on provider
     if provider == "together":
-        model = settings.TOGETHER_MODEL or "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        model = settings.TOGETHER_MODEL or TOGETHER_DEFAULT_MODEL
         print(f"\nDefault model: {model}")
         custom_model = input("Enter a different TogetherAI model name or press Enter to use default: ").strip()
         if custom_model:
             model = custom_model
     elif provider == "groq":
-        model = settings.GROQ_MODEL or "meta-llama/Llama-3.2-1B"
+        model = settings.GROQ_MODEL or GROQ_DEFAULT_MODEL
         print(f"\nDefault model: {model}")
         custom_model = input("Enter a different Groq model name or press Enter to use default: ").strip()
         if custom_model:
             model = custom_model
     elif provider == "openai":
-        model = settings.OPENAI_MODEL or "gpt-4o-mini-2024-07-18"
+        model = settings.OPENAI_MODEL or OPENAI_DEFAULT_MODEL
         print(f"\nDefault model: {model}")
-        print("Available OpenAI models: gpt-3.5-turbo, gpt-4-turbo, gpt-4o-mini-2024-07-18")
+        print(f"Available OpenAI models: gpt-3.5-turbo, gpt-4-turbo, {OPENAI_DEFAULT_MODEL}")
         custom_model = input("Enter a different OpenAI model name or press Enter to use default: ").strip()
         if custom_model:
             model = custom_model
     elif provider == "anthropic":
-        model = settings.ANTHROPIC_MODEL or "claude-3-5-sonnet-20240620"
+        model = settings.ANTHROPIC_MODEL or ANTHROPIC_DEFAULT_MODEL
         print(f"\nDefault model: {model}")
         custom_model = input("Enter a different Anthropic model name or press Enter to use default: ").strip()
         if custom_model:
             model = custom_model
     elif provider == "gemini":
-        model = settings.GEMINI_MODEL or "gemini-1.5-flash-002"
+        model = settings.GEMINI_MODEL or GEMINI_DEFAULT_MODEL
         print(f"\nDefault model: {model}")
         custom_model = input("Enter a different Gemini model name or press Enter to use default: ").strip()
         if custom_model:

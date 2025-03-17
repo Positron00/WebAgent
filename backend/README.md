@@ -373,4 +373,35 @@ Vector database and data storage locations can be configured using environment v
 WEBAGENT_DATA_DIR=/path/to/data             # Base directory for all data
 WEBAGENT_VECTOR_DB_PATH=/path/to/vectordb   # Vector database location
 WEBAGENT_ARTIFACTS_PATH=/path/to/artifacts  # Document artifacts location
-``` 
+```
+
+## Environment Variables
+
+The WebAgent backend uses several environment variables for configuration. These are loaded in the following order of priority:
+
+1. `.env.local` - For API keys and sensitive information (highest priority)
+2. YAML configuration in `config/{env}.yaml` - For environment-specific settings
+3. `.env` - For default fallback values (lowest priority)
+
+### Environment Files
+
+The repository includes several template files:
+
+- `.env.example` - Template for general configuration variables
+- `.env.example.local` - Template for sensitive API keys (never commit to version control)
+- `.env.demos.example` - Template for demo-specific variables
+
+To set up your environment:
+
+1. Copy `.env.example` to `.env` and customize as needed
+2. Copy `.env.example.local` to `.env.local` and add your API keys
+
+### Important Variables
+
+Key environment variables include:
+
+- `WEBAGENT_ENV`: Set to `dev`, `uat`, or `prod` to determine which YAML config to load
+- `WEBAGENT_LLM_DEFAULT_PROVIDER`: Which LLM provider to use (`together`, `openai`, etc.)
+- `TOGETHER_API_KEY`, `OPENAI_API_KEY`: API keys for LLM providers
+- `TAVILY_API_KEY`: API key for web search functionality
+- `LANGSMITH_API_KEY`: For tracing and debugging LLM chains 
