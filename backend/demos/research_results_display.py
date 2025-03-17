@@ -63,8 +63,18 @@ def format_result(query_result, dark_mode=False):
     # Set colors based on dark/light mode
     divider = "* * *" if dark_mode else "---"
     
-    # Start with the query
-    markdown = f"# Query\n\n{query_result.query}\n\n"
+    # Start with the query - format it to stand out
+    markdown = f"# Query\n\n"
+    
+    # Format the query with markdown quote block to make it stand out
+    query_lines = query_result.query.split('\n')
+    if len(query_lines) > 1:
+        # For multi-line queries, use a quote block
+        markdown += "> " + "\n> ".join(query_lines) + "\n\n"
+    else:
+        # For single line queries, make them bold and larger
+        markdown += f"**{query_result.query}**\n\n"
+        
     markdown += f"{divider}\n\n"
     
     # Handle error case
@@ -81,6 +91,42 @@ def format_result(query_result, dark_mode=False):
     
     # Format actual results
     result = query_result.result
+    
+    # Check if result is completely empty
+    if result == {} or result is None:
+        markdown += "# Results\n\n*No results returned*\n\n"
+        return markdown
+    
+    # Handle web research results
+    if isinstance(result, dict) and "analysis" in result:
+        if result.get("analysis"):
+            markdown += "# Analysis\n\n"
+            markdown += f"{result['analysis']}\n\n"
+            markdown += f"{divider}\n\n"
+        
+        if "sources" in result and result["sources"]:
+            markdown += "# Sources\n\n"
+            for i, source in enumerate(result["sources"], 1):
+                title = source.get("title", "Untitled")
+                url = source.get("url", "No URL")
+                snippet = source.get("content_snippet", "")
+                
+                markdown += f"### {i}. {title}\n"
+                markdown += f"**URL**: [{url}]({url})\n\n"
+                if snippet:
+                    markdown += f"**Preview**: {snippet}\n\n"
+            
+            markdown += f"{divider}\n\n"
+        elif "sources" in result and not result["sources"]:
+            markdown += "# Sources\n\n*No sources found*\n\n"
+            markdown += f"{divider}\n\n"
+            
+        # If empty analysis but we have sources, show a message
+        if not result.get("analysis") and result.get("sources"):
+            markdown += "# Analysis\n\n*No analysis available. Please review the sources directly.*\n\n"
+            markdown += f"{divider}\n\n"
+            
+        return markdown
     
     # Handle internal research agent state
     if hasattr(result, 'reports') and 'internal_research' in result.reports:
@@ -236,7 +282,7 @@ class ResultsWindow(QMainWindow):
         self.results = results
         self.dark_mode = False
         self.setWindowTitle(title)
-        self.setMinimumSize(950, 700)
+        self.setMinimumSize(1050, 800)  # Increased from 950, 700
         
         self.setup_ui()
         
@@ -270,7 +316,7 @@ class ResultsWindow(QMainWindow):
             
             # Improve readability with better text spacing
             tab.setLineWrapMode(QTextBrowser.WidgetWidth)
-            tab.setLineWidth(800)  # Wider line width for better readability
+            tab.setLineWidth(900)  # Wider line width (from 800 to 900) for better readability
             
             # Add zoom capabilities
             tab.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard | Qt.LinksAccessibleByMouse)
@@ -278,8 +324,8 @@ class ResultsWindow(QMainWindow):
             
             # Create shortened tab title from query
             query = result.query
-            if len(query) > 30:
-                query = query[:27] + "..."
+            if len(query) > 50:  # Increased from 30 to 50 characters
+                query = query[:47] + "..."
             
             self.tabs.addTab(tab, f"Query {i+1}: {query}")
         
@@ -292,10 +338,14 @@ class ResultsWindow(QMainWindow):
         # Style tabs with CSS to make them more prominent
         self.tabs.setStyleSheet("""
             QTabBar::tab {
-                min-width: 200px;
+                min-width: 300px;  /* Increased from 200px to 300px */
+                max-width: 600px;  /* Added maximum width */
                 min-height: 35px;
                 font-size: 13px;
                 font-weight: bold;
+                padding-left: 10px;
+                padding-right: 10px;
+                text-align: left;
             }
         """)
         
@@ -442,6 +492,21 @@ class ResultsWindow(QMainWindow):
                     ul, ol { margin-left: 24px; }
                     li { margin: 8px 0; font-size: 16px; }
                     a { color: #3498db; text-decoration: underline; }
+                    blockquote { 
+                        background-color: #2a2a2a; 
+                        border-left: 4px solid #3498db; 
+                        padding: 10px 15px; 
+                        margin: 15px 0; 
+                        font-size: 18px; 
+                        font-style: italic;
+                        color: #e0e0e0;
+                        line-height: 1.6;
+                    }
+                    strong { 
+                        font-weight: bold; 
+                        font-size: 18px; 
+                        color: #e0e0e0;
+                    }
                 """)
         else:
             # Light theme
@@ -530,6 +595,21 @@ class ResultsWindow(QMainWindow):
                     ul, ol { margin-left: 24px; }
                     li { margin: 8px 0; font-size: 16px; }
                     a { color: #2980b9; text-decoration: underline; }
+                    blockquote { 
+                        background-color: #f5f5f5; 
+                        border-left: 4px solid #2980b9; 
+                        padding: 10px 15px; 
+                        margin: 15px 0; 
+                        font-size: 18px; 
+                        font-style: italic;
+                        color: #333333;
+                        line-height: 1.6;
+                    }
+                    strong { 
+                        font-weight: bold; 
+                        font-size: 18px; 
+                        color: #2c3e50;
+                    }
                 """)
         
     def center(self):
@@ -583,21 +663,41 @@ def display_research_results(queries, results=None, errors=None, title="Research
         errors: List of error messages (can be None for queries with no errors)
         title: Title for the window
     """
+    # Validate inputs
+    if not queries or not isinstance(queries, list):
+        logger.error("No valid queries provided")
+        if not queries:
+            queries = ["No query provided"]
+    
     # Ensure lists are of same length or fill with None
     if results is None:
         results = [None] * len(queries)
     if errors is None:
         errors = [None] * len(queries)
     
+    # Validate results - if empty dict, convert to None
+    for i in range(len(results)):
+        if results[i] == {}:
+            results[i] = None
+            
     # Create QueryResult objects
     query_results = []
     for i, query in enumerate(queries):
+        # If query text is None or empty, provide a default
+        if not query:
+            query = "No query text provided"
+            
         result = results[i] if i < len(results) else None
         error = errors[i] if i < len(errors) else None
         query_results.append(QueryResult(query, result, error))
     
+    # Verify we have at least one query to display
+    if not query_results:
+        logger.error("No queries to display")
+        return 1
+        
     # Create Qt application
-    app = QApplication([])
+    app = QApplication.instance() or QApplication([])
     window = ResultsWindow(query_results, title=title)
     window.show()
     return app.exec_()

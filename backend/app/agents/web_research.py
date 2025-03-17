@@ -15,7 +15,7 @@ from app.models.task import WorkflowState
 from app.services.llm import get_llm
 from app.services.web_search import perform_web_search
 from app.agents.base_agent import BaseAgent
-
+from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 # Prompt for the Web Research Agent
@@ -65,7 +65,7 @@ class WebResearchAgent(BaseAgent):
         """Initialize the Web Research Agent."""
         super().__init__(name="web_research")
         self.prompt = WEB_RESEARCH_PROMPT
-        self.llm = get_llm("gpt-4-turbo")
+        self.llm = get_llm(settings.LLM_DEFAULT_MODEL)
         self.output_parser = StrOutputParser()
         self.llm_chain = self.llm
     
@@ -236,6 +236,12 @@ class WebResearchAgent(BaseAgent):
             response = self.llm.invoke(messages)
             assistant_message = response if isinstance(response, str) else response.get("content", "")
             
+            # Log response for debugging
+            logger.debug(f"LLM response type: {type(response)}")
+            if not assistant_message:
+                logger.warning("Empty response from LLM")
+                assistant_message = "No analysis was generated. Please review the sources directly."
+            
             # Parse the response
             parsed_response = {
                 "analysis": assistant_message,
@@ -252,6 +258,10 @@ class WebResearchAgent(BaseAgent):
                 })
             
             parsed_response["sources"] = sources
+            
+            # Log the final response for debugging
+            logger.debug(f"Final response structure: {list(parsed_response.keys())}")
+            logger.debug(f"Number of sources: {len(sources)}")
             
             # Update the workflow state with the research results
             state.context["web_search_results"] = search_results

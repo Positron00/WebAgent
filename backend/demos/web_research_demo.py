@@ -203,6 +203,18 @@ async def run_web_research_demo():
         # Get the research results from the context
         research_results = result_state.context.get("web_research_results", {})
         
+        # Ensure we have a valid result structure
+        if not research_results or not isinstance(research_results, dict):
+            logger.warning("Invalid research results format")
+            research_results = {
+                "analysis": "No analysis available",
+                "sources": []
+            }
+        
+        # If analysis is missing but sources exist, add a placeholder
+        if "sources" in research_results and research_results["sources"] and "analysis" not in research_results:
+            research_results["analysis"] = "No analysis was generated, but sources were found. Please review the sources directly."
+        
         # Log detailed information about the result
         if research_results:
             logger.debug(f"Output contains {len(research_results.get('sources', []))} sources")
