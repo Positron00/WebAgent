@@ -41,6 +41,7 @@ from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.utils.metrics import timing_decorator
 from backend.app.services.llm import confirm_llm_selection
+from backend.demos.research_results_display import display_research_results
 
 # Sample code tasks to test
 CODING_TASKS = [
@@ -66,6 +67,11 @@ CODING_TASKS = [
 async def run_coding_assistant_demo():
     """Run the coding assistant agent demo."""
     logger.info("Starting Coding Assistant Agent Demo")
+    
+    # Initialize lists to store results for GUI display
+    all_queries = []
+    all_results = []
+    all_errors = []
     
     # Ask user to confirm LLM provider and model selection
     print("\n" + "=" * 80)
@@ -105,6 +111,11 @@ async def run_coding_assistant_demo():
             result_state = await coding_agent.run(state)
             duration = (datetime.now() - start_time).total_seconds()
             
+            # Store results for display
+            all_queries.append(f"{task['title']}: {task['query']}")
+            all_results.append(result_state.output)
+            all_errors.append(None)
+            
             # Print results
             logger.info(f"Code Generation Results (completed in {duration:.2f} seconds):")
             if result_state.output:
@@ -141,6 +152,10 @@ async def run_coding_assistant_demo():
                 
         except Exception as e:
             logger.error(f"Error running coding assistant agent: {e}")
+            # Store error for display
+            all_queries.append(f"{task['title']}: {task['query']}")
+            all_results.append(None)
+            all_errors.append(str(e))
     
     # Test code generation with specific requirements
     logger.info("\n\n=== TESTING CODE GENERATION WITH SPECIFIC REQUIREMENTS ===\n")
@@ -168,6 +183,11 @@ async def run_coding_assistant_demo():
         start_time = datetime.now()
         result_state = await coding_agent.run(state)
         duration = (datetime.now() - start_time).total_seconds()
+        
+        # Store results for display
+        all_queries.append(f"{specific_task['query']}: {specific_task['query']}")
+        all_results.append(result_state.output)
+        all_errors.append(None)
         
         # Print results
         logger.info(f"Code Generation Results (completed in {duration:.2f} seconds):")
@@ -207,6 +227,22 @@ async def run_coding_assistant_demo():
             
     except Exception as e:
         logger.error(f"Error running coding assistant agent: {e}")
+        # Store error for display
+        all_queries.append(f"{specific_task['query']}: {specific_task['query']}")
+        all_results.append(None)
+        all_errors.append(str(e))
+    
+    # After all tasks are complete, display results in GUI
+    logger.info("\nDisplaying results in GUI...")
+    try:
+        display_research_results(
+            queries=all_queries,
+            results=all_results,
+            errors=all_errors,
+            title="Coding Assistant Results"
+        )
+    except Exception as e:
+        logger.error(f"Error displaying results in GUI: {e}")
     
     logger.info("Coding Assistant Agent Demo completed.")
 

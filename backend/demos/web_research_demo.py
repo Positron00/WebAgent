@@ -41,6 +41,7 @@ from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.utils.metrics import timing_decorator
 from backend.app.services.llm import confirm_llm_selection
+from backend.demos.research_results_display import display_research_results
 
 @timing_decorator
 async def run_web_research_demo():
@@ -157,9 +158,31 @@ async def run_web_research_demo():
             logger.warning("No research results returned.")
             print("No research results were returned.")
             
+        # Display results in GUI
+        logger.info("\nDisplaying results in GUI...")
+        try:
+            display_research_results(
+                queries=[query],
+                results=[result_state.output],
+                errors=[None],
+                title="Web Research Results"
+            )
+        except Exception as e:
+            logger.error(f"Error displaying results in GUI: {e}")
     except Exception as e:
         logger.error(f"Error running web research agent: {e}")
         print(f"\nERROR: {e}")
+        
+        # Display error in GUI
+        try:
+            display_research_results(
+                queries=[query],
+                results=[None],
+                errors=[str(e)],
+                title="Web Research Results"
+            )
+        except Exception as display_error:
+            logger.error(f"Error displaying results in GUI: {display_error}")
     
     print("\nWeb Research Agent Demo completed.")
 

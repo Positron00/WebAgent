@@ -47,6 +47,7 @@ from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.utils.metrics import timing_decorator
 from backend.app.services.llm import confirm_llm_selection
+from backend.demos.research_results_display import display_research_results
 
 # Path to demo data
 DEMO_DATA_DIR = os.path.join(current_dir, "demo_data")
@@ -209,6 +210,11 @@ async def run_data_analysis_demo():
     """Run the data analysis agent demo."""
     logger.info("Starting Data Analysis Agent Demo")
     
+    # Initialize lists to store results for GUI display
+    all_queries = []
+    all_results = []
+    all_errors = []
+    
     # Ask user to confirm LLM provider and model selection
     print("\n" + "=" * 80)
     print("DATA ANALYSIS AGENT DEMO")
@@ -270,6 +276,11 @@ async def run_data_analysis_demo():
             result_state = await analysis_agent.run(state)
             duration = (datetime.now() - start_time).total_seconds()
             
+            # Store results for display
+            all_queries.append(f"{task['title']}: {task['query']}")
+            all_results.append(result_state.output)
+            all_errors.append(None)
+            
             # Print results
             logger.info(f"Analysis Results (completed in {duration:.2f} seconds):")
             if result_state.output:
@@ -299,6 +310,10 @@ async def run_data_analysis_demo():
                 
         except Exception as e:
             logger.error(f"Error running data analysis agent: {e}")
+            # Store error for display
+            all_queries.append(f"{task['title']}: {task['query']}")
+            all_results.append(None)
+            all_errors.append(str(e))
     
     # Test analysis with specific parameters
     logger.info("\n\n=== TESTING ANALYSIS WITH SPECIFIC PARAMETERS ===\n")
@@ -327,6 +342,11 @@ async def run_data_analysis_demo():
         result_state = await analysis_agent.run(state)
         duration = (datetime.now() - start_time).total_seconds()
         
+        # Store results for display
+        all_queries.append(f"Correlation Analysis: {specific_task['query']}")
+        all_results.append(result_state.output)
+        all_errors.append(None)
+        
         # Print results
         logger.info(f"Analysis Results (completed in {duration:.2f} seconds):")
         if result_state.output:
@@ -353,8 +373,24 @@ async def run_data_analysis_demo():
             
     except Exception as e:
         logger.error(f"Error running data analysis agent: {e}")
+        # Store error for display
+        all_queries.append(f"Correlation Analysis: {specific_task['query']}")
+        all_results.append(None)
+        all_errors.append(str(e))
     
     logger.info("Data Analysis Agent Demo completed.")
+    
+    # Display all results in GUI
+    logger.info("\nDisplaying results in GUI...")
+    try:
+        display_research_results(
+            queries=all_queries,
+            results=all_results,
+            errors=all_errors,
+            title="Data Analysis Results"
+        )
+    except Exception as e:
+        logger.error(f"Error displaying results in GUI: {e}")
 
 if __name__ == "__main__":
     # Run the demo
