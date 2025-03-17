@@ -55,6 +55,7 @@ from backend.app.services.document_ingestion_service import get_document_ingesti
 from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.utils.metrics import timing_decorator
+from backend.app.services.llm import confirm_llm_selection
 
 # Import the research results display
 from backend.demos.research_results_display import display_research_results
@@ -84,25 +85,15 @@ async def run_document_extraction_demo():
     # Initialize results list for the GUI
     results = []
     
-    # Ask for user confirmation to connect to the TogetherAI LLM
-    print("\n" + "=" * 120)
-    print("This demo will connect to the TogetherAI LLM API using your configured API key.")
-    try:
-        model_info = settings.LLM_PROVIDER if hasattr(settings, 'LLM_PROVIDER') else 'together'
-        model_name = settings.DEFAULT_MODEL if hasattr(settings, 'DEFAULT_MODEL') else 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free'
-        print(f"The model that will be used is: {model_name} (Provider: {model_info})")
-    except AttributeError:
-        print("Using default TogetherAI LLM configuration")
-    print("=" * 120)
+    # Ask user to confirm LLM provider and model selection
+    print("\n" + "=" * 80)
+    print("DOCUMENT EXTRACTION AGENT DEMO")
+    print("=" * 80)
+    print("This demo requires an LLM for extracting information from documents.")
+    print("The default LLM provider is TogetherAI with the Llama-3.3-70B model.")
     
-    confirmation = input("\nDo you want to continue and connect to the LLM API? (Y/n): ")
-    if confirmation.lower() not in ["y", "yes",""]:
-        logger.info("User declined to connect to the LLM API. Demo aborted.")
-        print("Demo aborted by user.")
-        return
-    
-    logger.info("User confirmed to connect to the LLM API.")
-    print("\nConnecting to TogetherAI LLM API...")
+    # Confirm LLM provider and model
+    provider, model = confirm_llm_selection()
     
     # Create a sample document if needed
     sample_doc_path = get_sample_document()
@@ -111,6 +102,7 @@ async def run_document_extraction_demo():
     doc_loader = get_document_loader_service()
     
     # Get document extraction agent
+    print("\nInitializing Document Extraction Agent...")
     extraction_agent = get_document_extraction_agent()
     
     # Load document
@@ -134,6 +126,7 @@ async def run_document_extraction_demo():
     
     # Run extraction agent
     logger.info("Running document extraction agent...")
+    print(f"\nRunning extraction with {provider} ({model}) as the LLM provider...")
     try:
         result_state = await extraction_agent.run(state)
         

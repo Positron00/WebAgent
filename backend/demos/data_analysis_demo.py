@@ -46,6 +46,7 @@ from backend.app.agents.data_analysis import get_data_analysis_agent
 from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.utils.metrics import timing_decorator
+from backend.app.services.llm import confirm_llm_selection
 
 # Path to demo data
 DEMO_DATA_DIR = os.path.join(current_dir, "demo_data")
@@ -208,11 +209,22 @@ async def run_data_analysis_demo():
     """Run the data analysis agent demo."""
     logger.info("Starting Data Analysis Agent Demo")
     
+    # Ask user to confirm LLM provider and model selection
+    print("\n" + "=" * 80)
+    print("DATA ANALYSIS AGENT DEMO")
+    print("=" * 80)
+    print("This demo requires an LLM for analyzing data and generating insights.")
+    print("The default LLM provider is TogetherAI with the Llama-3.3-70B model.")
+    
+    # Confirm LLM provider and model
+    provider, model = confirm_llm_selection()
+    
     # Create sample datasets
     datasets = create_sample_datasets()
     logger.info(f"Created {len(datasets)} sample datasets")
     
     # Get data analysis agent
+    print("\nInitializing Data Analysis Agent...")
     analysis_agent = get_data_analysis_agent()
     
     # Define analysis tasks
@@ -250,7 +262,9 @@ async def run_data_analysis_demo():
         )
         
         # Run data analysis agent
-        logger.info(f"Running analysis for: {task['title']}")
+        logger.info(f"Running data analysis for: {task['title']}")
+        print(f"\nRunning analysis with {provider} ({model}) as the LLM provider...")
+        print(f"Analysis task: {task['title']}")
         try:
             start_time = datetime.now()
             result_state = await analysis_agent.run(state)

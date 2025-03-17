@@ -1,6 +1,6 @@
 """
 LLM service for the WebAgent backend.
-Provides access to different LLM providers including OpenAI, Together AI, and self-hosted models.
+Provides access to different LLM providers including Together AI, Groq, OpenAI, Anthropic, Gemini, and self-hosted models.
 """
 from typing import Dict, Optional, Any, List, Tuple
 import logging
@@ -273,12 +273,12 @@ def get_openai_llm(model_name: Optional[str] = None):
     Get a LangChain ChatOpenAI instance.
     
     Args:
-        model_name: Optional model name to use (defaults to settings.DEFAULT_MODEL)
+        model_name: Optional model name to use (defaults to settings.OPENAI_MODEL)
         
     Returns:
         A configured ChatOpenAI instance
     """
-    model = model_name or settings.DEFAULT_MODEL
+    model = model_name or settings.OPENAI_MODEL
     llm_config = get_llm_config()
     
     try:
@@ -305,7 +305,7 @@ def get_together_llm(model_name: Optional[str] = None):
     
     Args:
         model_name: Optional name of the TogetherAI model to use.
-                  If not provided, will use the configured default.
+                  If not provided, will use the configured default TOGETHER_MODEL.
                   
     Returns:
         A configured TogetherLLM instance ready for use.
@@ -314,8 +314,8 @@ def get_together_llm(model_name: Optional[str] = None):
     provider = "together"
     llm_config = get_llm_config()
     
-    # Use provided model or default to configured TOGETHER_MODEL_NAME
-    model = model_name or settings.TOGETHER_MODEL_NAME
+    # Use provided model or default to configured TOGETHER_MODEL
+    model = model_name or settings.TOGETHER_MODEL
     
     together_api_key = os.getenv("TOGETHER_API_KEY")
     
@@ -417,6 +417,21 @@ def get_llm(model_name: Optional[str] = None):
     llm_config = get_llm_config()
     provider = llm_config.provider.lower()
     
+    # Check if the CONFIRM_LLM_SELECTION environment variable is set
+    # This allows for explicit confirmation of the provider and model
+    if os.getenv("CONFIRM_LLM_SELECTION", "False").lower() == "true":
+        # Get the confirmed provider and model from environment variables
+        confirmed_provider = os.getenv("CONFIRMED_LLM_PROVIDER")
+        confirmed_model = os.getenv("CONFIRMED_LLM_MODEL")
+        
+        if confirmed_provider:
+            logger.info(f"Using explicitly confirmed provider: {confirmed_provider}")
+            provider = confirmed_provider.lower()
+        
+        if confirmed_model:
+            logger.info(f"Using explicitly confirmed model: {confirmed_model}")
+            model_name = confirmed_model
+    
     logger.info(f"Creating LLM instance with provider: {provider}")
     
     # Define fallback order
@@ -424,14 +439,20 @@ def get_llm(model_name: Optional[str] = None):
     
     # Set up the fallback order based on the initial provider
     if provider == "together":
-        fallback_order = ["together", "openai", "self"]
+        fallback_order = ["together", "groq", "openai", "anthropic", "gemini", "self"]
+    elif provider == "groq":
+        fallback_order = ["groq", "together", "openai", "anthropic", "gemini", "self"]
     elif provider == "openai":
-        fallback_order = ["openai", "together", "self"]
+        fallback_order = ["openai", "together", "groq", "anthropic", "gemini", "self"]
+    elif provider == "anthropic":
+        fallback_order = ["anthropic", "together", "groq", "openai", "gemini", "self"]
+    elif provider == "gemini":
+        fallback_order = ["gemini", "together", "groq", "openai", "anthropic", "self"]
     elif provider == "self":
-        fallback_order = ["self", "together", "openai"]
+        fallback_order = ["self", "together", "groq", "openai", "anthropic", "gemini"]
     else:
         # Default fallback order
-        fallback_order = ["together", "openai", "self"]
+        fallback_order = ["together", "groq", "openai", "anthropic", "gemini", "self"]
         logger.warning(f"Unknown provider '{provider}', using default fallback order: {fallback_order}")
     
     # Track errors for detailed reporting
@@ -616,4 +637,121 @@ def get_llm_service_status() -> Dict[str, Any]:
             "openai": {"enabled": bool(os.getenv("OPENAI_API_KEY"))},
             "together": {"enabled": bool(os.getenv("TOGETHER_API_KEY"))},
             "self": {"enabled": False}
-        } 
+        }
+
+def confirm_llm_selection():
+    """
+    Interactive function to confirm LLM provider and model selection.
+    Sets environment variables based on user selection.
+    
+    Returns:
+        Tuple[str, str]: Selected provider and model name
+    """
+    # Default to TogetherAI and Llama-3.3-70B
+    default_provider = settings.LLM_DEFAULT_PROVIDER or "together"
+    default_model = settings.LLM_DEFAULT_MODEL or "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    
+    print("\n" + "=" * 80)
+    print("SELECT LLM PROVIDER")
+    print("=" * 80)
+    print("1. TogetherAI (default)")
+    print("2. Groq")
+    print("3. OpenAI")
+    print("4. Anthropic")
+    print("5. Gemini")
+    print("6. Self-hosted LLM")
+    
+    provider_choice = input("\nSelect LLM provider (1-6, default=1): ").strip()
+    
+    provider = default_provider
+    if provider_choice == "2":
+        provider = "groq"
+        print("\nSelected Groq as the LLM provider")
+    elif provider_choice == "3":
+        provider = "openai"
+        print("\nSelected OpenAI as the LLM provider")
+    elif provider_choice == "4":
+        provider = "anthropic"
+        print("\nSelected Anthropic as the LLM provider")
+    elif provider_choice == "5":
+        provider = "gemini"
+        print("\nSelected Gemini as the LLM provider")
+    elif provider_choice == "6":
+        provider = "self"
+        print("\nSelected self-hosted LLM as the provider")
+    else:
+        print("\nSelected TogetherAI as the LLM provider")
+    
+    # Default model based on provider
+    if provider == "together":
+        model = settings.TOGETHER_MODEL or "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        print(f"\nDefault model: {model}")
+        custom_model = input("Enter a different TogetherAI model name or press Enter to use default: ").strip()
+        if custom_model:
+            model = custom_model
+    elif provider == "groq":
+        model = settings.GROQ_MODEL or "meta-llama/Llama-3.2-1B"
+        print(f"\nDefault model: {model}")
+        custom_model = input("Enter a different Groq model name or press Enter to use default: ").strip()
+        if custom_model:
+            model = custom_model
+    elif provider == "openai":
+        model = settings.OPENAI_MODEL or "gpt-4o-mini-2024-07-18"
+        print(f"\nDefault model: {model}")
+        print("Available OpenAI models: gpt-3.5-turbo, gpt-4-turbo, gpt-4o-mini-2024-07-18")
+        custom_model = input("Enter a different OpenAI model name or press Enter to use default: ").strip()
+        if custom_model:
+            model = custom_model
+    elif provider == "anthropic":
+        model = settings.ANTHROPIC_MODEL or "claude-3-5-sonnet-20240620"
+        print(f"\nDefault model: {model}")
+        custom_model = input("Enter a different Anthropic model name or press Enter to use default: ").strip()
+        if custom_model:
+            model = custom_model
+    elif provider == "gemini":
+        model = settings.GEMINI_MODEL or "gemini-1.5-flash-002"
+        print(f"\nDefault model: {model}")
+        custom_model = input("Enter a different Gemini model name or press Enter to use default: ").strip()
+        if custom_model:
+            model = custom_model
+    elif provider == "self":
+        model = os.getenv("SELF_HOSTED_MODEL") or "local-model"
+        print(f"\nUsing self-hosted model: {model}")
+    
+    # Confirm the selection
+    print("\n" + "=" * 80)
+    print(f"Selected Configuration:")
+    print(f"Provider: {provider}")
+    print(f"Model: {model}")
+    print("=" * 80)
+    
+    confirmation = input("\nConfirm this selection? (Y/n): ")
+    if confirmation.lower() not in ["y", "yes", ""]:
+        print("Selection not confirmed. Please try again.")
+        return confirm_llm_selection()
+    
+    # Set environment variables to control provider and model
+    os.environ["CONFIRM_LLM_SELECTION"] = "True"
+    os.environ["CONFIRMED_LLM_PROVIDER"] = provider
+    os.environ["CONFIRMED_LLM_MODEL"] = model
+    
+    # Set provider-specific environment variables
+    if provider == "together":
+        os.environ["TOGETHER_MODEL"] = model
+    elif provider == "groq":
+        os.environ["GROQ_MODEL"] = model
+    elif provider == "openai":
+        os.environ["OPENAI_MODEL"] = model
+    elif provider == "anthropic":
+        os.environ["ANTHROPIC_MODEL"] = model
+    elif provider == "gemini":
+        os.environ["GEMINI_MODEL"] = model
+    elif provider == "self":
+        os.environ["SELF_HOSTED_MODEL"] = model
+    
+    # Also set the general LLM defaults
+    os.environ["WEBAGENT_LLM_DEFAULT_PROVIDER"] = provider
+    os.environ["WEBAGENT_LLM_DEFAULT_MODEL"] = model
+    
+    print(f"\nSelection confirmed. Using {provider} with model {model}")
+    return provider, model 

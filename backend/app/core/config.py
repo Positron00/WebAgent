@@ -73,10 +73,26 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = os.getenv("WEBAGENT_CORS_ORIGINS", "http://localhost:3000").split(",")
     
+    # Default LLM services
+    LLM_DEFAULT_PROVIDER: str = os.getenv("WEBAGENT_LLM_DEFAULT_PROVIDER", "together")
+    LLM_DEFAULT_MODEL: str = os.getenv("WEBAGENT_LLM_DEFAULT_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
+    
     # OpenAI
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
-    DEFAULT_MODEL: str = os.getenv("WEBAGENT_LLM_DEFAULT_MODEL", "gpt-4-turbo")
+    OPENAI_MODEL: Optional[str] = os.getenv("OPENAI_MODEL", "gpt-4o-mini-2024-07-18")
     
+    # Anthropic
+    ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
+    ANTHROPIC_MODEL: Optional[str] = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20240620")
+    
+    # Gemini
+    GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
+    GEMINI_MODEL: Optional[str] = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-002")
+    
+    # Groq
+    GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY")
+    GROQ_MODEL: Optional[str] = os.getenv("GROQ_MODEL", "meta-llama/Llama-3.2-1B")
+
     # LangSmith for tracing and observability
     LANGSMITH_API_KEY: Optional[str] = os.getenv("LANGSMITH_API_KEY")
     LANGSMITH_PROJECT_NAME: str = os.getenv("LANGSMITH_PROJECT_NAME", "webagent-research")
@@ -87,7 +103,7 @@ class Settings(BaseSettings):
     
     # Together AI for LLM services
     TOGETHER_API_KEY: Optional[str] = os.getenv("TOGETHER_API_KEY")
-    TOGETHER_MODEL_NAME: Optional[str] = os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
+    TOGETHER_MODEL: Optional[str] = os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
     
     # Data directory settings
     DATA_DIR: str = Field(

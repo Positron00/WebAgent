@@ -40,6 +40,7 @@ from backend.app.agents.coding_assistant import get_coding_assistant_agent
 from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.utils.metrics import timing_decorator
+from backend.app.services.llm import confirm_llm_selection
 
 # Sample code tasks to test
 CODING_TASKS = [
@@ -66,7 +67,18 @@ async def run_coding_assistant_demo():
     """Run the coding assistant agent demo."""
     logger.info("Starting Coding Assistant Agent Demo")
     
+    # Ask user to confirm LLM provider and model selection
+    print("\n" + "=" * 80)
+    print("CODING ASSISTANT AGENT DEMO")
+    print("=" * 80)
+    print("This demo requires an LLM for generating code and explanations.")
+    print("The default LLM provider is TogetherAI with the Llama-3.3-70B model.")
+    
+    # Confirm LLM provider and model
+    provider, model = confirm_llm_selection()
+    
     # Get coding assistant agent
+    print("\nInitializing Coding Assistant Agent...")
     coding_agent = get_coding_assistant_agent()
     
     # Run through each coding task
@@ -86,6 +98,8 @@ async def run_coding_assistant_demo():
         
         # Run coding assistant agent
         logger.info(f"Generating code for: {task['title']}")
+        print(f"\nRunning code generation with {provider} ({model}) as the LLM provider...")
+        print(f"Task: {task['title']}")
         try:
             start_time = datetime.now()
             result_state = await coding_agent.run(state)
