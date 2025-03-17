@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.6] - 2025-03-17
+
+### Enhanced
+- Improved research results display to show deduplication metrics
+- Added information about original document count before deduplication
+- Enhanced source document display to highlight deduplication process 
+- Fixed import error with QShortcut in research results display
+- Moved QShortcut from QtCore to QtWidgets for proper module organization
+- Fixed tab width adjustments to improve UI responsiveness
+- Fixed issue with multiple popup windows appearing during internal research demo
+- Fixed issue with source document display in research results
+- Fixed issue with LLM model selection in demo scripts
+- Enforced LLM model selection in demo scripts
+- Tested and debugged document extraction, internal research and web research demos
+
 ## [2.8.5] - 2025-03-16
 
 ### Enhanced
