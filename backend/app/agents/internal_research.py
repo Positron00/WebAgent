@@ -969,8 +969,33 @@ class InternalResearchAgent(BaseAgent):
             
             # 1.5 Deduplicate retrieved documents
             logger.info(f"Deduplicating {len(retrieved_documents)} retrieved documents")
+            
+            # Log source distribution before deduplication
+            source_counts_before = {}
+            for doc in retrieved_documents:
+                source = doc.get("metadata", {}).get("source", "Unknown")
+                source_counts_before[source] = source_counts_before.get(source, 0) + 1
+            
+            # Log the most common sources before deduplication
+            logger.info("Source distribution before deduplication:")
+            for source, count in sorted(source_counts_before.items(), key=lambda x: x[1], reverse=True)[:5]:
+                logger.info(f"  - {source}: {count} documents")
+            
+            # Perform deduplication
             retrieved_documents = self._deduplicate_documents(retrieved_documents)
-            logger.info(f"After deduplication: {len(retrieved_documents)} documents")
+            
+            # Log source distribution after deduplication
+            source_counts_after = {}
+            for doc in retrieved_documents:
+                source = doc.get("metadata", {}).get("source", "Unknown")
+                source_counts_after[source] = source_counts_after.get(source, 0) + 1
+            
+            # Log the most common sources after deduplication
+            logger.info("Source distribution after deduplication:")
+            for source, count in sorted(source_counts_after.items(), key=lambda x: x[1], reverse=True)[:5]:
+                logger.info(f"  - {source}: {count} documents")
+                
+            logger.info(f"After deduplication: {len(retrieved_documents)} documents ({len(source_counts_after)} unique sources)")
             
             # Get rerank_top_n configuration
             rerank_top_n = self.config.get("rerank_top_n", 5)
@@ -1042,7 +1067,14 @@ class InternalResearchAgent(BaseAgent):
                     "total_time": time.time() - start_time,
                     "num_retrieved": len(retrieved_documents),
                     "num_reranked": len(reranked_documents),
-                    "top_document_score": reranked_documents[0].get("score", 0) if reranked_documents else 0
+                    "top_document_score": reranked_documents[0].get("score", 0) if reranked_documents else 0,
+                    "deduplication": {
+                        "sources_before": len(source_counts_before),
+                        "sources_after": len(source_counts_after),
+                        "documents_before_dedup": sum(source_counts_before.values()),
+                        "documents_after_dedup": sum(source_counts_after.values()),
+                        "source_counts": source_counts_after
+                    }
                 }
             }
             
@@ -1076,7 +1108,7 @@ class InternalResearchAgent(BaseAgent):
 
     def _deduplicate_documents(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Deduplicate documents based on content similarity.
+        Deduplicate documents based on content similarity and source.
         
         Args:
             documents: List of documents to deduplicate
@@ -1087,25 +1119,102 @@ class InternalResearchAgent(BaseAgent):
         if not documents:
             return []
             
-        # Use a set to track unique document content hashes
+        # Use sets to track unique document content hashes and sources
         unique_docs = []
         content_hashes = set()
+        source_hashes = set()
+        
+        # Track detailed info for logging
+        dedup_reasons = {
+            "exact_content_match": 0,
+            "source_and_content_similarity": 0,
+            "kept": 0
+        }
         
         for doc in documents:
             # Get document content
             content = doc.get("page_content", "")
             
-            # Create a simple hash of the content (first 100 chars + length + last 100 chars)
-            # This is a simple but effective way to identify near-duplicate content
+            # Get document source 
+            metadata = doc.get("metadata", {})
+            source = metadata.get("source", "")
+            
+            # Create content hash
             content_preview = f"{content[:100]}_{len(content)}_{content[-100:]}"
             content_hash = hash(content_preview)
             
-            # If this content hash is new, add the document
-            if content_hash not in content_hashes:
+            # Create source hash
+            source_hash = hash(source) if source else None
+            
+            # Skip this document if we've seen identical content
+            if content_hash in content_hashes:
+                dedup_reasons["exact_content_match"] += 1
+                continue
+                
+            # If we have a source and it's already been seen, check content similarity
+            if source_hash and source_hash in source_hashes:
+                # Compare with already accepted documents with the same source
+                for accepted_doc in unique_docs:
+                    accepted_source = accepted_doc.get("metadata", {}).get("source", "")
+                    if accepted_source == source:
+                        # Compare content similarity
+                        accepted_content = accepted_doc.get("page_content", "")
+                        similarity = self._calculate_content_similarity(content, accepted_content)
+                        
+                        # If similarity is above threshold, skip this document
+                        if similarity > 0.7:  # Threshold for similarity
+                            dedup_reasons["source_and_content_similarity"] += 1
+                            # Add the similarity score to the document for debugging
+                            doc["dedup_similarity"] = similarity
+                            break
+                else:
+                    # No similar document found, add this one
+                    content_hashes.add(content_hash)
+                    if source_hash:
+                        source_hashes.add(source_hash)
+                    unique_docs.append(doc)
+                    dedup_reasons["kept"] += 1
+            else:
+                # New content and source, add it
                 content_hashes.add(content_hash)
+                if source_hash:
+                    source_hashes.add(source_hash)
                 unique_docs.append(doc)
+                dedup_reasons["kept"] += 1
+        
+        # Log deduplication results
+        logger.info(f"Deduplicated {len(documents)} documents to {len(unique_docs)} unique documents")
+        logger.info(f"Deduplication reasons: {dedup_reasons}")
         
         return unique_docs
+
+    def _calculate_content_similarity(self, content1: str, content2: str) -> float:
+        """
+        Calculate similarity between two content strings.
+        
+        Args:
+            content1: First content string
+            content2: Second content string
+            
+        Returns:
+            Similarity score between 0 and 1
+        """
+        # Simple word overlap similarity
+        if not content1 or not content2:
+            return 0.0
+            
+        # Convert to lowercase and split into words
+        words1 = set(content1.lower().split())
+        words2 = set(content2.lower().split())
+        
+        # Calculate Jaccard similarity
+        intersection = len(words1.intersection(words2))
+        union = len(words1.union(words2))
+        
+        if union == 0:
+            return 0.0
+            
+        return intersection / union
 
 
 def get_internal_research_agent() -> InternalResearchAgent:

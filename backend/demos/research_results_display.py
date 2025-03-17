@@ -30,9 +30,9 @@ if parent_dir not in sys.path:
 # Import PyQt5 for GUI
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QTextBrowser, QVBoxLayout, QWidget, 
                            QTabWidget, QPushButton, QHBoxLayout, QFileDialog, QMessageBox,
-                           QCheckBox, QLabel, QComboBox)
+                           QCheckBox, QLabel, QComboBox, QShortcut)
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QFont, QIcon, QColor, QPalette
+from PyQt5.QtGui import QFont, QIcon, QColor, QPalette, QKeySequence
 
 class QueryResult:
     """Represents a query and its result"""
@@ -149,10 +149,52 @@ def format_result(query_result, dark_mode=False):
         
         # Add source documents if available
         if documents:
-            # Suppress the full source document contents, just show a count
+            # Capture unique sources to show deduplication is working
+            unique_sources = {}
+            for doc in documents:
+                if isinstance(doc, dict):
+                    metadata = doc.get('metadata', {})
+                    source = metadata.get('source', 'Unknown')
+                    score = doc.get('score', 0)
+                    
+                    # Count occurrences of each source
+                    if source in unique_sources:
+                        unique_sources[source]['count'] += 1
+                        if score > unique_sources[source]['best_score']:
+                            unique_sources[source]['best_score'] = score
+                    else:
+                        unique_sources[source] = {
+                            'count': 1,
+                            'best_score': score
+                        }
+            
+            # Show source document information with deduplication metrics
             markdown += f"# Source Documents\n\n"
-            markdown += f"Found {len(documents)} relevant documents.\n\n"
-            # Add a brief summary of the top 3 sources without the full content
+            
+            # Try to get deduplication metrics if available
+            metrics = internal_research.get('metrics', {})
+            dedup_metrics = metrics.get('deduplication', {})
+            
+            if dedup_metrics:
+                docs_before = dedup_metrics.get('documents_before_dedup', 0)
+                docs_after = dedup_metrics.get('documents_after_dedup', len(documents))
+                sources_before = dedup_metrics.get('sources_before', 0)
+                sources_after = dedup_metrics.get('sources_after', len(unique_sources))
+                
+                markdown += f"Found {len(documents)} relevant documents from {len(unique_sources)} unique sources.\n"
+                markdown += f"(Reduced from {docs_before} initial documents through deduplication.)\n\n"
+            else:
+                markdown += f"Found {len(documents)} relevant documents from {len(unique_sources)} unique sources.\n\n"
+            
+            # First show a summary of sources and their counts
+            markdown += "## Sources Summary\n\n"
+            for source, info in sorted(unique_sources.items(), key=lambda x: x[1]['best_score'], reverse=True):
+                markdown += f"* **{source}**: {info['count']} document(s), best relevance score: {info['best_score']:.2f}\n"
+            
+            markdown += f"\n{divider}\n\n"
+            
+            # Then show details of the top documents
+            markdown += "## Top Documents\n\n"
             top_docs = documents[:3]  # Only show top 3
             for i, doc in enumerate(top_docs, 1):
                 if isinstance(doc, dict):
@@ -160,10 +202,16 @@ def format_result(query_result, dark_mode=False):
                     source = metadata.get('source', 'Unknown')
                     score = doc.get('score', None)
                     
-                    markdown += f"**Source {i}**: {source}"
+                    markdown += f"### Document {i}\n"
+                    markdown += f"**Source**: {source}\n"
                     if score is not None:
-                        markdown += f" (Relevance: {score:.2f})"
-                    markdown += "\n\n"
+                        markdown += f"**Relevance Score**: {score:.2f}\n"
+                    
+                    # Add a preview of the content
+                    content = doc.get('page_content', '')
+                    if content:
+                        preview = content[:200] + "..." if len(content) > 200 else content
+                        markdown += f"\n**Preview**:\n```\n{preview}\n```\n\n"
             
             markdown += f"{divider}\n\n"
     # If result is a dictionary with summary and contexts
@@ -239,7 +287,23 @@ def format_result(query_result, dark_mode=False):
             if documents:
                 # Suppress the full source document contents, just show a count
                 markdown += f"# Source Documents\n\n"
-                markdown += f"Found {len(documents)} relevant documents.\n\n"
+                
+                # Try to get deduplication metrics if available
+                metrics = result.get('metrics', {})
+                dedup_metrics = metrics.get('deduplication', {}) if isinstance(metrics, dict) else {}
+                
+                if dedup_metrics and isinstance(dedup_metrics, dict):
+                    docs_before = dedup_metrics.get('documents_before_dedup', 0)
+                    docs_after = dedup_metrics.get('documents_after_dedup', len(documents))
+                    
+                    if docs_before > docs_after:
+                        markdown += f"Found {len(documents)} relevant documents.\n"
+                        markdown += f"(Reduced from {docs_before} initial documents through deduplication.)\n\n"
+                    else:
+                        markdown += f"Found {len(documents)} relevant documents.\n\n"
+                else:
+                    markdown += f"Found {len(documents)} relevant documents.\n\n"
+                
                 # Add a brief summary of the top 3 sources without the full content
                 top_docs = documents[:3]  # Only show top 3
                 for i, doc in enumerate(top_docs, 1):
@@ -282,7 +346,7 @@ class ResultsWindow(QMainWindow):
         self.results = results
         self.dark_mode = False
         self.setWindowTitle(title)
-        self.setMinimumSize(1050, 800)  # Increased from 950, 700
+        self.setMinimumSize(1200, 800)  # Increased from 1050, 800 to have more space for tabs
         
         self.setup_ui()
         
@@ -292,6 +356,10 @@ class ResultsWindow(QMainWindow):
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         main_layout = QVBoxLayout(main_widget)
+        
+        # Add keyboard shortcuts
+        wrap_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
+        wrap_shortcut.activated.connect(self.toggle_wrap_shortcut)
         
         # Add header info
         self.info_label = QTextBrowser()
@@ -314,9 +382,13 @@ class ResultsWindow(QMainWindow):
             markdown_content = format_result(result, self.dark_mode)
             tab.setMarkdown(markdown_content)
             
-            # Improve readability with better text spacing
+            # Default to word wrap for better readability
             tab.setLineWrapMode(QTextBrowser.WidgetWidth)
-            tab.setLineWidth(900)  # Wider line width (from 800 to 900) for better readability
+            tab.setLineWidth(900)  # Wider line width for better readability
+            tab.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            
+            # Keep good readability for code blocks and tables
+            tab.setTabStopWidth(40)  # Set reasonable tab stop width
             
             # Add zoom capabilities
             tab.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard | Qt.LinksAccessibleByMouse)
@@ -324,10 +396,10 @@ class ResultsWindow(QMainWindow):
             
             # Create shortened tab title from query
             query = result.query
-            if len(query) > 50:  # Increased from 30 to 50 characters
-                query = query[:47] + "..."
+            if len(query) > 30:  # Reduced from 50 to 30 characters for better tab fitting
+                query = query[:27] + "..."
             
-            self.tabs.addTab(tab, f"Query {i+1}: {query}")
+            self.tabs.addTab(tab, f"Q{i+1}: {query}")
         
         # Make tabs more visible and larger
         self.tabs.setTabPosition(QTabWidget.North)
@@ -335,22 +407,21 @@ class ResultsWindow(QMainWindow):
         self.tabs.setTabsClosable(False)
         self.tabs.setMovable(True)  # Allow tab reordering
         
-        # Style tabs with CSS to make them more prominent
-        self.tabs.setStyleSheet("""
-            QTabBar::tab {
-                min-width: 300px;  /* Increased from 200px to 300px */
-                max-width: 600px;  /* Added maximum width */
-                min-height: 35px;
-                font-size: 13px;
-                font-weight: bold;
-                padding-left: 10px;
-                padding-right: 10px;
-                text-align: left;
-            }
-        """)
+        # Auto-adjust tab width based on number of tabs
+        self.adjust_tab_width()
         
         # Add display options layout
         options_layout = QHBoxLayout()
+        
+        # Add word wrap toggle
+        self.wrap_checkbox = QCheckBox("Word Wrap")
+        self.wrap_checkbox.setChecked(True)  # Default is word wrap enabled
+        self.wrap_checkbox.stateChanged.connect(self.toggle_word_wrap)
+        self.wrap_checkbox.setToolTip("Toggle word wrap (Ctrl+W)")
+        options_layout.addWidget(self.wrap_checkbox)
+        
+        # Add spacing
+        options_layout.addSpacing(20)
         
         # Add theme selection
         theme_label = QLabel("Theme:")
@@ -389,6 +460,27 @@ class ResultsWindow(QMainWindow):
         
         # Center window
         self.center()
+    
+    def toggle_wrap_shortcut(self):
+        """Toggle word wrap when shortcut is pressed"""
+        # Toggle the checkbox state
+        self.wrap_checkbox.setChecked(not self.wrap_checkbox.isChecked())
+    
+    def toggle_word_wrap(self, state):
+        """Toggle between word wrap and horizontal scrolling for all tabs"""
+        for i in range(self.tabs.count()):
+            tab = self.tabs.widget(i)
+            if state == Qt.Checked:
+                # Enable word wrap
+                tab.setLineWrapMode(QTextBrowser.WidgetWidth)
+                tab.setLineWidth(900)  # Wider line width for better readability
+                tab.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+                self.statusBar().showMessage("Word wrap enabled", 2000)
+            else:
+                # Enable horizontal scrolling
+                tab.setLineWrapMode(QTextBrowser.NoWrap)
+                tab.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+                self.statusBar().showMessage("Horizontal scrolling enabled", 2000)
     
     def toggle_theme(self, index):
         """Toggle between light and dark themes"""
@@ -487,8 +579,37 @@ class ResultsWindow(QMainWindow):
                     h3 { color: #f39c12; font-size: 24px; margin-top: 14px; margin-bottom: 10px; }
                     p { line-height: 1.6; margin-top: 10px; margin-bottom: 10px; font-size: 16px; }
                     code { background-color: #3a3a3a; color: #e74c3c; padding: 2px 4px; border-radius: 3px; font-size: 16px; }
-                    pre { background-color: #3a3a3a; padding: 12px; border-radius: 5px; margin: 12px 0; 
-                          border-left: 3px solid #3498db; font-size: 16px; }
+                    pre { 
+                        background-color: #3a3a3a; 
+                        padding: 12px; 
+                        border-radius: 5px; 
+                        margin: 12px 0; 
+                        border-left: 3px solid #3498db; 
+                        font-size: 16px; 
+                        overflow-x: auto; 
+                        white-space: pre;
+                        font-family: "Courier New", monospace;
+                    }
+                    table { 
+                        border-collapse: collapse; 
+                        margin: 15px 0; 
+                        min-width: 400px;
+                        overflow-x: auto;
+                        display: block;
+                    }
+                    th, td { 
+                        padding: 8px 15px; 
+                        border: 1px solid #4a4a4a; 
+                        text-align: left;
+                    }
+                    th { 
+                        background-color: #3a3a3a;
+                        color: #e0e0e0;
+                        font-weight: bold;
+                    }
+                    tr:nth-child(even) { 
+                        background-color: #333333;
+                    }
                     ul, ol { margin-left: 24px; }
                     li { margin: 8px 0; font-size: 16px; }
                     a { color: #3498db; text-decoration: underline; }
@@ -590,8 +711,37 @@ class ResultsWindow(QMainWindow):
                     h3 { color: #d35400; font-size: 24px; margin-top: 14px; margin-bottom: 10px; }
                     p { line-height: 1.6; margin-top: 10px; margin-bottom: 10px; font-size: 16px; }
                     code { background-color: #f0f0f0; color: #e74c3c; padding: 2px 4px; border-radius: 3px; font-size: 16px; }
-                    pre { background-color: #f8f8f8; padding: 12px; border-radius: 5px; margin: 12px 0; 
-                          border-left: 3px solid #2980b9; font-size: 16px; }
+                    pre { 
+                        background-color: #f8f8f8; 
+                        padding: 12px; 
+                        border-radius: 5px; 
+                        margin: 12px 0; 
+                        border-left: 3px solid #2980b9; 
+                        font-size: 16px; 
+                        overflow-x: auto; 
+                        white-space: pre;
+                        font-family: "Courier New", monospace;
+                    }
+                    table { 
+                        border-collapse: collapse; 
+                        margin: 15px 0; 
+                        min-width: 400px;
+                        overflow-x: auto;
+                        display: block;
+                    }
+                    th, td { 
+                        padding: 8px 15px; 
+                        border: 1px solid #cccccc; 
+                        text-align: left;
+                    }
+                    th { 
+                        background-color: #f0f0f0;
+                        color: #2c3e50;
+                        font-weight: bold;
+                    }
+                    tr:nth-child(even) { 
+                        background-color: #f5f5f5;
+                    }
                     ul, ol { margin-left: 24px; }
                     li { margin: 8px 0; font-size: 16px; }
                     a { color: #2980b9; text-decoration: underline; }
@@ -651,6 +801,45 @@ class ResultsWindow(QMainWindow):
                 QMessageBox.information(self, "Success", f"Results saved to {file_path}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to save file: {str(e)}")
+
+    def adjust_tab_width(self):
+        """Adjust tab width based on the number of tabs"""
+        num_tabs = self.tabs.count()
+        if num_tabs <= 0:
+            return
+            
+        # Calculate optimal tab width based on window width and number of tabs
+        # Leave some margin (100px) for tab bar controls
+        available_width = self.width() - 100  
+        tab_width = max(80, min(200, available_width // num_tabs))
+        
+        # Update the tab bar style with the calculated width
+        self.tabs.setStyleSheet(f"""
+            QTabBar::tab {{
+                min-width: {tab_width}px;
+                max-width: {tab_width * 2}px;
+                min-height: 35px;
+                font-size: 13px;
+                font-weight: bold;
+                padding-left: 10px;
+                padding-right: 10px;
+                text-align: left;
+            }}
+            
+            QTabWidget::pane {{
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+            }}
+            
+            QTabBar::tab:selected {{
+                border-bottom-width: 2px;
+            }}
+        """)
+
+    def resizeEvent(self, event):
+        """Adjust tab widths when window is resized"""
+        super().resizeEvent(event)
+        self.adjust_tab_width()
 
 
 def display_research_results(queries, results=None, errors=None, title="Research Results"):

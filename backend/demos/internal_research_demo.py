@@ -486,11 +486,11 @@ async def run_internal_research_demo(debug_mode=False):
     # Define research queries
     research_queries = [
         "What are our guidelines for AI ethics?",
-        #"What is the technical architecture of WebAgent?",
-        #"What products are we planning to release in 2025?",
-        #"How does our hybrid retrieval system work?",
-        #"What are the capabilities of our research agent?",
-        #"How does our document processing pipeline work?",
+        "What is the technical architecture of WebAgent?",
+        "What products are we planning to release in 2025?",
+        "How does our hybrid retrieval system work?",
+        "What are the capabilities of our research agent?",
+        "How does our document processing pipeline work?",
         # Add a simple test query that should clearly match documents we know exist
         "ethics AI" if debug_mode else None  
     ]
