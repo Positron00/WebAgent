@@ -169,9 +169,15 @@ async def run_web_research_demo():
     state = WorkflowState(
         query=query,
         context={
+            "query": query,
             "research_priority": research_priority,
             "max_sources": max_sources,
-            "search_depth": search_depth
+            "search_depth": search_depth,
+            "research_plan": {
+                "plan": f"Research about {query} with {research_priority} priority.",
+                "requires_web_search": True,
+                "search_depth": search_depth
+            }
         }
     )
     logger.debug(f"Workflow state created: {state}")
@@ -194,51 +200,47 @@ async def run_web_research_demo():
         duration = (datetime.now() - start_time).total_seconds()
         logger.info(f"Web research completed in {duration:.2f} seconds")
         
+        # Get the research results from the context
+        research_results = result_state.context.get("web_research_results", {})
+        
         # Log detailed information about the result
-        if result_state.output:
-            if isinstance(result_state.output, dict):
-                logger.debug(f"Output contains {len(result_state.output.get('sources', []))} sources")
-                logger.debug(f"Output contains {len(result_state.output.get('facts', []))} facts")
-                summary_length = len(result_state.output.get('summary', ''))
-                logger.debug(f"Summary length: {summary_length} characters")
-                
-                # Log source domains for analysis
-                source_domains = []
-                for source in result_state.output.get('sources', []):
-                    url = source.get('url', '')
-                    if url:
-                        try:
-                            from urllib.parse import urlparse
-                            domain = urlparse(url).netloc
-                            source_domains.append(domain)
-                        except Exception as domain_error:
-                            logger.warning(f"Could not parse domain from url {url}: {domain_error}")
-                if source_domains:
-                    logger.debug(f"Source domains: {', '.join(source_domains)}")
+        if research_results:
+            logger.debug(f"Output contains {len(research_results.get('sources', []))} sources")
+            
+            # Log source domains for analysis
+            source_domains = []
+            for source in research_results.get('sources', []):
+                url = source.get('url', '')
+                if url:
+                    try:
+                        from urllib.parse import urlparse
+                        domain = urlparse(url).netloc
+                        source_domains.append(domain)
+                    except Exception as domain_error:
+                        logger.warning(f"Could not parse domain from url {url}: {domain_error}")
+            if source_domains:
+                logger.debug(f"Source domains: {', '.join(source_domains)}")
         
         # Print results
         print("\n" + "=" * 80)
         print(f"WEB RESEARCH RESULTS (completed in {duration:.2f} seconds)")
         print("=" * 80)
         
-        if result_state.output:
+        if research_results:
             # Format the research output
-            if isinstance(result_state.output, dict):
-                print("\nSUMMARY:")
-                print("=" * 80)
-                print(result_state.output.get("summary", "No summary provided"))
-                
-                print("\nSOURCES:")
-                print("=" * 80)
-                for idx, source in enumerate(result_state.output.get("sources", [])):
-                    print(f"{idx+1}. {source.get('title', 'Untitled')} - {source.get('url', 'No URL')}")
-                    
-                print("\nFACTUAL INFORMATION:")
-                print("=" * 80)
-                for idx, fact in enumerate(result_state.output.get("facts", [])):
-                    print(f"{idx+1}. {fact}")
-            else:
-                pprint(result_state.output)
+            print("\nRESULTS:")
+            print("=" * 80)
+            
+            # Print analysis if available
+            if "analysis" in research_results:
+                print("\nANALYSIS:")
+                print(research_results.get("analysis", "No analysis provided"))
+            
+            # Print sources if available
+            print("\nSOURCES:")
+            print("=" * 80)
+            for idx, source in enumerate(research_results.get("sources", [])):
+                print(f"{idx+1}. {source.get('title', 'Untitled')} - {source.get('url', 'No URL')}")
         else:
             logger.warning("No research results returned")
             print("No research results were returned.")
@@ -248,7 +250,7 @@ async def run_web_research_demo():
         try:
             display_research_results(
                 queries=[query],
-                results=[result_state.output],
+                results=[research_results],
                 errors=[None],
                 title="Web Research Results"
             )
@@ -297,8 +299,8 @@ async def run_web_research_demo():
         
         logger.info(f"Saving research results to {result_file}")
         with open(result_file, "w") as f:
-            if 'result_state' in locals() and hasattr(result_state, 'output') and result_state.output:
-                json.dump(result_state.output, f, indent=2)
+            if research_results:
+                json.dump(research_results, f, indent=2)
             else:
                 json.dump({"error": "No results available"}, f)
     except Exception as save_error:

@@ -64,11 +64,10 @@ class WebResearchAgent(BaseAgent):
     def __init__(self):
         """Initialize the Web Research Agent."""
         super().__init__(name="web_research")
-        self.prompt = ChatPromptTemplate.from_template(WEB_RESEARCH_PROMPT)
+        self.prompt = WEB_RESEARCH_PROMPT
         self.llm = get_llm("gpt-4-turbo")
-        self.parser = StrOutputParser()
-        self.chain = self.prompt | self.llm | self.parser
-        self.chain = self.trace_chain(self.chain)
+        self.output_parser = StrOutputParser()
+        self.llm_chain = self.llm
     
     def _format_search_results(self, results: List[Dict[str, Any]]) -> str:
         """Format search results for the prompt."""
@@ -84,13 +83,14 @@ class WebResearchAgent(BaseAgent):
             
         return formatted_results
     
-    def _format_feedback(self, state: WorkflowState) -> str:
+    def _format_feedback(self, feedback: Dict) -> str:
         """Format feedback from Senior Research Agent if available."""
         # Check if there's feedback in the context
-        feedback = state.context.get("research_feedback")
-        iteration = state.context.get("research_iteration", 1)
-        
-        if not feedback or iteration <= 1:
+        if not feedback:
+            return ""
+            
+        iteration = feedback.get("iteration", 1)
+        if iteration <= 1:
             return ""
             
         # Format the feedback section
@@ -117,7 +117,7 @@ class WebResearchAgent(BaseAgent):
         logger.info(f"Processing query: {query}")
 
         # Update workflow state with current step
-        state = state.with_current_step("web_research")
+        state.current_step = "web_research"
 
         # Get the research plan from the state context
         research_plan = state.context.get("research_plan", {})
@@ -129,14 +129,12 @@ class WebResearchAgent(BaseAgent):
         # Check if the research plan doesn't require a web search
         if not research_plan.get("requires_web_search", True):
             logger.info("Research plan does not require a web search")
-            return state.with_context({
-                **state.context,
-                "web_search_results": [],
-                "web_research_results": {
-                    "skipped": True,
-                    "reasoning": "The research question doesn't require a web search."
-                }
-            })
+            state.context["web_search_results"] = []
+            state.context["web_research_results"] = {
+                "skipped": True,
+                "reasoning": "The research question doesn't require a web search."
+            }
+            return state
         
         # Use a different search query for follow-up research
         search_query = query
@@ -205,14 +203,12 @@ class WebResearchAgent(BaseAgent):
         # Handle the case where no search results are found
         if not search_results:
             logger.warning("No relevant search results found")
-            return state.with_context({
-                **state.context,
-                "web_search_results": [],
-                "web_research_results": {
-                    "analysis": "No relevant information found on the web for this query.",
-                    "sources": []
-                }
-            })
+            state.context["web_search_results"] = []
+            state.context["web_research_results"] = {
+                "analysis": "No relevant information found on the web for this query.",
+                "sources": []
+            }
+            return state
         
         # Format the search results for the prompt
         formatted_results = self._format_search_results(search_results)
@@ -236,11 +232,15 @@ class WebResearchAgent(BaseAgent):
         
         # Call the language model to analyze the results
         try:
-            response = await self.llm_chain.acall(messages)
-            assistant_message = response["content"] if response and isinstance(response, dict) else str(response)
+            # Call the LLM directly
+            response = self.llm.invoke(messages)
+            assistant_message = response if isinstance(response, str) else response.get("content", "")
             
             # Parse the response
-            parsed_response = self.output_parser.parse(assistant_message)
+            parsed_response = {
+                "analysis": assistant_message,
+                "sources": []
+            }
             
             # Add the sources from the search results
             sources = []
@@ -254,11 +254,9 @@ class WebResearchAgent(BaseAgent):
             parsed_response["sources"] = sources
             
             # Update the workflow state with the research results
-            return state.with_context({
-                **state.context,
-                "web_search_results": search_results,
-                "web_research_results": parsed_response
-            })
+            state.context["web_search_results"] = search_results
+            state.context["web_research_results"] = parsed_response
+            return state
             
         except Exception as e:
             logger.error(f"Error in web research analysis: {str(e)}")
@@ -271,14 +269,12 @@ class WebResearchAgent(BaseAgent):
                     "content_snippet": result.get("content", "")[:150] + "..." if result.get("content") else ""
                 })
                 
-            return state.with_context({
-                **state.context,
-                "web_search_results": search_results,
-                "web_research_results": {
-                    "analysis": "Error occurred during analysis. Please review the sources directly.",
-                    "sources": sources
-                }
-            })
+            state.context["web_search_results"] = search_results
+            state.context["web_research_results"] = {
+                "analysis": "Error occurred during analysis. Please review the sources directly.",
+                "sources": sources
+            }
+            return state
 
 
 def get_web_research_agent() -> WebResearchAgent:

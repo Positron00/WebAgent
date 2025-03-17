@@ -775,7 +775,7 @@ class InternalResearchAgent(BaseAgent):
             # Use the default model from settings instead of hardcoded "gpt-4-turbo"
             # which is not supported by TogetherAI
             from app.core.config import settings
-            default_model = settings.DEFAULT_MODEL
+            default_model = settings.LLM_DEFAULT_MODEL
             # Only use the model specified in config if it's not "gpt-4-turbo"
             model_name = self.config.get("llm_model")
             if not model_name or model_name.startswith("gpt-"):
