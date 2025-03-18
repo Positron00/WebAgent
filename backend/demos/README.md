@@ -4,6 +4,7 @@ This directory contains demo scripts that showcase the features and capabilities
 
 ## Available Demos
 
+- **`multiagent_workflow_demo.py`**: Demonstrates the complete LangGraph multiagent workflow with agentic mode toggle, showing how multiple agents collaborate to solve complex research tasks.
 - **`document_extraction_demo.py`**: Demonstrates the Document Extraction Agent's capability to extract structured information from documents.
 - **`web_research_demo.py`**: Shows how the Web Research Agent searches the web and retrieves relevant information.
 - **`internal_research_demo.py`**: Demonstrates retrieval of information from internal knowledge bases using vector embeddings.
@@ -24,6 +25,12 @@ This directory contains demo scripts that showcase the features and capabilities
 Run any demo script using Python:
 
 ```bash
+# To run the multiagent workflow demo
+python -m backend.demos.multiagent_workflow_demo --query "Your query here" --agentic True
+
+# To run a sample query with the multiagent workflow
+python -m backend.demos.multiagent_workflow_demo --sample complex_research
+
 # To run the document extraction demo
 python -m backend.demos.document_extraction_demo
 
