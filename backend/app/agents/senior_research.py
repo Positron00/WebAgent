@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 SENIOR_RESEARCH_PROMPT = """You are a Senior Research Agent specializing in synthesizing information from multiple sources.
 
 USER QUERY: {query}
-RESEARCH PLAN: {research_plan}
+SUPERVISOR REQUIREMENTS: {requirements}
+RESEARCH ITERATION: {research_iteration} (Maximum: 3)
 
 You have been provided with the following research reports:
 
@@ -33,21 +34,20 @@ WEB RESEARCH:
 INTERNAL RESEARCH:
 {internal_research}
 
-CURRENT RESEARCH ITERATION: {research_iteration} (Maximum: 3)
-
 Your task:
-1. Synthesize the information from all research sources
-2. Create a comprehensive, well-structured report that answers the user's query
-3. Highlight key findings, insights, and conclusions
-4. Identify any contradictions or gaps in the research
-5. Maintain all source citations from the original reports
-6. Format your report as markdown with clear sections and headings
+1. Carefully verify that all requirements from the Supervisor have been met
+2. Synthesize the information from all research sources
+3. Create a comprehensive, well-structured report that answers the user's query
+4. Highlight key findings, insights, and conclusions
+5. Identify any contradictions or gaps in the research
+6. Maintain all source citations from the original reports
+7. Format your report as markdown with clear sections and headings
 
-MOST IMPORTANTLY: You must evaluate if the research satisfies all requirements from the research plan.
+MOST IMPORTANTLY: You must evaluate if the research satisfies ALL requirements specified by the Supervisor.
 If the research is insufficient, unclear, or missing key information, you should identify what additional information is needed.
 
 Your response must include an evaluation section with:
-- A score from 1-10 on how well the research answers the query
+- A verification of each requirement (met/not met)
 - A list of any missing or insufficient information
 - Whether additional research is needed (yes/no)
 - If additional research is needed, provide specific questions that need to be addressed
@@ -56,9 +56,9 @@ IMPORTANT: If research iteration has already reached 3, you MUST complete the re
 
 Format your evaluation using the following structure at the start of your output:
 ```evaluation
-score: [1-10]
+research_status: ["needs_more_research", "needs_analysis", "complete"]
+requirements_met: ["requirement 1: met", "requirement 2: not met", ...]
 missing_information: ["item 1", "item 2", ...]
-requires_additional_research: [yes/no]
 research_questions: ["question 1", "question 2", ...]
 ```
 
@@ -68,9 +68,9 @@ After the evaluation, provide your complete synthesized report.
 # Define the evaluation output structure
 class ResearchEvaluation(BaseModel):
     """Structured evaluation of research quality and completeness."""
-    score: int = Field(description="Score from 1-10 on how well the research answers the query")
+    research_status: str = Field(description="Research status")
+    requirements_met: List[str] = Field(description="List of requirements met")
     missing_information: List[str] = Field(description="List of missing or insufficient information")
-    requires_additional_research: bool = Field(description="Whether additional research is needed")
     research_questions: List[str] = Field(description="Specific questions that need to be addressed in additional research")
 
 class SeniorResearchAgent(BaseAgent):
@@ -138,17 +138,17 @@ class SeniorResearchAgent(BaseAgent):
             else:
                 logger.warning("Evaluation block not found in output")
                 return {
-                    "score": 5, 
-                    "missing_information": [], 
-                    "requires_additional_research": False,
+                    "research_status": "complete",
+                    "requirements_met": [],
+                    "missing_information": [],
                     "research_questions": []
                 }
         except Exception as e:
             logger.error(f"Error parsing evaluation: {str(e)}")
             return {
-                "score": 5, 
-                "missing_information": [], 
-                "requires_additional_research": False,
+                "research_status": "complete",
+                "requirements_met": [],
+                "missing_information": [],
                 "research_questions": []
             }
             
@@ -187,23 +187,24 @@ class SeniorResearchAgent(BaseAgent):
         try:
             logger.info(f"Senior Research Agent processing query: {state.query}")
             
-            # Get the research plan from the context
-            research_plan = state.context.get("research_plan", {})
+            # Get the supervisor's requirements
+            supervisor_output = state.reports.get("supervisor", {})
+            requirements = supervisor_output.get("requirements", ["No specific requirements provided"])
             
             # Track research iterations
-            current_iteration = state.context.get("research_iteration", 1)
-            state.context["research_iteration"] = current_iteration
+            current_iteration = state.context.get("research_loops", 0) + 1
+            state.context["research_loops"] = current_iteration
             
             # Get the findings from both research agents
             web_findings = state.reports.get("web_research", "No web research findings available.")
             internal_findings = state.reports.get("internal_research", "No internal research findings available.")
             
-            logger.debug(f"Synthesizing findings from web and internal research (iteration {current_iteration})")
+            logger.debug(f"Synthesizing findings from web and internal research (iteration {current_iteration}/3)")
             
             # Run the LLM chain to synthesize the findings
             full_output = await self.chain.ainvoke({
                 "query": state.query,
-                "research_plan": research_plan.get("analysis", "No research plan provided."),
+                "requirements": requirements,
                 "web_research": web_findings,
                 "internal_research": internal_findings,
                 "research_iteration": current_iteration
@@ -215,85 +216,43 @@ class SeniorResearchAgent(BaseAgent):
             # Extract the report content
             synthesis = self._get_report_content(full_output)
             
-            # Decide whether additional research is needed
-            requires_additional_research = (
-                evaluation.get("requires_additional_research", False) and
-                current_iteration < self.max_iterations
-            )
+            # Determine research status
+            research_status = evaluation.get("research_status", "complete")
             
-            if requires_additional_research:
-                logger.info(f"Senior Research Agent requesting additional research (iteration {current_iteration})")
-                
-                # Create a research request to give back to research agents
-                research_request = {
-                    "status": "needs_more_research",
-                    "score": evaluation.get("score", 0),
-                    "missing_information": evaluation.get("missing_information", []),
-                    "research_questions": evaluation.get("research_questions", []),
-                    "current_iteration": current_iteration,
-                    "timestamp": datetime.now().isoformat()
-                }
-                
-                # Add the research request to the state
-                state.update_with_agent_output("senior_research", research_request)
+            # Prepare senior research output
+            senior_research_output = {
+                "research_status": research_status,
+                "requirements_met": evaluation.get("requirements_met", []),
+                "missing_information": evaluation.get("missing_information", []),
+                "research_questions": evaluation.get("research_questions", []),
+                "current_iteration": current_iteration,
+                "synthesis": synthesis,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            # Update the state with the senior research output
+            state.update_with_agent_output("senior_research", senior_research_output)
+            
+            # If we need more research and haven't reached the maximum iterations
+            if research_status == "needs_more_research" and current_iteration < self.max_iterations:
+                logger.info(f"Senior Research Agent requesting additional research (iteration {current_iteration}/3)")
                 
                 # Add feedback to the context for other agents to use
-                state.context["research_feedback"] = research_request
-                state.context["research_iteration"] = current_iteration + 1
-                
-                # Set routing to research agents
-                requires_web = research_plan.get("requires_web_search", False)
-                requires_internal = research_plan.get("requires_internal_knowledge", False)
-                
-                # Indicate next steps in context
-                state.context["next_research_agents"] = []
-                if requires_web:
-                    state.context["next_research_agents"].append("web_research")
-                if requires_internal:
-                    state.context["next_research_agents"].append("internal_research")
-                
-                # Set that research is continuing
-                state.context["continue_research"] = True
-                
-                logger.info(f"Requesting additional research from: {state.context['next_research_agents']}")
-                return state
+                state.context["research_feedback"] = senior_research_output
+            elif research_status == "needs_analysis":
+                logger.info("Senior Research Agent indicating analysis is needed")
+                # Mark that analysis is needed in the context
+                state.context["needs_analysis"] = True
             else:
-                # If no additional research needed or max iterations reached, create the final report
-                logger.info(f"Senior Research Agent completing synthesis (iteration {current_iteration})")
-                
-                # Create the senior research report
-                senior_research_report = {
-                    "status": "completed",
-                    "score": evaluation.get("score", 5),
-                    "synthesis": synthesis,
-                    "timestamp": datetime.now().isoformat()
-                }
-                
-                # Add the report to the state
-                state.update_with_agent_output("senior_research", senior_research_report)
-                
-                # Add the synthesis to the context for other agents to use
-                state.context["verified_findings"] = synthesis
-                
-                # Set that research is complete
-                state.context["continue_research"] = False
-                
-                # Prepare the final report
-                final_report = {
-                    "title": f"Research Report: {state.query}",
-                    "content": synthesis,
-                    "type": "final_report"
-                }
-                
-                # Add the final report to the state
-                state.final_report = final_report
-                
-                logger.info("Senior Research Agent completed synthesis successfully")
-                return state
+                logger.info("Senior Research Agent completed synthesis, proceeding to Team Manager")
+                # If research is complete, mark it in the context
+                state.context["research_complete"] = True
+            
+            return state
             
         except Exception as e:
-            logger.error(f"Error in Senior Research Agent: {str(e)}", exc_info=True)
-            state.error = f"Senior Research Agent error: {str(e)}"
+            logger.error(f"Error in Senior Research Agent: {str(e)}")
+            state.mark_error(f"Senior Research Agent failed: {str(e)}")
             return state
 
 

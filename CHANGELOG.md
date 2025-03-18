@@ -2,6 +2,18 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 2.9.2 - 2025-03-18
+
+### Added
+- LangGraph multiagent workflow implementation with agentic toggle mode
+- Enhanced Supervisor Agent with task classification capabilities
+- Parallel execution of Internal Research and Web Research Agents
+- Senior Research Agent verification process with requirement checking
+- Iterative research loop system (up to 3 loops) for improved research quality
+- Team Manager Agent with Data Analysis and Coding Assistant integration
+- Comprehensive agent memory and workflow state management
+- Full LangSmith tracing integration for debugging and monitoring
+
 ## 2.9.1 - 2025-03-18
 
 ### Added

@@ -39,6 +39,16 @@ Consider:
 - Clusters or groupings of related information
 
 IMPORTANT: Be analytical, precise, and data-driven. Focus on extracting meaningful insights rather than just summarizing the research.
+
+Your output should be structured as JSON with the following format:
+{
+  "analysis_summary": "Brief overview of key insights found",
+  "quantitative_insights": ["insight 1", "insight 2", ...],
+  "qualitative_insights": ["insight 1", "insight 2", ...],
+  "correlations": ["correlation 1", "correlation 2", ...],
+  "anomalies": ["anomaly 1", "anomaly 2", ...],
+  "full_analysis": "Complete formatted markdown analysis with all details"
+}
 """
 
 class DataAnalysisAgent(BaseAgent):
@@ -68,36 +78,79 @@ class DataAnalysisAgent(BaseAgent):
         try:
             logger.info(f"Data Analysis Agent processing query: {state.query}")
             
-            # Get the verified findings from the senior research agent
-            research_findings = state.context.get("verified_findings", "No research findings available.")
+            # Get the research synthesis from the senior research agent
+            senior_research_output = state.reports.get("senior_research", {})
+            research_findings = senior_research_output.get("synthesis", "No research findings available.")
             
             logger.debug("Analyzing research findings for patterns and insights")
             
             # Run the LLM chain to analyze the data
-            analysis = await self.chain.ainvoke({
+            analysis_result = await self.chain.ainvoke({
                 "query": state.query,
                 "research_findings": research_findings
             })
             
+            # Parse the analysis result as JSON if possible
+            try:
+                # Try parsing the JSON output
+                if isinstance(analysis_result, str):
+                    # If the result is a string, it might be a JSON string or have a JSON section
+                    if analysis_result.strip().startswith("{") and analysis_result.strip().endswith("}"):
+                        # Looks like JSON - try to parse it
+                        analysis_data = json.loads(analysis_result)
+                    else:
+                        # Try to extract JSON from text
+                        import re
+                        json_match = re.search(r'(\{.*\})', analysis_result, re.DOTALL)
+                        if json_match:
+                            analysis_data = json.loads(json_match.group(1))
+                        else:
+                            # No JSON structure found, create a basic structure
+                            logger.warning("Could not parse JSON from LLM output, creating basic structure")
+                            analysis_data = {
+                                "analysis_summary": "Analysis of research findings",
+                                "quantitative_insights": [],
+                                "qualitative_insights": [],
+                                "correlations": [],
+                                "anomalies": [],
+                                "full_analysis": analysis_result
+                            }
+                else:
+                    # Result is already structured data
+                    analysis_data = analysis_result
+                
+            except Exception as json_error:
+                logger.error(f"Error parsing analysis output as JSON: {str(json_error)}")
+                logger.debug(f"Raw analysis output: {analysis_result}")
+                # Create a basic structure
+                analysis_data = {
+                    "analysis_summary": "Analysis of research findings",
+                    "quantitative_insights": [],
+                    "qualitative_insights": [],
+                    "correlations": [],
+                    "anomalies": [],
+                    "full_analysis": analysis_result
+                }
+            
             # Create the data analysis report
             data_analysis_report = {
                 "status": "completed",
-                "analysis": analysis,
+                "analysis": analysis_data.get("full_analysis", "Analysis not available"),
+                "summary": analysis_data.get("analysis_summary", "No summary available"),
+                "quantitative_insights": analysis_data.get("quantitative_insights", []),
+                "qualitative_insights": analysis_data.get("qualitative_insights", []),
                 "timestamp": datetime.now().isoformat()
             }
             
             # Add the report to the state
-            state.reports["data_analysis"] = data_analysis_report
-            
-            # Add the analysis to the context for other agents to use
-            state.context["data_insights"] = analysis
+            state.update_with_agent_output("data_analysis", data_analysis_report)
             
             logger.info("Data Analysis Agent completed analysis successfully")
             return state
             
         except Exception as e:
             logger.error(f"Error in Data Analysis Agent: {str(e)}", exc_info=True)
-            state.error = f"Data Analysis Agent error: {str(e)}"
+            state.mark_error(f"Data Analysis Agent error: {str(e)}")
             return state
 
 

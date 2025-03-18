@@ -14,7 +14,7 @@ from app.core.logger import logger
 app = FastAPI(
     title="AI Observability API",
     description="API for AI observability and monitoring",
-    version="2.9.0",
+    version="2.9.2",
 )
 
 # Add CORS middleware

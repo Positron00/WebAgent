@@ -43,6 +43,20 @@ Your code should:
 - Include a title and labels for all visualizations
 
 IMPORTANT: Focus on code that directly supports the insights from the research. Make sure your code is clean, well-documented, and follows best practices.
+
+Your output should include both the visualization code and a brief explanation of what each visualization shows, formatted as a JSON object:
+{
+  "explanation": "A brief explanation of what your visualizations will show and why you chose these specific visualizations",
+  "visualizations": [
+    {
+      "title": "Visualization 1 Title",
+      "description": "What this visualization shows",
+      "type": "line_chart/bar_chart/etc."
+    },
+    ...
+  ],
+  "code": "```python\\n# Your complete python code here\\n```"
+}
 """
 
 class CodingAssistantAgent(BaseAgent):
@@ -78,39 +92,77 @@ class CodingAssistantAgent(BaseAgent):
         try:
             logger.info(f"Coding Assistant Agent processing query: {state.query}")
             
-            # Get the verified findings and data insights
-            research_findings = state.context.get("verified_findings", "No research findings available.")
-            data_insights = state.context.get("data_insights", "No data insights available.")
+            # Get the research findings and data insights
+            senior_research_output = state.reports.get("senior_research", {})
+            research_findings = senior_research_output.get("synthesis", "No research findings available.")
+            
+            data_analysis = state.reports.get("data_analysis", {})
+            data_insights = data_analysis.get("analysis", "No data insights available.")
             
             logger.debug("Generating visualization code based on research findings and data insights")
             
             # Run the LLM chain to generate code
-            code = await self.chain.ainvoke({
+            result = await self.chain.ainvoke({
                 "query": state.query,
                 "research_findings": research_findings,
                 "data_insights": data_insights,
                 "allowed_libraries": self.allowed_libraries
             })
             
+            # Parse the result as JSON if possible
+            try:
+                # Try parsing the JSON output
+                if isinstance(result, str):
+                    # If the result is a string, it might be a JSON string or have a JSON section
+                    if result.strip().startswith("{") and result.strip().endswith("}"):
+                        # Looks like JSON - try to parse it
+                        code_data = json.loads(result)
+                    else:
+                        # Try to extract JSON from text
+                        import re
+                        json_match = re.search(r'(\{.*\})', result, re.DOTALL)
+                        if json_match:
+                            code_data = json.loads(json_match.group(1))
+                        else:
+                            # No JSON structure found, create a basic structure
+                            logger.warning("Could not parse JSON from LLM output, creating basic structure")
+                            code_data = {
+                                "explanation": "Visualization code for research findings",
+                                "visualizations": [],
+                                "code": result
+                            }
+                else:
+                    # Result is already structured data
+                    code_data = result
+                
+            except Exception as json_error:
+                logger.error(f"Error parsing coding output as JSON: {str(json_error)}")
+                logger.debug(f"Raw coding output: {result}")
+                # Create a basic structure
+                code_data = {
+                    "explanation": "Visualization code for research findings",
+                    "visualizations": [],
+                    "code": result
+                }
+            
             # Create the coding assistant report
             coding_report = {
                 "status": "completed",
-                "code": code,
+                "code": code_data.get("code", result),
+                "explanation": code_data.get("explanation", "Code for data visualization"),
+                "visualizations": code_data.get("visualizations", []),
                 "timestamp": datetime.now().isoformat()
             }
             
             # Add the report to the state
-            state.reports["coding_assistant"] = coding_report
-            
-            # Add the code to the context for other agents to use
-            state.context["visualization_code"] = code
+            state.update_with_agent_output("coding_assistant", coding_report)
             
             logger.info("Coding Assistant Agent completed code generation successfully")
             return state
             
         except Exception as e:
             logger.error(f"Error in Coding Assistant Agent: {str(e)}", exc_info=True)
-            state.error = f"Coding Assistant Agent error: {str(e)}"
+            state.mark_error(f"Coding Assistant Agent error: {str(e)}")
             return state
 
 

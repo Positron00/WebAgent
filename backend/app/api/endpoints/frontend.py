@@ -32,6 +32,7 @@ class FrontendChatRequest(BaseModel):
     top_p: float = Field(default=1.0)
     frequency_penalty: float = Field(default=0.0)
     presence_penalty: float = Field(default=0.0)
+    agentic_toggle: bool = Field(default=False, description="Whether to use the agentic workflow")
 
 class FrontendChatResponse(BaseModel):
     """Chat response format expected by the frontend."""
@@ -58,7 +59,8 @@ async def frontend_chat_completions(
             "previous_messages": [
                 {"role": m.role, "content": m.content} 
                 for m in request.messages[:-1]  # Exclude the last message which we'll use as the query
-            ]
+            ],
+            "agentic_toggle": request.agentic_toggle  # Pass the agentic toggle to the workflow
         }
         
         # Generate a unique task ID

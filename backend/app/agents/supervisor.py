@@ -47,13 +47,23 @@ USER QUERY: {query}
 
 Your task:
 1. Analyze the query to understand what the user is asking
-2. Determine if web search is needed or if internal knowledge is sufficient
-3. Create a research plan with specific questions to investigate
-4. Decide which specialized agents should handle each part of the research
-5. Determine if document extraction is needed for any referenced documents
+2. Determine the task type:
+   - "document_extraction" for simple information extraction from documents
+   - "complex_research" for queries requiring detailed analysis, web research, or multiple steps
+3. Create specific requirements for completing the query
+4. If complex research is needed, create a detailed research plan with specific questions to investigate
+5. Determine which specialized agents should handle each part of the research
 
-Output your analysis and plan in a clear, structured format.
-Include whether document extraction is needed under the "requires_document_extraction" key.
+Output your analysis in JSON format with these fields:
+{
+  "task_type": "document_extraction" or "complex_research",
+  "requirements": [list of specific requirements needed to complete the task],
+  "research_plan": {
+    "needs_web_research": true/false,
+    "needs_internal_research": true/false,
+    "questions": [list of specific questions to research]
+  }
+}
 """
 
 class SupervisorAgent(BaseAgent):
@@ -130,39 +140,57 @@ class SupervisorAgent(BaseAgent):
             # Run the LLM chain to analyze the query
             result = await self.chain.ainvoke({"query": state.query})
             
-            # Extract key information from the analysis
-            requires_web_search = "web" in result.lower() or "online" in result.lower() or "internet" in result.lower()
-            requires_internal_knowledge = "internal" in result.lower() or "existing" in result.lower() or "database" in result.lower()
-            requires_document_extraction = "document" in result.lower() or "extract" in result.lower() or "pdf" in result.lower()
+            # Parse the JSON output
+            try:
+                # Try parsing the JSON output
+                if isinstance(result, str):
+                    # If the result is a string, it might be a JSON string or have a JSON section
+                    if result.strip().startswith("{") and result.strip().endswith("}"):
+                        # Looks like JSON - try to parse it
+                        plan_data = json.loads(result)
+                    else:
+                        # Try to extract JSON from text
+                        import re
+                        json_match = re.search(r'(\{.*\})', result, re.DOTALL)
+                        if json_match:
+                            plan_data = json.loads(json_match.group(1))
+                        else:
+                            # No JSON structure found, create a basic structure
+                            logger.warning("Could not parse JSON from LLM output, creating basic structure")
+                            plan_data = {
+                                "task_type": "document_extraction" if "document" in result.lower() else "complex_research",
+                                "requirements": ["Extract relevant information from the query"],
+                                "research_plan": {
+                                    "needs_web_research": "web" in result.lower() or "online" in result.lower(),
+                                    "needs_internal_research": "internal" in result.lower() or "existing" in result.lower(),
+                                    "questions": ["What information is needed to answer the query?"]
+                                }
+                            }
+                else:
+                    # Result is already structured data
+                    plan_data = result
+                    
+            except Exception as json_error:
+                logger.error(f"Error parsing supervisor output as JSON: {str(json_error)}")
+                logger.debug(f"Raw supervisor output: {result}")
+                # Create a basic plan structure
+                plan_data = {
+                    "task_type": "document_extraction" if "document" in result.lower() else "complex_research",
+                    "requirements": ["Extract relevant information from the query"],
+                    "research_plan": {
+                        "needs_web_research": "web" in result.lower() or "online" in result.lower(),
+                        "needs_internal_research": "internal" in result.lower() or "existing" in result.lower(),
+                        "questions": ["What information is needed to answer the query?"]
+                    }
+                }
             
-            # Create a research plan
-            research_plan = {
-                "analysis": result,
-                "requires_web_search": requires_web_search,
-                "requires_internal_knowledge": requires_internal_knowledge,
-                "requires_document_extraction": requires_document_extraction,
-                "timestamp": datetime.now().isoformat()
-            }
-            
-            # Update the state with the research plan
-            state.update_with_agent_output("supervisor", research_plan)
+            # Update the state with the supervisor's analysis
+            state.update_with_agent_output("supervisor", plan_data)
             
             # Add the analysis to the context for other agents to use
-            state.context["research_plan"] = research_plan
+            state.context["research_plan"] = plan_data.get("research_plan", {})
             
-            # Handle document extraction directly if needed
-            if requires_document_extraction and "document_path" in state.context:
-                logger.info("Document extraction required - initiating extraction")
-                document_result = self.handle_document_extraction({
-                    "document_path": state.context["document_path"],
-                    "extraction_method": "auto",
-                    "route_to_team_manager": True
-                })
-                state.context["document_extraction_result"] = document_result
-            
-            logger.info(f"Supervisor completed analysis. Web search: {requires_web_search}, " 
-                      f"Internal knowledge: {requires_internal_knowledge}, "
-                      f"Document extraction: {requires_document_extraction}")
+            logger.info(f"Supervisor completed analysis. Task type: {plan_data.get('task_type', 'undefined')}")
             return state
             
         except Exception as e:
