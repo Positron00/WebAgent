@@ -7022,3 +7022,1252 @@ TypeError: Object of type bool_ is not JSON serializable
 2025-03-17 14:21:44,668 - webagent - INFO - Metrics exported to backend/demos/results/observability_metrics.json
 2025-03-17 14:21:44,669 - webagent - INFO - ML observability demo completed successfully
 2025-03-17 14:21:44,669 - webagent - INFO - ML observability demo completed successfully
+2025-03-17 20:35:34,024 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-17 20:35:34,540 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-17 20:35:34,540 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized drift detector: demo_latency with window size 100
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized drift detector: demo_latency with window size 100
+2025-03-17 20:35:34,609 - webagent - INFO - Registered drift detector: demo_latency
+2025-03-17 20:35:34,609 - webagent - INFO - Registered drift detector: demo_latency
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized drift detector: demo_accuracy with window size 100
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized drift detector: demo_accuracy with window size 100
+2025-03-17 20:35:34,609 - webagent - INFO - Registered drift detector: demo_accuracy
+2025-03-17 20:35:34,609 - webagent - INFO - Registered drift detector: demo_accuracy
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized drift detector: demo_category with window size 100
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized drift detector: demo_category with window size 100
+2025-03-17 20:35:34,609 - webagent - INFO - Registered drift detector: demo_category
+2025-03-17 20:35:34,609 - webagent - INFO - Registered drift detector: demo_category
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized model performance drift detector: demo_performance
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized model performance drift detector: demo_performance
+2025-03-17 20:35:34,609 - webagent - INFO - Registered drift detector: demo_performance
+2025-03-17 20:35:34,609 - webagent - INFO - Registered drift detector: demo_performance
+2025-03-17 20:35:34,609 - webagent - WARNING - MLflow not installed. MLflow tracking disabled.
+2025-03-17 20:35:34,609 - webagent - WARNING - MLflow not installed. MLflow tracking disabled.
+2025-03-17 20:35:34,609 - webagent - WARNING - MLflow not initialized, metrics will not be logged to MLflow
+2025-03-17 20:35:34,609 - webagent - WARNING - MLflow not initialized, metrics will not be logged to MLflow
+2025-03-17 20:35:34,609 - webagent - INFO - Registered model gpt4-demo of type llm for task text-generation
+2025-03-17 20:35:34,609 - webagent - INFO - Registered model gpt4-demo of type llm for task text-generation
+2025-03-17 20:35:34,609 - webagent - INFO - Registered model embedding-demo of type embedding for task text-embedding
+2025-03-17 20:35:34,609 - webagent - INFO - Registered model embedding-demo of type embedding for task text-embedding
+2025-03-17 20:35:34,609 - webagent - INFO - Registered pipeline doc-processing-demo of type document-processing
+2025-03-17 20:35:34,609 - webagent - INFO - Registered pipeline doc-processing-demo of type document-processing
+2025-03-17 20:35:34,609 - webagent - INFO - Registered pipeline data-extraction-demo of type data-extraction
+2025-03-17 20:35:34,609 - webagent - INFO - Registered pipeline data-extraction-demo of type data-extraction
+2025-03-17 20:35:34,609 - webagent - INFO - Registered dataset documents-demo of type text
+2025-03-17 20:35:34,609 - webagent - INFO - Registered dataset documents-demo of type text
+2025-03-17 20:35:34,609 - webagent - INFO - Registered dataset embeddings-demo of type vector
+2025-03-17 20:35:34,609 - webagent - INFO - Registered dataset embeddings-demo of type vector
+2025-03-17 20:35:34,609 - webagent - INFO - Registered demo components in metrics registries
+2025-03-17 20:35:34,609 - webagent - INFO - Registered demo components in metrics registries
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized ML Observability Demo
+2025-03-17 20:35:34,609 - webagent - INFO - Initialized ML Observability Demo
+2025-03-17 20:35:34,609 - webagent - INFO - Starting ML observability demo
+2025-03-17 20:35:34,609 - webagent - INFO - Starting ML observability demo
+2025-03-17 20:35:34,609 - webagent - INFO - Simulating 100 normal operations
+2025-03-17 20:35:34,609 - webagent - INFO - Simulating 100 normal operations
+2025-03-17 20:35:35,792 - webagent - INFO - Processed 0 normal samples
+2025-03-17 20:35:35,792 - webagent - INFO - Processed 0 normal samples
+2025-03-17 20:35:36,037 - webagent - INFO - Processed 10 normal samples
+2025-03-17 20:35:36,037 - webagent - INFO - Processed 10 normal samples
+2025-03-17 20:35:36,273 - webagent - INFO - Processed 20 normal samples
+2025-03-17 20:35:36,273 - webagent - INFO - Processed 20 normal samples
+2025-03-17 20:35:36,521 - webagent - INFO - Processed 30 normal samples
+2025-03-17 20:35:36,521 - webagent - INFO - Processed 30 normal samples
+2025-03-17 20:35:36,784 - webagent - INFO - Processed 40 normal samples
+2025-03-17 20:35:36,784 - webagent - INFO - Processed 40 normal samples
+2025-03-17 20:35:37,033 - webagent - INFO - Processed 50 normal samples
+2025-03-17 20:35:37,033 - webagent - INFO - Processed 50 normal samples
+2025-03-17 20:35:37,285 - webagent - INFO - Processed 60 normal samples
+2025-03-17 20:35:37,285 - webagent - INFO - Processed 60 normal samples
+2025-03-17 20:35:37,533 - webagent - INFO - Processed 70 normal samples
+2025-03-17 20:35:37,533 - webagent - INFO - Processed 70 normal samples
+2025-03-17 20:35:37,783 - webagent - INFO - Processed 80 normal samples
+2025-03-17 20:35:37,783 - webagent - INFO - Processed 80 normal samples
+2025-03-17 20:35:38,042 - webagent - INFO - Processed 90 normal samples
+2025-03-17 20:35:38,042 - webagent - INFO - Processed 90 normal samples
+2025-03-17 20:35:38,289 - webagent - INFO - Completed normal operations simulation
+2025-03-17 20:35:38,289 - webagent - INFO - Completed normal operations simulation
+2025-03-17 20:35:38,290 - webagent - INFO - Simulating gradual drift over 150 samples
+2025-03-17 20:35:38,290 - webagent - INFO - Simulating gradual drift over 150 samples
+2025-03-17 20:35:38,293 - webagent - INFO - Processed 0 drift samples. Current drift scores - Latency: 0.2888, Accuracy: 0.3863
+2025-03-17 20:35:38,293 - webagent - INFO - Processed 0 drift samples. Current drift scores - Latency: 0.2888, Accuracy: 0.3863
+2025-03-17 20:35:38,548 - webagent - INFO - Processed 10 drift samples. Current drift scores - Latency: 0.5702, Accuracy: 0.7189
+2025-03-17 20:35:38,548 - webagent - INFO - Processed 10 drift samples. Current drift scores - Latency: 0.5702, Accuracy: 0.7189
+2025-03-17 20:35:38,802 - webagent - INFO - Processed 20 drift samples. Current drift scores - Latency: 0.7189, Accuracy: 0.8670
+2025-03-17 20:35:38,802 - webagent - INFO - Processed 20 drift samples. Current drift scores - Latency: 0.7189, Accuracy: 0.8670
+2025-03-17 20:35:39,058 - webagent - INFO - Processed 30 drift samples. Current drift scores - Latency: 0.2888, Accuracy: 0.9247
+2025-03-17 20:35:39,058 - webagent - INFO - Processed 30 drift samples. Current drift scores - Latency: 0.2888, Accuracy: 0.9247
+2025-03-17 20:35:39,108 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,108 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,135 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,135 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,162 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,162 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,189 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,189 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,212 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,212 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,235 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,235 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,260 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,260 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,285 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,285 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,311 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,311 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,311 - webagent - INFO - Processed 40 drift samples. Current drift scores - Latency: 0.3863, Accuracy: 0.9902
+2025-03-17 20:35:39,311 - webagent - INFO - Processed 40 drift samples. Current drift scores - Latency: 0.3863, Accuracy: 0.9902
+2025-03-17 20:35:39,337 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,337 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,364 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,364 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,388 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,388 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,412 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,412 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,438 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,438 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,461 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,461 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,488 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,488 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,514 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,514 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,536 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,536 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,563 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,563 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,563 - webagent - INFO - Processed 50 drift samples. Current drift scores - Latency: 0.3863, Accuracy: 0.9995
+2025-03-17 20:35:39,563 - webagent - INFO - Processed 50 drift samples. Current drift scores - Latency: 0.3863, Accuracy: 0.9995
+2025-03-17 20:35:39,587 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,587 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,613 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,613 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,639 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,639 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,665 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,665 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,691 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,691 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,716 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,716 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,742 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,742 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,795 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,795 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,821 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,821 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,821 - webagent - INFO - Processed 60 drift samples. Current drift scores - Latency: 0.8670, Accuracy: 1.0000
+2025-03-17 20:35:39,821 - webagent - INFO - Processed 60 drift samples. Current drift scores - Latency: 0.8670, Accuracy: 1.0000
+2025-03-17 20:35:39,847 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,847 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,848 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,848 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,873 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,873 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,873 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,873 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,895 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,895 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,895 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,895 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,920 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,920 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,920 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,920 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,946 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,946 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,947 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,947 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,995 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,995 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,995 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:39,995 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,021 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,021 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,021 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,021 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,047 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,047 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,048 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,048 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,070 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,070 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,071 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,071 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,071 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,071 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,071 - webagent - WARNING - Drift detected at sample 70. Model retraining recommended!
+2025-03-17 20:35:40,071 - webagent - WARNING - Drift detected at sample 70. Model retraining recommended!
+2025-03-17 20:35:40,071 - webagent - INFO - Processed 70 drift samples. Current drift scores - Latency: 0.9597, Accuracy: 1.0000
+2025-03-17 20:35:40,071 - webagent - INFO - Processed 70 drift samples. Current drift scores - Latency: 0.9597, Accuracy: 1.0000
+2025-03-17 20:35:40,094 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,094 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,094 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,094 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,094 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,094 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,120 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,120 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,120 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,120 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,121 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,121 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,146 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,146 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,147 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,147 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,147 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,147 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,173 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,173 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,173 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,173 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,174 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,174 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,199 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,199 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,200 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,200 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,200 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,200 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,225 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,225 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,225 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,225 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,225 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,225 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,251 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,251 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,251 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,251 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,251 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,251 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,274 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,274 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,275 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,275 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,275 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,275 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,300 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,300 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,301 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,301 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,301 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,301 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,323 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,323 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,323 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,323 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,323 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,323 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,323 - webagent - WARNING - Drift detected at sample 80. Model retraining recommended!
+2025-03-17 20:35:40,323 - webagent - WARNING - Drift detected at sample 80. Model retraining recommended!
+2025-03-17 20:35:40,323 - webagent - INFO - Processed 80 drift samples. Current drift scores - Latency: 0.9934, Accuracy: 1.0000
+2025-03-17 20:35:40,323 - webagent - INFO - Processed 80 drift samples. Current drift scores - Latency: 0.9934, Accuracy: 1.0000
+2025-03-17 20:35:40,349 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,349 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,349 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,349 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,349 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,349 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,375 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,375 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,376 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,376 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,376 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,376 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,402 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,402 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,403 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,403 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,403 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,403 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,429 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,429 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,429 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,429 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,430 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,430 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,455 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,455 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,456 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,456 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,456 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,456 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,479 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,479 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,479 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,479 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,480 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,480 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,506 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,506 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,506 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,506 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,507 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,507 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,532 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,532 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,533 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,533 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,533 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,533 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,559 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,559 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,560 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,560 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,560 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,560 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,586 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,586 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,587 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,587 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,587 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,587 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,587 - webagent - WARNING - Drift detected at sample 90. Model retraining recommended!
+2025-03-17 20:35:40,587 - webagent - WARNING - Drift detected at sample 90. Model retraining recommended!
+2025-03-17 20:35:40,587 - webagent - INFO - Processed 90 drift samples. Current drift scores - Latency: 0.9992, Accuracy: 1.0000
+2025-03-17 20:35:40,587 - webagent - INFO - Processed 90 drift samples. Current drift scores - Latency: 0.9992, Accuracy: 1.0000
+2025-03-17 20:35:40,613 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,613 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,613 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,613 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,614 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,614 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,639 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,639 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,640 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,640 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,640 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,640 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,666 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,666 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,666 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,666 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,667 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,667 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,692 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,692 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,693 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,693 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,693 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,693 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,717 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,717 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,717 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,717 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,718 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,718 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,742 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,742 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,743 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,743 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,743 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,743 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,795 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,795 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,796 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,796 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,796 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,796 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,820 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,820 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,820 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,820 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,820 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,820 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,843 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,843 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,844 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,844 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,844 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,844 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,844 - webagent - WARNING - Drift detected at sample 100. Model retraining recommended!
+2025-03-17 20:35:40,844 - webagent - WARNING - Drift detected at sample 100. Model retraining recommended!
+2025-03-17 20:35:40,844 - webagent - INFO - Processed 100 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:40,844 - webagent - INFO - Processed 100 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:40,869 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,869 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,870 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,870 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,870 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,870 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,895 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,895 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,896 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,896 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,896 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,896 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,921 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,921 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,921 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,921 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,922 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,922 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,947 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,947 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,947 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,947 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,947 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,947 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,972 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,972 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,998 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,998 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,998 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,998 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,999 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:40,999 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,022 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,022 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,022 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,022 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,022 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,022 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,048 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,048 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,049 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,049 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,049 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,049 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,075 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,075 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,075 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,075 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,075 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,075 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,103 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,103 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,104 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,104 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,105 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,105 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,105 - webagent - WARNING - Drift detected at sample 110. Model retraining recommended!
+2025-03-17 20:35:41,105 - webagent - WARNING - Drift detected at sample 110. Model retraining recommended!
+2025-03-17 20:35:41,105 - webagent - INFO - Processed 110 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:41,105 - webagent - INFO - Processed 110 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:41,128 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,128 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,129 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,129 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,129 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,129 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,155 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,155 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,155 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,155 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,156 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,156 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,182 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,182 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,182 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,182 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,182 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,182 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,208 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,208 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,209 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,209 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,209 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,209 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,235 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,235 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,235 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,235 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,235 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,235 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,261 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,261 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,262 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,262 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,262 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,262 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,287 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,287 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,287 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,287 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,288 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,288 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,311 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,311 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,312 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,312 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,312 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,312 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,333 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,333 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,334 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,334 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,334 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,334 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,360 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,360 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,360 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,360 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,360 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,360 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,361 - webagent - WARNING - Drift detected at sample 120. Model retraining recommended!
+2025-03-17 20:35:41,361 - webagent - WARNING - Drift detected at sample 120. Model retraining recommended!
+2025-03-17 20:35:41,361 - webagent - INFO - Processed 120 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:41,361 - webagent - INFO - Processed 120 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:41,386 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,386 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,387 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,387 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,387 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,387 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,413 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,413 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,414 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,414 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,414 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,414 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,440 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,440 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,440 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,440 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,441 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,441 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,466 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,466 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,467 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,467 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,467 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,467 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,493 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,493 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,493 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,493 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,494 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,494 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,520 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,520 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,520 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,520 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,520 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,520 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,546 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,546 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,547 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,547 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,547 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,547 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,573 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,573 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,573 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,573 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,574 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,574 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,599 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,599 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,599 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,599 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,599 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,599 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,623 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,623 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,623 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,623 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,624 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,624 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,624 - webagent - WARNING - Drift detected at sample 130. Model retraining recommended!
+2025-03-17 20:35:41,624 - webagent - WARNING - Drift detected at sample 130. Model retraining recommended!
+2025-03-17 20:35:41,624 - webagent - INFO - Processed 130 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:41,624 - webagent - INFO - Processed 130 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:41,649 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,649 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,650 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,650 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,650 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,650 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,676 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,676 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,677 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,677 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,677 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,677 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,703 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,703 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,703 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,703 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,704 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,704 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,729 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,729 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,730 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,730 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,730 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,730 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,756 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,756 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,756 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,756 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,756 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,756 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,782 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,782 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,783 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,783 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,783 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,783 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,809 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,809 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,809 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,809 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,810 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,810 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,835 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,835 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,835 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,835 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,836 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,836 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,861 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,861 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,862 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,862 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,862 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,862 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,888 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,888 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,889 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,889 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,889 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,889 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,889 - webagent - WARNING - Drift detected at sample 140. Model retraining recommended!
+2025-03-17 20:35:41,889 - webagent - WARNING - Drift detected at sample 140. Model retraining recommended!
+2025-03-17 20:35:41,889 - webagent - INFO - Processed 140 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:41,889 - webagent - INFO - Processed 140 drift samples. Current drift scores - Latency: 1.0000, Accuracy: 1.0000
+2025-03-17 20:35:41,910 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,910 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,911 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,911 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,911 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,911 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,936 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,936 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,936 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,936 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,937 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,937 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,962 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,962 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,963 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,963 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,963 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,963 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,988 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,988 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,989 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,989 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,989 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:41,989 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,014 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,014 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,014 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,014 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,015 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,015 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,036 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,036 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,036 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,036 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,036 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,036 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,061 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,061 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,062 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,062 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,062 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,062 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,062 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,062 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,087 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,087 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,087 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,087 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,088 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,088 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,088 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,088 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,109 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,109 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,110 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,110 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,110 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,110 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,110 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,110 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,135 - webagent - INFO - Completed gradual drift simulation
+2025-03-17 20:35:42,135 - webagent - INFO - Completed gradual drift simulation
+2025-03-17 20:35:42,135 - webagent - INFO - Simulating embedding drift over 100 samples
+2025-03-17 20:35:42,135 - webagent - INFO - Simulating embedding drift over 100 samples
+2025-03-17 20:35:42,135 - webagent - INFO - Initialized drift detector: demo_embedding with window size 50
+2025-03-17 20:35:42,135 - webagent - INFO - Initialized drift detector: demo_embedding with window size 50
+2025-03-17 20:35:42,136 - webagent - INFO - Registered drift detector: demo_embedding
+2025-03-17 20:35:42,136 - webagent - INFO - Registered drift detector: demo_embedding
+2025-03-17 20:35:42,742 - webagent - INFO - Processed 0 embedding samples. Current drift score: 0.0000
+2025-03-17 20:35:42,742 - webagent - INFO - Processed 0 embedding samples. Current drift score: 0.0000
+2025-03-17 20:35:42,949 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,949 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,950 - webagent - WARNING - Embedding drift detected at sample 9. Drift score: 0.9139
+2025-03-17 20:35:42,950 - webagent - WARNING - Embedding drift detected at sample 9. Drift score: 0.9139
+2025-03-17 20:35:42,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,971 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,971 - webagent - WARNING - Embedding drift detected at sample 10. Drift score: 0.9601
+2025-03-17 20:35:42,971 - webagent - WARNING - Embedding drift detected at sample 10. Drift score: 0.9601
+2025-03-17 20:35:42,996 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,996 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:42,997 - webagent - WARNING - Embedding drift detected at sample 11. Drift score: 0.9669
+2025-03-17 20:35:42,997 - webagent - WARNING - Embedding drift detected at sample 11. Drift score: 0.9669
+2025-03-17 20:35:43,018 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,018 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,019 - webagent - WARNING - Embedding drift detected at sample 12. Drift score: 0.9913
+2025-03-17 20:35:43,019 - webagent - WARNING - Embedding drift detected at sample 12. Drift score: 0.9913
+2025-03-17 20:35:43,044 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,044 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,044 - webagent - WARNING - Embedding drift detected at sample 13. Drift score: 0.9893
+2025-03-17 20:35:43,044 - webagent - WARNING - Embedding drift detected at sample 13. Drift score: 0.9893
+2025-03-17 20:35:43,069 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,069 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,070 - webagent - WARNING - Embedding drift detected at sample 14. Drift score: 0.9942
+2025-03-17 20:35:43,070 - webagent - WARNING - Embedding drift detected at sample 14. Drift score: 0.9942
+2025-03-17 20:35:43,092 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,092 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,093 - webagent - WARNING - Embedding drift detected at sample 15. Drift score: 0.9668
+2025-03-17 20:35:43,093 - webagent - WARNING - Embedding drift detected at sample 15. Drift score: 0.9668
+2025-03-17 20:35:43,118 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,118 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,118 - webagent - WARNING - Embedding drift detected at sample 16. Drift score: 0.9548
+2025-03-17 20:35:43,118 - webagent - WARNING - Embedding drift detected at sample 16. Drift score: 0.9548
+2025-03-17 20:35:43,144 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,144 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,145 - webagent - WARNING - Embedding drift detected at sample 17. Drift score: 0.9477
+2025-03-17 20:35:43,145 - webagent - WARNING - Embedding drift detected at sample 17. Drift score: 0.9477
+2025-03-17 20:35:43,167 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,167 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,167 - webagent - WARNING - Embedding drift detected at sample 18. Drift score: 0.9381
+2025-03-17 20:35:43,167 - webagent - WARNING - Embedding drift detected at sample 18. Drift score: 0.9381
+2025-03-17 20:35:43,193 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,193 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,193 - webagent - WARNING - Embedding drift detected at sample 19. Drift score: 0.9554
+2025-03-17 20:35:43,193 - webagent - WARNING - Embedding drift detected at sample 19. Drift score: 0.9554
+2025-03-17 20:35:43,218 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,218 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,219 - webagent - WARNING - Embedding drift detected at sample 20. Drift score: 0.9719
+2025-03-17 20:35:43,219 - webagent - WARNING - Embedding drift detected at sample 20. Drift score: 0.9719
+2025-03-17 20:35:43,244 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,244 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,244 - webagent - WARNING - Embedding drift detected at sample 21. Drift score: 0.9776
+2025-03-17 20:35:43,244 - webagent - WARNING - Embedding drift detected at sample 21. Drift score: 0.9776
+2025-03-17 20:35:43,269 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,269 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,270 - webagent - WARNING - Embedding drift detected at sample 22. Drift score: 0.9584
+2025-03-17 20:35:43,270 - webagent - WARNING - Embedding drift detected at sample 22. Drift score: 0.9584
+2025-03-17 20:35:43,293 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,293 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,294 - webagent - WARNING - Embedding drift detected at sample 23. Drift score: 0.9452
+2025-03-17 20:35:43,294 - webagent - WARNING - Embedding drift detected at sample 23. Drift score: 0.9452
+2025-03-17 20:35:43,318 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,318 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,319 - webagent - WARNING - Embedding drift detected at sample 24. Drift score: 0.9657
+2025-03-17 20:35:43,319 - webagent - WARNING - Embedding drift detected at sample 24. Drift score: 0.9657
+2025-03-17 20:35:43,343 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,343 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,344 - webagent - WARNING - Embedding drift detected at sample 25. Drift score: 0.9564
+2025-03-17 20:35:43,344 - webagent - WARNING - Embedding drift detected at sample 25. Drift score: 0.9564
+2025-03-17 20:35:43,369 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,369 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,369 - webagent - WARNING - Embedding drift detected at sample 26. Drift score: 0.9453
+2025-03-17 20:35:43,369 - webagent - WARNING - Embedding drift detected at sample 26. Drift score: 0.9453
+2025-03-17 20:35:43,394 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,394 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,395 - webagent - WARNING - Embedding drift detected at sample 27. Drift score: 0.9667
+2025-03-17 20:35:43,395 - webagent - WARNING - Embedding drift detected at sample 27. Drift score: 0.9667
+2025-03-17 20:35:43,421 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,421 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,421 - webagent - WARNING - Embedding drift detected at sample 28. Drift score: 0.9803
+2025-03-17 20:35:43,421 - webagent - WARNING - Embedding drift detected at sample 28. Drift score: 0.9803
+2025-03-17 20:35:43,447 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,447 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,447 - webagent - WARNING - Embedding drift detected at sample 29. Drift score: 0.9717
+2025-03-17 20:35:43,447 - webagent - WARNING - Embedding drift detected at sample 29. Drift score: 0.9717
+2025-03-17 20:35:43,469 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,469 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,470 - webagent - WARNING - Embedding drift detected at sample 30. Drift score: 0.9710
+2025-03-17 20:35:43,470 - webagent - WARNING - Embedding drift detected at sample 30. Drift score: 0.9710
+2025-03-17 20:35:43,495 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,495 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,496 - webagent - WARNING - Embedding drift detected at sample 31. Drift score: 0.9823
+2025-03-17 20:35:43,496 - webagent - WARNING - Embedding drift detected at sample 31. Drift score: 0.9823
+2025-03-17 20:35:43,521 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,521 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,521 - webagent - WARNING - Embedding drift detected at sample 32. Drift score: 0.9712
+2025-03-17 20:35:43,521 - webagent - WARNING - Embedding drift detected at sample 32. Drift score: 0.9712
+2025-03-17 20:35:43,545 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,545 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,545 - webagent - WARNING - Embedding drift detected at sample 33. Drift score: 0.9814
+2025-03-17 20:35:43,545 - webagent - WARNING - Embedding drift detected at sample 33. Drift score: 0.9814
+2025-03-17 20:35:43,571 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,571 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,571 - webagent - WARNING - Embedding drift detected at sample 34. Drift score: 0.9894
+2025-03-17 20:35:43,571 - webagent - WARNING - Embedding drift detected at sample 34. Drift score: 0.9894
+2025-03-17 20:35:43,596 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,596 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,596 - webagent - WARNING - Embedding drift detected at sample 35. Drift score: 0.9910
+2025-03-17 20:35:43,596 - webagent - WARNING - Embedding drift detected at sample 35. Drift score: 0.9910
+2025-03-17 20:35:43,622 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,622 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,622 - webagent - WARNING - Embedding drift detected at sample 36. Drift score: 1.0119
+2025-03-17 20:35:43,622 - webagent - WARNING - Embedding drift detected at sample 36. Drift score: 1.0119
+2025-03-17 20:35:43,647 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,647 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,647 - webagent - WARNING - Embedding drift detected at sample 37. Drift score: 1.0192
+2025-03-17 20:35:43,647 - webagent - WARNING - Embedding drift detected at sample 37. Drift score: 1.0192
+2025-03-17 20:35:43,673 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,673 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,673 - webagent - WARNING - Embedding drift detected at sample 38. Drift score: 1.0110
+2025-03-17 20:35:43,673 - webagent - WARNING - Embedding drift detected at sample 38. Drift score: 1.0110
+2025-03-17 20:35:43,696 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,696 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,697 - webagent - WARNING - Embedding drift detected at sample 39. Drift score: 1.0098
+2025-03-17 20:35:43,697 - webagent - WARNING - Embedding drift detected at sample 39. Drift score: 1.0098
+2025-03-17 20:35:43,720 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,720 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,721 - webagent - WARNING - Embedding drift detected at sample 40. Drift score: 0.9965
+2025-03-17 20:35:43,721 - webagent - WARNING - Embedding drift detected at sample 40. Drift score: 0.9965
+2025-03-17 20:35:43,746 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,746 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,747 - webagent - WARNING - Embedding drift detected at sample 41. Drift score: 0.9930
+2025-03-17 20:35:43,747 - webagent - WARNING - Embedding drift detected at sample 41. Drift score: 0.9930
+2025-03-17 20:35:43,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,769 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,769 - webagent - WARNING - Embedding drift detected at sample 42. Drift score: 0.9880
+2025-03-17 20:35:43,769 - webagent - WARNING - Embedding drift detected at sample 42. Drift score: 0.9880
+2025-03-17 20:35:43,794 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,794 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,795 - webagent - WARNING - Embedding drift detected at sample 43. Drift score: 0.9861
+2025-03-17 20:35:43,795 - webagent - WARNING - Embedding drift detected at sample 43. Drift score: 0.9861
+2025-03-17 20:35:43,820 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,820 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,820 - webagent - WARNING - Embedding drift detected at sample 44. Drift score: 0.9768
+2025-03-17 20:35:43,820 - webagent - WARNING - Embedding drift detected at sample 44. Drift score: 0.9768
+2025-03-17 20:35:43,844 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,844 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,844 - webagent - WARNING - Embedding drift detected at sample 45. Drift score: 0.9846
+2025-03-17 20:35:43,844 - webagent - WARNING - Embedding drift detected at sample 45. Drift score: 0.9846
+2025-03-17 20:35:43,870 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,870 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,870 - webagent - WARNING - Embedding drift detected at sample 46. Drift score: 0.9878
+2025-03-17 20:35:43,870 - webagent - WARNING - Embedding drift detected at sample 46. Drift score: 0.9878
+2025-03-17 20:35:43,895 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,895 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,895 - webagent - WARNING - Embedding drift detected at sample 47. Drift score: 0.9821
+2025-03-17 20:35:43,895 - webagent - WARNING - Embedding drift detected at sample 47. Drift score: 0.9821
+2025-03-17 20:35:43,918 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,918 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,918 - webagent - WARNING - Embedding drift detected at sample 48. Drift score: 0.9685
+2025-03-17 20:35:43,918 - webagent - WARNING - Embedding drift detected at sample 48. Drift score: 0.9685
+2025-03-17 20:35:43,940 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,940 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,940 - webagent - WARNING - Embedding drift detected at sample 49. Drift score: 0.9692
+2025-03-17 20:35:43,940 - webagent - WARNING - Embedding drift detected at sample 49. Drift score: 0.9692
+2025-03-17 20:35:43,965 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,965 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,965 - webagent - WARNING - Embedding drift detected at sample 50. Drift score: 0.9627
+2025-03-17 20:35:43,965 - webagent - WARNING - Embedding drift detected at sample 50. Drift score: 0.9627
+2025-03-17 20:35:43,988 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,988 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:43,988 - webagent - WARNING - Embedding drift detected at sample 51. Drift score: 0.9676
+2025-03-17 20:35:43,988 - webagent - WARNING - Embedding drift detected at sample 51. Drift score: 0.9676
+2025-03-17 20:35:44,013 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,013 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,014 - webagent - WARNING - Embedding drift detected at sample 52. Drift score: 0.9741
+2025-03-17 20:35:44,014 - webagent - WARNING - Embedding drift detected at sample 52. Drift score: 0.9741
+2025-03-17 20:35:44,039 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,039 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,039 - webagent - WARNING - Embedding drift detected at sample 53. Drift score: 0.9822
+2025-03-17 20:35:44,039 - webagent - WARNING - Embedding drift detected at sample 53. Drift score: 0.9822
+2025-03-17 20:35:44,062 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,062 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,062 - webagent - WARNING - Embedding drift detected at sample 54. Drift score: 0.9816
+2025-03-17 20:35:44,062 - webagent - WARNING - Embedding drift detected at sample 54. Drift score: 0.9816
+2025-03-17 20:35:44,085 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,085 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,085 - webagent - WARNING - Embedding drift detected at sample 55. Drift score: 0.9806
+2025-03-17 20:35:44,085 - webagent - WARNING - Embedding drift detected at sample 55. Drift score: 0.9806
+2025-03-17 20:35:44,111 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,111 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,111 - webagent - WARNING - Embedding drift detected at sample 56. Drift score: 0.9919
+2025-03-17 20:35:44,111 - webagent - WARNING - Embedding drift detected at sample 56. Drift score: 0.9919
+2025-03-17 20:35:44,132 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,132 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,132 - webagent - WARNING - Embedding drift detected at sample 57. Drift score: 0.9824
+2025-03-17 20:35:44,132 - webagent - WARNING - Embedding drift detected at sample 57. Drift score: 0.9824
+2025-03-17 20:35:44,158 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,158 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,158 - webagent - WARNING - Embedding drift detected at sample 58. Drift score: 0.9905
+2025-03-17 20:35:44,158 - webagent - WARNING - Embedding drift detected at sample 58. Drift score: 0.9905
+2025-03-17 20:35:44,183 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,183 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,183 - webagent - WARNING - Embedding drift detected at sample 59. Drift score: 1.0081
+2025-03-17 20:35:44,183 - webagent - WARNING - Embedding drift detected at sample 59. Drift score: 1.0081
+2025-03-17 20:35:44,209 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,209 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,209 - webagent - WARNING - Embedding drift detected at sample 60. Drift score: 1.0019
+2025-03-17 20:35:44,209 - webagent - WARNING - Embedding drift detected at sample 60. Drift score: 1.0019
+2025-03-17 20:35:44,232 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,232 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,232 - webagent - WARNING - Embedding drift detected at sample 61. Drift score: 0.9973
+2025-03-17 20:35:44,232 - webagent - WARNING - Embedding drift detected at sample 61. Drift score: 0.9973
+2025-03-17 20:35:44,253 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,253 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,253 - webagent - WARNING - Embedding drift detected at sample 62. Drift score: 0.9899
+2025-03-17 20:35:44,253 - webagent - WARNING - Embedding drift detected at sample 62. Drift score: 0.9899
+2025-03-17 20:35:44,278 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,278 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,278 - webagent - WARNING - Embedding drift detected at sample 63. Drift score: 0.9792
+2025-03-17 20:35:44,278 - webagent - WARNING - Embedding drift detected at sample 63. Drift score: 0.9792
+2025-03-17 20:35:44,304 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,304 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,304 - webagent - WARNING - Embedding drift detected at sample 64. Drift score: 0.9829
+2025-03-17 20:35:44,304 - webagent - WARNING - Embedding drift detected at sample 64. Drift score: 0.9829
+2025-03-17 20:35:44,327 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,327 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,327 - webagent - WARNING - Embedding drift detected at sample 65. Drift score: 0.9947
+2025-03-17 20:35:44,327 - webagent - WARNING - Embedding drift detected at sample 65. Drift score: 0.9947
+2025-03-17 20:35:44,353 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,353 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,353 - webagent - WARNING - Embedding drift detected at sample 66. Drift score: 1.0100
+2025-03-17 20:35:44,353 - webagent - WARNING - Embedding drift detected at sample 66. Drift score: 1.0100
+2025-03-17 20:35:44,379 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,379 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,379 - webagent - WARNING - Embedding drift detected at sample 67. Drift score: 1.0080
+2025-03-17 20:35:44,379 - webagent - WARNING - Embedding drift detected at sample 67. Drift score: 1.0080
+2025-03-17 20:35:44,401 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,401 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,401 - webagent - WARNING - Embedding drift detected at sample 68. Drift score: 1.0046
+2025-03-17 20:35:44,401 - webagent - WARNING - Embedding drift detected at sample 68. Drift score: 1.0046
+2025-03-17 20:35:44,424 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,424 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,424 - webagent - WARNING - Embedding drift detected at sample 69. Drift score: 0.9863
+2025-03-17 20:35:44,424 - webagent - WARNING - Embedding drift detected at sample 69. Drift score: 0.9863
+2025-03-17 20:35:44,449 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,449 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,449 - webagent - WARNING - Embedding drift detected at sample 70. Drift score: 0.9688
+2025-03-17 20:35:44,449 - webagent - WARNING - Embedding drift detected at sample 70. Drift score: 0.9688
+2025-03-17 20:35:44,474 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,474 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,474 - webagent - WARNING - Embedding drift detected at sample 71. Drift score: 0.9609
+2025-03-17 20:35:44,474 - webagent - WARNING - Embedding drift detected at sample 71. Drift score: 0.9609
+2025-03-17 20:35:44,499 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,499 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,500 - webagent - WARNING - Embedding drift detected at sample 72. Drift score: 0.9775
+2025-03-17 20:35:44,500 - webagent - WARNING - Embedding drift detected at sample 72. Drift score: 0.9775
+2025-03-17 20:35:44,524 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,524 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,525 - webagent - WARNING - Embedding drift detected at sample 73. Drift score: 0.9853
+2025-03-17 20:35:44,525 - webagent - WARNING - Embedding drift detected at sample 73. Drift score: 0.9853
+2025-03-17 20:35:44,548 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,548 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,548 - webagent - WARNING - Embedding drift detected at sample 74. Drift score: 0.9790
+2025-03-17 20:35:44,548 - webagent - WARNING - Embedding drift detected at sample 74. Drift score: 0.9790
+2025-03-17 20:35:44,574 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,574 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,574 - webagent - WARNING - Embedding drift detected at sample 75. Drift score: 0.9785
+2025-03-17 20:35:44,574 - webagent - WARNING - Embedding drift detected at sample 75. Drift score: 0.9785
+2025-03-17 20:35:44,594 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,594 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,595 - webagent - WARNING - Embedding drift detected at sample 76. Drift score: 0.9874
+2025-03-17 20:35:44,595 - webagent - WARNING - Embedding drift detected at sample 76. Drift score: 0.9874
+2025-03-17 20:35:44,620 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,620 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,620 - webagent - WARNING - Embedding drift detected at sample 77. Drift score: 0.9816
+2025-03-17 20:35:44,620 - webagent - WARNING - Embedding drift detected at sample 77. Drift score: 0.9816
+2025-03-17 20:35:44,646 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,646 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,647 - webagent - WARNING - Embedding drift detected at sample 78. Drift score: 0.9753
+2025-03-17 20:35:44,647 - webagent - WARNING - Embedding drift detected at sample 78. Drift score: 0.9753
+2025-03-17 20:35:44,669 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,669 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,669 - webagent - WARNING - Embedding drift detected at sample 79. Drift score: 0.9788
+2025-03-17 20:35:44,669 - webagent - WARNING - Embedding drift detected at sample 79. Drift score: 0.9788
+2025-03-17 20:35:44,690 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,690 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,690 - webagent - WARNING - Embedding drift detected at sample 80. Drift score: 0.9705
+2025-03-17 20:35:44,690 - webagent - WARNING - Embedding drift detected at sample 80. Drift score: 0.9705
+2025-03-17 20:35:44,715 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,715 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,715 - webagent - WARNING - Embedding drift detected at sample 81. Drift score: 0.9552
+2025-03-17 20:35:44,715 - webagent - WARNING - Embedding drift detected at sample 81. Drift score: 0.9552
+2025-03-17 20:35:44,741 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,741 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,741 - webagent - WARNING - Embedding drift detected at sample 82. Drift score: 0.9543
+2025-03-17 20:35:44,741 - webagent - WARNING - Embedding drift detected at sample 82. Drift score: 0.9543
+2025-03-17 20:35:44,766 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,766 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,767 - webagent - WARNING - Embedding drift detected at sample 83. Drift score: 0.9358
+2025-03-17 20:35:44,767 - webagent - WARNING - Embedding drift detected at sample 83. Drift score: 0.9358
+2025-03-17 20:35:44,787 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,787 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,788 - webagent - WARNING - Embedding drift detected at sample 84. Drift score: 0.9260
+2025-03-17 20:35:44,788 - webagent - WARNING - Embedding drift detected at sample 84. Drift score: 0.9260
+2025-03-17 20:35:44,813 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,813 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,813 - webagent - WARNING - Embedding drift detected at sample 85. Drift score: 0.9300
+2025-03-17 20:35:44,813 - webagent - WARNING - Embedding drift detected at sample 85. Drift score: 0.9300
+2025-03-17 20:35:44,836 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,836 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,836 - webagent - WARNING - Embedding drift detected at sample 86. Drift score: 0.9120
+2025-03-17 20:35:44,836 - webagent - WARNING - Embedding drift detected at sample 86. Drift score: 0.9120
+2025-03-17 20:35:44,859 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,859 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,859 - webagent - WARNING - Embedding drift detected at sample 87. Drift score: 0.8949
+2025-03-17 20:35:44,859 - webagent - WARNING - Embedding drift detected at sample 87. Drift score: 0.8949
+2025-03-17 20:35:44,884 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,884 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,884 - webagent - WARNING - Embedding drift detected at sample 88. Drift score: 0.9058
+2025-03-17 20:35:44,884 - webagent - WARNING - Embedding drift detected at sample 88. Drift score: 0.9058
+2025-03-17 20:35:44,905 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,905 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,906 - webagent - WARNING - Embedding drift detected at sample 89. Drift score: 0.9086
+2025-03-17 20:35:44,906 - webagent - WARNING - Embedding drift detected at sample 89. Drift score: 0.9086
+2025-03-17 20:35:44,931 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,931 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,931 - webagent - WARNING - Embedding drift detected at sample 90. Drift score: 0.9184
+2025-03-17 20:35:44,931 - webagent - WARNING - Embedding drift detected at sample 90. Drift score: 0.9184
+2025-03-17 20:35:44,957 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,957 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,957 - webagent - WARNING - Embedding drift detected at sample 91. Drift score: 0.9185
+2025-03-17 20:35:44,957 - webagent - WARNING - Embedding drift detected at sample 91. Drift score: 0.9185
+2025-03-17 20:35:44,982 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,982 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:44,982 - webagent - WARNING - Embedding drift detected at sample 92. Drift score: 0.9271
+2025-03-17 20:35:44,982 - webagent - WARNING - Embedding drift detected at sample 92. Drift score: 0.9271
+2025-03-17 20:35:45,008 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,008 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,008 - webagent - WARNING - Embedding drift detected at sample 93. Drift score: 0.9285
+2025-03-17 20:35:45,008 - webagent - WARNING - Embedding drift detected at sample 93. Drift score: 0.9285
+2025-03-17 20:35:45,034 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,034 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,034 - webagent - WARNING - Embedding drift detected at sample 94. Drift score: 0.9357
+2025-03-17 20:35:45,034 - webagent - WARNING - Embedding drift detected at sample 94. Drift score: 0.9357
+2025-03-17 20:35:45,057 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,057 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,057 - webagent - WARNING - Embedding drift detected at sample 95. Drift score: 0.9238
+2025-03-17 20:35:45,057 - webagent - WARNING - Embedding drift detected at sample 95. Drift score: 0.9238
+2025-03-17 20:35:45,083 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,083 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,084 - webagent - WARNING - Embedding drift detected at sample 96. Drift score: 0.9265
+2025-03-17 20:35:45,084 - webagent - WARNING - Embedding drift detected at sample 96. Drift score: 0.9265
+2025-03-17 20:35:45,110 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,110 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,111 - webagent - WARNING - Embedding drift detected at sample 97. Drift score: 0.9299
+2025-03-17 20:35:45,111 - webagent - WARNING - Embedding drift detected at sample 97. Drift score: 0.9299
+2025-03-17 20:35:45,136 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,136 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,136 - webagent - WARNING - Embedding drift detected at sample 98. Drift score: 0.9361
+2025-03-17 20:35:45,136 - webagent - WARNING - Embedding drift detected at sample 98. Drift score: 0.9361
+2025-03-17 20:35:45,162 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,162 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:45,162 - webagent - WARNING - Embedding drift detected at sample 99. Drift score: 0.9311
+2025-03-17 20:35:45,162 - webagent - WARNING - Embedding drift detected at sample 99. Drift score: 0.9311
+2025-03-17 20:35:45,343 - webagent - INFO - Completed embedding drift simulation
+2025-03-17 20:35:45,343 - webagent - INFO - Completed embedding drift simulation
+2025-03-17 20:35:45,344 - webagent - INFO - Simulating categorical drift over 100 samples
+2025-03-17 20:35:45,344 - webagent - INFO - Simulating categorical drift over 100 samples
+2025-03-17 20:35:45,344 - webagent - INFO - Initialized drift detector: demo_doc_types with window size 50
+2025-03-17 20:35:45,344 - webagent - INFO - Initialized drift detector: demo_doc_types with window size 50
+2025-03-17 20:35:45,344 - webagent - INFO - Registered drift detector: demo_doc_types
+2025-03-17 20:35:45,344 - webagent - INFO - Registered drift detector: demo_doc_types
+2025-03-17 20:35:45,957 - webagent - INFO - Processed 0 categorical samples. Current drift score: 0.0000
+2025-03-17 20:35:45,957 - webagent - INFO - Processed 0 categorical samples. Current drift score: 0.0000
+2025-03-17 20:35:46,190 - webagent - INFO - Processed 10 categorical samples. Current drift score: 0.0000
+2025-03-17 20:35:46,190 - webagent - INFO - Processed 10 categorical samples. Current drift score: 0.0000
+2025-03-17 20:35:46,428 - webagent - INFO - Processed 20 categorical samples. Current drift score: 0.0000
+2025-03-17 20:35:46,428 - webagent - INFO - Processed 20 categorical samples. Current drift score: 0.0000
+2025-03-17 20:35:46,660 - webagent - INFO - Processed 30 categorical samples. Current drift score: 0.3663
+2025-03-17 20:35:46,660 - webagent - INFO - Processed 30 categorical samples. Current drift score: 0.3663
+2025-03-17 20:35:46,909 - webagent - INFO - Processed 40 categorical samples. Current drift score: 0.3730
+2025-03-17 20:35:46,909 - webagent - INFO - Processed 40 categorical samples. Current drift score: 0.3730
+2025-03-17 20:35:47,142 - webagent - INFO - Processed 50 categorical samples. Current drift score: 0.5956
+2025-03-17 20:35:47,142 - webagent - INFO - Processed 50 categorical samples. Current drift score: 0.5956
+2025-03-17 20:35:47,381 - webagent - INFO - Processed 60 categorical samples. Current drift score: 0.8758
+2025-03-17 20:35:47,381 - webagent - INFO - Processed 60 categorical samples. Current drift score: 0.8758
+2025-03-17 20:35:47,473 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,473 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,474 - webagent - WARNING - Category distribution drift detected at sample 64. Drift score: 0.9693
+2025-03-17 20:35:47,474 - webagent - WARNING - Category distribution drift detected at sample 64. Drift score: 0.9693
+2025-03-17 20:35:47,499 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,499 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,499 - webagent - WARNING - Category distribution drift detected at sample 65. Drift score: 0.9710
+2025-03-17 20:35:47,499 - webagent - WARNING - Category distribution drift detected at sample 65. Drift score: 0.9710
+2025-03-17 20:35:47,524 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,524 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,524 - webagent - WARNING - Category distribution drift detected at sample 66. Drift score: 0.9697
+2025-03-17 20:35:47,524 - webagent - WARNING - Category distribution drift detected at sample 66. Drift score: 0.9697
+2025-03-17 20:35:47,550 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,550 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,550 - webagent - WARNING - Category distribution drift detected at sample 67. Drift score: 0.9814
+2025-03-17 20:35:47,550 - webagent - WARNING - Category distribution drift detected at sample 67. Drift score: 0.9814
+2025-03-17 20:35:47,576 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,576 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,576 - webagent - WARNING - Category distribution drift detected at sample 68. Drift score: 0.9891
+2025-03-17 20:35:47,576 - webagent - WARNING - Category distribution drift detected at sample 68. Drift score: 0.9891
+2025-03-17 20:35:47,599 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,599 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,599 - webagent - WARNING - Category distribution drift detected at sample 69. Drift score: 0.9902
+2025-03-17 20:35:47,599 - webagent - WARNING - Category distribution drift detected at sample 69. Drift score: 0.9902
+2025-03-17 20:35:47,624 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,624 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,624 - webagent - WARNING - Category distribution drift detected at sample 70. Drift score: 0.9905
+2025-03-17 20:35:47,624 - webagent - WARNING - Category distribution drift detected at sample 70. Drift score: 0.9905
+2025-03-17 20:35:47,649 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,649 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,649 - webagent - WARNING - Category distribution drift detected at sample 71. Drift score: 0.9853
+2025-03-17 20:35:47,649 - webagent - WARNING - Category distribution drift detected at sample 71. Drift score: 0.9853
+2025-03-17 20:35:47,675 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,675 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,675 - webagent - WARNING - Category distribution drift detected at sample 72. Drift score: 0.9921
+2025-03-17 20:35:47,675 - webagent - WARNING - Category distribution drift detected at sample 72. Drift score: 0.9921
+2025-03-17 20:35:47,700 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,700 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,700 - webagent - WARNING - Category distribution drift detected at sample 73. Drift score: 0.9921
+2025-03-17 20:35:47,700 - webagent - WARNING - Category distribution drift detected at sample 73. Drift score: 0.9921
+2025-03-17 20:35:47,726 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,726 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,726 - webagent - WARNING - Category distribution drift detected at sample 74. Drift score: 0.9925
+2025-03-17 20:35:47,726 - webagent - WARNING - Category distribution drift detected at sample 74. Drift score: 0.9925
+2025-03-17 20:35:47,751 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,751 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,752 - webagent - WARNING - Category distribution drift detected at sample 75. Drift score: 0.9853
+2025-03-17 20:35:47,752 - webagent - WARNING - Category distribution drift detected at sample 75. Drift score: 0.9853
+2025-03-17 20:35:47,777 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,777 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,777 - webagent - WARNING - Category distribution drift detected at sample 76. Drift score: 0.9853
+2025-03-17 20:35:47,777 - webagent - WARNING - Category distribution drift detected at sample 76. Drift score: 0.9853
+2025-03-17 20:35:47,803 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,803 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,803 - webagent - WARNING - Category distribution drift detected at sample 77. Drift score: 0.9868
+2025-03-17 20:35:47,803 - webagent - WARNING - Category distribution drift detected at sample 77. Drift score: 0.9868
+2025-03-17 20:35:47,828 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,828 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,828 - webagent - WARNING - Category distribution drift detected at sample 78. Drift score: 0.9912
+2025-03-17 20:35:47,828 - webagent - WARNING - Category distribution drift detected at sample 78. Drift score: 0.9912
+2025-03-17 20:35:47,850 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,850 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,850 - webagent - WARNING - Category distribution drift detected at sample 79. Drift score: 0.9912
+2025-03-17 20:35:47,850 - webagent - WARNING - Category distribution drift detected at sample 79. Drift score: 0.9912
+2025-03-17 20:35:47,876 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,876 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,876 - webagent - WARNING - Category distribution drift detected at sample 80. Drift score: 0.9958
+2025-03-17 20:35:47,876 - webagent - WARNING - Category distribution drift detected at sample 80. Drift score: 0.9958
+2025-03-17 20:35:47,901 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,901 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,902 - webagent - WARNING - Category distribution drift detected at sample 81. Drift score: 0.9977
+2025-03-17 20:35:47,902 - webagent - WARNING - Category distribution drift detected at sample 81. Drift score: 0.9977
+2025-03-17 20:35:47,927 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,927 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,927 - webagent - WARNING - Category distribution drift detected at sample 82. Drift score: 0.9958
+2025-03-17 20:35:47,927 - webagent - WARNING - Category distribution drift detected at sample 82. Drift score: 0.9958
+2025-03-17 20:35:47,953 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,953 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,953 - webagent - WARNING - Category distribution drift detected at sample 83. Drift score: 0.9929
+2025-03-17 20:35:47,953 - webagent - WARNING - Category distribution drift detected at sample 83. Drift score: 0.9929
+2025-03-17 20:35:47,978 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,978 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:47,979 - webagent - WARNING - Category distribution drift detected at sample 84. Drift score: 0.9853
+2025-03-17 20:35:47,979 - webagent - WARNING - Category distribution drift detected at sample 84. Drift score: 0.9853
+2025-03-17 20:35:48,005 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,005 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,005 - webagent - WARNING - Category distribution drift detected at sample 85. Drift score: 0.9911
+2025-03-17 20:35:48,005 - webagent - WARNING - Category distribution drift detected at sample 85. Drift score: 0.9911
+2025-03-17 20:35:48,027 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,027 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,028 - webagent - WARNING - Category distribution drift detected at sample 86. Drift score: 0.9914
+2025-03-17 20:35:48,028 - webagent - WARNING - Category distribution drift detected at sample 86. Drift score: 0.9914
+2025-03-17 20:35:48,052 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,052 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,053 - webagent - WARNING - Category distribution drift detected at sample 87. Drift score: 0.9911
+2025-03-17 20:35:48,053 - webagent - WARNING - Category distribution drift detected at sample 87. Drift score: 0.9911
+2025-03-17 20:35:48,079 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,079 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,079 - webagent - WARNING - Category distribution drift detected at sample 88. Drift score: 0.9932
+2025-03-17 20:35:48,079 - webagent - WARNING - Category distribution drift detected at sample 88. Drift score: 0.9932
+2025-03-17 20:35:48,101 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,101 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,101 - webagent - WARNING - Category distribution drift detected at sample 89. Drift score: 0.9963
+2025-03-17 20:35:48,101 - webagent - WARNING - Category distribution drift detected at sample 89. Drift score: 0.9963
+2025-03-17 20:35:48,127 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,127 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,128 - webagent - WARNING - Category distribution drift detected at sample 90. Drift score: 0.9964
+2025-03-17 20:35:48,128 - webagent - WARNING - Category distribution drift detected at sample 90. Drift score: 0.9964
+2025-03-17 20:35:48,154 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,154 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,155 - webagent - WARNING - Category distribution drift detected at sample 91. Drift score: 0.9964
+2025-03-17 20:35:48,155 - webagent - WARNING - Category distribution drift detected at sample 91. Drift score: 0.9964
+2025-03-17 20:35:48,177 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,177 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,177 - webagent - WARNING - Category distribution drift detected at sample 92. Drift score: 0.9943
+2025-03-17 20:35:48,177 - webagent - WARNING - Category distribution drift detected at sample 92. Drift score: 0.9943
+2025-03-17 20:35:48,203 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,203 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,204 - webagent - WARNING - Category distribution drift detected at sample 93. Drift score: 0.9964
+2025-03-17 20:35:48,204 - webagent - WARNING - Category distribution drift detected at sample 93. Drift score: 0.9964
+2025-03-17 20:35:48,226 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,226 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,226 - webagent - WARNING - Category distribution drift detected at sample 94. Drift score: 0.9964
+2025-03-17 20:35:48,226 - webagent - WARNING - Category distribution drift detected at sample 94. Drift score: 0.9964
+2025-03-17 20:35:48,250 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,250 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,250 - webagent - WARNING - Category distribution drift detected at sample 95. Drift score: 0.9983
+2025-03-17 20:35:48,250 - webagent - WARNING - Category distribution drift detected at sample 95. Drift score: 0.9983
+2025-03-17 20:35:48,272 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,272 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,273 - webagent - WARNING - Category distribution drift detected at sample 96. Drift score: 0.9990
+2025-03-17 20:35:48,273 - webagent - WARNING - Category distribution drift detected at sample 96. Drift score: 0.9990
+2025-03-17 20:35:48,299 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,299 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,299 - webagent - WARNING - Category distribution drift detected at sample 97. Drift score: 0.9996
+2025-03-17 20:35:48,299 - webagent - WARNING - Category distribution drift detected at sample 97. Drift score: 0.9996
+2025-03-17 20:35:48,325 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,325 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,326 - webagent - WARNING - Category distribution drift detected at sample 98. Drift score: 0.9992
+2025-03-17 20:35:48,326 - webagent - WARNING - Category distribution drift detected at sample 98. Drift score: 0.9992
+2025-03-17 20:35:48,349 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,349 - webagent - WARNING - MLflow not available for logging
+2025-03-17 20:35:48,349 - webagent - WARNING - Category distribution drift detected at sample 99. Drift score: 0.9995
+2025-03-17 20:35:48,349 - webagent - WARNING - Category distribution drift detected at sample 99. Drift score: 0.9995
+2025-03-17 20:35:48,500 - webagent - INFO - Completed categorical drift simulation
+2025-03-17 20:35:48,500 - webagent - INFO - Completed categorical drift simulation
+2025-03-17 20:35:48,500 - webagent - INFO - Generating metrics plots
+2025-03-17 20:35:48,500 - webagent - INFO - Generating metrics plots
+2025-03-17 20:35:48,744 - webagent - INFO - Saved Grafana dashboard to /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos/results/model_performance_dashboard.json
+2025-03-17 20:35:48,744 - webagent - INFO - Saved Grafana dashboard to /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos/results/model_performance_dashboard.json
+2025-03-17 20:35:48,744 - webagent - INFO - Saved Grafana dashboard to /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos/results/model_drift_dashboard.json
+2025-03-17 20:35:48,744 - webagent - INFO - Saved Grafana dashboard to /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos/results/model_drift_dashboard.json
+2025-03-17 20:35:48,744 - webagent - WARNING - Grafana URL or API key not set, skipping dashboard upload
+2025-03-17 20:35:48,744 - webagent - WARNING - Grafana URL or API key not set, skipping dashboard upload
+2025-03-17 20:35:48,744 - webagent - INFO - Plots saved to /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos/results
+2025-03-17 20:35:48,744 - webagent - INFO - Plots saved to /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos/results
+2025-03-17 20:35:48,747 - webagent - INFO - Metrics exported to /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos/results/observability_metrics.json
+2025-03-17 20:35:48,747 - webagent - INFO - Metrics exported to /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos/results/observability_metrics.json
+2025-03-17 20:35:48,747 - webagent - INFO - ML observability demo completed successfully
+2025-03-17 20:35:48,747 - webagent - INFO - ML observability demo completed successfully

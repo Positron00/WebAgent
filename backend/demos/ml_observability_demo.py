@@ -43,6 +43,19 @@ from backend.app.core.drift_detection import (
     should_retrain_any_model
 )
 from backend.app.core.logger import logger
+from backend.app.core.mlflow_integration import (
+    get_mlflow_manager,
+    log_model_metrics,
+    log_drift_detection,
+    log_visualization,
+    log_metrics_export
+)
+from backend.app.core.grafana_integration import (
+    GrafanaDashboardGenerator,
+    generate_model_drift_dashboard,
+    generate_model_performance_dashboard,
+    upload_dashboard_to_grafana
+)
 
 # Configure matplotlib for non-interactive mode if needed
 plt.switch_backend('agg')
@@ -70,6 +83,18 @@ class ObservabilityDemo:
         self.accuracy_detector = create_numerical_drift_detector("demo_accuracy", window_size=100, threshold=0.05)
         self.category_detector = create_categorical_drift_detector("demo_category", window_size=100, threshold=0.05)
         self.performance_detector = create_performance_drift_detector("demo_performance", window_size=50, threshold=0.1)
+        
+        # Initialize MLflow
+        self.mlflow_manager = get_mlflow_manager()
+        if self.mlflow_manager.initialized:
+            self.mlflow_run_id = self.mlflow_manager.start_run(experiment_name="MLObservabilityDemo")
+            logger.info(f"Started MLflow run with ID: {self.mlflow_run_id}")
+        else:
+            self.mlflow_run_id = None
+            logger.warning("MLflow not initialized, metrics will not be logged to MLflow")
+        
+        # Initialize Grafana dashboard generator
+        self.grafana_generator = GrafanaDashboardGenerator()
         
         # Track metrics over time for plotting
         self.metrics_history = {
@@ -142,6 +167,17 @@ class ObservabilityDemo:
         )
         
         logger.info("Registered demo components in metrics registries")
+        
+        # Log component registrations to MLflow if available
+        if self.mlflow_run_id:
+            self.mlflow_manager.log_parameters({
+                "model_ids": "gpt4-demo,embedding-demo",
+                "pipeline_ids": "doc-processing-demo,data-extraction-demo",
+                "dataset_ids": "documents-demo,embeddings-demo",
+                "demo_type": "ml_observability"
+            })
+            
+            logger.info("Logged component registrations to MLflow")
     
     def _generate_normal_prediction(self) -> Tuple[float, float, int, int, bool]:
         """
@@ -211,6 +247,14 @@ class ObservabilityDemo:
                 confidence=random.uniform(0.8, 0.95)
             )
             
+            # Log to MLflow if available
+            if self.mlflow_run_id:
+                self.mlflow_manager.log_metrics({
+                    "reference_latency": latency,
+                    "reference_accuracy": accuracy,
+                    "reference_success": 1.0 if success else 0.0
+                })
+            
             # Sleep to simulate real-time operation
             time.sleep(sleep_time)
         
@@ -259,6 +303,32 @@ class ObservabilityDemo:
                 confidence=random.uniform(0.8, 0.95)
             )
             
+            # Log to MLflow if available
+            if self.mlflow_run_id:
+                self.mlflow_manager.log_metrics({
+                    "latency": latency,
+                    "accuracy": accuracy,
+                    "success": 1.0 if success else 0.0,
+                    "tokens": prompt_tokens + completion_tokens,
+                    "latency_drift_score": latency_score,
+                    "accuracy_drift_score": accuracy_score,
+                    "category_drift_score": category_score,
+                    "performance_drift_score": perf_score
+                })
+                
+                # Log drift detection events
+                if any([latency_drift, accuracy_drift, category_drift, perf_drift]):
+                    log_drift_detection(
+                        detector_id="normal_operation",
+                        scores={
+                            "latency": latency_score,
+                            "accuracy": accuracy_score,
+                            "category": category_score,
+                            "performance": perf_score
+                        },
+                        detected=True
+                    )
+            
             # Store metrics for plotting
             self.metrics_history["timestamps"].append(datetime.now())
             self.metrics_history["latency"].append(latency)
@@ -288,6 +358,14 @@ class ObservabilityDemo:
         # Gradually increase latency and decrease accuracy
         latency_increment = 0.3 / num_samples  # Gradually increase to +300ms
         accuracy_decrement = 0.2 / num_samples  # Gradually decrease by 20%
+        
+        # Log drift simulation parameters to MLflow
+        if self.mlflow_run_id:
+            self.mlflow_manager.log_parameters({
+                "drift_simulation_samples": num_samples,
+                "latency_increment_total": 0.3,
+                "accuracy_decrement_total": 0.2
+            })
         
         for i in range(num_samples):
             # Update drift parameters
@@ -343,6 +421,35 @@ class ObservabilityDemo:
                 confidence=confidence
             )
             
+            # Log to MLflow if available
+            if self.mlflow_run_id:
+                self.mlflow_manager.log_metrics({
+                    "drift_latency": latency,
+                    "drift_accuracy": accuracy,
+                    "drift_success": 1.0 if success else 0.0,
+                    "drift_tokens": prompt_tokens + completion_tokens,
+                    "drift_quality_score": quality_score,
+                    "drift_confidence": confidence,
+                    "drift_factor": drift_factor,
+                    "drift_latency_score": latency_score,
+                    "drift_accuracy_score": accuracy_score,
+                    "drift_category_score": category_score,
+                    "drift_performance_score": perf_score
+                })
+                
+                # Log drift detection events
+                if any([latency_drift, accuracy_drift, category_drift, perf_drift]):
+                    log_drift_detection(
+                        detector_id="gradual_drift",
+                        scores={
+                            "latency": latency_score,
+                            "accuracy": accuracy_score,
+                            "category": category_score,
+                            "performance": perf_score
+                        },
+                        detected=True
+                    )
+            
             # Store metrics for plotting
             self.metrics_history["timestamps"].append(datetime.now())
             self.metrics_history["latency"].append(latency)
@@ -356,6 +463,13 @@ class ObservabilityDemo:
                 retrain = self.performance_detector.should_retrain()
                 if retrain:
                     logger.warning(f"Drift detected at sample {i}. Model retraining recommended!")
+                    # Log retraining recommendation to MLflow
+                    if self.mlflow_run_id:
+                        self.mlflow_manager.log_metrics({
+                            "retraining_recommended": 1.0,
+                            "retraining_sample": float(i)
+                        })
+                
                 logger.info(f"Processed {i} drift samples. Current drift scores - Latency: {latency_score:.4f}, Accuracy: {accuracy_score:.4f}")
             
             # Sleep to simulate real-time operation
@@ -375,6 +489,14 @@ class ObservabilityDemo:
         
         # Create embedding drift detector
         embedding_detector = create_embedding_drift_detector("demo_embedding", window_size=50, threshold=0.3)
+        
+        # Log embedding simulation parameters to MLflow
+        if self.mlflow_run_id:
+            self.mlflow_manager.log_parameters({
+                "embedding_simulation_samples": num_samples,
+                "embedding_dimension": 384,
+                "embedding_drift_threshold": embedding_detector.threshold
+            })
         
         # Generate reference embeddings
         reference_centroid = np.zeros(384)
@@ -419,6 +541,22 @@ class ObservabilityDemo:
                 metadata={"drift_score": drift_score, "drift_detected": drift_detected}
             )
             
+            # Log to MLflow if available
+            if self.mlflow_run_id:
+                self.mlflow_manager.log_metrics({
+                    "embedding_drift_score": drift_score,
+                    "embedding_drift_magnitude": drift_magnitude,
+                    "embedding_drift_detected": 1.0 if drift_detected else 0.0
+                })
+                
+                # Log drift detection events
+                if drift_detected:
+                    log_drift_detection(
+                        detector_id="embedding_drift",
+                        scores={"embedding": drift_score},
+                        detected=True
+                    )
+            
             if i % 10 == 0 or drift_detected:
                 if drift_detected:
                     logger.warning(f"Embedding drift detected at sample {i}. Drift score: {drift_score:.4f}")
@@ -447,7 +585,13 @@ class ObservabilityDemo:
         
         # Save the plot
         plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir, 'embedding_drift.png'))
+        embedding_drift_path = os.path.join(self.output_dir, 'embedding_drift.png')
+        plt.savefig(embedding_drift_path)
+        
+        # Log to MLflow if available
+        if self.mlflow_run_id:
+            log_visualization(plt.gcf(), "embedding_drift.png")
+        
         plt.close()
         
         logger.info("Completed embedding drift simulation")
@@ -464,6 +608,14 @@ class ObservabilityDemo:
         
         # Create categorical drift detector
         category_detector = create_categorical_drift_detector("demo_doc_types", window_size=50, threshold=0.05)
+        
+        # Log categorical simulation parameters to MLflow
+        if self.mlflow_run_id:
+            self.mlflow_manager.log_parameters({
+                "categorical_simulation_samples": num_samples,
+                "categorical_drift_threshold": category_detector.threshold,
+                "categories": "pdf,docx,txt,html,csv"
+            })
         
         # Initial distribution of document types
         categories = ["pdf", "docx", "txt", "html", "csv"]
@@ -487,6 +639,13 @@ class ObservabilityDemo:
         
         # Gradually shift distribution
         drift_probs = [0.1, 0.15, 0.05, 0.6, 0.1]  # Target drifted distribution (more HTML)
+        
+        # Log target distribution to MLflow
+        if self.mlflow_run_id:
+            self.mlflow_manager.log_parameters({
+                "initial_distribution": str(initial_probs),
+                "target_distribution": str(drift_probs)
+            })
         
         category_counts = {cat: 0 for cat in categories}
         drift_scores = []
@@ -527,6 +686,29 @@ class ObservabilityDemo:
                 items_processed=1,
                 metadata={"doc_type": category}
             )
+            
+            # Log to MLflow if available
+            if self.mlflow_run_id:
+                # Create category frequency metrics
+                category_metrics = {f"category_{cat}_freq": category_counts[cat] / sum(category_counts.values()) 
+                                   for cat in categories}
+                
+                # Add drift metrics
+                category_metrics.update({
+                    "category_drift_score": drift_score,
+                    "category_drift_detected": 1.0 if drift_detected else 0.0,
+                    "category_drift_factor": drift_factor
+                })
+                
+                self.mlflow_manager.log_metrics(category_metrics)
+                
+                # Log drift detection events
+                if drift_detected:
+                    log_drift_detection(
+                        detector_id="category_drift",
+                        scores={"category": drift_score},
+                        detected=True
+                    )
             
             if i % 10 == 0 or drift_detected:
                 if drift_detected:
@@ -577,7 +759,19 @@ class ObservabilityDemo:
         
         # Save the plot
         plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir, 'category_drift.png'))
+        category_drift_path = os.path.join(self.output_dir, 'category_drift.png')
+        plt.savefig(category_drift_path)
+        
+        # Log to MLflow if available
+        if self.mlflow_run_id:
+            log_visualization(plt.gcf(), "category_drift.png")
+            
+            # Log final category distribution as parameters
+            self.mlflow_manager.log_parameters({
+                f"final_{cat}_percentage": f"{category_percentages[cat]:.1f}%" 
+                for cat in categories
+            })
+        
         plt.close()
         
         logger.info("Completed categorical drift simulation")
@@ -611,7 +805,12 @@ class ObservabilityDemo:
         plt.grid(True, alpha=0.3)
         
         plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir, 'model_performance.png'))
+        model_perf_path = os.path.join(self.output_dir, 'model_performance.png')
+        plt.savefig(model_perf_path)
+        
+        # Log to MLflow if available
+        if self.mlflow_run_id:
+            log_visualization(plt.gcf(), "model_performance.png")
         plt.close()
         
         # Figure 2: Drift Score and Error Rate
@@ -645,7 +844,12 @@ class ObservabilityDemo:
         plt.grid(True, alpha=0.3)
         
         plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir, 'drift_error_rate.png'))
+        drift_error_path = os.path.join(self.output_dir, 'drift_error_rate.png')
+        plt.savefig(drift_error_path)
+        
+        # Log to MLflow if available
+        if self.mlflow_run_id:
+            log_visualization(plt.gcf(), "drift_error_rate.png")
         plt.close()
         
         # Figure 3: Token Usage
@@ -657,8 +861,57 @@ class ObservabilityDemo:
         plt.grid(True, alpha=0.3)
         
         plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir, 'token_usage.png'))
+        token_usage_path = os.path.join(self.output_dir, 'token_usage.png')
+        plt.savefig(token_usage_path)
+        
+        # Log to MLflow if available
+        if self.mlflow_run_id:
+            log_visualization(plt.gcf(), "token_usage.png")
         plt.close()
+        
+        # Generate Grafana dashboards
+        try:
+            # Create model performance dashboard
+            perf_dashboard_path = os.path.join(self.output_dir, 'model_performance_dashboard.json')
+            generate_model_performance_dashboard(
+                output_file=perf_dashboard_path,
+                title="WebAgent ML Performance Dashboard",
+                folder="MLObservabilityDemo"
+            )
+            
+            # Create model drift dashboard
+            drift_dashboard_path = os.path.join(self.output_dir, 'model_drift_dashboard.json')
+            generate_model_drift_dashboard(
+                output_file=drift_dashboard_path,
+                title="WebAgent ML Drift Dashboard",
+                folder="MLObservabilityDemo"
+            )
+            
+            # Upload dashboards to Grafana if configured
+            grafana_url = os.environ.get("GRAFANA_URL")
+            grafana_api_key = os.environ.get("GRAFANA_API_KEY")
+            
+            if grafana_url and grafana_api_key:
+                upload_dashboard_to_grafana(
+                    dashboard_file=perf_dashboard_path,
+                    grafana_url=grafana_url,
+                    api_key=grafana_api_key,
+                    folder="MLObservabilityDemo"
+                )
+                
+                upload_dashboard_to_grafana(
+                    dashboard_file=drift_dashboard_path,
+                    grafana_url=grafana_url,
+                    api_key=grafana_api_key,
+                    folder="MLObservabilityDemo"
+                )
+                
+                logger.info("Uploaded dashboards to Grafana")
+            else:
+                logger.warning("Grafana URL or API key not set, skipping dashboard upload")
+                
+        except Exception as e:
+            logger.error(f"Error generating Grafana dashboards: {str(e)}")
         
         logger.info(f"Plots saved to {self.output_dir}")
     
@@ -707,6 +960,10 @@ class ObservabilityDemo:
         with open(export_path, "w") as f:
             json.dump(export_data, f, indent=2)
         
+        # Log export data to MLflow if available
+        if self.mlflow_run_id:
+            log_metrics_export(export_data, "observability_metrics.json")
+        
         logger.info(f"Metrics exported to {export_path}")
         return export_data
     
@@ -742,11 +999,22 @@ class ObservabilityDemo:
             # Print summary
             self._print_summary(metrics_data)
             
+            # End MLflow run if started
+            if self.mlflow_run_id:
+                self.mlflow_manager.end_run()
+                logger.info(f"Ended MLflow run: {self.mlflow_run_id}")
+            
             logger.info("ML observability demo completed successfully")
             return True
             
         except Exception as e:
             logger.error(f"Error running observability demo: {str(e)}", exc_info=True)
+            
+            # End MLflow run if started
+            if self.mlflow_run_id:
+                self.mlflow_manager.end_run()
+                logger.warning(f"Ended MLflow run due to error: {self.mlflow_run_id}")
+            
             return False
     
     def _print_summary(self, metrics_data: Dict[str, Any]):
@@ -802,6 +1070,26 @@ class ObservabilityDemo:
         print(f"  - Embedding Drift Plot: {os.path.join(self.output_dir, 'embedding_drift.png')}")
         print(f"  - Category Drift Plot: {os.path.join(self.output_dir, 'category_drift.png')}")
         
+        # Print MLflow information if available
+        if self.mlflow_run_id:
+            print("\nMLFLOW TRACKING:")
+            print(f"  - Tracking URI: {self.mlflow_manager.tracking_uri}")
+            print(f"  - Run ID: {self.mlflow_run_id}")
+            print(f"  - Experiment: MLObservabilityDemo")
+            print("  - View in MLflow UI to explore metrics, parameters, and artifacts")
+        
+        # Print Grafana information if available
+        grafana_url = os.environ.get("GRAFANA_URL")
+        if grafana_url:
+            print("\nGRAFANA DASHBOARDS:")
+            print(f"  - Grafana URL: {grafana_url}")
+            print(f"  - Performance Dashboard: {os.path.join(self.output_dir, 'model_performance_dashboard.json')}")
+            print(f"  - Drift Dashboard: {os.path.join(self.output_dir, 'model_drift_dashboard.json')}")
+            if os.environ.get("GRAFANA_API_KEY"):
+                print("  - Dashboards have been uploaded to Grafana")
+            else:
+                print("  - Dashboards generated but not uploaded (API key not provided)")
+        
         print("\n" + "="*80)
 
 
@@ -812,7 +1100,23 @@ def main():
                         help="Directory to save output files (default: demos/results)")
     parser.add_argument("--skip-plots", action="store_true", 
                         help="Skip generating plots")
+    parser.add_argument("--mlflow-tracking-uri", type=str, default=None,
+                        help="MLflow tracking URI (default: from MLFLOW_TRACKING_URI env var)")
+    parser.add_argument("--grafana-url", type=str, default=None,
+                        help="Grafana URL (default: from GRAFANA_URL env var)")
+    parser.add_argument("--grafana-api-key", type=str, default=None,
+                        help="Grafana API key (default: from GRAFANA_API_KEY env var)")
     args = parser.parse_args()
+    
+    # Set environment variables if provided
+    if args.mlflow_tracking_uri:
+        os.environ["MLFLOW_TRACKING_URI"] = args.mlflow_tracking_uri
+    
+    if args.grafana_url:
+        os.environ["GRAFANA_URL"] = args.grafana_url
+        
+    if args.grafana_api_key:
+        os.environ["GRAFANA_API_KEY"] = args.grafana_api_key
     
     demo = ObservabilityDemo(output_dir=args.output_dir)
     success = demo.run_demo(skip_plots=args.skip_plots)

@@ -11,6 +11,8 @@ This demo showcases the ML observability features of the WebAgent platform, incl
 - **Performance Degradation**: Monitors for model performance degradation over time
 - **Visualization**: Generates plots to visualize metrics and drift
 - **Alert Generation**: Demonstrates when model retraining would be triggered
+- **MLflow Integration**: Tracks experiments, metrics, and artifacts in MLflow
+- **Grafana Dashboards**: Generates and optionally uploads Grafana dashboards
 
 ## Requirements
 
@@ -18,6 +20,8 @@ This demo showcases the ML observability features of the WebAgent platform, incl
 - NumPy
 - Matplotlib
 - Pandas
+- MLflow (optional, for experiment tracking)
+- Grafana (optional, for dashboard visualization)
 
 These dependencies should already be installed if you have the WebAgent platform installed.
 
@@ -33,6 +37,43 @@ python backend/demos/ml_observability_demo.py
 
 - `--output-dir PATH`: Specify a custom output directory for metrics and plots (default: `backend/demos/results`)
 - `--skip-plots`: Skip generating plots (useful for headless environments)
+- `--mlflow-tracking-uri URI`: Specify MLflow tracking URI (default: from MLFLOW_TRACKING_URI env var)
+- `--grafana-url URL`: Specify Grafana server URL (default: from GRAFANA_URL env var)
+- `--grafana-api-key KEY`: Specify Grafana API key (default: from GRAFANA_API_KEY env var)
+
+### MLflow Integration
+
+To enable MLflow tracking:
+
+1. Install MLflow:
+   ```bash
+   pip install mlflow
+   ```
+
+2. Start the MLflow tracking server:
+   ```bash
+   mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000
+   ```
+
+3. Run the demo with the MLflow tracking URI:
+   ```bash
+   python backend/demos/ml_observability_demo.py --mlflow-tracking-uri http://localhost:5000
+   ```
+
+4. Open the MLflow UI at http://localhost:5000 to view experiments, metrics, parameters, and artifacts.
+
+### Grafana Integration
+
+To enable Grafana dashboard generation and upload:
+
+1. Install a Grafana server or use an existing one.
+
+2. Create an API key in Grafana with Editor permissions.
+
+3. Run the demo with Grafana configuration:
+   ```bash
+   python backend/demos/ml_observability_demo.py --grafana-url http://localhost:3000 --grafana-api-key YOUR_API_KEY
+   ```
 
 ## Output
 
@@ -43,7 +84,9 @@ The demo will:
 3. Detect when drift exceeds thresholds
 4. Generate visualization plots
 5. Export metrics to JSON
-6. Print a summary of findings
+6. Create Grafana dashboards (if configured)
+7. Log all metrics and artifacts to MLflow (if configured)
+8. Print a summary of findings
 
 ### Generated Files
 
@@ -53,6 +96,8 @@ The demo will:
 - `token_usage.png`: Plot of token usage over time
 - `embedding_drift.png`: Visualization of embedding drift detection
 - `category_drift.png`: Visualization of categorical drift detection
+- `model_performance_dashboard.json`: Grafana dashboard for model performance metrics
+- `model_drift_dashboard.json`: Grafana dashboard for drift detection metrics
 
 ## Integrating with Your Models
 
@@ -61,8 +106,14 @@ This demo illustrates how to use the following components in your own applicatio
 1. **Metrics Registry**: Track model performance, pipeline efficiency, and data quality
 2. **Drift Detectors**: Monitor for distributional shifts that require attention
 3. **Visualization**: Create custom plots for your specific metrics
+4. **MLflow Tracking**: Log metrics, parameters, and artifacts to MLflow
+5. **Grafana Dashboards**: Generate custom Grafana dashboards
 
-For implementation details, see the `backend/app/core/metrics_registry.py` and `backend/app/core/drift_detection.py` modules.
+For implementation details, see the following modules:
+- `backend/app/core/metrics_registry.py` - Core metrics collection
+- `backend/app/core/drift_detection.py` - Drift detection algorithms
+- `backend/app/core/mlflow_integration.py` - MLflow integration
+- `backend/app/core/grafana_integration.py` - Grafana dashboard generation
 
 ## Sample Observability Implementation
 
@@ -71,9 +122,15 @@ Here's a minimal example of how to integrate observability in your own services:
 ```python
 from backend.app.core.metrics_registry import get_model_metrics_registry
 from backend.app.core.drift_detection import create_numerical_drift_detector
+from backend.app.core.mlflow_integration import get_mlflow_manager, log_drift_detection
 
 # Get the model metrics registry
 model_registry = get_model_metrics_registry()
+
+# Initialize MLflow (optional)
+mlflow_manager = get_mlflow_manager()
+if mlflow_manager.initialized:
+    run_id = mlflow_manager.start_run(experiment_name="ModelMonitoring")
 
 # Register your model
 model_registry.register_model(
@@ -111,6 +168,23 @@ def predict(input_text):
         drift_score, drift_detected = accuracy_detector.add_current_sample(result.accuracy)
         if drift_detected:
             logger.warning(f"Accuracy drift detected! Score: {drift_score:.4f}")
+            
+            # Log drift detection to MLflow
+            if mlflow_manager.initialized:
+                log_drift_detection(
+                    detector_id="sentiment_accuracy",
+                    scores={"accuracy": drift_score},
+                    detected=True
+                )
+            
+        # Log metrics to MLflow
+        if mlflow_manager.initialized:
+            mlflow_manager.log_metrics({
+                "latency": latency,
+                "accuracy": result.accuracy,
+                "confidence": result.confidence,
+                "drift_score": drift_score
+            })
             
         return result
     except Exception as e:
