@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/6ca66f90d6334c128d94b755fc4b4eb2/artifacts
+end_time: 1742306431017
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 6ca66f90d6334c128d94b755fc4b4eb2
+run_name: adaptable-ant-639
+run_uuid: 6ca66f90d6334c128d94b755fc4b4eb2
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306431011
+status: 3
+tags: []
+user_id: danc

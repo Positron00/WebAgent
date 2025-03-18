@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/b53fc4d1481d4952bcfc9eb18e428191/artifacts
+end_time: 1742306431922
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: b53fc4d1481d4952bcfc9eb18e428191
+run_name: marvelous-gnat-95
+run_uuid: b53fc4d1481d4952bcfc9eb18e428191
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306431915
+status: 3
+tags: []
+user_id: danc

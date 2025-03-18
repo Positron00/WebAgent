@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/a2863866096840408ff1525ab9c2199b/artifacts
+end_time: 1742306442874
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: a2863866096840408ff1525ab9c2199b
+run_name: rare-whale-139
+run_uuid: a2863866096840408ff1525ab9c2199b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306442863
+status: 3
+tags: []
+user_id: danc

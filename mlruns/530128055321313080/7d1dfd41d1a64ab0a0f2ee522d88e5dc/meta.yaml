@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/7d1dfd41d1a64ab0a0f2ee522d88e5dc/artifacts
+end_time: 1742306433404
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 7d1dfd41d1a64ab0a0f2ee522d88e5dc
+run_name: crawling-snail-738
+run_uuid: 7d1dfd41d1a64ab0a0f2ee522d88e5dc
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306433397
+status: 3
+tags: []
+user_id: danc

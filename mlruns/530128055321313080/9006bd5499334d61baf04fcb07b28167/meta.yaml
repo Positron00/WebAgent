@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/9006bd5499334d61baf04fcb07b28167/artifacts
+end_time: 1742306432918
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 9006bd5499334d61baf04fcb07b28167
+run_name: thoughtful-ram-612
+run_uuid: 9006bd5499334d61baf04fcb07b28167
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306432912
+status: 3
+tags: []
+user_id: danc

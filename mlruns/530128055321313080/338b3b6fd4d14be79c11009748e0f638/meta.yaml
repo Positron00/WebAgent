@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/338b3b6fd4d14be79c11009748e0f638/artifacts
+end_time: 1742306431358
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 338b3b6fd4d14be79c11009748e0f638
+run_name: masked-dog-186
+run_uuid: 338b3b6fd4d14be79c11009748e0f638
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306431351
+status: 3
+tags: []
+user_id: danc

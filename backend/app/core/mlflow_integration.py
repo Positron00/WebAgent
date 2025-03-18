@@ -23,6 +23,7 @@ except ImportError:
     MLFLOW_AVAILABLE = False
 
 from backend.app.core.logger import logger
+from backend.app.core.config import Settings
 
 class MLflowManager:
     """Manages connections and logging to MLflow."""
@@ -250,7 +251,7 @@ class MLflowManager:
         return True
 
 
-# Singleton instance
+# Global instance
 _mlflow_manager = None
 
 def get_mlflow_manager() -> MLflowManager:
@@ -262,7 +263,8 @@ def get_mlflow_manager() -> MLflowManager:
     """
     global _mlflow_manager
     if _mlflow_manager is None:
-        _mlflow_manager = MLflowManager()
+        settings = Settings()
+        _mlflow_manager = MLflowManager(tracking_uri=settings.MLFLOW_TRACKING_URI)
     return _mlflow_manager
 
 def log_model_metrics(model_id: str, metrics: Dict[str, Any]) -> bool:
@@ -314,18 +316,41 @@ def log_drift_detection(detector_id: str, scores: Dict[str, float], detected: bo
     """
     manager = get_mlflow_manager()
     
-    # Start run if needed
+    # Check if we need to start a run - only if no run is active
     if not mlflow.active_run():
+        logger.info(f"No active MLflow run found, starting new run for drift detection: {detector_id}")
         run_id = manager.start_run(f"drift_{detector_id}")
         if not run_id:
             return False
+        # Mark that we created this run and need to end it
+        created_run = True
+    else:
+        # Use existing run
+        created_run = False
+        logger.debug(f"Using existing MLflow run for drift detection: {detector_id}")
     
-    # Prepare metrics
-    metrics = {f"drift_score_{k}": v for k, v in scores.items()}
-    metrics["drift_detected"] = 1 if detected else 0
-    
-    # Log metrics
-    return manager.log_metrics(metrics)
+    try:
+        # Prepare metrics
+        metrics = {f"drift_score_{k}": v for k, v in scores.items()}
+        metrics["drift_detected"] = 1 if detected else 0
+        
+        # Add detector ID as a tag
+        manager.log_parameters({"detector_id": detector_id})
+        
+        # Log metrics
+        success = manager.log_metrics(metrics)
+        
+        # If we created this run, end it
+        if created_run:
+            manager.end_run()
+            
+        return success
+    except Exception as e:
+        logger.warning(f"Failed to log drift detection to MLflow: {str(e)}")
+        # Clean up if we created the run
+        if created_run:
+            manager.end_run()
+        return False
 
 def log_visualization(figure, artifact_name: str) -> bool:
     """
@@ -339,6 +364,13 @@ def log_visualization(figure, artifact_name: str) -> bool:
         True if successful, False otherwise
     """
     manager = get_mlflow_manager()
+    
+    # Check if we need to start a run
+    if not mlflow.active_run():
+        logger.warning("No active MLflow run found for logging visualization. Using existing MLflow manager.")
+        # Since logging visualization is usually part of a larger workflow,
+        # we won't create a new run here but will log to the existing manager
+    
     return manager.log_figure(figure, artifact_name)
 
 def log_metrics_export(metrics_data: Dict[str, Any], artifact_name: str = "metrics_export.json") -> bool:
@@ -353,4 +385,11 @@ def log_metrics_export(metrics_data: Dict[str, Any], artifact_name: str = "metri
         True if successful, False otherwise
     """
     manager = get_mlflow_manager()
+    
+    # Check if we need to start a run
+    if not mlflow.active_run():
+        logger.warning("No active MLflow run found for logging metrics export. Using existing MLflow manager.")
+        # Since logging metrics export is usually part of a larger workflow,
+        # we won't create a new run here but will log to the existing manager
+    
     return manager.log_dict(metrics_data, artifact_name) 

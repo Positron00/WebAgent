@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/68071bc1e76549cb8dc3127d18adde13/artifacts
+end_time: 1742306434617
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 68071bc1e76549cb8dc3127d18adde13
+run_name: nimble-hen-789
+run_uuid: 68071bc1e76549cb8dc3127d18adde13
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306434609
+status: 3
+tags: []
+user_id: danc

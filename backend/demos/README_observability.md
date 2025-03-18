@@ -39,7 +39,8 @@ python backend/demos/ml_observability_demo.py
 - `--skip-plots`: Skip generating plots (useful for headless environments)
 - `--mlflow-tracking-uri URI`: Specify MLflow tracking URI (default: from MLFLOW_TRACKING_URI env var)
 - `--grafana-url URL`: Specify Grafana server URL (default: from GRAFANA_URL env var)
-- `--grafana-api-key KEY`: Specify Grafana API key (default: from GRAFANA_API_KEY env var)
+- `--grafana-token TOKEN`: Specify Grafana service account token (default: from GRAFANA_SERVICE_ACCOUNT_TOKEN env var)
+- `--grafana-api-key KEY`: DEPRECATED - Use `--grafana-token` instead
 
 ### MLflow Integration
 
@@ -52,15 +53,15 @@ To enable MLflow tracking:
 
 2. Start the MLflow tracking server:
    ```bash
-   mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000
+   mlflow server --host 127.0.0.1 --port 8080
    ```
 
 3. Run the demo with the MLflow tracking URI:
    ```bash
-   python backend/demos/ml_observability_demo.py --mlflow-tracking-uri http://localhost:5000
+   python backend/demos/ml_observability_demo.py --mlflow-tracking-uri http://127.0.0.1:8080
    ```
 
-4. Open the MLflow UI at http://localhost:5000 to view experiments, metrics, parameters, and artifacts.
+4. Open the MLflow UI at http://127.0.0.1:8080 to view experiments, metrics, parameters, and artifacts.
 
 ### Grafana Integration
 
@@ -68,12 +69,19 @@ To enable Grafana dashboard generation and upload:
 
 1. Install a Grafana server or use an existing one.
 
-2. Create an API key in Grafana with Editor permissions.
+2. Create a service account and token:
+   - Navigate to Grafana's Admin section → Users and access → Service accounts
+   - Click "Add service account"
+   - Give it a name and role (Editor or Admin)
+   - After creating the service account, add a token
+   - Copy the service account token value
 
 3. Run the demo with Grafana configuration:
    ```bash
-   python backend/demos/ml_observability_demo.py --grafana-url http://localhost:3000 --grafana-api-key YOUR_API_KEY
+   python backend/demos/ml_observability_demo.py --grafana-url http://localhost:3000 --grafana-token YOUR_SERVICE_ACCOUNT_TOKEN
    ```
+
+> Note: Grafana API keys are deprecated as of 2024. If you're using an older Grafana instance, you can still use the `--grafana-api-key` parameter, but it's recommended to migrate to service account tokens.
 
 ## Output
 

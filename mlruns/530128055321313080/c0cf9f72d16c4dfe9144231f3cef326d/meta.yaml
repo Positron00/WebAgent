@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/c0cf9f72d16c4dfe9144231f3cef326d/artifacts
+end_time: 1742306432493
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: c0cf9f72d16c4dfe9144231f3cef326d
+run_name: dashing-stork-402
+run_uuid: c0cf9f72d16c4dfe9144231f3cef326d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306432487
+status: 3
+tags: []
+user_id: danc

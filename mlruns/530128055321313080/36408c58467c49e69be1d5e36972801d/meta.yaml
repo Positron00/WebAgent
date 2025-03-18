@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/36408c58467c49e69be1d5e36972801d/artifacts
+end_time: 1742306434649
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 36408c58467c49e69be1d5e36972801d
+run_name: persistent-cow-634
+run_uuid: 36408c58467c49e69be1d5e36972801d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306434641
+status: 3
+tags: []
+user_id: danc

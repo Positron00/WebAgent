@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/796fec16000c4174b0dcff38282a7798/artifacts
+end_time: 1742306432968
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 796fec16000c4174b0dcff38282a7798
+run_name: calm-kite-854
+run_uuid: 796fec16000c4174b0dcff38282a7798
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306432958
+status: 3
+tags: []
+user_id: danc

@@ -171,7 +171,12 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     
     # MLflow tracking
-    MLFLOW_TRACKING_URI: Optional[str] = os.getenv("MLFLOW_TRACKING_URI")
+    MLFLOW_TRACKING_URI: Optional[str] = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:8080")
+
+    # Grafana settings
+    GRAFANA_URL: Optional[str] = os.getenv("GRAFANA_URL", "http://127.0.0.1:3000")
+    GRAFANA_API_KEY: Optional[str] = os.getenv("GRAFANA_API_KEY")
+    GRAFANA_SERVICE_ACCOUNT_TOKEN: Optional[str] = os.getenv("GRAFANA_SERVICE_ACCOUNT_TOKEN")
 
     class Config:
         """Pydantic config class"""

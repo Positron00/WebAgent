@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/68f2ad60bf0440619104875e0e82f951/artifacts
+end_time: 1742306442403
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 68f2ad60bf0440619104875e0e82f951
+run_name: fearless-hen-522
+run_uuid: 68f2ad60bf0440619104875e0e82f951
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306442383
+status: 3
+tags: []
+user_id: danc

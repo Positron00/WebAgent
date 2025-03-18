@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/1f55e9858128453b8470281b8f70fa16/artifacts
+end_time: 1742306429412
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 1f55e9858128453b8470281b8f70fa16
+run_name: gifted-whale-416
+run_uuid: 1f55e9858128453b8470281b8f70fa16
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306429406
+status: 3
+tags: []
+user_id: danc

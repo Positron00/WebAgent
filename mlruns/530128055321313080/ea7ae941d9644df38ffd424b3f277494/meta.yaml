@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/ea7ae941d9644df38ffd424b3f277494/artifacts
+end_time: 1742306429728
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: ea7ae941d9644df38ffd424b3f277494
+run_name: spiffy-conch-363
+run_uuid: ea7ae941d9644df38ffd424b3f277494
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306429721
+status: 3
+tags: []
+user_id: danc

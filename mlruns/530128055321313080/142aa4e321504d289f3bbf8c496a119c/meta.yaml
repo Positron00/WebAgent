@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/142aa4e321504d289f3bbf8c496a119c/artifacts
+end_time: 1742306435448
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 142aa4e321504d289f3bbf8c496a119c
+run_name: gentle-penguin-948
+run_uuid: 142aa4e321504d289f3bbf8c496a119c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306435439
+status: 3
+tags: []
+user_id: danc

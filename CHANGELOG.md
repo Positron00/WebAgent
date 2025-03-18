@@ -1,11 +1,23 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to the WebAgent Platform will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## 2.9.1 - 2025-03-18
 
-## [2.9.0] - 2025-03-17
+### Added
+- Support for Grafana service account tokens (replacing deprecated API keys)
+- Added GRAFANA_SERVICE_ACCOUNT_TOKEN configuration setting in config.py
+- Added command-line argument `--grafana-token` for service account token input
+- Improved documentation for Grafana integration in README_observability.md
+
+### Fixed
+- Fixed MLflow run management in observability demo
+- Updated MLflow integration to handle active runs properly
+- Resolved issue with multiple MLflow runs being created simultaneously
+- Improved error handling in MLflow logging functions
+- Ensured backward compatibility for existing Grafana API key usage
+
+## 2.9.0 - 2025-03-17
 
 ### Added
 - Comprehensive ML observability framework for monitoring model performance and data quality

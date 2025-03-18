@@ -14,6 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 from backend.app.core.logger import logger
+from backend.app.core.config import Settings
 
 class GrafanaDashboardGenerator:
     """Generates Grafana dashboards for ML observability metrics."""
@@ -21,19 +22,23 @@ class GrafanaDashboardGenerator:
     def __init__(
         self, 
         grafana_url: Optional[str] = None,
-        api_key: Optional[str] = None,
+        token: Optional[str] = None,
         dashboard_dir: Optional[str] = None
     ):
         """
         Initialize the Grafana dashboard generator.
         
         Args:
-            grafana_url: URL of the Grafana server (default: from env var GRAFANA_URL)
-            api_key: Grafana API key (default: from env var GRAFANA_API_KEY)
+            grafana_url: URL of the Grafana server (default: from Settings.GRAFANA_URL)
+            token: Grafana service account token (default: from env var GRAFANA_SERVICE_ACCOUNT_TOKEN)
             dashboard_dir: Directory to save dashboard JSON files (default: ./dashboards)
         """
-        self.grafana_url = grafana_url or os.environ.get("GRAFANA_URL")
-        self.api_key = api_key or os.environ.get("GRAFANA_API_KEY")
+        settings = Settings()
+        self.grafana_url = grafana_url or settings.GRAFANA_URL or os.environ.get("GRAFANA_URL")
+        
+        # Support both service account tokens and legacy API keys for backward compatibility
+        self.token = token or os.environ.get("GRAFANA_SERVICE_ACCOUNT_TOKEN") or settings.GRAFANA_SERVICE_ACCOUNT_TOKEN or os.environ.get("GRAFANA_API_KEY")
+        
         self.dashboard_dir = dashboard_dir or os.path.join(os.getcwd(), "dashboards")
         
         # Create dashboard directory if it doesn't exist
@@ -255,13 +260,13 @@ class GrafanaDashboardGenerator:
         Returns:
             Dashboard URL if successful, None otherwise
         """
-        if not self.grafana_url or not self.api_key:
-            logger.warning("Grafana URL or API key not provided. Cannot upload dashboard.")
+        if not self.grafana_url or not self.token:
+            logger.warning("Grafana URL or token not provided. Cannot upload dashboard.")
             return None
         
         # Prepare API request
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         }
         
@@ -308,11 +313,11 @@ class GrafanaDashboardGenerator:
         Returns:
             Folder ID if successful, None otherwise
         """
-        if not self.grafana_url or not self.api_key:
+        if not self.grafana_url or not self.token:
             return None
         
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         }
         
@@ -848,7 +853,7 @@ def generate_model_performance_dashboard(
 def upload_dashboard_to_grafana(
     dashboard_file: str,
     grafana_url: str,
-    api_key: str,
+    token: str,
     folder: str = "ML Observability"
 ) -> Optional[str]:
     """
@@ -857,7 +862,7 @@ def upload_dashboard_to_grafana(
     Args:
         dashboard_file: Path to the dashboard JSON file
         grafana_url: Grafana server URL
-        api_key: Grafana API key
+        token: Grafana service account token
         folder: Grafana folder
         
     Returns:
@@ -869,7 +874,7 @@ def upload_dashboard_to_grafana(
             dashboard_json = json.load(f)
         
         # Upload to Grafana
-        generator = GrafanaDashboardGenerator(grafana_url=grafana_url, api_key=api_key)
+        generator = GrafanaDashboardGenerator(grafana_url=grafana_url, token=token)
         dashboard_data = dashboard_json.get("dashboard", dashboard_json)
         return generator.upload_dashboard(dashboard_data, folder)
     except Exception as e:

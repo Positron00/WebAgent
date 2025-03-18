@@ -314,9 +314,7 @@ def start_gpu_monitoring(interval_seconds: int = 30):
 
 # ================ MLflow integration ================
 
-def log_to_mlflow(metrics: Dict[str, float], params: Dict[str, Any] = None, 
-                 tags: Dict[str, str] = None, artifacts: Dict[str, str] = None,
-                 experiment_name: str = None):
+def log_to_mlflow(metrics=None, params=None, tags=None, artifacts=None, experiment_name=None):
     """
     Log metrics, parameters, and artifacts to MLflow if available.
     
@@ -336,31 +334,44 @@ def log_to_mlflow(metrics: Dict[str, float], params: Dict[str, Any] = None,
         if experiment_name:
             mlflow.set_experiment(experiment_name)
         
-        with mlflow.start_run():
-            # Log metrics
+        # Check if a run is already active
+        if mlflow.active_run():
+            # Use existing run
             if metrics:
                 mlflow.log_metrics(metrics)
             
-            # Log params
             if params:
                 mlflow.log_params(params)
             
-            # Log tags
             if tags:
                 for key, value in tags.items():
                     mlflow.set_tag(key, value)
             
-            # Log artifacts
             if artifacts:
                 for path, name in artifacts.items():
-                    if os.path.exists(path):
+                    mlflow.log_artifact(path, name)
+        else:
+            # Start a new run
+            with mlflow.start_run():
+                # Log metrics
+                if metrics:
+                    mlflow.log_metrics(metrics)
+                
+                # Log params
+                if params:
+                    mlflow.log_params(params)
+                
+                # Log tags
+                if tags:
+                    for key, value in tags.items():
+                        mlflow.set_tag(key, value)
+                
+                # Log artifacts
+                if artifacts:
+                    for path, name in artifacts.items():
                         mlflow.log_artifact(path, name)
-                    else:
-                        logger.warning(f"Artifact path not found: {path}")
-                        
     except Exception as e:
-        logger.error(f"Error logging to MLflow: {e}")
-        logger.debug(traceback.format_exc())
+        logger.warning(f"Failed to log to MLflow: {str(e)}", exc_info=True)
 
 # ================ Summary metrics ================
 

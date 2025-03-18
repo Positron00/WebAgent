@@ -889,26 +889,30 @@ class ObservabilityDemo:
             
             # Upload dashboards to Grafana if configured
             grafana_url = os.environ.get("GRAFANA_URL")
+            grafana_token = os.environ.get("GRAFANA_SERVICE_ACCOUNT_TOKEN")
             grafana_api_key = os.environ.get("GRAFANA_API_KEY")
             
-            if grafana_url and grafana_api_key:
+            # Use service account token if available, fall back to API key for backward compatibility
+            auth_token = grafana_token or grafana_api_key
+            
+            if grafana_url and auth_token:
                 upload_dashboard_to_grafana(
                     dashboard_file=perf_dashboard_path,
                     grafana_url=grafana_url,
-                    api_key=grafana_api_key,
+                    token=auth_token,
                     folder="MLObservabilityDemo"
                 )
                 
                 upload_dashboard_to_grafana(
                     dashboard_file=drift_dashboard_path,
                     grafana_url=grafana_url,
-                    api_key=grafana_api_key,
+                    token=auth_token,
                     folder="MLObservabilityDemo"
                 )
                 
                 logger.info("Uploaded dashboards to Grafana")
             else:
-                logger.warning("Grafana URL or API key not set, skipping dashboard upload")
+                logger.warning("Grafana URL or authentication token not set, skipping dashboard upload")
                 
         except Exception as e:
             logger.error(f"Error generating Grafana dashboards: {str(e)}")
@@ -1085,10 +1089,11 @@ class ObservabilityDemo:
             print(f"  - Grafana URL: {grafana_url}")
             print(f"  - Performance Dashboard: {os.path.join(self.output_dir, 'model_performance_dashboard.json')}")
             print(f"  - Drift Dashboard: {os.path.join(self.output_dir, 'model_drift_dashboard.json')}")
-            if os.environ.get("GRAFANA_API_KEY"):
+            # Check for either service account token or legacy API key
+            if os.environ.get("GRAFANA_SERVICE_ACCOUNT_TOKEN") or os.environ.get("GRAFANA_API_KEY"):
                 print("  - Dashboards have been uploaded to Grafana")
             else:
-                print("  - Dashboards generated but not uploaded (API key not provided)")
+                print("  - Dashboards generated but not uploaded (authentication token not provided)")
         
         print("\n" + "="*80)
 
@@ -1105,7 +1110,9 @@ def main():
     parser.add_argument("--grafana-url", type=str, default=None,
                         help="Grafana URL (default: from GRAFANA_URL env var)")
     parser.add_argument("--grafana-api-key", type=str, default=None,
-                        help="Grafana API key (default: from GRAFANA_API_KEY env var)")
+                        help="Grafana API key (DEPRECATED, use --grafana-token instead)")
+    parser.add_argument("--grafana-token", type=str, default=None,
+                        help="Grafana service account token (default: from GRAFANA_SERVICE_ACCOUNT_TOKEN env var)")
     args = parser.parse_args()
     
     # Set environment variables if provided
@@ -1115,8 +1122,12 @@ def main():
     if args.grafana_url:
         os.environ["GRAFANA_URL"] = args.grafana_url
         
-    if args.grafana_api_key:
+    if args.grafana_token:
+        os.environ["GRAFANA_SERVICE_ACCOUNT_TOKEN"] = args.grafana_token
+    elif args.grafana_api_key:
+        # Fall back to API key if token is not provided
         os.environ["GRAFANA_API_KEY"] = args.grafana_api_key
+        logger.warning("Using --grafana-api-key is deprecated. Please use --grafana-token instead.")
     
     demo = ObservabilityDemo(output_dir=args.output_dir)
     success = demo.run_demo(skip_plots=args.skip_plots)

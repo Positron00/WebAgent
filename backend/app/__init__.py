@@ -16,4 +16,4 @@ if backend_dir.name == 'backend' and str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
 # Import version information
-__version__ = "2.9.0"  # Released on 2025-03-17
+__version__ = "2.9.1"  # Released on 2025-03-18

@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/53e144680977440db7e377f53f0dff30/artifacts
+end_time: 1742306443641
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 53e144680977440db7e377f53f0dff30
+run_name: amusing-shrimp-11
+run_uuid: 53e144680977440db7e377f53f0dff30
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306443632
+status: 3
+tags: []
+user_id: danc

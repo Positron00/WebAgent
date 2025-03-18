@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/9a7144f7b5f54c808f8695a6609fe81a/artifacts
+end_time: 1742306438174
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 9a7144f7b5f54c808f8695a6609fe81a
+run_name: casual-flea-808
+run_uuid: 9a7144f7b5f54c808f8695a6609fe81a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306438166
+status: 3
+tags: []
+user_id: danc

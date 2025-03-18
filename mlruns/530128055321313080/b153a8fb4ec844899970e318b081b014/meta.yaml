@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/b153a8fb4ec844899970e318b081b014/artifacts
+end_time: 1742306432537
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: b153a8fb4ec844899970e318b081b014
+run_name: masked-conch-739
+run_uuid: b153a8fb4ec844899970e318b081b014
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306432528
+status: 3
+tags: []
+user_id: danc

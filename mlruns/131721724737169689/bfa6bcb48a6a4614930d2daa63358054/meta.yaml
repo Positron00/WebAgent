@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/131721724737169689/bfa6bcb48a6a4614930d2daa63358054/artifacts
+end_time: 1742310472900
+entry_point_name: ''
+experiment_id: '131721724737169689'
+lifecycle_stage: active
+run_id: bfa6bcb48a6a4614930d2daa63358054
+run_name: run_1742310451
+run_uuid: bfa6bcb48a6a4614930d2daa63358054
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742310451985
+status: 3
+tags: []
+user_id: danc

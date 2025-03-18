@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/0c59f0c19e69464891e1253dd584cf56/artifacts
+end_time: 1742306428945
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 0c59f0c19e69464891e1253dd584cf56
+run_name: peaceful-fly-921
+run_uuid: 0c59f0c19e69464891e1253dd584cf56
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306428939
+status: 3
+tags: []
+user_id: danc

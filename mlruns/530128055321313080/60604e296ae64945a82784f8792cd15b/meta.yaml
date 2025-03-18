@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/60604e296ae64945a82784f8792cd15b/artifacts
+end_time: 1742306432030
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 60604e296ae64945a82784f8792cd15b
+run_name: enchanting-goat-955
+run_uuid: 60604e296ae64945a82784f8792cd15b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306432024
+status: 3
+tags: []
+user_id: danc

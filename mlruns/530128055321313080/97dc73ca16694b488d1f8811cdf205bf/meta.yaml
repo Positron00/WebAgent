@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/97dc73ca16694b488d1f8811cdf205bf/artifacts
+end_time: 1742306439624
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 97dc73ca16694b488d1f8811cdf205bf
+run_name: crawling-midge-643
+run_uuid: 97dc73ca16694b488d1f8811cdf205bf
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306439616
+status: 3
+tags: []
+user_id: danc

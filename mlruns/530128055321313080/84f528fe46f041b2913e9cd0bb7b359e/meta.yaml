@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/84f528fe46f041b2913e9cd0bb7b359e/artifacts
+end_time: 1742306433797
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 84f528fe46f041b2913e9cd0bb7b359e
+run_name: learned-lamb-864
+run_uuid: 84f528fe46f041b2913e9cd0bb7b359e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306433790
+status: 3
+tags: []
+user_id: danc

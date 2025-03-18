@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/530128055321313080/03f77e3b5d98442997f16cb363f79a5a/artifacts
+end_time: 1742306438403
+entry_point_name: ''
+experiment_id: '530128055321313080'
+lifecycle_stage: active
+run_id: 03f77e3b5d98442997f16cb363f79a5a
+run_name: legendary-bug-222
+run_uuid: 03f77e3b5d98442997f16cb363f79a5a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742306438393
+status: 3
+tags: []
+user_id: danc
