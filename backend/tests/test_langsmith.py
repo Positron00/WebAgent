@@ -3,17 +3,53 @@
 Test script to verify LangSmith integration.
 
 This script tests the LangSmith configuration and tracing functionality.
+
+Can be run from:
+- WebAgent root: python backend/tests/test_langsmith.py
+- Backend directory: python tests/test_langsmith.py
+- As module: python -m backend.tests.test_langsmith or python -m tests.test_langsmith
 """
 import os
 import sys
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Add project root to path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = current_dir
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# Dynamic path setup to support running from different locations
+def setup_paths():
+    """Set up the Python path to find modules regardless of where the script is run from."""
+    script_dir = Path(os.path.abspath(os.path.dirname(__file__)))
+    working_dir = Path(os.getcwd())
+    
+    # If we're in a 'tests' directory, go up one level to find backend
+    if script_dir.name == 'tests':
+        backend_dir = script_dir.parent
+    else:
+        backend_dir = working_dir
+        
+        # Try to find backend directory
+        if working_dir.name == 'backend':
+            backend_dir = working_dir
+        elif 'backend' in working_dir.parts:
+            # Navigate up until we find backend
+            backend_dir = working_dir
+            while backend_dir.name != 'backend' and backend_dir != backend_dir.parent:
+                backend_dir = backend_dir.parent
+        else:
+            # We might be in the project root
+            backend_dir = working_dir / 'backend'
+            if not backend_dir.exists():
+                # Last resort - try relative to script
+                backend_dir = script_dir.parent
+    
+    # Add backend dir to path
+    if str(backend_dir) not in sys.path:
+        sys.path.insert(0, str(backend_dir))
+        
+    return backend_dir
+
+# Set up paths
+backend_dir = setup_paths()
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,9 +61,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import after environment is loaded
-from backend.app.core.setup_langsmith import setup_langsmith, get_langsmith_client, get_langchain_tracer, create_langsmith_tags
-from backend.app.core.loadEnvYAML import get_langsmith_config
+# Import after environment is loaded and paths are set up
+try:
+    from app.core.setup_langsmith import setup_langsmith, get_langsmith_client, get_langchain_tracer, create_langsmith_tags
+    from app.core.loadEnvYAML import get_langsmith_config
+except ImportError:
+    # Second attempt with different import path
+    sys.path.insert(0, str(backend_dir.parent))  # Add project root
+    from backend.app.core.setup_langsmith import setup_langsmith, get_langsmith_client, get_langchain_tracer, create_langsmith_tags
+    from backend.app.core.loadEnvYAML import get_langsmith_config
 
 def test_langsmith_config():
     """Test loading LangSmith configuration."""

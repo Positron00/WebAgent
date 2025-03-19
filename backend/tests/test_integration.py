@@ -25,8 +25,11 @@ logger = logging.getLogger(__name__)
 # Set testing mode
 os.environ["TESTING"] = "True"
 
-# Add the current directory to the path so we can import app modules
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add project root to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)  # backend directory
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # Import app modules
 from app.services.llm import get_llm, get_together_llm, get_llm_status

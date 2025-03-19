@@ -71,4 +71,55 @@ except ImportError:
             raise ImportError("Diagnostics core module could not be imported")
             
         def run_all_tests(*args, **kwargs):
-            raise ImportError("Diagnostics core module could not be imported") 
+            raise ImportError("Diagnostics core module could not be imported")
+
+def setup_paths():
+    """
+    Set up the Python path to find modules regardless of where the script is run from.
+    
+    This function can be used by any diagnostic script to ensure proper import paths
+    regardless of whether the script is run:
+    - Directly from the backend directory
+    - From the WebAgent root directory
+    - As a module with python -m
+    
+    Returns:
+        backend_dir: Path object for the backend directory
+    """
+    script_dir = Path(os.path.abspath(os.path.dirname(__file__)))
+    working_dir = Path(os.getcwd())
+    
+    # If we're in a 'diagnostics' directory, go up one level to find backend
+    if script_dir.name == 'diagnostics':
+        backend_dir = script_dir.parent
+    else:
+        backend_dir = working_dir
+        
+        # Try to find backend directory
+        if working_dir.name == 'backend':
+            backend_dir = working_dir
+        elif 'backend' in working_dir.parts:
+            # Navigate up until we find backend
+            backend_dir = working_dir
+            while backend_dir.name != 'backend' and backend_dir != backend_dir.parent:
+                backend_dir = backend_dir.parent
+        else:
+            # We might be in the project root
+            backend_dir = working_dir / 'backend'
+            if not backend_dir.exists():
+                # Last resort - try relative to script
+                backend_dir = script_dir.parent
+    
+    # Add backend dir to path
+    if str(backend_dir) not in sys.path:
+        sys.path.insert(0, str(backend_dir))
+        
+    # Add project root (parent of backend) if relevant
+    project_root = backend_dir.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+        
+    return backend_dir
+
+# Exports
+__all__ = ['setup_paths'] 
