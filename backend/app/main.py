@@ -13,8 +13,8 @@ from app.core.logger import logger
 # Create FastAPI app
 app = FastAPI(
     title="AI Observability API",
-    description="API for AI observability and monitoring",
-    version="2.9.2",
+    description="WebAgent Backend API - Advanced agentic capabilities for web research, data analysis, and code generation",
+    version="2.9.3",
 )
 
 # Add CORS middleware

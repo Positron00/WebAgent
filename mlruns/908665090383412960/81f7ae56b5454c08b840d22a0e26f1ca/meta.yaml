@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/81f7ae56b5454c08b840d22a0e26f1ca/artifacts
+end_time: 1742343798279
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 81f7ae56b5454c08b840d22a0e26f1ca
+run_name: efficient-bird-844
+run_uuid: 81f7ae56b5454c08b840d22a0e26f1ca
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742343798275
+status: 3
+tags: []
+user_id: danc

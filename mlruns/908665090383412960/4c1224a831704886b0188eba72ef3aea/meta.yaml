@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/4c1224a831704886b0188eba72ef3aea/artifacts
+end_time: 1742344342554
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 4c1224a831704886b0188eba72ef3aea
+run_name: chill-ox-556
+run_uuid: 4c1224a831704886b0188eba72ef3aea
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742344342549
+status: 3
+tags: []
+user_id: danc

@@ -23,8 +23,8 @@ Requirements:
     - LangSmith API key for tracing (optional but recommended)
 """
 
-import os
 import sys
+import os
 import time
 import argparse
 import asyncio
@@ -35,9 +35,33 @@ from pathlib import Path
 import json
 from typing import Dict, Any, Optional
 
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
+
+# Define rate limiting parameters for Together AI API
+TOGETHER_RATE_LIMIT_BUFFER = 12.0  # Buffer time in seconds (higher than the 10 req/min limit)
+_last_together_api_call = 0
+
+def enforce_together_api_rate_limit():
+    """
+    Enforce rate limiting for Together AI API calls.
+    This ensures we don't exceed the rate limit of about 6 queries per minute
+    for the free tier of Llama 3.3 70B Instruct Turbo model.
+    """
+    global _last_together_api_call
+    current_time = time.time()
+    elapsed = current_time - _last_together_api_call
+    
+    if _last_together_api_call > 0 and elapsed < TOGETHER_RATE_LIMIT_BUFFER:
+        sleep_time = TOGETHER_RATE_LIMIT_BUFFER - elapsed
+        logger.info(f"Rate limiting: Sleeping for {sleep_time:.2f} seconds to avoid Together AI rate limit")
+        time.sleep(sleep_time)
+    
+    _last_together_api_call = time.time()
 
 # Setup path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -51,7 +75,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(f"backend/demos/logs/workflow_demo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+        logging.FileHandler(f"demos/logs/workflow_demo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
     ]
 )
 logger = logging.getLogger("multiagent_workflow_demo")
@@ -61,19 +85,24 @@ from backend.app.graph.workflows import get_agent_workflow
 from backend.app.models.task import WorkflowState
 from backend.app.core.config import settings
 from backend.app.core.metrics import timing_decorator
+from backend.app.core.setup_langsmith import setup_langsmith, get_langsmith_client
 
 # Set up LangSmith tracing if available
 if settings.LANGSMITH_API_KEY:
     import os
-    from langsmith import Client
     
-    # Configure LangSmith
-    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    # Configure LangSmith for this demo (using the standard setup utility)
+    setup_langsmith()
+    
+    # Set a demo-specific project name
     os.environ["LANGCHAIN_PROJECT"] = f"webagent-workflow-demo-{datetime.now().strftime('%Y%m%d')}"
     
-    # Create a LangSmith client
-    client = Client()
-    logger.info(f"LangSmith tracing enabled with project: {os.environ['LANGCHAIN_PROJECT']}")
+    # Get the client to verify it's working
+    client = get_langsmith_client()
+    if client:
+        logger.info(f"LangSmith tracing enabled with project: {os.environ['LANGCHAIN_PROJECT']}")
+    else:
+        logger.warning("LangSmith client initialization failed. Check your API key.")
 else:
     logger.warning("LangSmith API key not found. Tracing will not be available.")
 
@@ -235,10 +264,18 @@ async def run_workflow_demo(query: str, agentic_toggle: bool = True) -> Dict[str
     try:
         # Set up state tracking
         prev_state = None
+        prev_step = None
         
         # Create an event handler to track state changes
         async def state_tracker(state):
-            nonlocal prev_state
+            nonlocal prev_state, prev_step
+            
+            # Track step changes to add pauses between different agent calls
+            if state.current_step != prev_step and prev_step is not None:
+                logger.info(f"Step change from {prev_step} to {state.current_step}, adding delay to manage API rate limits")
+                await asyncio.sleep(2)  # Add a small delay between agent steps
+            
+            prev_step = state.current_step
             prev_state = watch_state_updates(state, prev_state)
             return state
         
@@ -341,8 +378,9 @@ def main():
         logger.warning(f"Demo ended with status: {result['status']}")
     
     logger.info("See the detailed logs for full agent interactions and workflow process")
-    if settings.LANGSMITH_API_KEY:
+    if settings.LANGSMITH_API_KEY and settings.LANGSMITH_TRACING_ENABLED:
         logger.info(f"LangSmith traces available in project: {os.environ.get('LANGCHAIN_PROJECT')}")
+        logger.info(f"View them at: https://smith.langchain.com/projects/{os.environ.get('LANGCHAIN_PROJECT')}")
 
 if __name__ == "__main__":
     main() 

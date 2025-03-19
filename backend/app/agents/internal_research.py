@@ -1217,11 +1217,19 @@ class InternalResearchAgent(BaseAgent):
         return intersection / union
 
 
-def get_internal_research_agent() -> InternalResearchAgent:
+def get_internal_research_agent():
     """
     Get an instance of the advanced RAG-based Internal Research Agent.
     
     Returns:
-        An InternalResearchAgent instance with RAG capabilities
+        A callable function that takes a WorkflowState and calls the agent's run method.
+        This makes it compatible with LangGraph which expects nodes to be callable.
     """
-    return InternalResearchAgent() 
+    agent = InternalResearchAgent()
+    
+    # Return a callable function instead of the agent directly
+    async def internal_research_function(state: WorkflowState) -> WorkflowState:
+        """Callable wrapper for the internal research agent"""
+        return await agent.run(state)
+    
+    return internal_research_function 

@@ -1,0 +1,235 @@
+2025-03-18 15:46:09,254 - app.core.loadEnvYAML - INFO - Loading configuration from /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/config/dev.yaml
+2025-03-18 15:46:09,256 - app.core.loadEnvYAML - INFO - Successfully loaded configuration for environment: dev
+2025-03-18 15:46:09,256 - app.core.loadEnvYAML - INFO - Configuration validation successful
+2025-03-18 15:46:09,256 - app.core.loadEnvYAML - DEBUG - Exported 75 configuration values to environment variables
+2025-03-18 15:46:09,260 - app.core.setup_langsmith - INFO - LangSmith environment variables configured:
+2025-03-18 15:46:09,260 - app.core.setup_langsmith - INFO -   LANGCHAIN_TRACING_V2: true
+2025-03-18 15:46:09,260 - app.core.setup_langsmith - INFO -   LANGCHAIN_PROJECT: webagent-research
+2025-03-18 15:46:09,261 - app.core.setup_langsmith - INFO - LangSmith tracing initialized for project: webagent-research
+2025-03-18 15:46:09,266 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.smith.langchain.com:443
+2025-03-18 15:46:09,266 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.smith.langchain.com:443
+2025-03-18 15:46:09,566 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "GET /info HTTP/1.1" 200 672
+2025-03-18 15:46:09,568 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "GET /info HTTP/1.1" 200 672
+2025-03-18 15:46:10,012 - numexpr.utils - INFO - Note: NumExpr detected 16 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2025-03-18 15:46:10,012 - numexpr.utils - INFO - NumExpr defaulting to 8 threads.
+2025-03-18 15:46:11,199 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 15:46:15,616 - tensorflow - DEBUG - Falling back to TensorFlow client; we recommended you install the Cloud TPU client directly with pip install cloud-tpu-client.
+2025-03-18 15:46:15,771 - h5py._conv - DEBUG - Creating converter from 7 to 5
+2025-03-18 15:46:15,772 - h5py._conv - DEBUG - Creating converter from 5 to 7
+2025-03-18 15:46:15,772 - h5py._conv - DEBUG - Creating converter from 7 to 5
+2025-03-18 15:46:15,772 - h5py._conv - DEBUG - Creating converter from 5 to 7
+2025-03-18 15:46:16,288 - matplotlib - DEBUG - matplotlib data path: /opt/anaconda3/envs/agents/lib/python3.12/site-packages/matplotlib/mpl-data
+2025-03-18 15:46:16,290 - matplotlib - DEBUG - CONFIGDIR=/Users/danc/.matplotlib
+2025-03-18 15:46:16,291 - matplotlib - DEBUG - interactive is False
+2025-03-18 15:46:16,291 - matplotlib - DEBUG - platform is darwin
+2025-03-18 15:46:16,313 - matplotlib - DEBUG - CACHEDIR=/Users/danc/.matplotlib
+2025-03-18 15:46:16,315 - matplotlib.font_manager - DEBUG - Using fontManager instance from /Users/danc/.matplotlib/fontlist-v390.json
+2025-03-18 15:46:16,876 - datasets - INFO - PyTorch version 2.5.1 available.
+2025-03-18 15:46:16,877 - datasets - INFO - TensorFlow version 2.19.0 available.
+2025-03-18 15:46:17,242 - backend.app.core.setup_langsmith - INFO - LangSmith environment variables configured:
+2025-03-18 15:46:17,242 - backend.app.core.setup_langsmith - INFO -   LANGCHAIN_TRACING_V2: true
+2025-03-18 15:46:17,242 - backend.app.core.setup_langsmith - INFO -   LANGCHAIN_PROJECT: webagent-research
+2025-03-18 15:46:17,242 - backend.app.core.setup_langsmith - INFO - LangSmith tracing initialized for project: webagent-research
+2025-03-18 15:46:17,243 - backend.app.core.setup_langsmith - INFO - LangSmith environment variables configured:
+2025-03-18 15:46:17,243 - backend.app.core.setup_langsmith - INFO -   LANGCHAIN_TRACING_V2: true
+2025-03-18 15:46:17,243 - backend.app.core.setup_langsmith - INFO -   LANGCHAIN_PROJECT: webagent-research
+2025-03-18 15:46:17,243 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.smith.langchain.com:443
+2025-03-18 15:46:17,244 - backend.app.core.setup_langsmith - INFO - LangSmith tracing initialized for project: webagent-research
+2025-03-18 15:46:17,244 - multiagent_workflow_demo - INFO - LangSmith tracing enabled with project: webagent-workflow-demo-20250318
+2025-03-18 15:46:17,244 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.smith.langchain.com:443
+2025-03-18 15:46:17,245 - webagent - DEBUG - Function run_workflow_demo executed in 0.0000 seconds
+2025-03-18 15:46:17,245 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-03-18 15:46:17,245 - multiagent_workflow_demo - INFO - ################################################################################
+2025-03-18 15:46:17,245 - multiagent_workflow_demo - INFO - #                      LANGGRAPH MULTIAGENT WORKFLOW DEMO                      #
+2025-03-18 15:46:17,245 - multiagent_workflow_demo - INFO - ################################################################################
+2025-03-18 15:46:17,245 - multiagent_workflow_demo - INFO - Query: How do I create a simple React component?
+2025-03-18 15:46:17,245 - multiagent_workflow_demo - INFO - Agentic Workflow: Enabled
+2025-03-18 15:46:17,245 - backend.app.graph.workflows - INFO - Building agent workflow graph
+2025-03-18 15:46:17,245 - app.agents.base_agent - INFO - Initialized supervisor agent with ID: supervisor-c8d9e0b7
+2025-03-18 15:46:17,245 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:46:17,245 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:46:17,245 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:46:17,245 - app.services.llm - ERROR - TOGETHER_API_KEY environment variable not set
+2025-03-18 15:46:17,245 - app.services.llm - ERROR - LLM request to together failed after 0.00s: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:17,271 - git.cmd - DEBUG - Popen(['git', 'version'], cwd=/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend, stdin=None, shell=False, universal_newlines=False)
+2025-03-18 15:46:17,295 - git.cmd - DEBUG - Popen(['git', 'version'], cwd=/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend, stdin=None, shell=False, universal_newlines=False)
+2025-03-18 15:46:17,323 - git.cmd - DEBUG - Popen(['git', 'check-ignore', '/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos'], cwd=/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent, stdin=None, shell=False, universal_newlines=False)
+2025-03-18 15:46:17,340 - git.cmd - DEBUG - Popen(['git', 'cat-file', '--batch-check'], cwd=/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent, stdin=<valid stream>, shell=False, universal_newlines=False)
+2025-03-18 15:46:17,369 - app.services.llm - WARNING - Failed to initialize together LLM: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:17,369 - app.services.llm - INFO - Attempting to initialize LLM with provider: groq
+2025-03-18 15:46:17,369 - app.services.llm - INFO - Attempting to initialize LLM with provider: openai
+2025-03-18 15:46:17,369 - app.services.llm - INFO - LLM request to openai initiated
+2025-03-18 15:46:17,371 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:17,371 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:17,375 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:17,375 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:17,380 - app.services.llm - INFO - LLM request to openai completed in 0.01s with 0 tokens
+2025-03-18 15:46:17,385 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to supervisor chain
+2025-03-18 15:46:17,385 - app.agents.supervisor - INFO - Supervisor Agent initialized with both LangGraph and direct service capabilities
+2025-03-18 15:46:17,385 - app.agents.base_agent - INFO - Initialized document_extraction agent with ID: document_extraction-7e0ec9f1
+2025-03-18 15:46:17,385 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:46:17,385 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:46:17,385 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:46:17,385 - app.services.llm - ERROR - TOGETHER_API_KEY environment variable not set
+2025-03-18 15:46:17,385 - app.services.llm - ERROR - LLM request to together failed after 0.00s: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:17,390 - app.services.llm - WARNING - Failed to initialize together LLM: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:17,390 - app.services.llm - INFO - Attempting to initialize LLM with provider: groq
+2025-03-18 15:46:17,390 - app.services.llm - INFO - Attempting to initialize LLM with provider: openai
+2025-03-18 15:46:17,390 - app.services.llm - INFO - LLM request to openai initiated
+2025-03-18 15:46:17,390 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:17,391 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:17,393 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "GET /info HTTP/1.1" 200 672
+2025-03-18 15:46:17,393 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "GET /info HTTP/1.1" 200 672
+2025-03-18 15:46:17,395 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:17,395 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:17,399 - app.services.llm - INFO - LLM request to openai completed in 0.01s with 0 tokens
+2025-03-18 15:46:17,406 - app.agents.document_extraction_agent - INFO - Downloading required NLTK resources...
+2025-03-18 15:46:17,685 - app.agents.document_extraction_agent - INFO - Document Extraction Agent initialized with 3 methods
+2025-03-18 15:46:17,685 - app.agents.base_agent - INFO - Initialized internal_research agent with ID: internal_research-893f361f
+2025-03-18 15:46:17,685 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:17,685 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:17,689 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:17,690 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:17,702 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-18 15:46:17,769 - chromadb.config - DEBUG - Starting component System
+2025-03-18 15:46:17,769 - chromadb.config - DEBUG - Starting component Posthog
+2025-03-18 15:46:17,769 - chromadb.config - DEBUG - Starting component OpenTelemetryClient
+2025-03-18 15:46:17,769 - chromadb.config - DEBUG - Starting component SqliteDB
+2025-03-18 15:46:17,799 - chromadb.config - DEBUG - Starting component SimpleQuotaEnforcer
+2025-03-18 15:46:17,800 - chromadb.config - DEBUG - Starting component SimpleRateLimitEnforcer
+2025-03-18 15:46:17,800 - chromadb.config - DEBUG - Starting component LocalSegmentManager
+2025-03-18 15:46:17,800 - chromadb.config - DEBUG - Starting component LocalExecutor
+2025-03-18 15:46:17,800 - chromadb.config - DEBUG - Starting component SegmentAPI
+2025-03-18 15:46:17,808 - app.services.graphdb - INFO - No graph database URL configured. Using NetworkX in-memory graph.
+2025-03-18 15:46:17,808 - app.services.graphdb - INFO - Initialized fallback NetworkX graph
+2025-03-18 15:46:17,808 - app.services.vectordb - INFO - Vector database initialized at ./data/vectordb
+2025-03-18 15:46:17,808 - app.agents.internal_research - INFO - Using vector database path: ./data/vectordb
+2025-03-18 15:46:17,808 - app.agents.internal_research - WARNING - Error checking vector database dimensions: Client() got an unexpected keyword argument 'Settings'
+2025-03-18 15:46:17,808 - app.agents.internal_research - INFO - Creating new database with OpenAI-compatible embeddings (1536 dim)
+2025-03-18 15:46:17,809 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:17,809 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:17,813 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:17,813 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:17,817 - app.agents.internal_research - INFO - Successfully initialized OpenAI embeddings
+2025-03-18 15:46:17,817 - app.agents.internal_research - INFO - Initializing vector database with embeddings
+2025-03-18 15:46:17,819 - chromadb.api.segment - DEBUG - Collection langchain already exists, returning existing collection.
+2025-03-18 15:46:17,819 - app.agents.internal_research - INFO - Vector database has 0 documents
+2025-03-18 15:46:17,819 - app.agents.internal_research - INFO - Vector database is empty. Using placeholder document.
+2025-03-18 15:46:17,820 - app.agents.internal_research - INFO - Advanced RAG Retriever initialized with text-embedding-ada-002
+2025-03-18 15:46:17,820 - app.utils.metrics - DEBUG - RAGRetriever.initialize_retrievers executed in 0.1351 seconds
+2025-03-18 15:46:17,821 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): huggingface.co:443
+2025-03-18 15:46:18,111 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /cross-encoder/ms-marco-MiniLM-L12-v2/resolve/main/config.json HTTP/1.1" 200 0
+2025-03-18 15:46:18,263 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /cross-encoder/ms-marco-MiniLM-L12-v2/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+2025-03-18 15:46:18,307 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): us.i.posthog.com:443
+2025-03-18 15:46:18,337 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /cross-encoder/ms-marco-MiniLM-L12-v2/resolve/main/config.json HTTP/1.1" 200 0
+2025-03-18 15:46:18,471 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /cross-encoder/ms-marco-MiniLM-L12-v2/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+2025-03-18 15:46:18,498 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: mps
+2025-03-18 15:46:18,498 - app.agents.internal_research - INFO - Reranker initialized with cross-encoder/ms-marco-MiniLM-L12-v2
+2025-03-18 15:46:18,498 - app.utils.metrics - DEBUG - RAGReranker.initialize_reranker executed in 0.6782 seconds
+2025-03-18 15:46:18,498 - app.agents.internal_research - INFO - Using default model from settings: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+2025-03-18 15:46:18,498 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:46:18,498 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:46:18,498 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:46:18,498 - app.services.llm - ERROR - TOGETHER_API_KEY environment variable not set
+2025-03-18 15:46:18,498 - app.services.llm - ERROR - LLM request to together failed after 0.00s: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,504 - app.services.llm - WARNING - Failed to initialize together LLM: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,504 - app.services.llm - INFO - Attempting to initialize LLM with provider: groq
+2025-03-18 15:46:18,504 - app.services.llm - INFO - Attempting to initialize LLM with provider: openai
+2025-03-18 15:46:18,504 - app.services.llm - INFO - LLM request to openai initiated
+2025-03-18 15:46:18,505 - urllib3.connectionpool - DEBUG - https://us.i.posthog.com:443 "POST /batch/ HTTP/1.1" 200 15
+2025-03-18 15:46:18,505 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,505 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,509 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,509 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,513 - app.services.llm - INFO - LLM request to openai completed in 0.01s with 0 tokens
+2025-03-18 15:46:18,520 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to internal_research chain
+2025-03-18 15:46:18,520 - app.agents.internal_research - INFO - Advanced RAG-based Internal Research Agent initialized
+2025-03-18 15:46:18,520 - app.agents.base_agent - INFO - Initialized web_research agent with ID: web_research-2855e557
+2025-03-18 15:46:18,520 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:46:18,520 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:46:18,520 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:46:18,520 - app.services.llm - ERROR - TOGETHER_API_KEY environment variable not set
+2025-03-18 15:46:18,520 - app.services.llm - ERROR - LLM request to together failed after 0.00s: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,527 - app.services.llm - WARNING - Failed to initialize together LLM: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,527 - app.services.llm - INFO - Attempting to initialize LLM with provider: groq
+2025-03-18 15:46:18,527 - app.services.llm - INFO - Attempting to initialize LLM with provider: openai
+2025-03-18 15:46:18,527 - app.services.llm - INFO - LLM request to openai initiated
+2025-03-18 15:46:18,528 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,528 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,532 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,533 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,537 - app.services.llm - INFO - LLM request to openai completed in 0.01s with 0 tokens
+2025-03-18 15:46:18,543 - app.agents.base_agent - INFO - Initialized senior_research agent with ID: senior_research-f3f13569
+2025-03-18 15:46:18,543 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:46:18,543 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:46:18,543 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:46:18,543 - app.services.llm - ERROR - TOGETHER_API_KEY environment variable not set
+2025-03-18 15:46:18,543 - app.services.llm - ERROR - LLM request to together failed after 0.00s: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,548 - app.services.llm - WARNING - Failed to initialize together LLM: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,548 - app.services.llm - INFO - Attempting to initialize LLM with provider: groq
+2025-03-18 15:46:18,548 - app.services.llm - INFO - Attempting to initialize LLM with provider: openai
+2025-03-18 15:46:18,548 - app.services.llm - INFO - LLM request to openai initiated
+2025-03-18 15:46:18,549 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,549 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,553 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,553 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,557 - app.services.llm - INFO - LLM request to openai completed in 0.01s with 0 tokens
+2025-03-18 15:46:18,563 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to senior_research chain
+2025-03-18 15:46:18,563 - app.agents.base_agent - INFO - Initialized data_analysis agent with ID: data_analysis-61334bdb
+2025-03-18 15:46:18,563 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:46:18,563 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:46:18,563 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:46:18,563 - app.services.llm - ERROR - TOGETHER_API_KEY environment variable not set
+2025-03-18 15:46:18,563 - app.services.llm - ERROR - LLM request to together failed after 0.00s: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,569 - app.services.llm - WARNING - Failed to initialize together LLM: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,569 - app.services.llm - INFO - Attempting to initialize LLM with provider: groq
+2025-03-18 15:46:18,569 - app.services.llm - INFO - Attempting to initialize LLM with provider: openai
+2025-03-18 15:46:18,569 - app.services.llm - INFO - LLM request to openai initiated
+2025-03-18 15:46:18,569 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,569 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,573 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,574 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,577 - app.services.llm - INFO - LLM request to openai completed in 0.01s with 0 tokens
+2025-03-18 15:46:18,583 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to data_analysis chain
+2025-03-18 15:46:18,584 - app.agents.base_agent - INFO - Initialized coding_assistant agent with ID: coding_assistant-3d322cb6
+2025-03-18 15:46:18,584 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:46:18,584 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:46:18,584 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:46:18,584 - app.services.llm - ERROR - TOGETHER_API_KEY environment variable not set
+2025-03-18 15:46:18,584 - app.services.llm - ERROR - LLM request to together failed after 0.00s: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,589 - app.services.llm - WARNING - Failed to initialize together LLM: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,589 - app.services.llm - INFO - Attempting to initialize LLM with provider: groq
+2025-03-18 15:46:18,589 - app.services.llm - INFO - Attempting to initialize LLM with provider: openai
+2025-03-18 15:46:18,589 - app.services.llm - INFO - LLM request to openai initiated
+2025-03-18 15:46:18,590 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,590 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,594 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,594 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,598 - app.services.llm - INFO - LLM request to openai completed in 0.01s with 0 tokens
+2025-03-18 15:46:18,605 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to coding_assistant chain
+2025-03-18 15:46:18,605 - app.agents.base_agent - INFO - Initialized team_manager agent with ID: team_manager-b7adcca9
+2025-03-18 15:46:18,605 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:46:18,605 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:46:18,605 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:46:18,605 - app.services.llm - ERROR - TOGETHER_API_KEY environment variable not set
+2025-03-18 15:46:18,605 - app.services.llm - ERROR - LLM request to together failed after 0.00s: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,613 - app.services.llm - WARNING - Failed to initialize together LLM: TOGETHER_API_KEY not set in environment variables
+2025-03-18 15:46:18,613 - app.services.llm - INFO - Attempting to initialize LLM with provider: groq
+2025-03-18 15:46:18,613 - app.services.llm - INFO - Attempting to initialize LLM with provider: openai
+2025-03-18 15:46:18,613 - app.services.llm - INFO - LLM request to openai initiated
+2025-03-18 15:46:18,614 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,614 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,619 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:46:18,619 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:46:18,623 - app.services.llm - INFO - LLM request to openai completed in 0.01s with 0 tokens
+2025-03-18 15:46:18,629 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to team_manager chain
+2025-03-18 15:46:18,630 - backend.app.graph.workflows - INFO - LangSmith tracing enabled for workflow
+2025-03-18 15:46:18,630 - backend.app.graph.workflows - DEBUG - Using LangSmith project: webagent-workflow-demo-20250318
+2025-03-18 15:46:19,010 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:46:19,010 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:46:19,014 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:46:19,014 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:46:19,015 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:46:19,015 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:46:19,016 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:46:19,016 - langsmith.client - DEBUG - Closing Client.session

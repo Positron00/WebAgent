@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/236470243084263560/a7615f353f9a4a18af7dd69dcca4dc50/artifacts
+end_time: 1742327211272
+entry_point_name: ''
+experiment_id: '236470243084263560'
+lifecycle_stage: active
+run_id: a7615f353f9a4a18af7dd69dcca4dc50
+run_name: thundering-panda-302
+run_uuid: a7615f353f9a4a18af7dd69dcca4dc50
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742327211267
+status: 3
+tags: []
+user_id: danc

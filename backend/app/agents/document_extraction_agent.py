@@ -647,11 +647,19 @@ class DocumentExtractionAgent(BaseAgent):
             state.error = f"Error retrieving document: {str(e)}"
             return state
 
-def get_document_extraction_agent() -> DocumentExtractionAgent:
+def get_document_extraction_agent() -> Any:
     """
     Factory function to get a configured DocumentExtractionAgent.
     
     Returns:
-        DocumentExtractionAgent: A configured instance of the DocumentExtractionAgent.
+        A callable function that takes a WorkflowState and calls the agent's run method.
+        This makes it compatible with LangGraph which expects nodes to be callable.
     """
-    return DocumentExtractionAgent() 
+    agent = DocumentExtractionAgent()
+    
+    # Return a callable function instead of the agent directly
+    async def document_extraction_function(state: WorkflowState) -> WorkflowState:
+        """Callable wrapper for the document extraction agent"""
+        return await agent.run(state)
+    
+    return document_extraction_function 

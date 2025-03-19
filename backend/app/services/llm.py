@@ -121,6 +121,25 @@ class LLMMetrics:
 # Create global metrics instance
 metrics = LLMMetrics()
 
+# Rate limiting for Together AI API
+_last_together_api_call = 0
+TOGETHER_RATE_LIMIT_BUFFER = 12.0  # Buffer time in seconds (higher than the 10 req/min limit)
+
+def _enforce_together_api_rate_limit():
+    """
+    Enforce rate limiting for Together AI API calls to avoid hitting the rate limit.
+    """
+    global _last_together_api_call
+    current_time = time.time()
+    elapsed = current_time - _last_together_api_call
+    
+    if _last_together_api_call > 0 and elapsed < TOGETHER_RATE_LIMIT_BUFFER:
+        sleep_time = TOGETHER_RATE_LIMIT_BUFFER - elapsed
+        logger.info(f"Rate limiting: Sleeping for {sleep_time:.2f} seconds to avoid Together AI rate limit")
+        time.sleep(sleep_time)
+    
+    _last_together_api_call = time.time()
+
 def log_llm_request(provider: str = "unknown"):
     """Decorator to log LLM requests and record metrics."""
     def decorator(func):
@@ -433,6 +452,9 @@ def get_together_llm(model_name: Optional[str] = None):
         raise ValueError("TOGETHER_API_KEY not set in environment variables")
     
     try:
+        # Apply rate limiting to avoid hitting Together API rate limits
+        _enforce_together_api_rate_limit()
+        
         # Remove timeout and max_retries parameters which are not supported
         llm = TogetherLLM(
             model=model,
@@ -440,6 +462,15 @@ def get_together_llm(model_name: Optional[str] = None):
             max_tokens=llm_config.max_tokens,
             together_api_key=together_api_key
         )
+        
+        # Create a custom wrapper around the model's invoke method to enforce rate limiting
+        original_invoke = llm.invoke
+        def rate_limited_invoke(*args, **kwargs):
+            _enforce_together_api_rate_limit()
+            return original_invoke(*args, **kwargs)
+        
+        # Replace the invoke method with our rate-limited version
+        llm.invoke = rate_limited_invoke
         
         # Test the API connection with a simple query to verify it works correctly
         # This ensures the API connection and authentication work before proceeding

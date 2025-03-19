@@ -18,15 +18,24 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+grandparent_dir = os.path.dirname(parent_dir)
+
+# Make both WebAgent/ and WebAgent/backend/ work as root directories
+sys.path.append(parent_dir)  # Add backend/ to path
+sys.path.append(grandparent_dir)  # Add WebAgent/ to path
 
 # Import the modules to test
 from app.models.task import WorkflowState
 from app.graph.workflows import build_agent_workflow, get_agent_workflow
 from langgraph.graph import StateGraph, END
 
-# Import mock utils
-from backend.tests.mock_utils import create_mock_agent
+# Import mock utils - try both possible paths
+try:
+    from tests.mock_utils import create_mock_agent  # If running from backend/
+except ImportError:
+    from backend.tests.mock_utils import create_mock_agent  # If running from WebAgent/
 
 class TestLangGraphWorkflow:
     """Tests for the LangGraph workflow implementation."""

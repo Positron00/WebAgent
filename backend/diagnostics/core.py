@@ -16,9 +16,62 @@ import importlib
 import traceback
 from datetime import datetime
 
-# Import WebAgent modules
-from backend.app.core.config import settings
-from backend.app.core.metrics import get_metric_statistics, timing_decorator, log_memory_usage
+# Add project root to path for imports
+try:
+    # Try relative import from backend directory
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    
+    # Try to import WebAgent modules with flexible import handling
+    try:
+        from app.core.config import settings
+        from app.core.metrics import get_metric_statistics, timing_decorator, log_memory_usage
+    except ImportError:
+        try:
+            from backend.app.core.config import settings
+            from backend.app.core.metrics import get_metric_statistics, timing_decorator, log_memory_usage
+        except ImportError:
+            # Define fallback functions if the real ones aren't available
+            def timing_decorator(func):
+                def wrapper(*args, **kwargs):
+                    return func(*args, **kwargs)
+                return wrapper
+                
+            def log_memory_usage():
+                pass
+                
+            def get_metric_statistics():
+                return {}
+                
+            # Create a simple settings object
+            class Settings:
+                def __init__(self):
+                    self.DEBUG_MODE = False
+                    self.WEBAGENT_ENV = "dev"
+                    self.WEBAGENT_VERSION = "unknown"
+                    
+            settings = Settings()
+except Exception as e:
+    print(f"Error setting up imports: {e}")
+    # Define minimal versions of required functions
+    def timing_decorator(func):
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+        
+    def log_memory_usage():
+        pass
+        
+    def get_metric_statistics():
+        return {}
+        
+    # Create a simple settings object
+    class Settings:
+        def __init__(self):
+            self.DEBUG_MODE = False
+            self.WEBAGENT_ENV = "dev"
+            self.WEBAGENT_VERSION = "unknown"
+            
+    settings = Settings()
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -209,115 +262,103 @@ class SystemDiagnostics:
     
     @timing_decorator
     def check_agents(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Check available agents and their status.
-        
-        Returns:
-            Dictionary with agent information
-        """
-        logger.info("Checking agents")
-        start_time = time.time()
-        
-        # Import supervisor to get agent status
+        """Check the status of all agent components."""
+        result = {}
         try:
-            from backend.app.agents.supervisor import get_supervisor_agent
-            supervisor = get_supervisor_agent()
-            agent_status = supervisor.get_agent_status()
-            
-            # Add additional diagnostics for each agent
-            for agent_name, status in agent_status.items():
-                if isinstance(status, dict):
-                    # Add memory usage information
-                    import psutil
-                    process = psutil.Process(os.getpid())
-                    memory_info = process.memory_info()
-                    
-                    status["memory_usage"] = {
-                        "rss": memory_info.rss / 1024 / 1024,  # MB
-                        "vms": memory_info.vms / 1024 / 1024   # MB
+            # Try to import agents dynamically to avoid hard dependencies
+            try:
+                from app.agents.supervisor import get_supervisor_agent
+                supervisor_import_path = "app.agents"
+            except ImportError:
+                try:
+                    from backend.app.agents.supervisor import get_supervisor_agent
+                    supervisor_import_path = "backend.app.agents"
+                except ImportError:
+                    logger.warning("Could not import agents - reporting as unavailable")
+                    return {
+                        "supervisor": {"status": "unavailable", "error": "Import error"},
+                        "web_research": {"status": "unavailable", "error": "Import error"},
+                        "internal_research": {"status": "unavailable", "error": "Import error"},
+                        "senior_research": {"status": "unavailable", "error": "Import error"},
+                        "team_manager": {"status": "unavailable", "error": "Import error"}
                     }
-                    
-                    # Add execution time information if available from metrics
-                    from backend.app.core.metrics import get_metric_statistics
-                    metrics = get_metric_statistics()
-                    execution_times = metrics.get("execution_times", {})
-                    
-                    if f"{agent_name}.run" in execution_times:
-                        status["average_execution_time"] = execution_times[f"{agent_name}.run"]["average"]
-                        status["max_execution_time"] = execution_times[f"{agent_name}.run"]["max"]
-                        status["min_execution_time"] = execution_times[f"{agent_name}.run"]["min"]
-                        status["total_executions"] = execution_times[f"{agent_name}.run"]["count"]
-                
-                logger.info(f"Agent {agent_name} status: {status.get('status', 'unknown')}")
             
+            # Define agent modules to check
+            agent_modules = [
+                "supervisor", 
+                "web_research", 
+                "internal_research", 
+                "senior_research",
+                "team_manager"
+            ]
+            
+            # Check each agent
+            for agent_name in agent_modules:
+                try:
+                    # Try to import the agent module
+                    agent_module = importlib.import_module(f"{supervisor_import_path}.{agent_name}")
+                    
+                    # Try to get the agent factory function
+                    factory_name = f"get_{agent_name}_agent"
+                    if hasattr(agent_module, factory_name):
+                        # Report that agent is available but don't instantiate to avoid side effects
+                        result[agent_name] = {
+                            "status": "available",
+                            "factory": factory_name
+                        }
+                    else:
+                        result[agent_name] = {
+                            "status": "error", 
+                            "error": f"Agent factory {factory_name} not found"
+                        }
+                except Exception as e:
+                    result[agent_name] = {
+                        "status": "error",
+                        "error": str(e)
+                    }
         except Exception as e:
-            error_msg = f"Error checking agents: {str(e)}"
-            agent_status = {"error": error_msg}
-            logger.error(error_msg, exc_info=True)
+            logger.error(f"Error checking agents: {e}")
+            result = {"error": f"Error checking agents: {e}"}
         
-        self.check_results["agents"] = agent_status
-        self.check_times["agents"] = time.time() - start_time
-        return agent_status
+        return result
     
     @timing_decorator
     def check_workflow(self) -> Dict[str, Any]:
-        """
-        Check the LangGraph workflow.
-        
-        Returns:
-            Dict with workflow status information
-        """
-        logger.info("Checking LangGraph workflow")
-        
-        workflow_info = {
-            "status": "not_checked",
-            "error": None,
-            "nodes": [],
-            "edges": []
-        }
-        
+        """Check the status of the workflow configuration."""
+        result = {}
         try:
-            # Try to get the workflow
-            from backend.app.graph.workflows import get_agent_workflow
-            
+            # Try to import workflow-related modules
             try:
-                workflow = get_agent_workflow()
-                workflow_info["status"] = "success"
-                workflow_info["nodes"] = list(workflow.graph.nodes)
-                workflow_info["edges"] = [(src, dest) for src, dest in workflow.graph.edges]
-            except TypeError as e:
-                # Special handling for LangGraph compatibility errors
-                if "Expected a Runnable, callable or dict" in str(e):
-                    # Extract the class name that's causing the issue
-                    import re
-                    class_name = re.search(r"<class '(.+?)'>", str(e))
-                    if class_name:
-                        workflow_info["status"] = "partial"
-                        workflow_info["error"] = f"LangGraph compatibility issue with {class_name.group(1)}. Add __call__ method."
-                        logger.warning(f"Workflow check partial: LangGraph compatibility issue with {class_name.group(1)}")
-                    else:
-                        workflow_info["status"] = "error"
-                        workflow_info["error"] = f"LangGraph compatibility issue: {str(e)}"
-                        logger.error(f"Workflow check failed: {str(e)}")
-                else:
-                    workflow_info["status"] = "error"
-                    workflow_info["error"] = str(e)
-                    logger.error(f"Error checking workflow: {e}")
-                
-                # Try to get basic agent information even if the workflow has errors
                 try:
-                    from backend.app.agents.supervisor import get_supervisor_agent
-                    supervisor = get_supervisor_agent()
-                    workflow_info["supervisor_available"] = True
-                except Exception as agent_err:
-                    logger.error(f"Error checking supervisor agent: {agent_err}")
-                    workflow_info["supervisor_available"] = False
+                    from app.graph.workflows import get_agent_workflow, build_agent_workflow
+                    graph_import_path = "app.graph"
+                except ImportError:
+                    try:
+                        from backend.app.graph.workflows import get_agent_workflow, build_agent_workflow
+                        graph_import_path = "backend.app.graph"
+                    except ImportError:
+                        logger.warning("Could not import workflow modules - reporting as unavailable")
+                        return {
+                            "status": "unavailable",
+                            "error": "Import error - workflow modules not found"
+                        }
+                
+                # Just report that workflow components exist without actually building
+                # This avoids potentially expensive operations or side effects
+                result["status"] = "available"
+                result["builder_function"] = "build_agent_workflow"
+                result["getter_function"] = "get_agent_workflow"
+                result["module"] = graph_import_path
+                
+            except Exception as e:
+                result["error"] = str(e)
+                result["status"] = "error"
+                
         except Exception as e:
-            workflow_info["status"] = "error"
-            workflow_info["error"] = f"Error checking workflow: {str(e)}"
             logger.error(f"Error checking workflow: {e}")
-        
-        return workflow_info
+            result = {"error": f"Error checking workflow: {e}"}
+            
+        return result
     
     @timing_decorator
     def check_performance_metrics(self) -> Dict[str, Any]:

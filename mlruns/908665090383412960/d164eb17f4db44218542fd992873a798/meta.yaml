@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/d164eb17f4db44218542fd992873a798/artifacts
+end_time: 1742344627230
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: d164eb17f4db44218542fd992873a798
+run_name: painted-penguin-28
+run_uuid: d164eb17f4db44218542fd992873a798
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742344627224
+status: 3
+tags: []
+user_id: danc

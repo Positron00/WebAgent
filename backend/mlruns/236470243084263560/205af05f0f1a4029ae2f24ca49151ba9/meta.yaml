@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/236470243084263560/205af05f0f1a4029ae2f24ca49151ba9/artifacts
+end_time: 1742327212086
+entry_point_name: ''
+experiment_id: '236470243084263560'
+lifecycle_stage: active
+run_id: 205af05f0f1a4029ae2f24ca49151ba9
+run_name: selective-smelt-248
+run_uuid: 205af05f0f1a4029ae2f24ca49151ba9
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742327212082
+status: 3
+tags: []
+user_id: danc

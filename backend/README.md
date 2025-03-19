@@ -404,4 +404,41 @@ Key environment variables include:
 - `WEBAGENT_LLM_DEFAULT_PROVIDER`: Which LLM provider to use (`together`, `openai`, etc.)
 - `TOGETHER_API_KEY`, `OPENAI_API_KEY`: API keys for LLM providers
 - `TAVILY_API_KEY`: API key for web search functionality
-- `LANGSMITH_API_KEY`: For tracing and debugging LLM chains 
+- `LANGSMITH_API_KEY`: For tracing and debugging LLM chains
+
+## Directory Structure
+
+The backend is organized into the following key directories:
+
+### Core Application
+- `app/`: Main application code
+  - `api/`: API endpoints and routes
+  - `agents/`: Agent implementations
+  - `core/`: Core utilities and configuration
+  - `graph/`: LangGraph workflow definitions
+  - `models/`: Data models and schemas
+  - `services/`: Service implementations
+  - `utils/`: Utility functions
+
+### Testing, Demos, and Diagnostics
+- `tests/`: All test code
+  - `unit/`: Unit tests for individual components
+  - `diagnostics/`: Tests for diagnostic tools
+  - `integration/`: Integration tests
+  - `mock_utils.py`: Test utilities and mocks
+
+- `demos/`: Demo applications and examples
+  - Contains standalone demos for each WebAgent feature
+  - Run with `python -m backend.demos.[demo_name]`
+
+- `diagnostics/`: System diagnostics and monitoring
+  - `runners/`: Scripts for running diagnostics and tests
+  - `system_check.py`: Basic system health check
+  - `core.py`: Core diagnostic functionality
+
+### Configuration and Data
+- `config/`: Configuration files
+- `data/`: Data storage and processing
+
+### Documentation
+- `docs/`: Documentation files 

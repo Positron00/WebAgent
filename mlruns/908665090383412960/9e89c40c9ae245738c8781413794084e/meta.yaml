@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/9e89c40c9ae245738c8781413794084e/artifacts
+end_time: 1742325038691
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 9e89c40c9ae245738c8781413794084e
+run_name: charming-croc-769
+run_uuid: 9e89c40c9ae245738c8781413794084e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742325038683
+status: 3
+tags: []
+user_id: danc

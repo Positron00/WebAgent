@@ -358,11 +358,19 @@ class SupervisorAgent(BaseAgent):
         return status
 
 
-def get_supervisor_agent() -> SupervisorAgent:
+def get_supervisor_agent():
     """
     Get an instance of the Supervisor Agent.
     
     Returns:
-        A SupervisorAgent instance
+        A callable function that takes a WorkflowState and calls the agent's run method.
+        This makes it compatible with LangGraph which expects nodes to be callable.
     """
-    return SupervisorAgent() 
+    agent = SupervisorAgent()
+    
+    # Return a callable function instead of the agent directly
+    async def supervisor_function(state: WorkflowState) -> WorkflowState:
+        """Callable wrapper for the supervisor agent"""
+        return await agent.run(state)
+    
+    return supervisor_function 

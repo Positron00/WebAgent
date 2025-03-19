@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/c5b407de506748b394c3d191bff1bbd8/artifacts
+end_time: 1742344342572
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: c5b407de506748b394c3d191bff1bbd8
+run_name: traveling-rook-10
+run_uuid: c5b407de506748b394c3d191bff1bbd8
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742344342568
+status: 3
+tags: []
+user_id: danc

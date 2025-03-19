@@ -1,0 +1,497 @@
+2025-03-18 15:09:51,108 - app.core.loadEnvYAML - INFO - Loading configuration from /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/config/dev.yaml
+2025-03-18 15:09:51,111 - app.core.loadEnvYAML - INFO - Successfully loaded configuration for environment: dev
+2025-03-18 15:09:51,111 - app.core.loadEnvYAML - INFO - Configuration validation successful
+2025-03-18 15:09:51,111 - app.core.loadEnvYAML - DEBUG - Exported 75 configuration values to environment variables
+2025-03-18 15:09:51,115 - app.core.setup_langsmith - INFO - LangSmith environment variables configured:
+2025-03-18 15:09:51,115 - app.core.setup_langsmith - INFO -   LANGCHAIN_TRACING_V2: true
+2025-03-18 15:09:51,115 - app.core.setup_langsmith - INFO -   LANGCHAIN_PROJECT: webagent-research
+2025-03-18 15:09:51,116 - app.core.setup_langsmith - INFO - LangSmith tracing initialized for project: webagent-research
+2025-03-18 15:09:51,124 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.smith.langchain.com:443
+2025-03-18 15:09:51,124 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.smith.langchain.com:443
+2025-03-18 15:09:51,260 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "GET /info HTTP/1.1" 200 672
+2025-03-18 15:09:51,269 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "GET /info HTTP/1.1" 200 672
+2025-03-18 15:09:52,129 - numexpr.utils - INFO - Note: NumExpr detected 16 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2025-03-18 15:09:52,129 - numexpr.utils - INFO - NumExpr defaulting to 8 threads.
+2025-03-18 15:09:53,389 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 15:09:57,797 - tensorflow - DEBUG - Falling back to TensorFlow client; we recommended you install the Cloud TPU client directly with pip install cloud-tpu-client.
+2025-03-18 15:09:58,001 - h5py._conv - DEBUG - Creating converter from 7 to 5
+2025-03-18 15:09:58,001 - h5py._conv - DEBUG - Creating converter from 5 to 7
+2025-03-18 15:09:58,001 - h5py._conv - DEBUG - Creating converter from 7 to 5
+2025-03-18 15:09:58,001 - h5py._conv - DEBUG - Creating converter from 5 to 7
+2025-03-18 15:09:58,746 - matplotlib - DEBUG - matplotlib data path: /opt/anaconda3/envs/agents/lib/python3.12/site-packages/matplotlib/mpl-data
+2025-03-18 15:09:58,749 - matplotlib - DEBUG - CONFIGDIR=/Users/danc/.matplotlib
+2025-03-18 15:09:58,750 - matplotlib - DEBUG - interactive is False
+2025-03-18 15:09:58,750 - matplotlib - DEBUG - platform is darwin
+2025-03-18 15:09:58,772 - matplotlib - DEBUG - CACHEDIR=/Users/danc/.matplotlib
+2025-03-18 15:09:58,773 - matplotlib.font_manager - DEBUG - Using fontManager instance from /Users/danc/.matplotlib/fontlist-v390.json
+2025-03-18 15:09:59,264 - datasets - INFO - PyTorch version 2.5.1 available.
+2025-03-18 15:09:59,264 - datasets - INFO - TensorFlow version 2.19.0 available.
+2025-03-18 15:09:59,573 - backend.app.core.setup_langsmith - INFO - LangSmith environment variables configured:
+2025-03-18 15:09:59,573 - backend.app.core.setup_langsmith - INFO -   LANGCHAIN_TRACING_V2: true
+2025-03-18 15:09:59,573 - backend.app.core.setup_langsmith - INFO -   LANGCHAIN_PROJECT: webagent-research
+2025-03-18 15:09:59,573 - backend.app.core.setup_langsmith - INFO - LangSmith tracing initialized for project: webagent-research
+2025-03-18 15:09:59,573 - backend.app.core.setup_langsmith - INFO - LangSmith environment variables configured:
+2025-03-18 15:09:59,574 - backend.app.core.setup_langsmith - INFO -   LANGCHAIN_TRACING_V2: true
+2025-03-18 15:09:59,574 - backend.app.core.setup_langsmith - INFO -   LANGCHAIN_PROJECT: webagent-research
+2025-03-18 15:09:59,574 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.smith.langchain.com:443
+2025-03-18 15:09:59,574 - backend.app.core.setup_langsmith - INFO - LangSmith tracing initialized for project: webagent-research
+2025-03-18 15:09:59,575 - multiagent_workflow_demo - INFO - LangSmith tracing enabled with project: webagent-workflow-demo-20250318
+2025-03-18 15:09:59,575 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.smith.langchain.com:443
+2025-03-18 15:09:59,575 - webagent - DEBUG - Function run_workflow_demo executed in 0.0000 seconds
+2025-03-18 15:09:59,575 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-03-18 15:09:59,576 - multiagent_workflow_demo - INFO - ################################################################################
+2025-03-18 15:09:59,576 - multiagent_workflow_demo - INFO - #                      LANGGRAPH MULTIAGENT WORKFLOW DEMO                      #
+2025-03-18 15:09:59,576 - multiagent_workflow_demo - INFO - ################################################################################
+2025-03-18 15:09:59,576 - multiagent_workflow_demo - INFO - Query: How do I create a simple React component?
+2025-03-18 15:09:59,576 - multiagent_workflow_demo - INFO - Agentic Workflow: Enabled
+2025-03-18 15:09:59,576 - backend.app.graph.workflows - INFO - Building agent workflow graph
+2025-03-18 15:09:59,576 - app.agents.base_agent - INFO - Initialized supervisor agent with ID: supervisor-a904cd05
+2025-03-18 15:09:59,576 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:09:59,576 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:09:59,576 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:09:59,577 - app.services.llm - DEBUG - Testing TogetherAI API connection...
+2025-03-18 15:09:59,597 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.together.xyz:443
+2025-03-18 15:09:59,668 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "GET /info HTTP/1.1" 200 672
+2025-03-18 15:09:59,668 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "GET /info HTTP/1.1" 200 672
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: frozenset'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'frozenset'> to JSON: Object of type frozenset is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: CaseInsensitiveDict'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'requests.structures.CaseInsensitiveDict'> to JSON: Object of type CaseInsensitiveDict is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: RequestsCookieJar'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'requests.cookies.RequestsCookieJar'> to JSON: Object of type RequestsCookieJar is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: function'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'function'> to JSON: Object of type function is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: method'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'method'> to JSON: Object of type method is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: _thread.lock'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class '_thread.lock'> to JSON: Object of type lock is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:09:59,710 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:09:59,765 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:36,437 - urllib3.connectionpool - DEBUG - https://api.together.xyz:443 "POST /v1/completions HTTP/1.1" 200 None
+2025-03-18 15:10:36,474 - app.services.llm - DEBUG - TogetherAI API connection test successful
+2025-03-18 15:10:36,474 - app.services.llm - INFO - Successfully initialized TogetherLLM with model: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+2025-03-18 15:10:36,474 - app.services.llm - INFO - LLM request to together completed in 36.90s with 0 tokens
+2025-03-18 15:10:36,494 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:10:36,514 - git.cmd - DEBUG - Popen(['git', 'version'], cwd=/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent, stdin=None, shell=False, universal_newlines=False)
+2025-03-18 15:10:36,534 - git.cmd - DEBUG - Popen(['git', 'version'], cwd=/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent, stdin=None, shell=False, universal_newlines=False)
+2025-03-18 15:10:36,562 - git.cmd - DEBUG - Popen(['git', 'check-ignore', '/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/demos'], cwd=/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent, stdin=None, shell=False, universal_newlines=False)
+2025-03-18 15:10:36,577 - git.cmd - DEBUG - Popen(['git', 'cat-file', '--batch-check'], cwd=/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent, stdin=<valid stream>, shell=False, universal_newlines=False)
+2025-03-18 15:10:36,600 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to supervisor chain
+2025-03-18 15:10:36,600 - app.agents.supervisor - INFO - Supervisor Agent initialized with both LangGraph and direct service capabilities
+2025-03-18 15:10:36,600 - app.agents.base_agent - INFO - Initialized document_extraction agent with ID: document_extraction-a2ee6361
+2025-03-18 15:10:36,600 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:10:36,600 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:10:36,600 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:10:36,600 - app.services.llm - DEBUG - Testing TogetherAI API connection...
+2025-03-18 15:10:36,602 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.together.xyz:443
+2025-03-18 15:10:36,604 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: frozenset'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'frozenset'> to JSON: Object of type frozenset is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: CaseInsensitiveDict'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'requests.structures.CaseInsensitiveDict'> to JSON: Object of type CaseInsensitiveDict is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: RequestsCookieJar'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'requests.cookies.RequestsCookieJar'> to JSON: Object of type RequestsCookieJar is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: function'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'function'> to JSON: Object of type function is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: method'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'method'> to JSON: Object of type method is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: _thread.lock'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class '_thread.lock'> to JSON: Object of type lock is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:36,658 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:36,723 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:37,877 - urllib3.connectionpool - DEBUG - https://api.together.xyz:443 "POST /v1/completions HTTP/1.1" 200 None
+2025-03-18 15:10:37,878 - app.services.llm - DEBUG - TogetherAI API connection test successful
+2025-03-18 15:10:37,878 - app.services.llm - INFO - Successfully initialized TogetherLLM with model: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+2025-03-18 15:10:37,879 - app.services.llm - INFO - LLM request to together completed in 1.28s with 0 tokens
+2025-03-18 15:10:37,897 - app.agents.document_extraction_agent - INFO - Downloading required NLTK resources...
+2025-03-18 15:10:37,999 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:38,078 - app.agents.document_extraction_agent - INFO - Document Extraction Agent initialized with 3 methods
+2025-03-18 15:10:38,078 - app.agents.base_agent - INFO - Initialized internal_research agent with ID: internal_research-236d175c
+2025-03-18 15:10:38,079 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:10:38,080 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:10:38,085 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:10:38,085 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:10:38,098 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-03-18 15:10:38,164 - chromadb.config - DEBUG - Starting component System
+2025-03-18 15:10:38,164 - chromadb.config - DEBUG - Starting component Posthog
+2025-03-18 15:10:38,164 - chromadb.config - DEBUG - Starting component OpenTelemetryClient
+2025-03-18 15:10:38,164 - chromadb.config - DEBUG - Starting component SqliteDB
+2025-03-18 15:10:38,173 - chromadb.config - DEBUG - Starting component SimpleQuotaEnforcer
+2025-03-18 15:10:38,173 - chromadb.config - DEBUG - Starting component SimpleRateLimitEnforcer
+2025-03-18 15:10:38,173 - chromadb.config - DEBUG - Starting component LocalSegmentManager
+2025-03-18 15:10:38,173 - chromadb.config - DEBUG - Starting component LocalExecutor
+2025-03-18 15:10:38,173 - chromadb.config - DEBUG - Starting component SegmentAPI
+2025-03-18 15:10:38,175 - chromadb.api.segment - DEBUG - Collection langchain already exists, returning existing collection.
+2025-03-18 15:10:38,175 - app.services.graphdb - INFO - No graph database URL configured. Using NetworkX in-memory graph.
+2025-03-18 15:10:38,175 - app.services.graphdb - INFO - Initialized fallback NetworkX graph
+2025-03-18 15:10:38,175 - app.services.vectordb - INFO - Vector database initialized at ./data/vectordb
+2025-03-18 15:10:38,175 - app.agents.internal_research - INFO - Using vector database path: ./data/vectordb
+2025-03-18 15:10:38,176 - app.agents.internal_research - WARNING - Error checking vector database dimensions: Client() got an unexpected keyword argument 'Settings'
+2025-03-18 15:10:38,176 - app.agents.internal_research - INFO - Creating new database with OpenAI-compatible embeddings (1536 dim)
+2025-03-18 15:10:38,176 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:10:38,176 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:10:38,180 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:10:38,180 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:10:38,184 - app.agents.internal_research - INFO - Successfully initialized OpenAI embeddings
+2025-03-18 15:10:38,184 - app.agents.internal_research - INFO - Initializing vector database with embeddings
+2025-03-18 15:10:38,185 - chromadb.api.segment - DEBUG - Collection langchain already exists, returning existing collection.
+2025-03-18 15:10:38,191 - app.agents.internal_research - INFO - Vector database has 586 documents
+2025-03-18 15:10:38,212 - app.agents.internal_research - INFO - Advanced RAG Retriever initialized with text-embedding-ada-002
+2025-03-18 15:10:38,213 - app.utils.metrics - DEBUG - RAGRetriever.initialize_retrievers executed in 0.1341 seconds
+2025-03-18 15:10:38,213 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): huggingface.co:443
+2025-03-18 15:10:38,307 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /cross-encoder/ms-marco-MiniLM-L12-v2/resolve/main/config.json HTTP/1.1" 200 0
+2025-03-18 15:10:38,421 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /cross-encoder/ms-marco-MiniLM-L12-v2/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+2025-03-18 15:10:38,476 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /cross-encoder/ms-marco-MiniLM-L12-v2/resolve/main/config.json HTTP/1.1" 200 0
+2025-03-18 15:10:38,527 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /cross-encoder/ms-marco-MiniLM-L12-v2/resolve/main/tokenizer_config.json HTTP/1.1" 200 0
+2025-03-18 15:10:38,558 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: mps
+2025-03-18 15:10:38,558 - app.agents.internal_research - INFO - Reranker initialized with cross-encoder/ms-marco-MiniLM-L12-v2
+2025-03-18 15:10:38,558 - app.utils.metrics - DEBUG - RAGReranker.initialize_reranker executed in 0.3452 seconds
+2025-03-18 15:10:38,558 - app.agents.internal_research - INFO - Using default model from settings: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+2025-03-18 15:10:38,558 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:10:38,558 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:10:38,558 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:10:38,558 - app.services.llm - DEBUG - Testing TogetherAI API connection...
+2025-03-18 15:10:38,559 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.together.xyz:443
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: frozenset'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'frozenset'> to JSON: Object of type frozenset is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: CaseInsensitiveDict'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'requests.structures.CaseInsensitiveDict'> to JSON: Object of type CaseInsensitiveDict is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: RequestsCookieJar'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'requests.cookies.RequestsCookieJar'> to JSON: Object of type RequestsCookieJar is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: function'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'function'> to JSON: Object of type function is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: method'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'method'> to JSON: Object of type method is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: _thread.lock'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class '_thread.lock'> to JSON: Object of type lock is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:38,614 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:38,670 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:38,678 - urllib3.connectionpool - DEBUG - https://api.together.xyz:443 "POST /v1/completions HTTP/1.1" 429 598
+2025-03-18 15:10:38,679 - app.services.llm - WARNING - TogetherAI API connection test failed: Together received an invalid payload: {
+  "id": "nmYJFJE-3qmGs3-922708034d64e647",
+  "error": {
+    "message": "You have reached the rate limit specific to this model meta-llama/Llama-3.3-70B-Instruct-Turbo-Free. The maximum rate limit for this model is 6.0 queries per minute. This limit differs from the general rate limits published at Together AI rate limits documentation (https://docs.together.ai/docs/rate-limits). For inquiries about increasing your model-specific rate limit, please contact our sales team (https://www.together.ai/forms/contact-sales)",
+    "type": "model_rate_limit",
+    "param": null,
+    "code": null
+  }
+}
+2025-03-18 15:10:38,680 - app.services.llm - INFO - Successfully initialized TogetherLLM with model: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+2025-03-18 15:10:38,680 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): us.i.posthog.com:443
+2025-03-18 15:10:38,680 - app.services.llm - INFO - LLM request to together completed in 0.12s with 0 tokens
+2025-03-18 15:10:38,692 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to internal_research chain
+2025-03-18 15:10:38,692 - app.agents.internal_research - INFO - Advanced RAG-based Internal Research Agent initialized
+2025-03-18 15:10:38,692 - app.agents.base_agent - INFO - Initialized web_research agent with ID: web_research-c8c37fc5
+2025-03-18 15:10:38,692 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:10:38,692 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:10:38,692 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:10:38,692 - app.services.llm - DEBUG - Testing TogetherAI API connection...
+2025-03-18 15:10:38,693 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.together.xyz:443
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: frozenset'). Falling back to json.
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Failed to serialize <class 'frozenset'> to JSON: Object of type frozenset is not JSON serializable
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: CaseInsensitiveDict'). Falling back to json.
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Failed to serialize <class 'requests.structures.CaseInsensitiveDict'> to JSON: Object of type CaseInsensitiveDict is not JSON serializable
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: RequestsCookieJar'). Falling back to json.
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Failed to serialize <class 'requests.cookies.RequestsCookieJar'> to JSON: Object of type RequestsCookieJar is not JSON serializable
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: function'). Falling back to json.
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Failed to serialize <class 'function'> to JSON: Object of type function is not JSON serializable
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: method'). Falling back to json.
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Failed to serialize <class 'method'> to JSON: Object of type method is not JSON serializable
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: _thread.lock'). Falling back to json.
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Failed to serialize <class '_thread.lock'> to JSON: Object of type lock is not JSON serializable
+2025-03-18 15:10:38,748 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:38,749 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:38,749 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:38,749 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:38,749 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:38,749 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:38,789 - urllib3.connectionpool - DEBUG - https://us.i.posthog.com:443 "POST /batch/ HTTP/1.1" 200 15
+2025-03-18 15:10:38,812 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:48,668 - urllib3.connectionpool - DEBUG - https://api.together.xyz:443 "POST /v1/completions HTTP/1.1" 200 None
+2025-03-18 15:10:48,672 - app.services.llm - DEBUG - TogetherAI API connection test successful
+2025-03-18 15:10:48,672 - app.services.llm - INFO - Successfully initialized TogetherLLM with model: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+2025-03-18 15:10:48,673 - app.services.llm - INFO - LLM request to together completed in 9.98s with 0 tokens
+2025-03-18 15:10:48,687 - app.agents.base_agent - INFO - Initialized senior_research agent with ID: senior_research-06932c7f
+2025-03-18 15:10:48,687 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:10:48,687 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:10:48,687 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:10:48,687 - app.services.llm - DEBUG - Testing TogetherAI API connection...
+2025-03-18 15:10:48,688 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.together.xyz:443
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: frozenset'). Falling back to json.
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Failed to serialize <class 'frozenset'> to JSON: Object of type frozenset is not JSON serializable
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: CaseInsensitiveDict'). Falling back to json.
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Failed to serialize <class 'requests.structures.CaseInsensitiveDict'> to JSON: Object of type CaseInsensitiveDict is not JSON serializable
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: RequestsCookieJar'). Falling back to json.
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Failed to serialize <class 'requests.cookies.RequestsCookieJar'> to JSON: Object of type RequestsCookieJar is not JSON serializable
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: function'). Falling back to json.
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Failed to serialize <class 'function'> to JSON: Object of type function is not JSON serializable
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: method'). Falling back to json.
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Failed to serialize <class 'method'> to JSON: Object of type method is not JSON serializable
+2025-03-18 15:10:48,743 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: _thread.lock'). Falling back to json.
+2025-03-18 15:10:48,744 - langsmith.client - DEBUG - Failed to serialize <class '_thread.lock'> to JSON: Object of type lock is not JSON serializable
+2025-03-18 15:10:48,744 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:48,744 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:48,744 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:48,744 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:48,744 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:48,744 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:48,803 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:49,238 - urllib3.connectionpool - DEBUG - https://api.together.xyz:443 "POST /v1/completions HTTP/1.1" 404 None
+2025-03-18 15:10:49,240 - app.services.llm - WARNING - TogetherAI API connection test failed: Together received an invalid payload: {
+  "id": "nmYJJPB-4yUbBN-9227084299b41366",
+  "error": {
+    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}
+2025-03-18 15:10:49,240 - app.services.llm - ERROR - TogetherAI API rate limit exceeded
+2025-03-18 15:10:49,240 - app.services.llm - ERROR - Error creating Together AI LLM: TogetherAI API rate limit exceeded: Together received an invalid payload: {
+  "id": "nmYJJPB-4yUbBN-9227084299b41366",
+  "error": {
+    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}
+2025-03-18 15:10:49,241 - app.services.llm - ERROR - Traceback (most recent call last):
+  File "/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/app/services/llm.py", line 449, in get_together_llm
+    test_response = llm.invoke("Hello")
+                    ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/langchain_core/language_models/llms.py", line 390, in invoke
+    self.generate_prompt(
+  File "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/langchain_core/language_models/llms.py", line 763, in generate_prompt
+    return self.generate(prompt_strings, stop=stop, callbacks=callbacks, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/langchain_core/language_models/llms.py", line 966, in generate
+    output = self._generate_helper(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/langchain_core/language_models/llms.py", line 787, in _generate_helper
+    self._generate(
+  File "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/langchain_core/language_models/llms.py", line 1526, in _generate
+    self._call(prompt, stop=stop, run_manager=run_manager, **kwargs)
+  File "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/langchain_together/llms.py", line 158, in _call
+    raise ValueError(f"Together received an invalid payload: {response.text}")
+ValueError: Together received an invalid payload: {
+  "id": "nmYJJPB-4yUbBN-9227084299b41366",
+  "error": {
+    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/app/services/llm.py", line 459, in get_together_llm
+    raise ValueError(f"TogetherAI API rate limit exceeded: {str(test_err)}")
+ValueError: TogetherAI API rate limit exceeded: Together received an invalid payload: {
+  "id": "nmYJJPB-4yUbBN-9227084299b41366",
+  "error": {
+    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}
+
+2025-03-18 15:10:49,241 - app.services.llm - ERROR - LLM request to together failed after 0.55s: TogetherAI API rate limit exceeded: TogetherAI API rate limit exceeded: Together received an invalid payload: {
+  "id": "nmYJJPB-4yUbBN-9227084299b41366",
+  "error": {
+    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}
+2025-03-18 15:10:49,250 - app.services.llm - WARNING - Failed to initialize together LLM: TogetherAI API rate limit exceeded: TogetherAI API rate limit exceeded: Together received an invalid payload: {
+  "id": "nmYJJPB-4yUbBN-9227084299b41366",
+  "error": {
+    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}
+2025-03-18 15:10:49,251 - app.services.llm - INFO - Attempting to initialize LLM with provider: groq
+2025-03-18 15:10:49,251 - app.services.llm - INFO - Attempting to initialize LLM with provider: openai
+2025-03-18 15:10:49,251 - app.services.llm - INFO - LLM request to openai initiated
+2025-03-18 15:10:49,251 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:10:49,251 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:10:49,256 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-03-18 15:10:49,256 - httpx - DEBUG - load_verify_locations cafile='/opt/anaconda3/envs/agents/lib/python3.12/site-packages/certifi/cacert.pem'
+2025-03-18 15:10:49,260 - app.services.llm - INFO - LLM request to openai completed in 0.01s with 0 tokens
+2025-03-18 15:10:49,266 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to senior_research chain
+2025-03-18 15:10:49,266 - app.agents.base_agent - INFO - Initialized data_analysis agent with ID: data_analysis-27933a3e
+2025-03-18 15:10:49,266 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:10:49,266 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:10:49,266 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:10:49,267 - app.services.llm - DEBUG - Testing TogetherAI API connection...
+2025-03-18 15:10:49,267 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.together.xyz:443
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: frozenset'). Falling back to json.
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Failed to serialize <class 'frozenset'> to JSON: Object of type frozenset is not JSON serializable
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: CaseInsensitiveDict'). Falling back to json.
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Failed to serialize <class 'requests.structures.CaseInsensitiveDict'> to JSON: Object of type CaseInsensitiveDict is not JSON serializable
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: RequestsCookieJar'). Falling back to json.
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Failed to serialize <class 'requests.cookies.RequestsCookieJar'> to JSON: Object of type RequestsCookieJar is not JSON serializable
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: function'). Falling back to json.
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Failed to serialize <class 'function'> to JSON: Object of type function is not JSON serializable
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: method'). Falling back to json.
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Failed to serialize <class 'method'> to JSON: Object of type method is not JSON serializable
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: _thread.lock'). Falling back to json.
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Failed to serialize <class '_thread.lock'> to JSON: Object of type lock is not JSON serializable
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:49,322 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:49,323 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:49,323 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:49,323 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:49,380 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:49,488 - urllib3.connectionpool - DEBUG - https://api.together.xyz:443 "POST /v1/completions HTTP/1.1" 404 None
+2025-03-18 15:10:49,488 - app.services.llm - WARNING - TogetherAI API connection test failed: Together received an invalid payload: {
+  "id": "nmYJJW9-4yUbBN-922708465ac51fee",
+  "error": {
+    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}
+2025-03-18 15:10:49,488 - app.services.llm - INFO - Successfully initialized TogetherLLM with model: gpt-4-turbo
+2025-03-18 15:10:49,488 - app.services.llm - INFO - LLM request to together completed in 0.22s with 0 tokens
+2025-03-18 15:10:49,495 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to data_analysis chain
+2025-03-18 15:10:49,495 - app.agents.base_agent - INFO - Initialized coding_assistant agent with ID: coding_assistant-6cab7556
+2025-03-18 15:10:49,495 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:10:49,495 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:10:49,495 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:10:49,495 - app.services.llm - DEBUG - Testing TogetherAI API connection...
+2025-03-18 15:10:49,496 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.together.xyz:443
+2025-03-18 15:10:49,550 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: frozenset'). Falling back to json.
+2025-03-18 15:10:49,550 - langsmith.client - DEBUG - Failed to serialize <class 'frozenset'> to JSON: Object of type frozenset is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: CaseInsensitiveDict'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class 'requests.structures.CaseInsensitiveDict'> to JSON: Object of type CaseInsensitiveDict is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: RequestsCookieJar'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class 'requests.cookies.RequestsCookieJar'> to JSON: Object of type RequestsCookieJar is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: function'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class 'function'> to JSON: Object of type function is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: method'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class 'method'> to JSON: Object of type method is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: _thread.lock'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class '_thread.lock'> to JSON: Object of type lock is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:49,551 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:49,616 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:49,666 - urllib3.connectionpool - DEBUG - https://api.together.xyz:443 "POST /v1/completions HTTP/1.1" 404 None
+2025-03-18 15:10:49,668 - app.services.llm - WARNING - TogetherAI API connection test failed: Together received an invalid payload: {
+  "id": "nmYJJZE-4yUbBN-922708479876d67b",
+  "error": {
+    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}
+2025-03-18 15:10:49,668 - app.services.llm - INFO - Successfully initialized TogetherLLM with model: gpt-4-turbo
+2025-03-18 15:10:49,668 - app.services.llm - INFO - LLM request to together completed in 0.17s with 0 tokens
+2025-03-18 15:10:49,675 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to coding_assistant chain
+2025-03-18 15:10:49,675 - app.agents.base_agent - INFO - Initialized team_manager agent with ID: team_manager-b05a74ae
+2025-03-18 15:10:49,675 - app.services.llm - INFO - Creating LLM instance with provider: together
+2025-03-18 15:10:49,675 - app.services.llm - INFO - Attempting to initialize LLM with provider: together
+2025-03-18 15:10:49,675 - app.services.llm - INFO - LLM request to together initiated
+2025-03-18 15:10:49,675 - app.services.llm - DEBUG - Testing TogetherAI API connection...
+2025-03-18 15:10:49,676 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.together.xyz:443
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: frozenset'). Falling back to json.
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Failed to serialize <class 'frozenset'> to JSON: Object of type frozenset is not JSON serializable
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: CaseInsensitiveDict'). Falling back to json.
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Failed to serialize <class 'requests.structures.CaseInsensitiveDict'> to JSON: Object of type CaseInsensitiveDict is not JSON serializable
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: RequestsCookieJar'). Falling back to json.
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Failed to serialize <class 'requests.cookies.RequestsCookieJar'> to JSON: Object of type RequestsCookieJar is not JSON serializable
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: HTTPAdapter'). Falling back to json.
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Failed to serialize <class 'requests.adapters.HTTPAdapter'> to JSON: Object of type HTTPAdapter is not JSON serializable
+2025-03-18 15:10:49,731 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: function'). Falling back to json.
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Failed to serialize <class 'function'> to JSON: Object of type function is not JSON serializable
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: method'). Falling back to json.
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Failed to serialize <class 'method'> to JSON: Object of type method is not JSON serializable
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: _thread.lock'). Falling back to json.
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Failed to serialize <class '_thread.lock'> to JSON: Object of type lock is not JSON serializable
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Orjson serialization failed: TypeError('Type is not JSON serializable: Condition'). Falling back to json.
+2025-03-18 15:10:49,732 - langsmith.client - DEBUG - Failed to serialize <class 'threading.Condition'> to JSON: Object of type Condition is not JSON serializable
+2025-03-18 15:10:49,798 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:49,863 - urllib3.connectionpool - DEBUG - https://api.together.xyz:443 "POST /v1/completions HTTP/1.1" 404 None
+2025-03-18 15:10:49,863 - app.services.llm - WARNING - TogetherAI API connection test failed: Together received an invalid payload: {
+  "id": "nmYJJcd-4yUbBN-92270848cb7cc9ab",
+  "error": {
+    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_available"
+  }
+}
+2025-03-18 15:10:49,864 - app.services.llm - INFO - Successfully initialized TogetherLLM with model: gpt-4-turbo
+2025-03-18 15:10:49,864 - app.services.llm - INFO - LLM request to together completed in 0.19s with 0 tokens
+2025-03-18 15:10:49,870 - app.agents.base_agent - DEBUG - Adding LangSmith tracing to team_manager chain
+2025-03-18 15:10:49,974 - urllib3.connectionpool - DEBUG - https://api.smith.langchain.com:443 "POST /runs/batch HTTP/1.1" 202 34
+2025-03-18 15:10:50,382 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:10:50,382 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:10:50,389 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:10:50,389 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:10:50,390 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:10:50,391 - langsmith.client - DEBUG - Closing Client.session
+2025-03-18 15:10:50,391 - langsmith.client - DEBUG - Closing Client.session

@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/236470243084263560/760971511d684d72867ef83f01ea130a/artifacts
+end_time: 1742341344641
+entry_point_name: ''
+experiment_id: '236470243084263560'
+lifecycle_stage: active
+run_id: 760971511d684d72867ef83f01ea130a
+run_name: bustling-stag-255
+run_uuid: 760971511d684d72867ef83f01ea130a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742341344636
+status: 3
+tags: []
+user_id: danc

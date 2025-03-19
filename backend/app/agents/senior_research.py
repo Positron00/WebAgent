@@ -256,11 +256,19 @@ class SeniorResearchAgent(BaseAgent):
             return state
 
 
-def get_senior_research_agent() -> SeniorResearchAgent:
+def get_senior_research_agent():
     """
     Get an instance of the Senior Research Agent.
     
     Returns:
-        A SeniorResearchAgent instance
+        A callable function that takes a WorkflowState and calls the agent's run method.
+        This makes it compatible with LangGraph which expects nodes to be callable.
     """
-    return SeniorResearchAgent() 
+    agent = SeniorResearchAgent()
+    
+    # Return a callable function instead of the agent directly
+    async def senior_research_function(state: WorkflowState) -> WorkflowState:
+        """Callable wrapper for the senior research agent"""
+        return await agent.run(state)
+    
+    return senior_research_function 

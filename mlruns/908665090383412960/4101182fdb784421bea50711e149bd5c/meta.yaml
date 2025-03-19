@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/4101182fdb784421bea50711e149bd5c/artifacts
+end_time: 1742343050640
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 4101182fdb784421bea50711e149bd5c
+run_name: chill-carp-862
+run_uuid: 4101182fdb784421bea50711e149bd5c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742343050634
+status: 3
+tags: []
+user_id: danc

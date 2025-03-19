@@ -17558,3 +17558,298 @@ Exception: Run with UUID bfa6bcb48a6a4614930d2daa63358054 is already active. To 
 2025-03-18 11:11:15,922 - webagent - DEBUG - Using existing MLflow run for drift detection: gradual_drift
 2025-03-18 11:11:15,986 - webagent - DEBUG - Using existing MLflow run for drift detection: gradual_drift
 2025-03-18 11:11:15,986 - webagent - DEBUG - Using existing MLflow run for drift detection: gradual_drift
+2025-03-18 15:09:53,389 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 15:09:59,575 - webagent - DEBUG - Function run_workflow_demo executed in 0.0000 seconds
+2025-03-18 15:49:24,070 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 16:03:54,426 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 16:04:00,465 - webagent - DEBUG - Function build_agent_workflow executed in 0.2364 seconds
+2025-03-18 16:04:12,275 - webagent - DEBUG - Function build_agent_workflow executed in 11.8067 seconds
+2025-03-18 16:04:12,275 - webagent - DEBUG - Function get_agent_workflow executed in 11.8068 seconds
+2025-03-18 16:04:12,275 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-18 16:09:08,008 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 16:09:13,107 - webagent - DEBUG - Function build_agent_workflow executed in 0.2373 seconds
+2025-03-18 16:09:24,915 - webagent - DEBUG - Function build_agent_workflow executed in 11.8049 seconds
+2025-03-18 16:09:24,915 - webagent - DEBUG - Function get_agent_workflow executed in 11.8050 seconds
+2025-03-18 16:09:24,915 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-18 19:44:02,371 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:10:21,567 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:10:26,523 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:10:26,523 - webagent - DEBUG - Completed task: team_manager_1742343026.523419 with status: completed in 0.00s
+2025-03-18 20:10:26,524 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:10:26,524 - webagent - DEBUG - Completed task: team_manager_1742343026.524615 with status: completed in 0.00s
+2025-03-18 20:10:26,525 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:10:26,525 - webagent - DEBUG - Completed task: team_manager_1742343026.525658 with status: completed in 0.00s
+2025-03-18 20:10:26,719 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:10:26,720 - webagent - DEBUG - Completed task: team_manager_1742343026.71989 with status: error in 0.00s
+2025-03-18 20:10:26,745 - webagent - DEBUG - Function check_system_info executed in 0.0239 seconds
+2025-03-18 20:10:26,826 - webagent - DEBUG - Function check_dependencies executed in 0.0794 seconds
+2025-03-18 20:10:26,828 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-18 20:10:26,829 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:10:26,829 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:10:26,829 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:10:26,829 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:10:26,829 - webagent - DEBUG - Function check_agents executed in 0.0005 seconds
+2025-03-18 20:11:28,908 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:11:33,375 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:11:33,375 - webagent - DEBUG - Completed task: team_manager_1742343093.375674 with status: completed in 0.00s
+2025-03-18 20:11:33,376 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:11:33,376 - webagent - DEBUG - Completed task: team_manager_1742343093.376893 with status: completed in 0.00s
+2025-03-18 20:11:33,377 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:11:33,377 - webagent - DEBUG - Completed task: team_manager_1742343093.377954 with status: completed in 0.00s
+2025-03-18 20:11:33,810 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:11:33,811 - webagent - DEBUG - Completed task: team_manager_1742343093.810437 with status: error in 0.00s
+2025-03-18 20:11:33,838 - webagent - DEBUG - Function check_system_info executed in 0.0266 seconds
+2025-03-18 20:11:33,921 - webagent - DEBUG - Function check_dependencies executed in 0.0814 seconds
+2025-03-18 20:11:33,923 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-18 20:11:33,924 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:11:33,924 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:11:33,924 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:11:33,924 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:11:33,924 - webagent - DEBUG - Function check_agents executed in 0.0004 seconds
+2025-03-18 20:22:50,308 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:25:40,757 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:25:45,680 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:25:45,681 - webagent - DEBUG - Completed task: team_manager_1742343945.680938 with status: completed in 0.00s
+2025-03-18 20:25:45,682 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:25:45,682 - webagent - DEBUG - Completed task: team_manager_1742343945.682184 with status: completed in 0.00s
+2025-03-18 20:25:45,683 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:25:45,683 - webagent - DEBUG - Completed task: team_manager_1742343945.683234 with status: completed in 0.00s
+2025-03-18 20:25:45,865 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:25:45,866 - webagent - DEBUG - Completed task: team_manager_1742343945.865865 with status: error in 0.00s
+2025-03-18 20:26:22,297 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:26:22,390 - webagent - DEBUG - Function check_system_info executed in 0.0120 seconds
+2025-03-18 20:26:23,423 - webagent - DEBUG - Function check_dependencies executed in 1.0325 seconds
+2025-03-18 20:26:23,423 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-18 20:26:28,199 - webagent - DEBUG - Function check_agents executed in 4.7763 seconds
+2025-03-18 20:26:28,223 - webagent - DEBUG - Function check_workflow executed in 0.0234 seconds
+2025-03-18 20:26:28,433 - webagent - DEBUG - Function check_performance_metrics executed in 0.2105 seconds
+2025-03-18 20:26:28,887 - webagent - DEBUG - Function check_network_connectivity executed in 0.4539 seconds
+2025-03-18 20:26:29,028 - webagent - DEBUG - Function check_language_model_availability executed in 0.1408 seconds
+2025-03-18 20:26:29,030 - webagent - DEBUG - Function check_security_status executed in 0.0018 seconds
+2025-03-18 20:26:29,030 - webagent - DEBUG - Function run_all_checks executed in 6.6525 seconds
+2025-03-18 20:26:42,027 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:26:42,028 - webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-18 20:26:42,039 - webagent - DEBUG - Function check_system_info executed in 0.0116 seconds
+2025-03-18 20:26:43,104 - webagent - DEBUG - Function check_dependencies executed in 1.0641 seconds
+2025-03-18 20:26:43,104 - webagent - DEBUG - Function check_environment executed in 0.0005 seconds
+2025-03-18 20:26:47,507 - webagent - DEBUG - Function check_agents executed in 4.4025 seconds
+2025-03-18 20:26:47,521 - webagent - DEBUG - Function check_workflow executed in 0.0143 seconds
+2025-03-18 20:26:47,729 - webagent - DEBUG - Function check_performance_metrics executed in 0.2073 seconds
+2025-03-18 20:26:47,730 - webagent - DEBUG - Function check_security_status executed in 0.0008 seconds
+2025-03-18 20:26:47,730 - webagent - DEBUG - Function run_all_checks executed in 5.7020 seconds
+2025-03-18 20:26:47,730 - webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-18 20:26:57,864 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:26:57,875 - webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-18 20:26:57,887 - webagent - DEBUG - Function check_system_info executed in 0.0116 seconds
+2025-03-18 20:26:58,805 - webagent - DEBUG - Function check_dependencies executed in 0.9172 seconds
+2025-03-18 20:26:58,805 - webagent - DEBUG - Function check_environment executed in 0.0005 seconds
+2025-03-18 20:27:03,173 - webagent - DEBUG - Function check_agents executed in 4.3676 seconds
+2025-03-18 20:27:03,187 - webagent - DEBUG - Function check_workflow executed in 0.0135 seconds
+2025-03-18 20:27:03,393 - webagent - DEBUG - Function check_performance_metrics executed in 0.2062 seconds
+2025-03-18 20:27:03,394 - webagent - DEBUG - Function check_security_status executed in 0.0008 seconds
+2025-03-18 20:27:03,394 - webagent - DEBUG - Function run_all_checks executed in 5.5184 seconds
+2025-03-18 20:27:03,394 - webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-18 20:30:08,879 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:30:08,892 - webagent - DEBUG - Function check_system_info executed in 0.0112 seconds
+2025-03-18 20:30:09,822 - webagent - DEBUG - Function check_dependencies executed in 0.9294 seconds
+2025-03-18 20:30:09,822 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-18 20:30:14,177 - webagent - DEBUG - Function check_agents executed in 4.3547 seconds
+2025-03-18 20:30:14,192 - webagent - DEBUG - Function check_workflow executed in 0.0152 seconds
+2025-03-18 20:30:14,399 - webagent - DEBUG - Function check_performance_metrics executed in 0.2072 seconds
+2025-03-18 20:30:15,303 - webagent - DEBUG - Function check_network_connectivity executed in 0.9038 seconds
+2025-03-18 20:30:15,439 - webagent - DEBUG - Function check_language_model_availability executed in 0.1352 seconds
+2025-03-18 20:30:15,439 - webagent - DEBUG - Function check_security_status executed in 0.0005 seconds
+2025-03-18 20:30:15,439 - webagent - DEBUG - Function run_all_checks executed in 6.5585 seconds
+2025-03-18 20:30:24,768 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:30:24,768 - webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-18 20:30:24,780 - webagent - DEBUG - Function check_system_info executed in 0.0118 seconds
+2025-03-18 20:30:25,720 - webagent - DEBUG - Function check_dependencies executed in 0.9392 seconds
+2025-03-18 20:30:25,720 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-18 20:30:30,178 - webagent - DEBUG - Function check_agents executed in 4.4576 seconds
+2025-03-18 20:30:30,193 - webagent - DEBUG - Function check_workflow executed in 0.0150 seconds
+2025-03-18 20:30:30,404 - webagent - DEBUG - Function check_performance_metrics executed in 0.2106 seconds
+2025-03-18 20:30:30,405 - webagent - DEBUG - Function check_security_status executed in 0.0009 seconds
+2025-03-18 20:30:30,405 - webagent - DEBUG - Function run_all_checks executed in 5.6360 seconds
+2025-03-18 20:30:30,405 - webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-18 20:30:52,443 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:30:52,444 - webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-18 20:30:52,456 - webagent - DEBUG - Function check_system_info executed in 0.0120 seconds
+2025-03-18 20:30:53,396 - webagent - DEBUG - Function check_dependencies executed in 0.9392 seconds
+2025-03-18 20:30:53,396 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-18 20:30:57,777 - webagent - DEBUG - Function check_agents executed in 4.3808 seconds
+2025-03-18 20:30:57,792 - webagent - DEBUG - Function check_workflow executed in 0.0149 seconds
+2025-03-18 20:30:57,999 - webagent - DEBUG - Function check_performance_metrics executed in 0.2072 seconds
+2025-03-18 20:30:58,000 - webagent - DEBUG - Function check_security_status executed in 0.0009 seconds
+2025-03-18 20:30:58,000 - webagent - DEBUG - Function run_all_checks executed in 5.5560 seconds
+2025-03-18 20:30:58,000 - webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-18 20:31:00,022 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:31:03,791 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:31:03,791 - webagent - DEBUG - Completed task: team_manager_1742344263.791187 with status: completed in 0.00s
+2025-03-18 20:31:03,792 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:31:03,792 - webagent - DEBUG - Completed task: team_manager_1742344263.792565 with status: completed in 0.00s
+2025-03-18 20:31:03,793 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:31:03,793 - webagent - DEBUG - Completed task: team_manager_1742344263.793658 with status: completed in 0.00s
+2025-03-18 20:31:04,187 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:31:04,188 - webagent - DEBUG - Completed task: team_manager_1742344264.187845 with status: error in 0.00s
+2025-03-18 20:31:04,215 - webagent - DEBUG - Function check_system_info executed in 0.0259 seconds
+2025-03-18 20:31:04,306 - webagent - DEBUG - Function check_dependencies executed in 0.0885 seconds
+2025-03-18 20:31:04,307 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-18 20:31:04,308 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:31:04,308 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:31:04,308 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:31:04,308 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:31:04,308 - webagent - DEBUG - Function check_agents executed in 0.0005 seconds
+2025-03-18 20:32:07,605 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:32:15,077 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:32:17,302 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:32:22,385 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:32:22,385 - webagent - DEBUG - Completed task: team_manager_1742344342.385739 with status: completed in 0.00s
+2025-03-18 20:32:22,386 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:32:22,386 - webagent - DEBUG - Completed task: team_manager_1742344342.3869 with status: completed in 0.00s
+2025-03-18 20:32:22,387 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:32:22,387 - webagent - DEBUG - Completed task: team_manager_1742344342.387944 with status: completed in 0.00s
+2025-03-18 20:32:22,573 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:32:22,574 - webagent - DEBUG - Completed task: team_manager_1742344342.5738 with status: error in 0.00s
+2025-03-18 20:32:22,599 - webagent - DEBUG - Function check_system_info executed in 0.0233 seconds
+2025-03-18 20:32:22,679 - webagent - DEBUG - Function check_dependencies executed in 0.0785 seconds
+2025-03-18 20:32:22,680 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-18 20:32:22,681 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:32:22,681 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:32:22,681 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:32:22,681 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:32:22,681 - webagent - DEBUG - Function check_agents executed in 0.0004 seconds
+2025-03-18 20:33:01,990 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:33:05,895 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:33:05,895 - webagent - DEBUG - Completed task: team_manager_1742344385.895489 with status: completed in 0.00s
+2025-03-18 20:33:05,896 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:33:05,897 - webagent - DEBUG - Completed task: team_manager_1742344385.897014 with status: completed in 0.00s
+2025-03-18 20:33:05,898 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:33:05,898 - webagent - DEBUG - Completed task: team_manager_1742344385.898266 with status: completed in 0.00s
+2025-03-18 20:33:06,002 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:33:06,003 - webagent - DEBUG - Completed task: team_manager_1742344386.002597 with status: error in 0.00s
+2025-03-18 20:33:41,020 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:33:57,245 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:34:01,099 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:34:01,099 - webagent - DEBUG - Completed task: team_manager_1742344441.099154 with status: completed in 0.00s
+2025-03-18 20:34:01,100 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:34:01,100 - webagent - DEBUG - Completed task: team_manager_1742344441.10037 with status: completed in 0.00s
+2025-03-18 20:34:01,101 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:34:01,101 - webagent - DEBUG - Completed task: team_manager_1742344441.101518 with status: completed in 0.00s
+2025-03-18 20:34:01,199 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:34:01,200 - webagent - DEBUG - Completed task: team_manager_1742344441.199707 with status: error in 0.00s
+2025-03-18 20:34:09,784 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:34:11,744 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:34:15,831 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:34:15,831 - webagent - DEBUG - Completed task: team_manager_1742344455.831575 with status: completed in 0.00s
+2025-03-18 20:34:15,832 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:34:15,833 - webagent - DEBUG - Completed task: team_manager_1742344455.83305 with status: completed in 0.00s
+2025-03-18 20:34:15,834 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:34:15,834 - webagent - DEBUG - Completed task: team_manager_1742344455.834221 with status: completed in 0.00s
+2025-03-18 20:34:15,933 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:34:15,933 - webagent - DEBUG - Completed task: team_manager_1742344455.933194 with status: error in 0.00s
+2025-03-18 20:34:15,957 - webagent - DEBUG - Function check_system_info executed in 0.0223 seconds
+2025-03-18 20:34:16,020 - webagent - DEBUG - Function check_dependencies executed in 0.0618 seconds
+2025-03-18 20:34:16,021 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-18 20:34:16,022 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:34:16,023 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:34:16,023 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:34:16,023 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:34:16,023 - webagent - DEBUG - Function check_agents executed in 0.0005 seconds
+2025-03-18 20:35:15,603 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:35:22,903 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:22,903 - webagent - DEBUG - Completed task: team_manager_1742344522.90363 with status: completed in 0.00s
+2025-03-18 20:35:22,905 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:22,905 - webagent - DEBUG - Completed task: team_manager_1742344522.905361 with status: completed in 0.00s
+2025-03-18 20:35:22,906 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:22,907 - webagent - DEBUG - Completed task: team_manager_1742344522.906998 with status: completed in 0.00s
+2025-03-18 20:35:23,012 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:23,012 - webagent - DEBUG - Completed task: team_manager_1742344523.012378 with status: error in 0.00s
+2025-03-18 20:35:23,227 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:23,227 - webagent - DEBUG - Completed task: team_manager_1742344523.227199 with status: completed in 0.00s
+2025-03-18 20:35:23,228 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:23,228 - webagent - DEBUG - Completed task: team_manager_1742344523.228347 with status: completed in 0.00s
+2025-03-18 20:35:23,229 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:23,229 - webagent - DEBUG - Completed task: team_manager_1742344523.229364 with status: completed in 0.00s
+2025-03-18 20:35:34,941 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:34,941 - webagent - DEBUG - Completed task: team_manager_1742344534.94141 with status: error in 0.00s
+2025-03-18 20:35:34,968 - webagent - DEBUG - Function check_system_info executed in 0.0260 seconds
+2025-03-18 20:35:35,035 - webagent - DEBUG - Function check_dependencies executed in 0.0652 seconds
+2025-03-18 20:35:35,037 - webagent - DEBUG - Function check_environment executed in 0.0004 seconds
+2025-03-18 20:35:35,038 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:35:35,038 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:35:35,038 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:35:35,038 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-18 20:35:35,038 - webagent - DEBUG - Function check_agents executed in 0.0004 seconds
+2025-03-18 20:35:52,364 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:35:56,445 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:56,445 - webagent - DEBUG - Completed task: team_manager_1742344556.445738 with status: completed in 0.00s
+2025-03-18 20:35:56,446 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:56,446 - webagent - DEBUG - Completed task: team_manager_1742344556.446908 with status: completed in 0.00s
+2025-03-18 20:35:56,448 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:56,448 - webagent - DEBUG - Completed task: team_manager_1742344556.448555 with status: completed in 0.00s
+2025-03-18 20:35:56,545 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:35:56,545 - webagent - DEBUG - Completed task: team_manager_1742344556.545486 with status: error in 0.00s
+2025-03-18 20:36:39,196 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:36:43,457 - webagent - DEBUG - Function build_agent_workflow executed in 0.2610 seconds
+2025-03-18 20:36:55,226 - webagent - DEBUG - Function build_agent_workflow executed in 11.7657 seconds
+2025-03-18 20:36:55,226 - webagent - DEBUG - Function get_agent_workflow executed in 11.7658 seconds
+2025-03-18 20:36:55,226 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-18 20:37:07,233 - webagent - DEBUG - Function build_agent_workflow executed in 12.0049 seconds
+2025-03-18 20:37:20,583 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:37:24,789 - webagent - DEBUG - Function build_agent_workflow executed in 0.2320 seconds
+2025-03-18 20:37:36,593 - webagent - DEBUG - Function build_agent_workflow executed in 11.7840 seconds
+2025-03-18 20:37:36,593 - webagent - DEBUG - Function get_agent_workflow executed in 11.7841 seconds
+2025-03-18 20:37:36,593 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-18 20:37:48,599 - webagent - DEBUG - Function build_agent_workflow executed in 12.0018 seconds
+2025-03-18 20:37:48,608 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:37:48,609 - webagent - DEBUG - Completed task: team_manager_1742344668.608954 with status: completed in 0.00s
+2025-03-18 20:37:48,610 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:37:48,610 - webagent - DEBUG - Completed task: team_manager_1742344668.61043 with status: completed in 0.00s
+2025-03-18 20:37:48,611 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:37:48,611 - webagent - DEBUG - Completed task: team_manager_1742344668.611676 with status: completed in 0.00s
+2025-03-18 20:38:00,597 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:38:00,598 - webagent - DEBUG - Completed task: team_manager_1742344680.597739 with status: error in 0.00s
+2025-03-18 20:38:12,469 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:38:18,033 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:38:18,034 - webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-18 20:38:18,045 - webagent - DEBUG - Function check_system_info executed in 0.0113 seconds
+2025-03-18 20:38:19,131 - webagent - DEBUG - Function check_dependencies executed in 1.0852 seconds
+2025-03-18 20:38:19,131 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-18 20:38:23,424 - webagent - DEBUG - Function check_agents executed in 4.2928 seconds
+2025-03-18 20:38:23,439 - webagent - DEBUG - Function check_workflow executed in 0.0149 seconds
+2025-03-18 20:38:23,649 - webagent - DEBUG - Function check_performance_metrics executed in 0.2106 seconds
+2025-03-18 20:38:23,651 - webagent - DEBUG - Function check_security_status executed in 0.0011 seconds
+2025-03-18 20:38:23,651 - webagent - DEBUG - Function run_all_checks executed in 5.6169 seconds
+2025-03-18 20:38:23,651 - webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-18 20:38:32,738 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:39:14,401 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:39:20,967 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:39:22,968 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:39:27,034 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:39:27,034 - webagent - DEBUG - Completed task: team_manager_1742344767.034351 with status: completed in 0.00s
+2025-03-18 20:39:27,035 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:39:27,035 - webagent - DEBUG - Completed task: team_manager_1742344767.035731 with status: completed in 0.00s
+2025-03-18 20:39:27,037 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:39:27,037 - webagent - DEBUG - Completed task: team_manager_1742344767.037194 with status: completed in 0.00s
+2025-03-18 20:39:27,152 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:39:27,153 - webagent - DEBUG - Completed task: team_manager_1742344767.152253 with status: error in 0.00s
+2025-03-18 20:39:52,808 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:39:52,810 - webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-18 20:39:52,826 - webagent - DEBUG - Function check_system_info executed in 0.0159 seconds
+2025-03-18 20:39:53,885 - webagent - DEBUG - Function check_dependencies executed in 1.0588 seconds
+2025-03-18 20:39:53,885 - webagent - DEBUG - Function check_environment executed in 0.0004 seconds
+2025-03-18 20:39:59,032 - webagent - DEBUG - Function check_agents executed in 5.1464 seconds
+2025-03-18 20:39:59,056 - webagent - DEBUG - Function check_workflow executed in 0.0239 seconds
+2025-03-18 20:39:59,262 - webagent - DEBUG - Function check_performance_metrics executed in 0.2063 seconds
+2025-03-18 20:39:59,264 - webagent - DEBUG - Function check_security_status executed in 0.0016 seconds
+2025-03-18 20:39:59,264 - webagent - DEBUG - Function run_all_checks executed in 6.4541 seconds
+2025-03-18 20:39:59,264 - webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-18 20:40:01,276 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-18 20:40:05,037 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:40:05,037 - webagent - DEBUG - Completed task: team_manager_1742344805.037891 with status: completed in 0.00s
+2025-03-18 20:40:05,039 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:40:05,039 - webagent - DEBUG - Completed task: team_manager_1742344805.039402 with status: completed in 0.00s
+2025-03-18 20:40:05,041 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:40:05,041 - webagent - DEBUG - Completed task: team_manager_1742344805.041262 with status: completed in 0.00s
+2025-03-18 20:40:05,287 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-18 20:40:05,289 - webagent - DEBUG - Completed task: team_manager_1742344805.287539 with status: error in 0.00s

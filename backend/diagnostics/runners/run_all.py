@@ -1,159 +1,143 @@
 #!/usr/bin/env python
 """
-WebAgent Test & Diagnostics Runner
-=================================
+Run All Diagnostics and Tests for WebAgent
 
-This script runs all tests and diagnostics for the WebAgent platform.
-It provides a comprehensive health check and test report.
+This script runs all the diagnostics and tests for the WebAgent platform:
+1. System diagnostics check
+2. Test suite execution
+
+The test suite is now located in backend/tests/ and includes:
+- Unit tests in backend/tests/unit/
+- Diagnostic tests in backend/tests/diagnostics/
+- Integration tests in backend/tests/
 
 Usage:
     python -m backend.diagnostics.runners.run_all [options]
+    OR
+    cd backend && python diagnostics/runners/run_all.py [options]
 
 Options:
     --skip-tests           Skip running tests
     --skip-diagnostics     Skip running diagnostics
-    --check-network        Check network connectivity
-    --check-llm            Check LLM availability (may make API calls)
-    --export-json=<file>   Export results to a JSON file
-    --export-junit=<file>  Export test results to a JUnit XML file
     --verbose, -v          Increase verbosity
+    --test-dir             Specific test directory to run
+    --test-file            Specific test file to run
 """
 import os
 import sys
-import json
 import time
 import argparse
+import logging
 from pathlib import Path
-from typing import Dict, Any
 
-# Add project root to path for imports
-project_root = Path(__file__).resolve().parent.parent.parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger("webagent_diagnostics")
 
-# Import test and diagnostics runners
-from backend.diagnostics.core import get_diagnostics, print_diagnostics_report
-from backend.app.core.logger import setup_logger
+# Determine if we're in the backend directory or the project root
+current_dir = Path(os.path.abspath(os.path.dirname(__file__)))
+backend_dir = current_dir.parent.parent
+
+# Try to import path_setup from the backend directory
+try:
+    # First, add the backend directory to the path if it's not already there
+    if str(backend_dir) not in sys.path:
+        sys.path.insert(0, str(backend_dir))
+    
+    # Try to import the path_setup module
+    from path_setup import setup_path
+    setup_path()
+    path_setup_imported = True
+except ImportError:
+    path_setup_imported = False
+    # Fallback method to add project directories to path
+    project_root = Path(__file__).resolve().parent.parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
+    # Add the parent directory to the path
+    parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+
+# Try both import styles - absolute and relative
+try:
+    try:
+        # Try absolute import
+        from backend.diagnostics.runners.run_diagnostics import main as run_diagnostics
+        from backend.diagnostics.runners.run_tests import run_tests
+    except ImportError:
+        # Try relative import
+        from diagnostics.runners.run_diagnostics import main as run_diagnostics
+        from diagnostics.runners.run_tests import run_tests
+except ImportError as e:
+    print(f"Error importing diagnostic runners: {e}")
+    print("Make sure you are running this script from the WebAgent root or backend directory")
+    sys.exit(1)
 
 def main():
-    """Run all tests and diagnostics."""
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description="WebAgent Test & Diagnostics Runner")
-    parser.add_argument("--skip-tests", action="store_true", help="Skip running tests")
-    parser.add_argument("--skip-diagnostics", action="store_true", help="Skip running diagnostics")
-    parser.add_argument("--check-network", action="store_true", help="Check network connectivity")
-    parser.add_argument("--check-llm", action="store_true", help="Check LLM availability")
-    parser.add_argument("--export-json", type=str, help="Export results to a JSON file")
-    parser.add_argument("--export-junit", type=str, help="Export test results to a JUnit XML file")
-    parser.add_argument("--verbose", "-v", action="count", default=0, 
-                        help="Increase verbosity (can be used multiple times)")
-    parser.add_argument("--test-dir", type=str, default="backend/diagnostics/tests",
-                        help="Directory containing tests to run")
-    
+    """Run all diagnostics and tests for WebAgent."""
+    parser = argparse.ArgumentParser(description="Run all WebAgent diagnostics and tests")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Display verbose output")
+    parser.add_argument("--skip-diagnostics", action="store_true", help="Skip diagnostic checks")
+    parser.add_argument("--skip-tests", action="store_true", help="Skip tests")
+    parser.add_argument("--test-dir", type=str, help="Specific test directory to run (relative to tests/)")
+    parser.add_argument("--test-file", type=str, help="Specific test file to run")
     args = parser.parse_args()
     
-    # Set up logging
-    logger = setup_logger("diagnostics_runner")
-    logger.info("Starting WebAgent diagnostics and tests")
+    overall_success = True
+    start_time = time.time()
     
-    # Set up the environment
-    os.environ.setdefault("WEBAGENT_ENV", "test")
-    os.environ["TESTING"] = "True"
+    logger.info("===== WebAgent Comprehensive Diagnostics and Tests =====")
     
-    results = {
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "tests": None,
-        "diagnostics": None
-    }
-    
-    # Run tests if not skipped
-    if not args.skip_tests:
-        logger.info("Running tests...")
-        test_result = run_tests(args)
-        results["tests"] = {
-            "passed": test_result == 0,
-            "exit_code": test_result
-        }
-    else:
-        logger.info("Tests skipped.")
-    
-    # Run diagnostics if not skipped
+    # Run diagnostics
     if not args.skip_diagnostics:
-        logger.info("Running diagnostics...")
-        diag_results = run_diagnostics(args)
-        results["diagnostics"] = diag_results
+        logger.info("\n===== Running System Diagnostics =====")
+        try:
+            diagnostics_success = run_diagnostics() == 0  # Convert return code to boolean success
+            if not diagnostics_success:
+                logger.error("❌ Diagnostics failed!")
+                overall_success = False
+            else:
+                logger.info("✅ Diagnostics passed!")
+        except Exception as e:
+            logger.error(f"❌ Diagnostics error: {str(e)}")
+            overall_success = False
     else:
-        logger.info("Diagnostics skipped.")
+        logger.info("Skipping diagnostics as requested")
     
-    # Export results if requested
-    if args.export_json:
-        with open(args.export_json, "w") as f:
-            json.dump(results, f, indent=2)
-        print(f"\nResults exported to {args.export_json}")
-    
-    # Return success if both tests and diagnostics passed (or were skipped)
-    tests_ok = args.skip_tests or results["tests"]["passed"]
-    diag_ok = args.skip_diagnostics or not has_critical_errors(results.get("diagnostics", {}))
-    
-    return 0 if tests_ok and diag_ok else 1
-
-def run_tests(args):
-    """Run tests using pytest."""
-    try:
-        import pytest
-    except ImportError:
-        print("Error: pytest is not installed. Please install it with:")
-        print("  pip install pytest pytest-xdist pytest-cov")
-        return 1
-    
-    # Build pytest arguments
-    pytest_args = []
-    
-    # Set verbosity
-    if args.verbose == 0:
-        pytest_args.append("-q")
-    elif args.verbose == 1:
-        pytest_args.append("-v")
-    elif args.verbose >= 2:
-        pytest_args.append("-vv")
-    
-    # Export JUnit XML if requested
-    if args.export_junit:
-        pytest_args.extend(["--junitxml", args.export_junit])
-    
-    # Set test directory
-    pytest_args.append(args.test_dir)
-    
-    print(f"Running tests with arguments: {' '.join(pytest_args)}")
-    result = pytest.main(pytest_args)
-    
-    # Report status
-    if result == 0:
-        print("\n✅ All tests passed!")
-    else:
-        print(f"\n❌ Tests failed with exit code {result}")
-    
-    return result
-
-def run_diagnostics(args) -> Dict[str, Any]:
-    """Run diagnostics and return results."""
-    # Get diagnostics instance
-    diagnostics = get_diagnostics()
-    
-    # Selectively disable certain checks
-    if not args.check_network:
-        diagnostics.check_network_connectivity = lambda: {"status": "skipped"}
+    # Run tests
+    if not args.skip_tests:
+        logger.info("\n===== Running Test Suite =====")
         
-    if not args.check_llm:
-        diagnostics.check_language_model_availability = lambda: {"status": "skipped"}
+        try:
+            # Run all tests or specified directory/file
+            test_success = run_tests(test_file=args.test_file, test_dir=args.test_dir, verbose=args.verbose)
+            
+            if not test_success:
+                logger.error("❌ Tests failed!")
+                overall_success = False
+            else:
+                logger.info("✅ Tests passed!")
+        except Exception as e:
+            logger.error(f"❌ Tests error: {str(e)}")
+            overall_success = False
+    else:
+        logger.info("Skipping tests as requested")
     
-    # Run all checks
-    results = diagnostics.run_all_checks()
+    # Report overall status
+    elapsed_time = time.time() - start_time
+    logger.info(f"\n===== Diagnostics and Tests completed in {elapsed_time:.2f} seconds =====")
     
-    # Print report
-    print_diagnostics_report(run_checks=False)  # We already ran checks
-    
-    return results
+    if overall_success:
+        logger.info("✅ All checks passed successfully!")
+        return 0
+    else:
+        logger.error("❌ Some checks failed. See above for details.")
+        return 1
 
 def has_critical_errors(diagnostics_results) -> bool:
     """Check if diagnostics results contain critical errors."""

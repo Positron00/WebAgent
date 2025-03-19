@@ -5,8 +5,15 @@ Test script to verify LangSmith integration.
 This script tests the LangSmith configuration and tracing functionality.
 """
 import os
+import sys
 import logging
 from dotenv import load_dotenv
+
+# Add project root to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = current_dir
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,8 +26,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import after environment is loaded
-from app.core.setup_langsmith import setup_langsmith, get_langsmith_client, get_langchain_tracer, create_langsmith_tags
-from app.core.loadEnvYAML import get_langsmith_config
+from backend.app.core.setup_langsmith import setup_langsmith, get_langsmith_client, get_langchain_tracer, create_langsmith_tags
+from backend.app.core.loadEnvYAML import get_langsmith_config
 
 def test_langsmith_config():
     """Test loading LangSmith configuration."""

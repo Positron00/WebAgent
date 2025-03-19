@@ -287,11 +287,19 @@ class WebResearchAgent(BaseAgent):
             return state
 
 
-def get_web_research_agent() -> WebResearchAgent:
+def get_web_research_agent():
     """
     Get an instance of the Web Research Agent.
     
     Returns:
-        A WebResearchAgent instance
+        A callable function that takes a WorkflowState and calls the agent's run method.
+        This makes it compatible with LangGraph which expects nodes to be callable.
     """
-    return WebResearchAgent() 
+    agent = WebResearchAgent()
+    
+    # Return a callable function instead of the agent directly
+    async def web_research_function(state: WorkflowState) -> WorkflowState:
+        """Callable wrapper for the web research agent"""
+        return await agent.run(state)
+    
+    return web_research_function 

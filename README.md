@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-2.9.2-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-2.9.3-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2025--03--18-lightgrey.svg)](https://github.com/yourusername/webagent)
 
 A multi-agent platform for web research and document processing.

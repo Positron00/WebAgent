@@ -69,6 +69,9 @@ Respond with a JSON object structured as follows:
 IMPORTANT: Your goal is to create a unified, cohesive report that reads as if it was written by a single expert rather than assembled from multiple sources. Ensure the report flows logically and maintains a consistent tone throughout.
 """
 
+# Global variable to store the singleton instance
+_team_manager_instance = None
+
 class TeamManagerAgent(BaseAgent):
     """
     Team Manager Agent that compiles final reports from specialized agents.
@@ -227,17 +230,26 @@ class TeamManagerAgent(BaseAgent):
             
             return state
 
-# Singleton instance
-_team_manager_instance = None
-
-def get_team_manager_agent() -> TeamManagerAgent:
+def get_team_manager_agent():
     """
-    Get an instance of the Team Manager Agent (singleton pattern).
+    Get an instance of the Team Manager Agent.
     
     Returns:
-        A TeamManagerAgent instance
+        A callable function that takes a WorkflowState and calls the agent's run method.
+        This makes it compatible with LangGraph which expects nodes to be callable.
     """
     global _team_manager_instance
+    
+    # If we don't have an instance yet, create one
     if _team_manager_instance is None:
-        _team_manager_instance = TeamManagerAgent()
+        agent = TeamManagerAgent()
+        
+        # Create the callable function
+        async def team_manager_function(state: WorkflowState) -> WorkflowState:
+            """Callable wrapper for the team manager agent"""
+            return await agent.run(state)
+        
+        # Store the instance
+        _team_manager_instance = team_manager_function
+    
     return _team_manager_instance 

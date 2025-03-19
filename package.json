@@ -1,7 +1,7 @@
 {
   "name": "webagent",
-  "version": "2.9.2",
-  "description": "WebAgent Platform with comprehensive agent demos, document batch loading, vector database integration, graph database for document relationships, enhanced agent testing capabilities, and visualization features (2025-03-18)",
+  "version": "2.9.3",
+  "description": "WebAgent Platform with comprehensive agent demos, enhanced logging for LangGraph workflow, document batch loading, vector database integration, graph database for document relationships, enhanced agent testing capabilities, and visualization features (2025-03-18)",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/7f52eb8be56b4f25aa33b0b3215ad233/artifacts
+end_time: 1742344491877
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 7f52eb8be56b4f25aa33b0b3215ad233
+run_name: classy-calf-918
+run_uuid: 7f52eb8be56b4f25aa33b0b3215ad233
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742344491872
+status: 3
+tags: []
+user_id: danc

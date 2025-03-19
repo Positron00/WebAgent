@@ -38,19 +38,30 @@ def setup_langsmith():
         os.environ["LANGCHAIN_API_KEY"] = settings.LANGSMITH_API_KEY
         os.environ["LANGCHAIN_PROJECT"] = settings.LANGSMITH_PROJECT_NAME
         
-        # Initialize client
-        _langsmith_client = Client(
-            api_key=settings.LANGSMITH_API_KEY,
-            api_url="https://api.smith.langchain.com"
-        )
+        # Log the configuration
+        logger.info(f"LangSmith environment variables configured:")
+        logger.info(f"  LANGCHAIN_TRACING_V2: {os.environ['LANGCHAIN_TRACING_V2']}")
+        logger.info(f"  LANGCHAIN_PROJECT: {os.environ['LANGCHAIN_PROJECT']}")
         
-        # Initialize tracer with project name
-        _langchain_tracer = LangChainTracer(
-            project_name=settings.LANGSMITH_PROJECT_NAME
-        )
-        
-        logger.info(f"LangSmith tracing initialized for project: {settings.LANGSMITH_PROJECT_NAME}")
-        return True
+        # Initialize client if tracing is enabled
+        if settings.LANGSMITH_TRACING_ENABLED:
+            # Initialize client
+            _langsmith_client = Client(
+                api_key=settings.LANGSMITH_API_KEY,
+                api_url="https://api.smith.langchain.com"
+            )
+            
+            # Initialize tracer with project name
+            _langchain_tracer = LangChainTracer(
+                project_name=settings.LANGSMITH_PROJECT_NAME
+            )
+            
+            logger.info(f"LangSmith tracing initialized for project: {settings.LANGSMITH_PROJECT_NAME}")
+            return True
+        else:
+            logger.info("LangSmith tracing is disabled in settings")
+            return False
+            
     except Exception as e:
         logger.error(f"Failed to initialize LangSmith: {str(e)}")
         os.environ["LANGCHAIN_TRACING_V2"] = "false"

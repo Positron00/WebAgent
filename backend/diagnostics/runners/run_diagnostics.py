@@ -8,6 +8,8 @@ It provides various options for which checks to run and how to display the resul
 
 Usage:
     python -m backend.diagnostics.runners.run_diagnostics [options]
+    OR
+    cd backend && python diagnostics/runners/run_diagnostics.py [options]
 
 Options:
     --check-network       Check network connectivity to essential services
@@ -21,16 +23,82 @@ import json
 import argparse
 from pathlib import Path
 
-# Add project root to path for imports
-project_root = Path(__file__).resolve().parent.parent.parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
+# Determine if we're in the backend directory or the project root
+current_dir = Path(os.path.abspath(os.path.dirname(__file__)))
+backend_dir = current_dir.parent.parent
 
-# Import diagnostics
-from backend.diagnostics.core import get_diagnostics, print_diagnostics_report
-from backend.app.core.logger import setup_logger
+# Try to import path_setup from the backend directory
+try:
+    # First, add the backend directory to the path if it's not already there
+    if str(backend_dir) not in sys.path:
+        sys.path.insert(0, str(backend_dir))
+    
+    # Try to import the path_setup module
+    from path_setup import setup_path
+    setup_path()
+    path_setup_imported = True
+except ImportError:
+    path_setup_imported = False
+    # Fallback method to add project directories to path
+    project_root = Path(__file__).resolve().parent.parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
+    # Add the parent directory to the path
+    parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+
+# Try both import styles - absolute and relative
+try:
+    try:
+        # Try absolute import
+        from backend.diagnostics.core import get_diagnostics, print_diagnostics_report
+    except ImportError:
+        # Try relative import
+        from diagnostics.core import get_diagnostics, print_diagnostics_report
+except ImportError as e:
+    print(f"Error importing diagnostics: {e}")
+    print("Make sure you are running this script from the WebAgent root or backend directory")
+    sys.exit(1)
+
+# Try to import the logger - handle case if not available
+try:
+    try:
+        from app.core.logger import setup_logger
+    except ImportError:
+        try:
+            from backend.app.core.logger import setup_logger
+        except ImportError:
+            # Fallback logger setup if the app module is not available
+            import logging
+            def setup_logger(name):
+                logger = logging.getLogger(name)
+                logger.setLevel(logging.INFO)
+                if not logger.handlers:
+                    handler = logging.StreamHandler()
+                    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+                    logger.addHandler(handler)
+                return logger
+except Exception as e:
+    print(f"Error setting up logger: {e}")
+    import logging
+    def setup_logger(name):
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.INFO)
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+            logger.addHandler(handler)
+        return logger
 
 def main():
+    """
+    Main entry point for the diagnostics script.
+    
+    Returns:
+        0 for success, 1 for failure
+    """
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="WebAgent Diagnostics Runner")
     parser.add_argument("--check-network", action="store_true", help="Check network connectivity")
@@ -39,7 +107,8 @@ def main():
     parser.add_argument("--format", choices=["text", "json", "markdown"], default="text", 
                         help="Output format (default: text)")
     
-    args = parser.parse_args()
+    # Only parse known args to allow calling from other scripts with additional args
+    args, _ = parser.parse_known_args()
     
     # Set up logging
     logger = setup_logger("diagnostics_runner")

@@ -1,0 +1,270 @@
+{
+  "system_info": {
+    "os": "Darwin",
+    "os_version": "Darwin Kernel Version 24.3.0: Thu Jan  2 20:24:22 PST 2025; root:xnu-11215.81.4~3/RELEASE_ARM64_T6041",
+    "python_version": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:22:19) [Clang 14.0.6 ]",
+    "webagent_version": "2.9.3",
+    "hostname": "CD-MBP-M4-Max.local",
+    "cpu_count": 16,
+    "current_time": "2025-03-18T20:12:50.161138",
+    "timezone": [
+      "EST",
+      "EDT"
+    ],
+    "platform": "macOS-15.3.2-arm64-arm-64bit",
+    "processor": "arm",
+    "architecture": [
+      "64bit",
+      ""
+    ],
+    "python_path": "/opt/anaconda3/envs/agents/bin/python",
+    "working_directory": "/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend",
+    "process_id": 74207
+  },
+  "dependencies": {
+    "langchain": {
+      "status": "installed",
+      "version": "0.3.14",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/langchain/__init__.py"
+    },
+    "langgraph": {
+      "status": "installed",
+      "version": "unknown",
+      "location": null
+    },
+    "fastapi": {
+      "status": "installed",
+      "version": "0.115.11",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/fastapi/__init__.py"
+    },
+    "pydantic": {
+      "status": "installed",
+      "version": "2.10.6",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/pydantic/__init__.py"
+    },
+    "uvicorn": {
+      "status": "installed",
+      "version": "0.34.0",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/uvicorn/__init__.py"
+    },
+    "openai": {
+      "status": "installed",
+      "version": "1.59.8",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/openai/__init__.py"
+    },
+    "anthropic": {
+      "status": "installed",
+      "version": "0.49.0",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/anthropic/__init__.py"
+    },
+    "pytest": {
+      "status": "installed",
+      "version": "8.3.5",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/pytest/__init__.py"
+    },
+    "numpy": {
+      "status": "installed",
+      "version": "1.26.4",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/numpy/__init__.py"
+    },
+    "psutil": {
+      "status": "installed",
+      "version": "5.9.0",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/psutil/__init__.py"
+    },
+    "prometheus_client": {
+      "status": "installed",
+      "version": "unknown",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/prometheus_client/__init__.py"
+    },
+    "httpx": {
+      "status": "installed",
+      "version": "0.27.2",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/httpx/__init__.py"
+    },
+    "redis": {
+      "status": "installed",
+      "version": "5.2.1",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/redis/__init__.py"
+    },
+    "transformers": {
+      "status": "installed",
+      "version": "4.46.3",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/transformers/__init__.py"
+    },
+    "jwt": {
+      "status": "installed",
+      "version": "2.10.1",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/jwt/__init__.py"
+    }
+  },
+  "environment": {
+    "webagent_env": "dev",
+    "debug_mode": true,
+    "api_base_url": "/api/v1",
+    "log_level": "INFO",
+    "request_size_limit": 10485760,
+    "llm_provider": "openai",
+    "langsmith_enabled": false,
+    "environment_variables": {
+      "OPENAI_API_KEY": {
+        "set": true,
+        "value_length": 164,
+        "status": "valid"
+      },
+      "ANTHROPIC_API_KEY": {
+        "set": false,
+        "value_length": 0,
+        "status": "invalid"
+      },
+      "LANGSMITH_API_KEY": {
+        "set": true,
+        "value_length": 51,
+        "status": "valid"
+      }
+    },
+    "tmp_dir_writable": true
+  },
+  "metrics": {
+    "execution_times": {
+      "run_all_checks": {
+        "total": 6.711635112762451,
+        "count": 1,
+        "min": 6.711635112762451,
+        "max": 6.711635112762451,
+        "average": 6.711635112762451
+      },
+      "check_system_info": {
+        "total": 0.012402057647705078,
+        "count": 1,
+        "min": 0.012402057647705078,
+        "max": 0.012402057647705078,
+        "average": 0.012402057647705078
+      },
+      "check_dependencies": {
+        "total": 1.1860079765319824,
+        "count": 1,
+        "min": 1.1860079765319824,
+        "max": 1.1860079765319824,
+        "average": 1.1860079765319824
+      },
+      "check_environment": {
+        "total": 0.00023317337036132812,
+        "count": 1,
+        "min": 0.00023317337036132812,
+        "max": 0.00023317337036132812,
+        "average": 0.00023317337036132812
+      },
+      "check_agents": {
+        "total": 5.2798850536346436,
+        "count": 1,
+        "min": 5.2798850536346436,
+        "max": 5.2798850536346436,
+        "average": 5.2798850536346436
+      },
+      "check_workflow": {
+        "total": 0.02147698402404785,
+        "count": 1,
+        "min": 0.02147698402404785,
+        "max": 0.02147698402404785,
+        "average": 0.02147698402404785
+      },
+      "check_performance_metrics": {
+        "total": 0.21055841445922852,
+        "count": 1,
+        "min": 0.21055841445922852,
+        "max": 0.21055841445922852,
+        "average": 0.21055841445922852
+      }
+    },
+    "metrics": {
+      "http_requests": {
+        "total": 0,
+        "in_progress": 0,
+        "latency": {
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "p99": null
+        }
+      },
+      "llm_requests": {
+        "total": 0,
+        "latency": {
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "p99": null
+        },
+        "tokens": {
+          "prompt": 0,
+          "completion": 0
+        }
+      },
+      "tasks": {
+        "total": 0,
+        "duration": {
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "p99": null
+        }
+      },
+      "errors": {
+        "total": 0,
+        "by_type": {}
+      }
+    },
+    "process": {
+      "memory_rss": 1010843648,
+      "memory_rss_mb": 964.015625,
+      "memory_vms": 424996241408,
+      "memory_vms_mb": 405308.0,
+      "cpu_percent": 0.1,
+      "threads": 43,
+      "open_files": 1,
+      "connections": 2,
+      "uptime_seconds": 6.904826879501343
+    },
+    "system": {
+      "total_memory": 51539607552,
+      "total_memory_gb": 48.0,
+      "available_memory": 17403396096,
+      "available_memory_gb": 16.208175659179688,
+      "memory_percent": 66.2,
+      "cpu_count": 16,
+      "cpu_percent": 13.1
+    }
+  },
+  "security": {
+    "middleware": {
+      "rate_limiting": true,
+      "size_limiting": true,
+      "security_headers": true
+    },
+    "https": {
+      "enabled": false,
+      "cert_path": "not_configured",
+      "key_path": "not_configured"
+    },
+    "authentication": {
+      "enabled": false,
+      "jwt_enabled": false,
+      "api_key_enabled": false
+    },
+    "security_headers": {
+      "configured": true
+    }
+  },
+  "timestamp": "2025-03-18T20:12:56.872755",
+  "execution_time": {
+    "total_seconds": 6.71162486076355,
+    "individual_checks": {
+      "system_info": 0.012398242950439453,
+      "dependencies": 1.1860020160675049,
+      "environment": 0.0002281665802001953,
+      "performance_metrics": 0.21054792404174805,
+      "security": 0.00029397010803222656
+    }
+  }
+}

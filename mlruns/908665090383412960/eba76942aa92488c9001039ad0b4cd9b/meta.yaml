@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/eba76942aa92488c9001039ad0b4cd9b/artifacts
+end_time: 1742343093790
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: eba76942aa92488c9001039ad0b4cd9b
+run_name: puzzled-skunk-921
+run_uuid: eba76942aa92488c9001039ad0b4cd9b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742343093785
+status: 3
+tags: []
+user_id: danc

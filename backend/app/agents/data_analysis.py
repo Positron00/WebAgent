@@ -154,11 +154,19 @@ class DataAnalysisAgent(BaseAgent):
             return state
 
 
-def get_data_analysis_agent() -> DataAnalysisAgent:
+def get_data_analysis_agent():
     """
     Get an instance of the Data Analysis Agent.
     
     Returns:
-        A DataAnalysisAgent instance
+        A callable function that takes a WorkflowState and calls the agent's run method.
+        This makes it compatible with LangGraph which expects nodes to be callable.
     """
-    return DataAnalysisAgent() 
+    agent = DataAnalysisAgent()
+    
+    # Return a callable function instead of the agent directly
+    async def data_analysis_function(state: WorkflowState) -> WorkflowState:
+        """Callable wrapper for the data analysis agent"""
+        return await agent.run(state)
+    
+    return data_analysis_function 

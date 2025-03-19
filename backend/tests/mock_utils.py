@@ -9,6 +9,9 @@ This module provides utilities to create mock objects for testing:
 """
 import os
 import logging
+import time
+import asyncio
+from datetime import datetime
 from typing import Dict, Any, Optional
 from unittest.mock import MagicMock, AsyncMock
 
@@ -26,6 +29,9 @@ def create_mock_agent(name: str) -> MagicMock:
     Returns:
         Mock agent with .run() method as AsyncMock
     """
+    logger.debug(f"Creating mock agent: {name}")
+    start_time = time.time()
+    
     # Create an AsyncMock for the agent
     mock_agent = AsyncMock()
     mock_agent.name = name
@@ -36,7 +42,20 @@ def create_mock_agent(name: str) -> MagicMock:
     
     # Configure the default behavior to echo back the state
     async def default_run(state):
-        state.update_with_agent_output(name, {"status": "completed"})
+        logger.debug(f"Mock {name} agent running with query: {state.query}")
+        exec_start = time.time()
+        
+        # Simulate some processing time
+        await asyncio.sleep(0.01)
+        
+        # Add mock output to the state
+        state.update_with_agent_output(name, {
+            "status": "completed",
+            "timestamp": datetime.now().isoformat(),
+            "execution_time": time.time() - exec_start
+        })
+        
+        logger.debug(f"Mock {name} agent completed in {time.time() - exec_start:.3f}s")
         return {"state": state}
     
     mock_agent.run.side_effect = default_run
@@ -53,6 +72,8 @@ def create_mock_agent(name: str) -> MagicMock:
             # Extract the state from the input dictionary
             state = state_dict.get("state")
             
+        logger.debug(f"Mock {name} agent called with state type: {type(state).__name__}")
+            
         # Process the state with the agent's run method
         result = await mock_agent.run(state)
         # Return the updated state in the same format
@@ -65,11 +86,13 @@ def create_mock_agent(name: str) -> MagicMock:
     mock_agent.get_status = MagicMock(return_value={
         "agent_id": mock_agent.agent_id,
         "name": name,
-        "status": "active"
+        "status": "active",
+        "created_at": datetime.now().isoformat()
     })
     
     mock_agent.log_activity = MagicMock()
     
+    logger.debug(f"Mock agent '{name}' created in {time.time() - start_time:.3f}s")
     return mock_agent
 
 def create_test_workflow_state(
@@ -88,11 +111,16 @@ def create_test_workflow_state(
     Returns:
         A WorkflowState instance
     """
-    return WorkflowState(
+    logger.debug(f"Creating test workflow state with query: '{query}', step: '{current_step}'")
+    
+    state = WorkflowState(
         query=query,
         context=context or {},
         current_step=current_step
     )
+    
+    logger.debug(f"Test workflow state created: {state}")
+    return state
 
 def setup_test_environment():
     """
@@ -103,8 +131,9 @@ def setup_test_environment():
     
     # Set minimal required environment variables
     os.environ.setdefault("WEBAGENT_ENV", "test")
+    os.environ.setdefault("LOG_LEVEL", "DEBUG") 
     
-    logger.info("Test environment configured")
+    logger.info("Test environment configured with TESTING=True, WEBAGENT_ENV=test")
     
     # Return a function to restore the environment
     original_env = dict(os.environ)

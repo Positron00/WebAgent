@@ -5,11 +5,14 @@ This module contains the workflow definitions for the WebAgent backend,
 including the agent workflow graph and routing logic.
 """
 import logging
+import json
 from typing import Dict, List, Optional, Any, cast
+import os
+import time
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
-from langsmith.run_trees.run_tree import RunTree
+from langchain.callbacks.tracers import LangChainTracer
 
 from app.models.task import WorkflowState
 from app.agents.supervisor import get_supervisor_agent
@@ -28,6 +31,9 @@ logger = logging.getLogger(__name__)
 
 # Singleton workflow instance
 _workflow_instance = None
+
+# Singleton router instance
+_research_router_instance = None
 
 def supervisor_router(state: WorkflowState) -> str:
     """
@@ -58,6 +64,7 @@ def supervisor_router(state: WorkflowState) -> str:
     task_type = supervisor_output.get("task_type", "unknown")
     
     logger.info(f"Supervisor determined task type: {task_type}")
+    logger.debug(f"Supervisor full output: {json.dumps(supervisor_output, default=str)}")
     
     # Route based on task complexity
     if task_type == "document_extraction":
@@ -90,6 +97,9 @@ def senior_research_router(state: WorkflowState) -> str:
     senior_research_output = state.reports.get("senior_research", {})
     research_status = senior_research_output.get("research_status", "incomplete")
     research_loops = state.context.get("research_loops", 0)
+    
+    logger.info(f"Senior Research status: {research_status}, loop count: {research_loops}/3")
+    logger.debug(f"Senior Research full output: {json.dumps(senior_research_output, default=str)}")
     
     # Check if we need more research (up to 3 loops)
     if research_status == "needs_more_research" and research_loops < 3:
@@ -124,6 +134,9 @@ def team_manager_router(state: WorkflowState) -> str:
     needs_analysis = team_manager_output.get("needs_analysis", False)
     needs_coding = team_manager_output.get("needs_coding", False)
     
+    logger.info(f"Team Manager assessment - needs analysis: {needs_analysis}, needs coding: {needs_coding}")
+    logger.debug(f"Team Manager full output: {json.dumps(team_manager_output, default=str)}")
+    
     if needs_analysis:
         logger.info("Team Manager requesting data analysis")
         return "data_analysis" 
@@ -145,6 +158,7 @@ async def run_research_agents(state: WorkflowState) -> WorkflowState:
         Updated workflow state with research results
     """
     logger.info("Running internal and web research agents in parallel")
+    start_time = time.time()
     
     # Get agent instances
     internal_research = get_internal_research_agent()
@@ -156,14 +170,22 @@ async def run_research_agents(state: WorkflowState) -> WorkflowState:
     
     try:
         # Run both agents concurrently
+        logger.debug("Starting internal research agent")
         internal_result = await internal_research.ainvoke(new_state)
+        logger.debug("Starting web research agent")
         web_result = await web_research.ainvoke(new_state)
+        
+        # Log response times
+        logger.info(f"Research agents execution completed in {time.time() - start_time:.2f} seconds")
         
         # Update the state with both results
         state.update_with_agent_output("internal_research", internal_result)
         state.update_with_agent_output("web_research", web_result)
         
-        logger.info("Successfully completed parallel research")
+        # Log the size of results
+        internal_docs = len(internal_result.get("documents", []) if internal_result else [])
+        web_docs = len(web_result.get("documents", []) if web_result else [])
+        logger.info(f"Research complete - internal documents: {internal_docs}, web documents: {web_docs}")
         
         # Move to senior research for verification
         state.current_step = "senior_research"
@@ -183,8 +205,10 @@ def build_agent_workflow(verbose: bool = False) -> StateGraph:
         StateGraph: The compiled agent workflow graph.
     """
     logger.info("Building agent workflow graph")
+    start_time = time.time()
     
     # Get all agent instances
+    logger.debug("Initializing agent instances")
     supervisor = get_supervisor_agent()
     document_extraction = get_document_extraction_agent()
     internal_research = get_internal_research_agent()
@@ -193,11 +217,14 @@ def build_agent_workflow(verbose: bool = False) -> StateGraph:
     data_analysis = get_data_analysis_agent()
     coding_assistant = get_coding_assistant_agent()
     team_manager = get_team_manager_agent()
+    logger.debug(f"All agent instances initialized in {time.time() - start_time:.2f} seconds")
     
     # Create a new graph
+    logger.debug("Creating StateGraph with WorkflowState")
     workflow = StateGraph(WorkflowState)
     
     # Add agent nodes to the graph
+    logger.debug("Adding agent nodes to graph")
     workflow.add_node("supervisor", supervisor)
     workflow.add_node("document_extraction", document_extraction)
     workflow.add_node("internal_research", internal_research) 
@@ -208,9 +235,11 @@ def build_agent_workflow(verbose: bool = False) -> StateGraph:
     workflow.add_node("team_manager", team_manager)
     
     # Add special node for parallel research execution
+    logger.debug("Adding parallel research execution node")
     workflow.add_node("research", run_research_agents)
     
     # Set up the workflow edges
+    logger.debug("Configuring graph edges and routes")
     # From start to supervisor
     workflow.add_edge("__start__", "supervisor")
     
@@ -224,6 +253,7 @@ def build_agent_workflow(verbose: bool = False) -> StateGraph:
             END: END
         }
     )
+    logger.debug("Added conditional edges from supervisor")
     
     # From document extraction directly to END (simple case)
     workflow.add_edge("document_extraction", END)
@@ -241,6 +271,7 @@ def build_agent_workflow(verbose: bool = False) -> StateGraph:
             END: END
         }
     )
+    logger.debug("Added conditional edges from senior research")
     
     # From team manager to specialized agents or end
     workflow.add_conditional_edges(
@@ -252,21 +283,30 @@ def build_agent_workflow(verbose: bool = False) -> StateGraph:
             END: END
         }
     )
+    logger.debug("Added conditional edges from team manager")
     
     # From specialized agents back to team manager
     workflow.add_edge("data_analysis", "team_manager")
     workflow.add_edge("coding_assistant", "team_manager")
     
     # Configure LangSmith tracing if enabled
-    config = {"configurable": {"thread_id": "default"}}
     if settings.LANGCHAIN_TRACING_V2:
         logger.info("LangSmith tracing enabled for workflow")
-        config["callbacks"] = [RunTree(run_type="chain")]
+        logger.debug(f"Using LangSmith project: {os.environ.get('LANGCHAIN_PROJECT', 'default')}")
     
     # Compile the workflow
-    compiled_workflow = workflow.compile(**config if settings.LANGCHAIN_TRACING_V2 else {})
+    logger.info("Compiling workflow graph")
+    compiled_time = time.time()
+    compiled_workflow = workflow.compile()
     
-    logger.info("Agent workflow built and compiled successfully")
+    build_time = time.time() - start_time
+    compile_time = time.time() - compiled_time
+    
+    logger.info(f"Agent workflow built and compiled successfully in {build_time:.2f}s (compile: {compile_time:.2f}s)")
+    if verbose:
+        logger.debug(f"Workflow nodes: {list(workflow._nodes.keys())}")
+        logger.debug(f"Workflow edges: {workflow._edges}")
+    
     return compiled_workflow
 
 @timing_decorator
@@ -279,5 +319,66 @@ def get_agent_workflow() -> StateGraph:
     """
     global _workflow_instance
     if _workflow_instance is None:
+        logger.info("Creating new workflow instance (singleton)")
         _workflow_instance = build_agent_workflow()
+    else:
+        logger.debug("Returning existing workflow instance")
     return _workflow_instance 
+
+def get_research_router():
+    """
+    Get the research router function.
+    
+    This function determines which research agent(s) to call based on the research plan.
+    
+    Returns:
+        A callable function that takes a WorkflowState and returns the next node name.
+    """
+    global _research_router_instance
+    
+    # If we don't have an instance yet, create one
+    if _research_router_instance is None:
+        def research_router(state: WorkflowState) -> str:
+            """
+            Route to appropriate research agent(s) based on the research plan.
+            
+            Args:
+                state: The current workflow state
+                
+            Returns:
+                String indicating the next node
+            """
+            # Check if there's an error
+            if state.error:
+                logger.warning(f"Error detected in workflow: {state.error}")
+                return END
+                
+            # Get the research plan from the supervisor
+            research_plan = state.context.get("research_plan", {})
+            requires_web_search = research_plan.get("requires_web_search", True)
+            requires_internal_knowledge = research_plan.get("requires_internal_knowledge", True)
+            
+            logger.info(f"Research plan - web search: {requires_web_search}, internal knowledge: {requires_internal_knowledge}")
+            
+            # Route based on the research plan
+            if requires_web_search and requires_internal_knowledge:
+                # Need both research types, use the parallel research node
+                logger.info("Both web and internal research required, executing in parallel")
+                return "research"
+            elif requires_web_search:
+                # Only web research needed
+                logger.info("Only web research required")
+                return "web_research"
+            elif requires_internal_knowledge:
+                # Only internal research needed
+                logger.info("Only internal research required")
+                return "internal_research"
+            else:
+                # No research needed, move to senior research for synthesis
+                logger.info("No research required, proceeding to senior research for synthesis")
+                return "senior_research"
+        
+        # Store the instance
+        _research_router_instance = research_router
+    
+    return _research_router_instance 

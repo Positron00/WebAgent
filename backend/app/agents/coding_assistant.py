@@ -166,11 +166,19 @@ class CodingAssistantAgent(BaseAgent):
             return state
 
 
-def get_coding_assistant_agent() -> CodingAssistantAgent:
+def get_coding_assistant_agent():
     """
     Get an instance of the Coding Assistant Agent.
     
     Returns:
-        A CodingAssistantAgent instance
+        A callable function that takes a WorkflowState and calls the agent's run method.
+        This makes it compatible with LangGraph which expects nodes to be callable.
     """
-    return CodingAssistantAgent() 
+    agent = CodingAssistantAgent()
+    
+    # Return a callable function instead of the agent directly
+    async def coding_assistant_function(state: WorkflowState) -> WorkflowState:
+        """Callable wrapper for the coding assistant agent"""
+        return await agent.run(state)
+    
+    return coding_assistant_function 

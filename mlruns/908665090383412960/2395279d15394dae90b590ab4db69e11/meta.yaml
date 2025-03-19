@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/2395279d15394dae90b590ab4db69e11/artifacts
+end_time: 1742344287892
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 2395279d15394dae90b590ab4db69e11
+run_name: gaudy-bird-904
+run_uuid: 2395279d15394dae90b590ab4db69e11
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742344287886
+status: 3
+tags: []
+user_id: danc

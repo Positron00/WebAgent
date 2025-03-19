@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = os.getenv("WEBAGENT_API_PREFIX", "/api/v1")
     PROJECT_NAME: str = "WebAgent Backend"
     PROJECT_DESCRIPTION: str = "Multi-Agent Research and Analysis Platform"
-    VERSION: str = "2.9.2"
+    VERSION: str = "2.9.3"
     
     # Environment
     WEBAGENT_ENV: str = os.getenv("WEBAGENT_ENV", "dev")
@@ -97,6 +97,12 @@ class Settings(BaseSettings):
     LANGSMITH_API_KEY: Optional[str] = os.getenv("LANGSMITH_API_KEY")
     LANGSMITH_PROJECT_NAME: str = os.getenv("LANGSMITH_PROJECT_NAME", "webagent-research")
     LANGSMITH_TRACING_ENABLED: bool = os.getenv("LANGSMITH_TRACING_ENABLED", "True").lower() == "true"
+    
+    # Alias for LANGSMITH_TRACING_ENABLED for backwards compatibility
+    @property
+    def LANGCHAIN_TRACING_V2(self) -> bool:
+        """Alias for LANGSMITH_TRACING_ENABLED for consistent usage across codebase."""
+        return self.LANGSMITH_TRACING_ENABLED
     
     # Tavily for web search
     TAVILY_API_KEY: Optional[str] = os.getenv("TAVILY_API_KEY")
@@ -166,9 +172,6 @@ class Settings(BaseSettings):
     # Authentication settings
     JWT_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_JWT_ENABLED", "False").lower() == "true"
     API_KEY_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_API_KEY_ENABLED", "False").lower() == "true"
-    
-    # Anthropic API
-    ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     
     # MLflow tracking
     MLFLOW_TRACKING_URI: Optional[str] = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:8080")
