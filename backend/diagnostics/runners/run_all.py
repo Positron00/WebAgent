@@ -28,6 +28,7 @@ import sys
 import time
 import argparse
 import logging
+import subprocess
 from pathlib import Path
 
 # Set up logging
@@ -37,16 +38,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger("webagent_diagnostics")
 
-# Determine if we're in the backend directory or the project root
-current_dir = Path(os.path.abspath(os.path.dirname(__file__)))
-backend_dir = current_dir.parent.parent
-project_root = backend_dir.parent if backend_dir.name == 'backend' else backend_dir
+# First, try to import the setup_paths function from the diagnostics package
+try:
+    # Try importing from the current package
+    from diagnostics import setup_paths
+except ImportError:
+    try:
+        # Try as absolute import
+        from backend.diagnostics import setup_paths
+    except ImportError:
+        # If all imports fail, define the function inline
+        def setup_paths():
+            script_dir = Path(os.path.abspath(os.path.dirname(__file__)))
+            # Navigate up two levels to find backend directory (runners -> diagnostics -> backend)
+            backend_dir = script_dir.parent.parent
+            project_root = backend_dir.parent if backend_dir.name == 'backend' else backend_dir
+            
+            # Add the necessary paths to sys.path
+            if str(project_root) not in sys.path:
+                sys.path.insert(0, str(project_root))
+            if str(backend_dir) not in sys.path:
+                sys.path.insert(0, str(backend_dir))
+                
+            return backend_dir
 
-# Add the necessary paths to sys.path if they're not already there
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
+# Set up paths
+backend_dir = setup_paths()
+project_root = backend_dir.parent if backend_dir.name == 'backend' else backend_dir
 
 # Load environment variables from .env.local file if it exists
 env_file = project_root / '.env.local'
@@ -65,25 +83,12 @@ if env_file.exists():
 
 # Try to import path_setup from the backend directory
 try:
-    # First, add the backend directory to the path if it's not already there
-    if str(backend_dir) not in sys.path:
-        sys.path.insert(0, str(backend_dir))
-    
     # Try to import the path_setup module
     from path_setup import setup_path
     setup_path()
     path_setup_imported = True
 except ImportError:
     path_setup_imported = False
-    # Fallback method to add project directories to path
-    project_root = Path(__file__).resolve().parent.parent.parent
-    if str(project_root) not in sys.path:
-        sys.path.insert(0, str(project_root))
-
-    # Add the parent directory to the path
-    parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    if parent_dir not in sys.path:
-        sys.path.insert(0, parent_dir)
 
 # Try both import styles - absolute and relative
 try:
@@ -108,7 +113,13 @@ def main():
     parser.add_argument("--skip-tests", action="store_true", help="Skip tests")
     parser.add_argument("--test-dir", type=str, help="Specific test directory to run (relative to tests/)")
     parser.add_argument("--test-file", type=str, help="Specific test file to run")
+    parser.add_argument("--tests-only", "-t", action="store_true", help="Only run tests (alias for --skip-diagnostics)")
+    
     args = parser.parse_args()
+    
+    # If --tests-only is provided, set skip_diagnostics to True
+    if args.tests_only:
+        args.skip_diagnostics = True
     
     overall_success = True
     start_time = time.time()

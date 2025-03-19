@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/81c981bb5e164434b34f4cb33dff2213/artifacts
+end_time: 1742394370942
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 81c981bb5e164434b34f4cb33dff2213
+run_name: silent-shrike-171
+run_uuid: 81c981bb5e164434b34f4cb33dff2213
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742394370936
+status: 3
+tags: []
+user_id: danc

@@ -1,75 +1,93 @@
 #!/usr/bin/env python
 """
-Test Runner for WebAgent
+Run WebAgent Tests
 
-This script runs the WebAgent test suite, which is now located in backend/tests.
-The test suite includes unit tests, diagnostic tests, and integration tests.
+This script runs tests for the WebAgent platform.
 
-Run specific tests with:
-python -m backend.diagnostics.runners.run_tests --test-file=test_langgraph.py
-OR
-cd backend && python diagnostics/runners/run_tests.py --test-file=test_langgraph.py
+Usage:
+    python -m backend.diagnostics.runners.run_tests [options]
+    OR
+    cd backend && python diagnostics/runners/run_tests.py [options]
+
+Options:
+    --tests-only, -t      Only run tests, skip diagnostics
+    --verbose, -v         Increase verbosity
+    --test-dir=DIR        Specify a directory containing tests to run
+    --test-file=FILE      Specify a specific test file to run
 """
 import os
 import sys
 import argparse
+import unittest
 import subprocess
 from pathlib import Path
 import logging
+
+# First, try to import the setup_paths function from the diagnostics package
+try:
+    # Try importing from the current package
+    from diagnostics import setup_paths
+except ImportError:
+    try:
+        # Try as absolute import
+        from backend.diagnostics import setup_paths
+    except ImportError:
+        # If all imports fail, define the function inline
+        def setup_paths():
+            script_dir = Path(os.path.abspath(os.path.dirname(__file__)))
+            # Navigate up two levels to find backend directory (runners -> diagnostics -> backend)
+            backend_dir = script_dir.parent.parent
+            project_root = backend_dir.parent if backend_dir.name == 'backend' else backend_dir
+            
+            # Add the necessary paths to sys.path
+            if str(project_root) not in sys.path:
+                sys.path.insert(0, str(project_root))
+            if str(backend_dir) not in sys.path:
+                sys.path.insert(0, str(backend_dir))
+                
+            return backend_dir
+
+# Set up paths
+backend_dir = setup_paths()
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger("test_runner")
+logger = logging.getLogger("webagent_tests")
 
-# Determine if we're in the backend directory or the project root
-current_dir = Path(os.path.abspath(os.path.dirname(__file__)))
-backend_dir = current_dir.parent.parent
-project_root = backend_dir.parent if backend_dir.name == 'backend' else backend_dir
-
-# Add the necessary paths to sys.path if they're not already there
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
-
-# Load environment variables from .env.local file if it exists
-env_file = project_root / '.env.local'
-if env_file.exists():
-    try:
-        logger.debug(f"Loading environment variables from {env_file}")
-        with open(env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    key, value = line.split('=', 1)
-                    os.environ[key.strip()] = value.strip().strip('"\'')
-        logger.debug("Environment variables loaded successfully")
-    except Exception as e:
-        logger.warning(f"Error loading environment variables from {env_file}: {e}")
-
-# Try to import path_setup from the backend directory
+# Try to use path_setup if available
 try:
-    # First, add the backend directory to the path if it's not already there
-    if str(backend_dir) not in sys.path:
-        sys.path.insert(0, str(backend_dir))
-    
-    # Try to import the path_setup module
     from path_setup import setup_path
     setup_path()
-    path_setup_imported = True
 except ImportError:
-    path_setup_imported = False
-    # Fallback method to add project directories to path
-    project_root = Path(__file__).resolve().parent.parent.parent
-    if str(project_root) not in sys.path:
-        sys.path.insert(0, str(project_root))
-    
-    # Make sure the current directory is in the path
-    if str(os.getcwd()) not in sys.path:
-        sys.path.insert(0, str(os.getcwd()))
+    pass
+
+# Load environment variables from .env.local file if it exists
+env_file = Path(backend_dir) / '.env.local'
+if env_file.exists():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(dotenv_path=str(env_file))
+        logger.info(f"Loaded environment variables from {env_file}")
+    except ImportError:
+        logger.warning("python-dotenv is not installed. Environment variables from .env.local will not be loaded.")
+    except Exception as e:
+        logger.error(f"Error loading environment variables from {env_file}: {e}")
+
+# Try to import the tests
+try:
+    try:
+        # Try absolute import first
+        import backend.tests as tests
+    except ImportError:
+        # Try relative import if absolute fails
+        import tests
+except ImportError as e:
+    logger.error(f"Error importing tests: {e}")
+    logger.error("Make sure you're running this script from either the WebAgent root or the backend directory")
+    sys.exit(1)
 
 def run_tests(test_file=None, test_dir=None, verbose=False):
     """

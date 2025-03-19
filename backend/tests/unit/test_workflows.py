@@ -2,6 +2,7 @@ import pytest
 import sys
 import os
 from pathlib import Path
+from unittest.mock import Mock
 
 # Try to import path_setup from the backend directory
 backend_dir = Path(__file__).resolve().parent.parent.parent
@@ -21,8 +22,10 @@ except ImportError:
 # Try both import styles
 try:
     from app.graph import workflows
+    from app.graph.workflows import _build_agent_workflow_impl
 except ImportError:
     from backend.app.graph import workflows
+    from backend.app.graph.workflows import _build_agent_workflow_impl
 
 @pytest.mark.vcr
 def test_build_agent_workflow(mocker):
@@ -32,16 +35,13 @@ def test_build_agent_workflow(mocker):
     # Mock all the required components
     mocker.patch("langchain_core.runnables.passthrough", return_value=mocker.Mock())
     
-    # Create a mock StateGraph with nodes attribute
-    mock_state_graph = mocker.Mock()
+    # Create a properly mocked StateGraph
+    mock_state_graph = Mock()
     mock_state_graph.nodes = {"supervisor": "mock_supervisor", "research": "mock_research"}
-    mock_state_graph.compile.return_value = mock_state_graph
+    mock_compile = Mock(return_value=mock_state_graph)
+    mock_state_graph.compile = mock_compile
     
-    # Mock StateGraph class
-    mock_state_graph_class = mocker.patch("langgraph.graph.StateGraph")
-    mock_state_graph_class.return_value = mock_state_graph
-    
-    # Mock all agent imports
+    # Mock agent imports (these would normally be called by the function)
     mocker.patch("app.graph.workflows.get_supervisor_agent", return_value=mocker.Mock())
     mocker.patch("app.graph.workflows.get_document_extraction_agent", return_value=mocker.Mock())
     mocker.patch("app.graph.workflows.get_internal_research_agent", return_value=mocker.Mock())
@@ -51,8 +51,14 @@ def test_build_agent_workflow(mocker):
     mocker.patch("app.graph.workflows.get_coding_assistant_agent", return_value=mocker.Mock())
     mocker.patch("app.graph.workflows.get_team_manager_agent", return_value=mocker.Mock())
     
-    # Run the function
-    result = workflows.build_agent_workflow({"mock": "config"})
+    # Mock the StateGraph class - we'll provide our own instance
+    mocker.patch("langgraph.graph.StateGraph", side_effect=lambda *args: None)
+    
+    # Run the function with our mocked graph
+    result = _build_agent_workflow_impl({"mock": "config"}, workflow=mock_state_graph)
     
     # Check that compile was called
-    mock_state_graph.compile.assert_called_once() 
+    mock_compile.assert_called_once()
+    
+    # Verify the result is our mock
+    assert result == mock_state_graph 

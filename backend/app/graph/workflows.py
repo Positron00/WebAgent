@@ -35,6 +35,26 @@ _workflow_instance = None
 # Singleton router instance
 _research_router_instance = None
 
+def research_router(state: WorkflowState) -> str:
+    """
+    Determine the next step from the state after a research-related step.
+    This is needed to support security tests.
+    
+    Args:
+        state: The current workflow state
+        
+    Returns:
+        The name of the next node in the workflow
+    """
+    # Check for research plan
+    if state.context.get("research_plan", {}).get("requires_web_search", False):
+        return "web_research"
+    elif state.context.get("research_plan", {}).get("requires_internal_search", False):
+        return "internal_research"
+    else:
+        # Default to web research if not specified
+        return "web_research"
+
 def supervisor_router(state: WorkflowState) -> str:
     """
     Determine the next step after the supervisor agent.
@@ -196,14 +216,25 @@ async def run_research_agents(state: WorkflowState) -> WorkflowState:
         state.mark_error(f"Error in research phase: {str(e)}")
         return state
 
-@timing_decorator
-def build_agent_workflow(verbose: bool = False) -> StateGraph:
+def _build_agent_workflow_impl(config=None, workflow=None) -> StateGraph:
     """
-    Build the agent workflow graph.
+    Implementation of build_agent_workflow that allows for testing with mocks.
+    
+    Args:
+        config: Configuration options for the workflow. Can be a dict or bool.
+               If bool, treated as verbose flag.
+        workflow: A pre-existing StateGraph instance to use (for testing).
     
     Returns:
         StateGraph: The compiled agent workflow graph.
     """
+    # Handle different parameter types
+    verbose = False
+    if isinstance(config, bool):
+        verbose = config
+    elif isinstance(config, dict) and config:
+        verbose = config.get("verbose", False)
+    
     logger.info("Building agent workflow graph")
     start_time = time.time()
     
@@ -219,15 +250,16 @@ def build_agent_workflow(verbose: bool = False) -> StateGraph:
     team_manager = get_team_manager_agent()
     logger.debug(f"All agent instances initialized in {time.time() - start_time:.2f} seconds")
     
-    # Create a new graph
+    # Create a new graph or use the provided one
     logger.debug("Creating StateGraph with WorkflowState")
-    workflow = StateGraph(WorkflowState)
+    if workflow is None:
+        workflow = StateGraph(WorkflowState)
     
     # Add agent nodes to the graph
     logger.debug("Adding agent nodes to graph")
     workflow.add_node("supervisor", supervisor)
     workflow.add_node("document_extraction", document_extraction)
-    workflow.add_node("internal_research", internal_research) 
+    workflow.add_node("internal_research", internal_research)
     workflow.add_node("web_research", web_research)
     workflow.add_node("senior_research", senior_research)
     workflow.add_node("data_analysis", data_analysis)
@@ -294,7 +326,7 @@ def build_agent_workflow(verbose: bool = False) -> StateGraph:
         logger.info("LangSmith tracing enabled for workflow")
         logger.debug(f"Using LangSmith project: {os.environ.get('LANGCHAIN_PROJECT', 'default')}")
     
-    # Compile the workflow
+    # Compile the workflow - ensure compile() is called explicitly
     logger.info("Compiling workflow graph")
     compiled_time = time.time()
     compiled_workflow = workflow.compile()
@@ -304,10 +336,23 @@ def build_agent_workflow(verbose: bool = False) -> StateGraph:
     
     logger.info(f"Agent workflow built and compiled successfully in {build_time:.2f}s (compile: {compile_time:.2f}s)")
     if verbose:
-        logger.debug(f"Workflow nodes: {list(workflow._nodes.keys())}")
-        logger.debug(f"Workflow edges: {workflow._edges}")
+        logger.debug(f"Workflow nodes: {list(workflow.nodes)}")
     
     return compiled_workflow
+
+@timing_decorator
+def build_agent_workflow(config=None) -> StateGraph:
+    """
+    Build the agent workflow graph.
+    
+    Args:
+        config: Configuration options for the workflow. Can be a dict or bool.
+               If bool, treated as verbose flag.
+    
+    Returns:
+        StateGraph: The compiled agent workflow graph.
+    """
+    return _build_agent_workflow_impl(config)
 
 @timing_decorator
 def get_agent_workflow() -> StateGraph:

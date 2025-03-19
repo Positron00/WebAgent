@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 """
-WebAgent Diagnostics Runner
-===========================
+Run WebAgent Diagnostics
 
-This script runs the WebAgent diagnostics suite to check the health of all components.
-It provides various options for which checks to run and how to display the results.
+This script runs the diagnostics for the WebAgent platform, providing information on:
+1. System information
+2. Python environment 
+3. Installed dependencies
+4. Environment variables
+5. Model services status
 
 Usage:
     python -m backend.diagnostics.runners.run_diagnostics [options]
@@ -12,30 +15,77 @@ Usage:
     cd backend && python diagnostics/runners/run_diagnostics.py [options]
 
 Options:
-    --check-network       Check network connectivity to essential services
-    --check-llm           Check language model availability (may make API calls)
-    --export-json=<file>  Export results to a JSON file
-    --format=<format>     Output format: text, json, markdown (default: text)
+    --verbose, -v        Increase verbosity (display DEBUG level logs)
+    --quiet, -q          Decrease verbosity (display only warnings and errors)
+    --no-color           Disable colored output
+    --output-file=FILE   Write diagnostics to a file
+    --output-format=FMT  Output format (text, json, markdown)
+    --run-tests          Also run diagnostic tests
 """
 import os
 import sys
-import json
+import time
 import argparse
+import logging
+import datetime
 from pathlib import Path
 
-# Determine if we're in the backend directory or the project root
-current_dir = Path(os.path.abspath(os.path.dirname(__file__)))
-backend_dir = current_dir.parent.parent
-project_root = backend_dir.parent if backend_dir.name == 'backend' else backend_dir
+# First, try to import the setup_paths function from the diagnostics package
+try:
+    # Try importing from the current package
+    from diagnostics import setup_paths
+except ImportError:
+    try:
+        # Try as absolute import
+        from backend.diagnostics import setup_paths
+    except ImportError:
+        # If all imports fail, define the function inline
+        def setup_paths():
+            script_dir = Path(os.path.abspath(os.path.dirname(__file__)))
+            # Navigate up two levels to find backend directory (runners -> diagnostics -> backend)
+            backend_dir = script_dir.parent.parent
+            project_root = backend_dir.parent if backend_dir.name == 'backend' else backend_dir
+            
+            # Add the necessary paths to sys.path
+            if str(project_root) not in sys.path:
+                sys.path.insert(0, str(project_root))
+            if str(backend_dir) not in sys.path:
+                sys.path.insert(0, str(backend_dir))
+                
+            return backend_dir
 
-# Add the necessary paths to sys.path if they're not already there
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
+# Set up paths
+backend_dir = setup_paths()
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger("webagent_diagnostics")
+
+# Try to use path_setup if available
+try:
+    from path_setup import setup_path
+    setup_path()
+except ImportError:
+    pass
+
+# Try to import the core diagnostics module
+try:
+    try:
+        # Try absolute import first
+        from backend.diagnostics.core import print_diagnostics_report, get_diagnostics
+    except ImportError:
+        # Try relative import if absolute fails
+        from diagnostics.core import print_diagnostics_report, get_diagnostics
+except ImportError as e:
+    logger.error(f"Error importing diagnostics module: {e}")
+    logger.error("Make sure you're running this script from either the WebAgent root or the backend directory")
+    sys.exit(1)
 
 # Load environment variables from .env.local file if it exists
-env_file = project_root / '.env.local'
+env_file = backend_dir / '.env.local'
 if env_file.exists():
     try:
         print(f"Loading environment variables from {env_file}")
@@ -48,20 +98,6 @@ if env_file.exists():
         print("Environment variables loaded successfully")
     except Exception as e:
         print(f"Error loading environment variables from {env_file}: {e}")
-
-# Try to import path_setup from the backend directory
-try:
-    # First, add the backend directory to the path if it's not already there
-    if str(backend_dir) not in sys.path:
-        sys.path.insert(0, str(backend_dir))
-    
-    # Try to import the path_setup module
-    from path_setup import setup_path
-    setup_path()
-    path_setup_imported = True
-except ImportError:
-    path_setup_imported = False
-    # Already added paths above
 
 # Try to load configuration to ensure environment variables are set
 try:
@@ -79,19 +115,6 @@ try:
             print("Warning: Could not load configuration. Some environment variables may be missing.")
 except Exception as e:
     print(f"Warning: Error loading configuration: {str(e)}")
-
-# Try both import styles - absolute and relative
-try:
-    try:
-        # Try absolute import
-        from backend.diagnostics.core import get_diagnostics, print_diagnostics_report
-    except ImportError:
-        # Try relative import
-        from diagnostics.core import get_diagnostics, print_diagnostics_report
-except ImportError as e:
-    print(f"Error importing diagnostics: {e}")
-    print("Make sure you are running this script from the WebAgent root or backend directory")
-    sys.exit(1)
 
 # Try to import the logger - handle case if not available
 try:

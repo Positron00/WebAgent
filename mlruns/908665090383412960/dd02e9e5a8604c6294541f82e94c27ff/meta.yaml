@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/dd02e9e5a8604c6294541f82e94c27ff/artifacts
+end_time: 1742394430883
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: dd02e9e5a8604c6294541f82e94c27ff
+run_name: thundering-trout-172
+run_uuid: dd02e9e5a8604c6294541f82e94c27ff
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742394430878
+status: 3
+tags: []
+user_id: danc
