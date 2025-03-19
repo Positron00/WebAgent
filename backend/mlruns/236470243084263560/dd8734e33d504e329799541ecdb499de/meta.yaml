@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/236470243084263560/dd8734e33d504e329799541ecdb499de/artifacts
+end_time: 1742345501148
+entry_point_name: ''
+experiment_id: '236470243084263560'
+lifecycle_stage: active
+run_id: dd8734e33d504e329799541ecdb499de
+run_name: fun-zebra-67
+run_uuid: dd8734e33d504e329799541ecdb499de
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742345501143
+status: 3
+tags: []
+user_id: danc

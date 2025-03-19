@@ -24,10 +24,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import the modules to test
-from backend.app.models.task import WorkflowState
-from backend.app.graph.workflows import build_agent_workflow, get_agent_workflow
-from backend.app.agents.base_agent import BaseAgent
+# Add path handling to support running from different directories
+current_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+project_root = os.path.abspath(os.path.join(backend_dir, '..'))
+
+# Add the necessary paths to sys.path if they're not already there
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+# Import the modules to test - try both absolute and relative imports
+try:
+    # Try absolute imports (when running from project root)
+    from backend.app.models.task import WorkflowState
+    from backend.app.graph.workflows import build_agent_workflow, get_agent_workflow
+    from backend.app.agents.base_agent import BaseAgent
+except ImportError:
+    try:
+        # Try relative imports (when running from backend directory)
+        from app.models.task import WorkflowState
+        from app.graph.workflows import build_agent_workflow, get_agent_workflow
+        from app.agents.base_agent import BaseAgent
+    except ImportError as e:
+        logger.error(f"Failed to import required modules: {e}")
+        logger.error("Make sure you are running this from either the WebAgent root or backend directory")
+        raise
 
 # Test utilities
 def create_mock_agent(name):

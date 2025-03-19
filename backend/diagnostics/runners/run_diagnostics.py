@@ -26,6 +26,28 @@ from pathlib import Path
 # Determine if we're in the backend directory or the project root
 current_dir = Path(os.path.abspath(os.path.dirname(__file__)))
 backend_dir = current_dir.parent.parent
+project_root = backend_dir.parent if backend_dir.name == 'backend' else backend_dir
+
+# Add the necessary paths to sys.path if they're not already there
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
+# Load environment variables from .env.local file if it exists
+env_file = project_root / '.env.local'
+if env_file.exists():
+    try:
+        print(f"Loading environment variables from {env_file}")
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    key, value = line.split('=', 1)
+                    os.environ[key.strip()] = value.strip().strip('"\'')
+        print("Environment variables loaded successfully")
+    except Exception as e:
+        print(f"Error loading environment variables from {env_file}: {e}")
 
 # Try to import path_setup from the backend directory
 try:
@@ -39,15 +61,24 @@ try:
     path_setup_imported = True
 except ImportError:
     path_setup_imported = False
-    # Fallback method to add project directories to path
-    project_root = Path(__file__).resolve().parent.parent.parent
-    if str(project_root) not in sys.path:
-        sys.path.insert(0, str(project_root))
+    # Already added paths above
 
-    # Add the parent directory to the path
-    parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    if parent_dir not in sys.path:
-        sys.path.insert(0, parent_dir)
+# Try to load configuration to ensure environment variables are set
+try:
+    # Try with absolute imports first
+    try:
+        from backend.app.core.loadEnvYAML import load_config
+        load_config()  # This will load and export environment variables
+    except ImportError:
+        # Try with relative imports
+        try:
+            from app.core.loadEnvYAML import load_config
+            load_config()  # This will load and export environment variables
+        except ImportError:
+            # If neither works, we'll continue without configuration
+            print("Warning: Could not load configuration. Some environment variables may be missing.")
+except Exception as e:
+    print(f"Warning: Error loading configuration: {str(e)}")
 
 # Try both import styles - absolute and relative
 try:
@@ -80,8 +111,8 @@ try:
                     handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
                     logger.addHandler(handler)
                 return logger
-except Exception as e:
-    print(f"Error setting up logger: {e}")
+except ImportError:
+    # If all else fails, define a simple logger
     import logging
     def setup_logger(name):
         logger = logging.getLogger(name)
@@ -91,6 +122,9 @@ except Exception as e:
             handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
             logger.addHandler(handler)
         return logger
+
+# Set up logging
+logger = setup_logger("webagent.diagnostics_runner")
 
 def main():
     """
@@ -111,7 +145,6 @@ def main():
     args, _ = parser.parse_known_args()
     
     # Set up logging
-    logger = setup_logger("diagnostics_runner")
     logger.info("Starting WebAgent diagnostics")
     
     # Get diagnostics instance

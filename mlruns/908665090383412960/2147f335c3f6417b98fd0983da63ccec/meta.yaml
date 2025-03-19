@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/2147f335c3f6417b98fd0983da63ccec/artifacts
+end_time: 1742345258280
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 2147f335c3f6417b98fd0983da63ccec
+run_name: nimble-perch-861
+run_uuid: 2147f335c3f6417b98fd0983da63ccec
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742345258275
+status: 3
+tags: []
+user_id: danc

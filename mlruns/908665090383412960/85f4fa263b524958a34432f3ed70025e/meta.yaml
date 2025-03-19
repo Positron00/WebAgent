@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/85f4fa263b524958a34432f3ed70025e/artifacts
+end_time: 1742345234280
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 85f4fa263b524958a34432f3ed70025e
+run_name: silent-cow-28
+run_uuid: 85f4fa263b524958a34432f3ed70025e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742345234274
+status: 3
+tags: []
+user_id: danc

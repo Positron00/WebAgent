@@ -27,6 +27,28 @@ logger = logging.getLogger("test_runner")
 # Determine if we're in the backend directory or the project root
 current_dir = Path(os.path.abspath(os.path.dirname(__file__)))
 backend_dir = current_dir.parent.parent
+project_root = backend_dir.parent if backend_dir.name == 'backend' else backend_dir
+
+# Add the necessary paths to sys.path if they're not already there
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
+# Load environment variables from .env.local file if it exists
+env_file = project_root / '.env.local'
+if env_file.exists():
+    try:
+        logger.debug(f"Loading environment variables from {env_file}")
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    key, value = line.split('=', 1)
+                    os.environ[key.strip()] = value.strip().strip('"\'')
+        logger.debug("Environment variables loaded successfully")
+    except Exception as e:
+        logger.warning(f"Error loading environment variables from {env_file}: {e}")
 
 # Try to import path_setup from the backend directory
 try:

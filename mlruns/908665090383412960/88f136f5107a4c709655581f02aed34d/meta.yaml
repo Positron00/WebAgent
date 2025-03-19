@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/88f136f5107a4c709655581f02aed34d/artifacts
+end_time: 1742345521048
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 88f136f5107a4c709655581f02aed34d
+run_name: upset-hawk-968
+run_uuid: 88f136f5107a4c709655581f02aed34d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742345521043
+status: 3
+tags: []
+user_id: danc

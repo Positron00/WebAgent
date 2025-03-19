@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """
-Team Manager Diagnostic Test Suite
+Team Manager Agent Test Suite
 
-This module tests the Team Manager agent functionality for diagnostic purposes,
-validating that the team manager can properly coordinate with specialized agents.
+Tests the TeamManagerAgent component and functionality.
 
 This test is part of the diagnostic test suite and focuses on system health.
 
@@ -25,9 +24,31 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import the modules to test
-from backend.app.models.task import WorkflowState
-from backend.app.agents.team_manager import TeamManagerAgent, get_team_manager_agent
+# Add path handling to support running from different directories
+current_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+project_root = os.path.abspath(os.path.join(backend_dir, '..'))
+
+# Add the necessary paths to sys.path if they're not already there
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+# Import the modules to test - try both absolute and relative imports
+try:
+    # Try absolute imports (when running from project root)
+    from backend.app.models.task import WorkflowState
+    from backend.app.agents.team_manager import TeamManagerAgent, get_team_manager_agent
+except ImportError:
+    try:
+        # Try relative imports (when running from backend directory)
+        from app.models.task import WorkflowState
+        from app.agents.team_manager import TeamManagerAgent, get_team_manager_agent
+    except ImportError as e:
+        logger.error(f"Failed to import required modules: {e}")
+        logger.error("Make sure you are running this from either the WebAgent root or backend directory")
+        raise
 
 class TestTeamManagerAgent:
     """Tests for the TeamManagerAgent implementation."""

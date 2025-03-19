@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/e4c3e40da521430d985c76e549b9da62/artifacts
+end_time: 1742345313424
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: e4c3e40da521430d985c76e549b9da62
+run_name: beautiful-cat-451
+run_uuid: e4c3e40da521430d985c76e549b9da62
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742345313419
+status: 3
+tags: []
+user_id: danc
