@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/527098883717798126/f1c8a50d31ae462fbed0d6dd61551b11/artifacts
+end_time: 1742440992991
+entry_point_name: ''
+experiment_id: '527098883717798126'
+lifecycle_stage: active
+run_id: f1c8a50d31ae462fbed0d6dd61551b11
+run_name: spiffy-loon-112
+run_uuid: f1c8a50d31ae462fbed0d6dd61551b11
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742440992986
+status: 3
+tags: []
+user_id: danc

@@ -314,7 +314,15 @@ class DocumentIngestionService:
         """Initialize the document ingestion service."""
         self.sample_docs_dir = os.path.join(settings.DATA_DIR, "sample_docs")
         os.makedirs(self.sample_docs_dir, exist_ok=True)
-        self.docs_directory = settings.SAMPLE_DOCS_DIR
+        
+        # Try to get SAMPLE_DOCS_DIR from settings, with fallback to sample_docs_dir
+        try:
+            self.docs_directory = settings.SAMPLE_DOCS_DIR
+        except AttributeError:
+            # Fallback if the setting doesn't exist
+            self.docs_directory = self.sample_docs_dir
+            logging.warning("settings.SAMPLE_DOCS_DIR not found, using %s as fallback", self.sample_docs_dir)
+            
         self.metrics = {
             "documents_processed": 0,
             "documents_failed": 0,

@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/527098883717798126/c2bae0ba8c2a4b0aadc1eb3fbc77dfb0/artifacts
+end_time: 1742440992922
+entry_point_name: ''
+experiment_id: '527098883717798126'
+lifecycle_stage: active
+run_id: c2bae0ba8c2a4b0aadc1eb3fbc77dfb0
+run_name: beautiful-pig-266
+run_uuid: c2bae0ba8c2a4b0aadc1eb3fbc77dfb0
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742440992917
+status: 3
+tags: []
+user_id: danc

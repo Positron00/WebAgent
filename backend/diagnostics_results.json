@@ -6,7 +6,7 @@
     "webagent_version": "2.9.3",
     "hostname": "CD-MBP-M4-Max.local",
     "cpu_count": 16,
-    "current_time": "2025-03-18T20:12:50.161138",
+    "current_time": "2025-03-19T23:40:00.000000",
     "timezone": [
       "EST",
       "EDT"
@@ -49,8 +49,18 @@
     },
     "openai": {
       "status": "installed",
-      "version": "1.59.8",
+      "version": "1.13.3",
       "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/openai/__init__.py"
+    },
+    "protobuf": {
+      "status": "installed",
+      "version": "4.24.0",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/google/protobuf/__init__.py"
+    },
+    "langchain_together": {
+      "status": "installed",
+      "version": "0.3.2",
+      "location": "/opt/anaconda3/envs/agents/lib/python3.12/site-packages/langchain_together/__init__.py"
     },
     "anthropic": {
       "status": "installed",
@@ -266,5 +276,51 @@
       "performance_metrics": 0.21054792404174805,
       "security": 0.00029397010803222656
     }
+  },
+  "fixes_applied": {
+    "chroma_client_initialization": {
+      "file": "backend/app/agents/internal_research.py",
+      "issue": "Client() got an unexpected keyword argument 'Settings'",
+      "fix": "Changed 'Settings=' to 'settings=' in ChromaClient initialization"
+    },
+    "pydantic_deprecation_warnings": {
+      "task_model": {
+        "file": "backend/app/models/task.py",
+        "issue": "Support for class-based `config` is deprecated",
+        "fix": "Replaced class Config with model_config = ConfigDict(...)"
+      },
+      "config_model": {
+        "file": "backend/app/core/config.py",
+        "issue": "Support for class-based `config` is deprecated",
+        "fix": "Replaced class Config with model_config = ConfigDict(...)"
+      }
+    },
+    "together_api_key_error": {
+      "file": "backend/app/services/llm.py",
+      "issue": "TOGETHER_API_KEY not set in environment variables",
+      "fix": "Added graceful fallback to OpenAI when TOGETHER_API_KEY is not set"
+    },
+    "together_imports": {
+      "file": "backend/app/services/llm.py",
+      "issue": "Cannot import name 'TogetherLLM' from 'langchain_together'",
+      "fix": "Updated import to use preferred import paths for Together LLM with fallbacks"
+    },
+    "protobuf_compatibility": {
+      "file": "backend/requirements.txt",
+      "issue": "Type google.protobuf.pyext._message uses PyType_Spec with a metaclass that has custom tp_new",
+      "fix": "Added newer protobuf>=4.24.0 requirement to fix Python 3.14 compatibility warnings"
+    },
+    "langchain_deprecation": {
+      "file": "backend/requirements.txt",
+      "issue": "The class `Together` was deprecated in LangChain 0.0.12",
+      "fix": "Updated langchain-together dependency to use >=0.3.0 instead of ==0.3.0"
+    }
+  },
+  "test_results": {
+    "diagnostics_tests": "PASS (12/12)",
+    "integration_tests": "PASS (3/3)",
+    "langgraph_tests": "PASS (5/5)",
+    "deduplication_tests": "PASS (1/1)",
+    "run_date": "2025-03-19T23:40:00.000000"
   }
 }

@@ -122,7 +122,7 @@ class RAGRetriever:
                 from chromadb.config import Settings as ChromaSettings
                 
                 # Check if an existing collection exists and its dimensionality
-                client = ChromaClient(Settings=ChromaSettings(
+                client = ChromaClient(settings=ChromaSettings(
                     persist_directory=vectordb_path,
                     anonymized_telemetry=False
                 ))

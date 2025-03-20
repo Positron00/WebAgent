@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/ffd8859e1fca48efa548277706f17fd0/artifacts
+end_time: 1742441120474
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: ffd8859e1fca48efa548277706f17fd0
+run_name: melodic-wolf-701
+run_uuid: ffd8859e1fca48efa548277706f17fd0
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742441120461
+status: 3
+tags: []
+user_id: danc

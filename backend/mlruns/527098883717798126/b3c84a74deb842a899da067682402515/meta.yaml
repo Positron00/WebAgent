@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/527098883717798126/b3c84a74deb842a899da067682402515/artifacts
+end_time: 1742440991902
+entry_point_name: ''
+experiment_id: '527098883717798126'
+lifecycle_stage: active
+run_id: b3c84a74deb842a899da067682402515
+run_name: able-shrew-702
+run_uuid: b3c84a74deb842a899da067682402515
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742440991897
+status: 3
+tags: []
+user_id: danc

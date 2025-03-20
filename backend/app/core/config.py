@@ -18,10 +18,15 @@ Configuration Priority:
 4. Default values in code - Ultimate fallback
 """
 import os
-from typing import List, Optional
-from pydantic import Field
+import sys
+from typing import Dict, List, Optional, Tuple, Any
+from pathlib import Path
+import logging
+import platform
+from datetime import datetime
 
 from dotenv import load_dotenv
+from pydantic import Field, ConfigDict
 from pydantic_settings import BaseSettings
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
 
@@ -113,13 +118,19 @@ class Settings(BaseSettings):
     
     # Data directory settings
     DATA_DIR: str = Field(
-        default=os.getenv("WEBAGENT_DATA_DIR", os.path.join(BASE_DIR, "data")),
+        default=os.getenv("WEBAGENT_DATA_DIR", os.path.join(BASE_DIR, "backend", "data")),
         description="Base directory for all data storage",
+    )
+    
+    # Sample documents directory
+    SAMPLE_DOCS_DIR: str = Field(
+        default=os.getenv("WEBAGENT_SAMPLE_DOCS_DIR", os.path.join(BASE_DIR, "backend", "demos", "demo_docs")),
+        description="Directory for sample documents used in demonstrations",
     )
     
     # Vector database settings
     VECTOR_DB_PATH: str = Field(
-        default=os.getenv("WEBAGENT_VECTOR_DB_PATH", os.path.join(BASE_DIR, "data", "vectordb")),
+        default=os.getenv("WEBAGENT_VECTOR_DB_PATH", os.path.join(BASE_DIR, "backend", "data", "vectordb")),
         description="Path to the vector database",
     )
     
@@ -135,7 +146,7 @@ class Settings(BaseSettings):
     
     # Artifacts storage settings
     ARTIFACTS_PATH: str = Field(
-        default=os.getenv("WEBAGENT_ARTIFACTS_PATH", os.path.join(BASE_DIR, "data", "artifacts")),
+        default=os.getenv("WEBAGENT_ARTIFACTS_PATH", os.path.join(BASE_DIR, "backend", "data", "artifacts")),
         description="Path to store document artifacts"
     )
     ARTIFACTS_REGISTRY_URL: Optional[str] = Field(
@@ -181,11 +192,11 @@ class Settings(BaseSettings):
     GRAFANA_API_KEY: Optional[str] = os.getenv("GRAFANA_API_KEY")
     GRAFANA_SERVICE_ACCOUNT_TOKEN: Optional[str] = os.getenv("GRAFANA_SERVICE_ACCOUNT_TOKEN")
 
-    class Config:
-        """Pydantic config class"""
-        case_sensitive = True
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = ConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        env_file_encoding="utf-8"
+    )
 
 
 # Override the settings from YAML if available

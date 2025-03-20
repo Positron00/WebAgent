@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/527098883717798126/b9234b9786d347bda2362ff80f2fb2f4/artifacts
+end_time: 1742441460895
+entry_point_name: ''
+experiment_id: '527098883717798126'
+lifecycle_stage: active
+run_id: b9234b9786d347bda2362ff80f2fb2f4
+run_name: thundering-hound-379
+run_uuid: b9234b9786d347bda2362ff80f2fb2f4
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742441460890
+status: 3
+tags: []
+user_id: danc

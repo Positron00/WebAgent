@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/527098883717798126/3fc87c75d27a40cc9f297bc16bbcc5eb/artifacts
+end_time: 1742441462037
+entry_point_name: ''
+experiment_id: '527098883717798126'
+lifecycle_stage: active
+run_id: 3fc87c75d27a40cc9f297bc16bbcc5eb
+run_name: clumsy-bass-507
+run_uuid: 3fc87c75d27a40cc9f297bc16bbcc5eb
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742441462032
+status: 3
+tags: []
+user_id: danc

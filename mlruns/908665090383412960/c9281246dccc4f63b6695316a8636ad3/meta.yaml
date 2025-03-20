@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/c9281246dccc4f63b6695316a8636ad3/artifacts
+end_time: 1742441156491
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: c9281246dccc4f63b6695316a8636ad3
+run_name: fearless-loon-181
+run_uuid: c9281246dccc4f63b6695316a8636ad3
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742441156477
+status: 3
+tags: []
+user_id: danc

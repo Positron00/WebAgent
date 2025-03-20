@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/backend/mlruns/527098883717798126/43c8690850714c5f9b36c5a166d08a2d/artifacts
+end_time: 1742441461953
+entry_point_name: ''
+experiment_id: '527098883717798126'
+lifecycle_stage: active
+run_id: 43c8690850714c5f9b36c5a166d08a2d
+run_name: upset-sponge-533
+run_uuid: 43c8690850714c5f9b36c5a166d08a2d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742441461947
+status: 3
+tags: []
+user_id: danc

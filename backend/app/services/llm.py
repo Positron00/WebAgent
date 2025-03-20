@@ -12,7 +12,7 @@ import requests
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
 
 from langchain_openai import ChatOpenAI
-from langchain_together import Together as TogetherLLM
+from langchain_community.llms import Together as TogetherLLM
 from langchain.chat_models.base import BaseChatModel
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from app.core.config import settings
@@ -426,20 +426,16 @@ def get_openai_llm(model_name: Optional[str] = None):
 
 @log_llm_request(provider="together")
 def get_together_llm(model_name: Optional[str] = None):
-    """Get a TogetherLLM instance for text generation.
-    
-    This function initializes a connection to the TogetherAI API
-    and returns a configured LLM.
+    """
+    Get a TogetherLLM instance with configuration.
     
     Args:
-        model_name: Optional name of the TogetherAI model to use.
-                  If not provided, will use the configured default TOGETHER_MODEL.
-                  
+        model_name: Optional model name to override the default
+    
     Returns:
-        A configured TogetherLLM instance ready for use.
+        TogetherLLM instance or fallback to OpenAI if TogetherLLM is not available
     """
-    start_time = time.time()
-    provider = "together"
+    # Get LLM configuration from settings
     llm_config = get_llm_config()
     
     # Use provided model or default to configured TOGETHER_MODEL
@@ -448,10 +444,26 @@ def get_together_llm(model_name: Optional[str] = None):
     together_api_key = os.getenv("TOGETHER_API_KEY")
     
     if not together_api_key:
-        logger.error("TOGETHER_API_KEY environment variable not set")
-        raise ValueError("TOGETHER_API_KEY not set in environment variables")
+        logger.warning("TOGETHER_API_KEY environment variable not set")
+        logger.info("Falling back to OpenAI LLM")
+        return get_openai_llm(model_name)
     
     try:
+        # Try different import paths for TogetherLLM
+        try:
+            from langchain_together import Together as TogetherLLM
+        except ImportError:
+            try:
+                from langchain_community.llms import Together as TogetherLLM
+                logger.warning("Using deprecated Together import from langchain_community")
+            except ImportError:
+                try:
+                    from langchain.llms import Together as TogetherLLM
+                    logger.warning("Using deprecated Together import from langchain")
+                except ImportError:
+                    logger.warning("Unable to import TogetherLLM. Falling back to OpenAI.")
+                    return get_openai_llm(model_name)
+        
         # Apply rate limiting to avoid hitting Together API rate limits
         _enforce_together_api_rate_limit()
         
@@ -473,7 +485,6 @@ def get_together_llm(model_name: Optional[str] = None):
         llm.invoke = rate_limited_invoke
         
         # Test the API connection with a simple query to verify it works correctly
-        # This ensures the API connection and authentication work before proceeding
         try:
             logger.debug("Testing TogetherAI API connection...")
             # Just a basic test that won't cost many tokens
@@ -483,35 +494,15 @@ def get_together_llm(model_name: Optional[str] = None):
             logger.warning(f"TogetherAI API connection test failed: {str(test_err)}")
             # If the test fails with a specific error, we might want to fall back immediately
             if "401" in str(test_err) or "Unauthorized" in str(test_err):
-                logger.error("TogetherAI API key appears to be invalid or expired")
-                raise ValueError(f"TogetherAI API authentication failed: {str(test_err)}")
-            elif "429" in str(test_err) or "Too Many Requests" in str(test_err):
-                logger.error("TogetherAI API rate limit exceeded")
-                raise ValueError(f"TogetherAI API rate limit exceeded: {str(test_err)}")
-            elif "503" in str(test_err) or "Service Unavailable" in str(test_err):
-                logger.error("TogetherAI API service is currently unavailable")
-                raise ValueError(f"TogetherAI API service unavailable: {str(test_err)}")
-            # Continue anyway for other types of errors as this was just a test
+                logger.error(f"TogetherAI API authentication failed: {str(test_err)}")
+                return get_openai_llm(model_name)
         
-        # Log successful creation
-        logger.info(f"Successfully initialized TogetherLLM with model: {model}")
         return llm
     except Exception as e:
         error_msg = str(e)
-        logger.error(f"Error creating Together AI LLM: {error_msg}")
-        logger.error(traceback.format_exc())
-        
-        # Provide more specific error messages based on the exception
-        if "401" in error_msg or "Unauthorized" in error_msg:
-            raise ValueError(f"TogetherAI API authentication failed: {error_msg}")
-        elif "429" in error_msg or "Too Many Requests" in error_msg:
-            raise ValueError(f"TogetherAI API rate limit exceeded: {error_msg}")
-        elif "503" in error_msg or "Service Unavailable" in error_msg:
-            raise ValueError(f"TogetherAI API service unavailable: {error_msg}")
-        elif "Connection" in error_msg or "Timeout" in error_msg:
-            raise ValueError(f"TogetherAI API connection error: {error_msg}")
-        else:
-            raise ValueError(f"Error initializing TogetherAI LLM: {error_msg}")
+        logger.warning(f"Failed to initialize together LLM: {error_msg}")
+        # Fallback to OpenAI
+        return get_openai_llm(model_name)
 
 @log_llm_request(provider="self")
 def get_self_hosted_llm(model_name: Optional[str] = None):
