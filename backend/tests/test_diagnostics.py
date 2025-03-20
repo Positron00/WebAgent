@@ -32,10 +32,11 @@ logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # Add current directory too
 
 # Import diagnostics module
 from app.utils.diagnostics import get_diagnostics, print_diagnostics_report, SystemDiagnostics
-from backend.tests.mock_utils import setup_test_environment
+from mock_utils import setup_test_environment
 
 class TestDiagnosticsUtility:
     """Tests for the diagnostics utility module."""
@@ -311,17 +312,62 @@ class TestDiagnosticsUtility:
     def test_run_all_checks(self):
         """Test running all diagnostic checks together."""
         # Create a minimal mock implementation
+        def mock_check_system_info(self):
+            result = {"os": "test"}
+            self.check_results["system_info"] = result
+            return result
+            
+        def mock_check_dependencies(self):
+            result = {"package": {"status": "installed"}}
+            self.check_results["dependencies"] = result
+            return result
+            
+        def mock_check_environment(self):
+            result = {"webagent_env": "test"}
+            self.check_results["environment"] = result
+            return result
+            
+        def mock_check_agents(self):
+            result = {"agent": {"status": "active"}}
+            self.check_results["agents"] = result
+            return result
+            
+        def mock_check_workflow(self):
+            result = {"nodes": ["test"]}
+            self.check_results["workflow"] = result
+            return result
+            
+        def mock_check_performance_metrics(self):
+            result = {"process": {"memory_rss": 100}}
+            self.check_results["metrics"] = result
+            return result
+            
+        def mock_check_network_connectivity(self):
+            result = {"openai": {"status": "available"}}
+            self.check_results["network_connectivity"] = result
+            return result
+            
+        def mock_check_language_model_availability(self):
+            result = {"status": "ok"}
+            self.check_results["llm_availability"] = result
+            return result
+            
+        def mock_check_security_status(self):
+            result = {"middleware": {"rate_limiting": True}}
+            self.check_results["security"] = result
+            return result
+        
         with patch.multiple(
             SystemDiagnostics,
-            check_system_info=MagicMock(return_value={"os": "test"}),
-            check_dependencies=MagicMock(return_value={"package": {"status": "installed"}}),
-            check_environment=MagicMock(return_value={"webagent_env": "test"}),
-            check_agents=MagicMock(return_value={"agent": {"status": "active"}}),
-            check_workflow=MagicMock(return_value={"nodes": ["test"]}),
-            check_performance_metrics=MagicMock(return_value={"process": {"memory_rss": 100}}),
-            check_network_connectivity=MagicMock(return_value={"openai": {"status": "available"}}),
-            check_language_model_availability=MagicMock(return_value={"status": "ok"}),
-            check_security_status=MagicMock(return_value={"middleware": {"rate_limiting": True}})
+            check_system_info=mock_check_system_info,
+            check_dependencies=mock_check_dependencies,
+            check_environment=mock_check_environment,
+            check_agents=mock_check_agents,
+            check_workflow=mock_check_workflow,
+            check_performance_metrics=mock_check_performance_metrics,
+            check_network_connectivity=mock_check_network_connectivity,
+            check_language_model_availability=mock_check_language_model_availability,
+            check_security_status=mock_check_security_status
         ):
             # Run all checks
             results = self.diagnostics.run_all_checks()

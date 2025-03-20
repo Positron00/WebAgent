@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/ce4bf3218b7b43f78258215c4dae21a4/artifacts
+end_time: 1742410614723
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: ce4bf3218b7b43f78258215c4dae21a4
+run_name: intelligent-hawk-785
+run_uuid: ce4bf3218b7b43f78258215c4dae21a4
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742410614717
+status: 3
+tags: []
+user_id: danc

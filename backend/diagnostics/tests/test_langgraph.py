@@ -15,8 +15,8 @@ import os
 import sys
 import pytest
 import logging
-import asyncio
-from typing import Dict, List, Any, Optional
+import asyncio  # noqa: F401
+from typing import Dict, List, Any, Optional  # noqa: F401
 from unittest.mock import patch, MagicMock
 
 # Configure logging for tests
@@ -26,10 +26,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import the modules to test
-from backend.app.models.task import WorkflowState
-from backend.app.graph.workflows import build_agent_workflow, get_agent_workflow
-from backend.app.agents.base_agent import BaseAgent
+# Import path setup to ensure modules can be found
+try:
+    # Try to import from backend directory
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+    from path_setup import setup_path
+    setup_path()
+except ImportError:
+    # Fallback if path_setup.py can't be found
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    backend_dir = os.path.abspath(os.path.join(current_dir, '../..'))
+    if backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
+
+# Import the modules to test - try both import paths for compatibility
+try:
+    from app.models.task import WorkflowState
+    from app.graph.workflows import build_agent_workflow, get_agent_workflow
+    from app.agents.base_agent import BaseAgent
+except ImportError:
+    try:
+        from backend.app.models.task import WorkflowState
+        from backend.app.graph.workflows import build_agent_workflow, get_agent_workflow
+        from backend.app.agents.base_agent import BaseAgent
+    except ImportError:
+        logger.error("Could not import required modules. Make sure paths are set up correctly.")
+        raise
 
 # Test utilities
 def create_mock_agent(name):

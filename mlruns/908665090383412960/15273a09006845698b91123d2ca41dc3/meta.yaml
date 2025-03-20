@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/15273a09006845698b91123d2ca41dc3/artifacts
+end_time: 1742411573870
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 15273a09006845698b91123d2ca41dc3
+run_name: upset-grouse-634
+run_uuid: 15273a09006845698b91123d2ca41dc3
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742411573864
+status: 3
+tags: []
+user_id: danc

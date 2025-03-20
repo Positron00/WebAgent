@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/af590494981247ff9d21f4b7bb10560a/artifacts
+end_time: 1742407192320
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: af590494981247ff9d21f4b7bb10560a
+run_name: blushing-conch-693
+run_uuid: af590494981247ff9d21f4b7bb10560a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742407192308
+status: 3
+tags: []
+user_id: danc

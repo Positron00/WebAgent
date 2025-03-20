@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/e56725037d0e42a9bbafcdd7cea1241d/artifacts
+end_time: 1742411465830
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: e56725037d0e42a9bbafcdd7cea1241d
+run_name: caring-ray-640
+run_uuid: e56725037d0e42a9bbafcdd7cea1241d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742411465823
+status: 3
+tags: []
+user_id: danc

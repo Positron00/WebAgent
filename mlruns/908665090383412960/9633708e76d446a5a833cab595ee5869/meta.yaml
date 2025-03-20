@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/9633708e76d446a5a833cab595ee5869/artifacts
+end_time: 1742410698727
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 9633708e76d446a5a833cab595ee5869
+run_name: silent-yak-980
+run_uuid: 9633708e76d446a5a833cab595ee5869
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742410698721
+status: 3
+tags: []
+user_id: danc

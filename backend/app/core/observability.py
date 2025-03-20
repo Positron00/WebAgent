@@ -438,7 +438,7 @@ def _calculate_success_rate(counter, label_name):
     success = 0
     
     for metric, labels in counter._metrics.items():
-        value = metric.value
+        value = getattr(metric, '_value', 0) if not hasattr(metric, '_type') else 0
         total += value
         if labels.get(label_name) == "success":
             success += value
@@ -452,10 +452,15 @@ def _get_histogram_average(histogram):
     total_sum = 0
     total_count = 0
     
-    for metric in histogram._metrics.values():
-        total_sum += metric.sum
-        total_count += metric.sample_count
-    
-    if total_count > 0:
-        return round(total_sum / total_count, 4)
-    return None 
+    try:
+        for metric in histogram._metrics.values():
+            if hasattr(metric, 'sum') and hasattr(metric, 'sample_count'):
+                total_sum += metric.sum
+                total_count += metric.sample_count
+        
+        if total_count > 0:
+            return round(total_sum / total_count, 4)
+        return None
+    except Exception as e:
+        logger.warning(f"Error calculating histogram average: {str(e)}")
+        return None 

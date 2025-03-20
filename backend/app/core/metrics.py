@@ -397,8 +397,8 @@ def get_metric_statistics():
     # Add HTTP request metrics
     try:
         metrics["http_requests"] = {
-            "total": sum([c.value for c in REQUEST_COUNT._metrics.values()]),
-            "in_progress": sum([g.value for g in REQUESTS_IN_PROGRESS._metrics.values()]),
+            "total": sum([getattr(c, '_value', 0) if not hasattr(c, '_type') else 0 for c in REQUEST_COUNT._metrics.values()]),
+            "in_progress": sum([getattr(g, '_value', 0) if not hasattr(g, '_type') else 0 for g in REQUESTS_IN_PROGRESS._metrics.values()]),
             "latency": {
                 "average": _get_histogram_average(REQUEST_LATENCY),
                 "p50": _get_histogram_quantile(REQUEST_LATENCY, 0.5),
@@ -413,7 +413,7 @@ def get_metric_statistics():
     # Add LLM request metrics
     try:
         metrics["llm_requests"] = {
-            "total": sum([c.value for c in LLM_REQUEST_COUNT._metrics.values()]),
+            "total": sum([getattr(c, '_value', 0) if not hasattr(c, '_type') else 0 for c in LLM_REQUEST_COUNT._metrics.values()]),
             "latency": {
                 "average": _get_histogram_average(LLM_REQUEST_LATENCY),
                 "p50": _get_histogram_quantile(LLM_REQUEST_LATENCY, 0.5),
@@ -421,8 +421,8 @@ def get_metric_statistics():
                 "p99": _get_histogram_quantile(LLM_REQUEST_LATENCY, 0.99)
             },
             "tokens": {
-                "prompt": sum([c.value for c, l in LLM_TOKEN_COUNT._metrics.items() if l["type"] == "prompt"]),
-                "completion": sum([c.value for c, l in LLM_TOKEN_COUNT._metrics.items() if l["type"] == "completion"])
+                "prompt": sum([getattr(c, '_value', 0) if not hasattr(c, '_type') else 0 for c, l in LLM_TOKEN_COUNT._metrics.items() if l["type"] == "prompt"]),
+                "completion": sum([getattr(c, '_value', 0) if not hasattr(c, '_type') else 0 for c, l in LLM_TOKEN_COUNT._metrics.items() if l["type"] == "completion"])
             }
         }
     except Exception as e:
@@ -432,7 +432,7 @@ def get_metric_statistics():
     # Add task metrics
     try:
         metrics["tasks"] = {
-            "total": sum([c.value for c in TASK_COUNT._metrics.values()]),
+            "total": sum([getattr(c, '_value', 0) if not hasattr(c, '_type') else 0 for c in TASK_COUNT._metrics.values()]),
             "duration": {
                 "average": _get_histogram_average(TASK_DURATION),
                 "p50": _get_histogram_quantile(TASK_DURATION, 0.5),
@@ -447,8 +447,8 @@ def get_metric_statistics():
     # Add error metrics
     try:
         metrics["errors"] = {
-            "total": sum([c.value for c in ERROR_COUNT._metrics.values()]),
-            "by_type": {l["type"]: c.value for c, l in ERROR_COUNT._metrics.items()}
+            "total": sum([getattr(c, '_value', 0) if not hasattr(c, '_type') else 0 for c in ERROR_COUNT._metrics.values()]),
+            "by_type": {l["type"]: getattr(c, '_value', 0) if not hasattr(c, '_type') else 0 for c, l in ERROR_COUNT._metrics.items()}
         }
     except Exception as e:
         logger.warning(f"Error getting error metrics: {str(e)}")
@@ -472,13 +472,18 @@ def _get_histogram_average(histogram):
     total_sum = 0
     total_count = 0
     
-    for metric in histogram._metrics.values():
-        total_sum += metric.sum
-        total_count += metric.sample_count
-    
-    if total_count > 0:
-        return total_sum / total_count
-    else:
+    try:
+        for metric in histogram._metrics.values():
+            if hasattr(metric, 'sum') and hasattr(metric, 'sample_count'):
+                total_sum += metric.sum
+                total_count += metric.sample_count
+        
+        if total_count > 0:
+            return total_sum / total_count
+        else:
+            return None
+    except Exception as e:
+        logger.warning(f"Error calculating histogram average: {str(e)}")
         return None
 
 def _get_histogram_quantile(histogram, quantile):
@@ -495,33 +500,41 @@ def _get_histogram_quantile(histogram, quantile):
     # This is a simplified implementation
     # For accurate quantiles, use Prometheus's built-in quantile functions
     
-    # Collect all observations
-    observations = []
-    
-    for metric in histogram._metrics.values():
-        # Extract bucket boundaries and counts
-        buckets = sorted([(float(k.split('_')[-1]), v) for k, v in metric.buckets.items()])
+    try:
+        # Collect all observations
+        observations = []
         
-        # Skip if no data
-        if not buckets:
-            continue
+        for metric in histogram._metrics.values():
+            # Check if metric has buckets attribute
+            if not hasattr(metric, 'buckets'):
+                continue
+                
+            # Extract bucket boundaries and counts
+            buckets = sorted([(float(k.split('_')[-1]), v) for k, v in metric.buckets.items()])
+            
+            # Skip if no data
+            if not buckets:
+                continue
+            
+            # Add observations based on bucket counts
+            for i, (upper_bound, count) in enumerate(buckets):
+                if i == 0:
+                    # First bucket
+                    observations.extend([upper_bound] * count)
+                else:
+                    # Subsequent buckets
+                    prev_count = buckets[i-1][1]
+                    observations.extend([upper_bound] * (count - prev_count))
         
-        # Add observations based on bucket counts
-        for i, (upper_bound, count) in enumerate(buckets):
-            if i == 0:
-                # First bucket
-                observations.extend([upper_bound] * count)
-            else:
-                # Subsequent buckets
-                prev_count = buckets[i-1][1]
-                observations.extend([upper_bound] * (count - prev_count))
-    
-    # Calculate quantile
-    if observations:
-        observations.sort()
-        index = int(quantile * len(observations))
-        return observations[index]
-    else:
+        # Calculate quantile
+        if observations:
+            observations.sort()
+            index = int(quantile * len(observations))
+            return observations[index]
+        else:
+            return None
+    except Exception as e:
+        logger.warning(f"Error calculating histogram quantile: {str(e)}")
         return None
 
 def log_memory_usage():

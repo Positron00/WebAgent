@@ -18101,3 +18101,159 @@ Exception: Run with UUID bfa6bcb48a6a4614930d2daa63358054 is already active. To 
 2025-03-19 10:50:11,035 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
 2025-03-19 10:50:15,518 - webagent - DEBUG - Function build_agent_workflow executed in 0.0022 seconds
 2025-03-19 11:04:01,173 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 13:52:43,939 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 13:54:16,204 - webagent - DEBUG - Function build_agent_workflow executed in 84.0645 seconds
+2025-03-19 13:55:40,238 - webagent - DEBUG - Function build_agent_workflow executed in 84.0294 seconds
+2025-03-19 13:55:40,238 - webagent - DEBUG - Function get_agent_workflow executed in 84.0295 seconds
+2025-03-19 13:55:40,238 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 13:57:04,273 - webagent - DEBUG - Function build_agent_workflow executed in 84.0321 seconds
+2025-03-19 13:57:28,282 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 13:57:28,282 - webagent - DEBUG - Completed task: team_manager_1742407048.282479 with status: completed in 0.00s
+2025-03-19 13:57:40,301 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 13:57:40,301 - webagent - DEBUG - Completed task: team_manager_1742407060.301531 with status: completed in 0.00s
+2025-03-19 13:57:52,298 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 13:57:52,298 - webagent - DEBUG - Completed task: team_manager_1742407072.298648 with status: completed in 0.00s
+2025-03-19 13:58:04,310 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 13:58:04,311 - webagent - DEBUG - Completed task: team_manager_1742407084.310502 with status: error in 0.00s
+2025-03-19 13:58:16,314 - webagent - DEBUG - Function build_agent_workflow executed in 11.9958 seconds
+2025-03-19 13:58:28,323 - webagent - DEBUG - Function build_agent_workflow executed in 11.9994 seconds
+2025-03-19 13:58:28,323 - webagent - DEBUG - Function get_agent_workflow executed in 11.9995 seconds
+2025-03-19 13:58:28,323 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 13:58:40,331 - webagent - DEBUG - Function build_agent_workflow executed in 12.0054 seconds
+2025-03-19 13:58:40,341 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 13:58:40,341 - webagent - DEBUG - Completed task: team_manager_1742407120.341883 with status: completed in 0.00s
+2025-03-19 13:58:40,343 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 13:58:40,343 - webagent - DEBUG - Completed task: team_manager_1742407120.343112 with status: completed in 0.00s
+2025-03-19 13:58:40,344 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 13:58:40,344 - webagent - DEBUG - Completed task: team_manager_1742407120.344311 with status: completed in 0.00s
+2025-03-19 13:58:52,312 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 13:58:52,313 - webagent - DEBUG - Completed task: team_manager_1742407132.31295 with status: error in 0.00s
+2025-03-19 13:58:52,339 - webagent - DEBUG - Function check_system_info executed in 0.0248 seconds
+2025-03-19 13:58:52,419 - webagent - DEBUG - Function check_dependencies executed in 0.0788 seconds
+2025-03-19 13:58:52,421 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-19 13:58:52,422 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 13:58:52,422 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 13:58:52,422 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 13:58:52,422 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 13:58:52,422 - webagent - DEBUG - Function check_agents executed in 0.0004 seconds
+2025-03-19 13:58:52,423 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 13:58:52,423 - webagent - DEBUG - Function check_workflow executed in 0.0001 seconds
+2025-03-19 13:58:52,516 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 13:58:52,517 - webagent - DEBUG - Function check_performance_metrics executed in 0.0002 seconds
+2025-03-19 13:58:52,518 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-19 13:58:52,518 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-19 13:58:52,520 - webagent - DEBUG - Function check_security_status executed in 0.0001 seconds
+2025-03-19 13:58:52,524 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-19 13:59:04,339 - webagent - DEBUG - Function build_agent_workflow executed in 11.8060 seconds
+2025-03-19 13:59:04,341 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 13:59:04,341 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 13:59:16,338 - webagent - DEBUG - Function build_agent_workflow executed in 11.9870 seconds
+2025-03-19 13:59:16,341 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 13:59:16,341 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 14:43:08,512 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 14:48:23,713 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 14:48:29,105 - webagent - DEBUG - Function check_workflow executed in 0.0000 seconds
+2025-03-19 14:50:07,019 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 14:50:12,555 - webagent - DEBUG - Function check_workflow executed in 0.0002 seconds
+2025-03-19 14:55:59,071 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 14:56:07,012 - webagent - DEBUG - Function check_workflow executed in 0.0002 seconds
+2025-03-19 14:56:22,099 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 14:57:54,748 - webagent - DEBUG - Function build_agent_workflow executed in 84.0608 seconds
+2025-03-19 14:59:18,769 - webagent - DEBUG - Function build_agent_workflow executed in 84.0187 seconds
+2025-03-19 14:59:18,769 - webagent - DEBUG - Function get_agent_workflow executed in 84.0188 seconds
+2025-03-19 14:59:18,769 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:00:42,793 - webagent - DEBUG - Function build_agent_workflow executed in 84.0213 seconds
+2025-03-19 15:01:06,805 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:01:06,805 - webagent - DEBUG - Completed task: team_manager_1742410866.805505 with status: completed in 0.00s
+2025-03-19 15:01:18,812 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:01:18,812 - webagent - DEBUG - Completed task: team_manager_1742410878.812552 with status: completed in 0.00s
+2025-03-19 15:01:30,811 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:01:30,811 - webagent - DEBUG - Completed task: team_manager_1742410890.811306 with status: completed in 0.00s
+2025-03-19 15:01:42,829 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:01:42,831 - webagent - DEBUG - Completed task: team_manager_1742410902.829859 with status: error in 0.00s
+2025-03-19 15:01:54,823 - webagent - DEBUG - Function build_agent_workflow executed in 11.9825 seconds
+2025-03-19 15:02:06,831 - webagent - DEBUG - Function build_agent_workflow executed in 12.0045 seconds
+2025-03-19 15:02:06,831 - webagent - DEBUG - Function get_agent_workflow executed in 12.0047 seconds
+2025-03-19 15:02:06,831 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:02:18,836 - webagent - DEBUG - Function build_agent_workflow executed in 12.0031 seconds
+2025-03-19 15:02:18,845 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:02:18,845 - webagent - DEBUG - Completed task: team_manager_1742410938.845882 with status: completed in 0.00s
+2025-03-19 15:02:18,847 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:02:18,847 - webagent - DEBUG - Completed task: team_manager_1742410938.847545 with status: completed in 0.00s
+2025-03-19 15:02:18,849 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:02:18,849 - webagent - DEBUG - Completed task: team_manager_1742410938.84907 with status: completed in 0.00s
+2025-03-19 15:02:30,835 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:02:30,835 - webagent - DEBUG - Completed task: team_manager_1742410950.835127 with status: error in 0.00s
+2025-03-19 15:02:30,870 - webagent - DEBUG - Function check_system_info executed in 0.0333 seconds
+2025-03-19 15:02:30,961 - webagent - DEBUG - Function check_dependencies executed in 0.0895 seconds
+2025-03-19 15:02:30,963 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-19 15:02:30,964 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:02:30,964 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:02:30,964 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:02:30,964 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:02:30,964 - webagent - DEBUG - Function check_agents executed in 0.0003 seconds
+2025-03-19 15:02:30,965 - webagent - DEBUG - Function check_workflow executed in 0.0002 seconds
+2025-03-19 15:02:30,967 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:02:30,967 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-19 15:02:30,968 - webagent - DEBUG - Function check_network_connectivity executed in 0.0001 seconds
+2025-03-19 15:02:30,969 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-19 15:02:30,971 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-19 15:02:30,972 - webagent - DEBUG - Function run_all_checks executed in 0.0001 seconds
+2025-03-19 15:02:42,848 - webagent - DEBUG - Function build_agent_workflow executed in 11.7606 seconds
+2025-03-19 15:02:42,850 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:02:42,850 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:02:54,848 - webagent - DEBUG - Function build_agent_workflow executed in 11.9897 seconds
+2025-03-19 15:02:54,851 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:02:54,851 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:05:00,696 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 15:05:00,701 - webagent - DEBUG - Function run_all_checks executed in 0.0001 seconds
+2025-03-19 15:05:36,055 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 15:05:36,058 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-19 15:05:44,173 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-19 15:07:17,933 - webagent - DEBUG - Function build_agent_workflow executed in 84.2237 seconds
+2025-03-19 15:08:41,804 - webagent - DEBUG - Function build_agent_workflow executed in 83.8682 seconds
+2025-03-19 15:08:41,804 - webagent - DEBUG - Function get_agent_workflow executed in 83.8683 seconds
+2025-03-19 15:08:41,804 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:10:05,834 - webagent - DEBUG - Function build_agent_workflow executed in 84.0274 seconds
+2025-03-19 15:10:29,839 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:10:29,839 - webagent - DEBUG - Completed task: team_manager_1742411429.839797 with status: completed in 0.00s
+2025-03-19 15:10:41,839 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:10:41,840 - webagent - DEBUG - Completed task: team_manager_1742411441.840045 with status: completed in 0.00s
+2025-03-19 15:10:53,845 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:10:53,845 - webagent - DEBUG - Completed task: team_manager_1742411453.845356 with status: completed in 0.00s
+2025-03-19 15:11:05,851 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:11:05,852 - webagent - DEBUG - Completed task: team_manager_1742411465.852039 with status: error in 0.00s
+2025-03-19 15:11:17,867 - webagent - DEBUG - Function build_agent_workflow executed in 12.0089 seconds
+2025-03-19 15:11:29,869 - webagent - DEBUG - Function build_agent_workflow executed in 11.9932 seconds
+2025-03-19 15:11:29,869 - webagent - DEBUG - Function get_agent_workflow executed in 11.9933 seconds
+2025-03-19 15:11:29,869 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:11:41,868 - webagent - DEBUG - Function build_agent_workflow executed in 11.9964 seconds
+2025-03-19 15:11:41,877 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:11:41,877 - webagent - DEBUG - Completed task: team_manager_1742411501.877525 with status: completed in 0.00s
+2025-03-19 15:11:41,878 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:11:41,878 - webagent - DEBUG - Completed task: team_manager_1742411501.878866 with status: completed in 0.00s
+2025-03-19 15:11:41,880 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:11:41,880 - webagent - DEBUG - Completed task: team_manager_1742411501.880234 with status: completed in 0.00s
+2025-03-19 15:11:53,869 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-19 15:11:53,869 - webagent - DEBUG - Completed task: team_manager_1742411513.869083 with status: error in 0.00s
+2025-03-19 15:11:53,902 - webagent - DEBUG - Function check_system_info executed in 0.0316 seconds
+2025-03-19 15:11:53,985 - webagent - DEBUG - Function check_dependencies executed in 0.0807 seconds
+2025-03-19 15:11:53,986 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-19 15:11:53,987 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:11:53,987 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:11:53,987 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:11:53,987 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:11:53,987 - webagent - DEBUG - Function check_agents executed in 0.0002 seconds
+2025-03-19 15:11:53,988 - webagent - DEBUG - Function check_workflow executed in 0.0002 seconds
+2025-03-19 15:11:53,989 - webagent - WARNING - Error getting task metrics: 'Counter' object has no attribute 'value'
+2025-03-19 15:11:53,989 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-19 15:11:53,990 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-19 15:11:53,991 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-19 15:11:53,992 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-19 15:11:53,993 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-19 15:12:05,879 - webagent - DEBUG - Function build_agent_workflow executed in 11.8760 seconds
+2025-03-19 15:12:05,881 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:12:05,882 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:12:17,884 - webagent - DEBUG - Function build_agent_workflow executed in 11.9953 seconds
+2025-03-19 15:12:17,887 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-19 15:12:17,887 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds

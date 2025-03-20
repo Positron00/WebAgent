@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/2cb1794db0e2449984d96899ca1fb00f/artifacts
+end_time: 1742406880216
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 2cb1794db0e2449984d96899ca1fb00f
+run_name: nosy-fly-584
+run_uuid: 2cb1794db0e2449984d96899ca1fb00f
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742406880210
+status: 3
+tags: []
+user_id: danc

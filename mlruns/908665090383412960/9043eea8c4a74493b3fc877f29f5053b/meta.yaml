@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/9043eea8c4a74493b3fc877f29f5053b/artifacts
+end_time: 1742410998856
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 9043eea8c4a74493b3fc877f29f5053b
+run_name: clean-newt-483
+run_uuid: 9043eea8c4a74493b3fc877f29f5053b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742410998847
+status: 3
+tags: []
+user_id: danc

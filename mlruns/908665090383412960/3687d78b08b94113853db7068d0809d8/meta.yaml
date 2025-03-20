@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/3687d78b08b94113853db7068d0809d8/artifacts
+end_time: 1742410842773
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 3687d78b08b94113853db7068d0809d8
+run_name: mysterious-mare-205
+run_uuid: 3687d78b08b94113853db7068d0809d8
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742410842766
+status: 3
+tags: []
+user_id: danc

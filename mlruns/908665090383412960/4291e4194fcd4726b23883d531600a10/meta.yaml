@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/4291e4194fcd4726b23883d531600a10/artifacts
+end_time: 1742406832199
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: 4291e4194fcd4726b23883d531600a10
+run_name: skittish-conch-760
+run_uuid: 4291e4194fcd4726b23883d531600a10
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742406832193
+status: 3
+tags: []
+user_id: danc

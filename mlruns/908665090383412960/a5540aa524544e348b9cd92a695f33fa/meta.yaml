@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/GoogleDrive-cdan118%40gmail.com/My%20Drive/Work/MachineLearning/Repos/WebAgent/mlruns/908665090383412960/a5540aa524544e348b9cd92a695f33fa/artifacts
+end_time: 1742407120327
+entry_point_name: ''
+experiment_id: '908665090383412960'
+lifecycle_stage: active
+run_id: a5540aa524544e348b9cd92a695f33fa
+run_name: tasteful-sponge-174
+run_uuid: a5540aa524544e348b9cd92a695f33fa
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742407120318
+status: 3
+tags: []
+user_id: danc
