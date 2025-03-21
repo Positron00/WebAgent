@@ -35,7 +35,7 @@ class CorsConfig(BaseModel):
 
 class VectorDBConfig(BaseModel):
     """Vector database configuration."""
-    path: str = Field(default="./data/vectordb")
+    path: str = Field(default="./backend/data/vectordb")
     embedding_dimension: int = Field(default=1536)
     distance_metric: str = Field(default="cosine")
     document_chunk_size: int = Field(default=1000, description="Size of document chunks for storage")
@@ -53,7 +53,7 @@ class RedisConfig(BaseModel):
 
 class ArtifactsConfig(BaseModel):
     """Artifacts storage configuration."""
-    path: str = Field(default="./data/artifacts")
+    path: str = Field(default="./backend/data/artifacts")
     registry_url: str = Field(default=None, description="URL to remote artifact registry")
     enable_versioning: bool = Field(default=True)
 

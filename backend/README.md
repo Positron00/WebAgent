@@ -370,9 +370,9 @@ Vector database and data storage locations can be configured using environment v
 
 ```bash
 # Data storage configuration
-WEBAGENT_DATA_DIR=/path/to/data             # Base directory for all data
-WEBAGENT_VECTOR_DB_PATH=/path/to/vectordb   # Vector database location
-WEBAGENT_ARTIFACTS_PATH=/path/to/artifacts  # Document artifacts location
+WEBAGENT_DATA_DIR=/path/to/backend/data             # Base directory for all data
+WEBAGENT_VECTOR_DB_PATH=/path/to/backend/data/vectordb   # Vector database location
+WEBAGENT_ARTIFACTS_PATH=/path/to/backend/data/artifacts  # Document artifacts location
 ```
 
 ## Environment Variables

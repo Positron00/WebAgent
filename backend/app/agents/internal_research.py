@@ -466,7 +466,8 @@ class RAGRetriever:
                     potential_db_paths = [
                         settings.VECTOR_DB_PATH,
                         os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "vectordb"),
-                        "./data/vectordb"
+                        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "backend", "data", "vectordb"),
+                        "./backend/data/vectordb"
                     ]
                     
                     for db_path in potential_db_paths:
