@@ -21,7 +21,7 @@ cors:
 database:
   vector_db:
     # Path can be overridden with WEBAGENT_VECTOR_DB_PATH environment variable
-    path: "./backend/data/vectordb"
+    path: ""  # Will use settings.VECTOR_DB_PATH
     embedding_dimension: 1536
     distance_metric: "cosine"
   redis:

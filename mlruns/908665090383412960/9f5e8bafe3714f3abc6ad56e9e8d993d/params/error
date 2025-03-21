@@ -1,9 +1,0 @@
-TogetherAI API rate limit exceeded: TogetherAI API rate limit exceeded: Together received an invalid payload: {
-  "id": "nmYJJPB-4yUbBN-9227084299b41366",
-  "error": {
-    "message": "Unable to access model gpt-4-turbo. Please visit https://api.together.ai/models to view the list of supported models.",
-    "type": "invalid_request_error",
-    "param": null,
-    "code": "model_not_available"
-  }
-}

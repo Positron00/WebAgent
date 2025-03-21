@@ -21,7 +21,7 @@ cors:
 database:
   vector_db:
     # Path can be overridden with WEBAGENT_VECTOR_DB_PATH environment variable
-    path: "./backend/data/vectordb"
+    path: ""  # Will use settings.VECTOR_DB_PATH
     embedding_dimension: 1536
     distance_metric: "cosine"
   redis:
@@ -109,7 +109,7 @@ logging:
   level: "DEBUG"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   log_to_file: true
-  log_file: "./logs/webagent-dev.log"
+  log_file: ""  # Will use path from settings
   rotate_logs: true
   max_file_size_mb: 10
   backup_count: 5

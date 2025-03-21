@@ -13,10 +13,14 @@ import mlflow
 from typing import Dict, Any, List, Tuple, Optional
 from collections import defaultdict
 
-from .base_model_service import BaseModelService, ModelServiceConfig
-from fastapi import HTTPException
+from app.core.config import settings
+from .base_model_service import BaseModelService
+from models.schemas.model import ModelServiceConfig
 
 logger = logging.getLogger(__name__)
+
+# Get absolute path to the backend directory for consistent path resolution
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # determine device to train on
 def get_device():
@@ -279,6 +283,9 @@ class FineTuneService(BaseModelService):
         self.experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME", "model-fine-tuning")
         self.run_id = None
         
+        # Use the MLRUNS_PATH from settings
+        default_mlruns_path = settings.MLRUNS_PATH
+        
         # Initialize MLflow
         mlflow.set_tracking_uri(self.mlflow_tracking_uri)
         
@@ -286,7 +293,7 @@ class FineTuneService(BaseModelService):
         try:
             self.experiment_id = mlflow.create_experiment(
                 self.experiment_name,
-                artifact_location=os.environ.get("MLFLOW_ARTIFACT_LOCATION", "./mlruns")
+                artifact_location=os.environ.get("MLFLOW_ARTIFACT_LOCATION", default_mlruns_path)
             )
         except mlflow.exceptions.MlflowException:
             self.experiment_id = mlflow.get_experiment_by_name(self.experiment_name).experiment_id

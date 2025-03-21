@@ -82,7 +82,15 @@ Please focus on finding this information in your analysis.
 TRACKING_ENABLED = os.environ.get("MLFLOW_TRACKING_URI") is not None
 if TRACKING_ENABLED:
     import mlflow
-    mlflow.set_experiment("rag_agent_performance")
+    # Use settings.MLRUNS_PATH for artifact location
+    experiment = mlflow.get_experiment_by_name("rag_agent_performance")
+    if experiment is None:
+        mlflow.create_experiment(
+            "rag_agent_performance",
+            artifact_location=os.environ.get("MLFLOW_ARTIFACT_LOCATION", settings.MLRUNS_PATH)
+        )
+    else:
+        mlflow.set_experiment("rag_agent_performance")
 
 class RAGRetriever:
     """
@@ -461,13 +469,9 @@ class RAGRetriever:
                 
                 # Try directly accessing the Chroma database in the default location
                 try:
-                    # The default vectordb path might be different from what we expect
-                    # Try various potential paths
+                    # Only use the path from settings
                     potential_db_paths = [
-                        settings.VECTOR_DB_PATH,
-                        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "vectordb"),
-                        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "backend", "data", "vectordb"),
-                        "./backend/data/vectordb"
+                        settings.VECTOR_DB_PATH
                     ]
                     
                     for db_path in potential_db_paths:

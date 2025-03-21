@@ -16,8 +16,8 @@ from typing import Dict, Any, Optional, Union
 from app.core.config import settings
 
 # Create logs directory if it doesn't exist
-logs_dir = Path("./logs")
-logs_dir.mkdir(exist_ok=True)
+logs_dir = Path(os.path.join(settings.DATA_DIR, "..", "logs"))
+logs_dir.mkdir(parents=True, exist_ok=True)
 
 # Get environment or default to 'dev'
 env = getattr(settings, "WEBAGENT_ENV", os.getenv("WEBAGENT_ENV", "dev"))
@@ -211,4 +211,21 @@ logger.info(
     f"Logger initialized - Environment: {env}, "
     f"Level: {logging.getLevelName(log_level)}, "
     f"File: {log_file}"
-) 
+)
+
+def setup_logging(level=logging.INFO, to_file=True, log_format=None):
+    """Set up logging for the application."""
+    # Create logs directory if doesn't exist
+    # Use the path from settings rather than a relative path
+    logs_dir = Path(os.path.join(settings.DATA_DIR, "..", "logs"))
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Default log format
+    if log_format is None:
+        log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
+    # Configure logging
+    logging.basicConfig(
+        level=level,
+        format=log_format
+    ) 

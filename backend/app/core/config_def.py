@@ -35,7 +35,7 @@ class CorsConfig(BaseModel):
 
 class VectorDBConfig(BaseModel):
     """Vector database configuration."""
-    path: str = Field(default="./backend/data/vectordb")
+    path: str = Field(default="")  # Will be set from settings.VECTOR_DB_PATH
     embedding_dimension: int = Field(default=1536)
     distance_metric: str = Field(default="cosine")
     document_chunk_size: int = Field(default=1000, description="Size of document chunks for storage")
@@ -53,7 +53,7 @@ class RedisConfig(BaseModel):
 
 class ArtifactsConfig(BaseModel):
     """Artifacts storage configuration."""
-    path: str = Field(default="./backend/data/artifacts")
+    path: str = Field(default="")  # Will be set from settings.ARTIFACTS_PATH
     registry_url: str = Field(default=None, description="URL to remote artifact registry")
     enable_versioning: bool = Field(default=True)
 
@@ -145,7 +145,7 @@ class LoggingConfig(BaseModel):
         default="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
     log_to_file: bool = Field(default=True)
-    log_file: str = Field(default="./logs/webagent.log")
+    log_file: str = Field(default="")  # Will be set from settings
     rotate_logs: bool = Field(default=True)
     max_file_size_mb: int = Field(default=10, gt=0)
     backup_count: int = Field(default=5, ge=0)

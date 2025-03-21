@@ -18306,3 +18306,73 @@ Exception: Run with UUID bfa6bcb48a6a4614930d2daa63358054 is already active. To 
 2025-03-19 23:35:10,134 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
 2025-03-19 23:36:09,947 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
 2025-03-19 23:40:38,231 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-21 02:02:09,651 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-21 02:02:12,139 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-21 02:02:18,084 - webagent - DEBUG - Function build_agent_workflow executed in 0.2975 seconds
+2025-03-21 02:02:29,858 - webagent - DEBUG - Function build_agent_workflow executed in 11.7707 seconds
+2025-03-21 02:02:29,858 - webagent - DEBUG - Function get_agent_workflow executed in 11.7708 seconds
+2025-03-21 02:02:29,858 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-21 02:02:41,846 - webagent - DEBUG - Function build_agent_workflow executed in 11.9850 seconds
+2025-03-21 02:02:41,855 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 02:02:41,855 - webagent - DEBUG - Completed task: team_manager_1742536961.855664 with status: completed in 0.00s
+2025-03-21 02:02:41,856 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 02:02:41,856 - webagent - DEBUG - Completed task: team_manager_1742536961.856871 with status: completed in 0.00s
+2025-03-21 02:02:41,857 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 02:02:41,857 - webagent - DEBUG - Completed task: team_manager_1742536961.857955 with status: completed in 0.00s
+2025-03-21 02:02:53,868 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 02:02:53,869 - webagent - DEBUG - Completed task: team_manager_1742536973.86853 with status: error in 0.00s
+2025-03-21 02:03:06,149 - webagent - DEBUG - Function check_system_info executed in 0.0238 seconds
+2025-03-21 02:03:06,231 - webagent - DEBUG - Function check_dependencies executed in 0.0800 seconds
+2025-03-21 02:03:06,233 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-21 02:03:06,234 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-21 02:03:06,235 - webagent - DEBUG - Function check_workflow executed in 0.0001 seconds
+2025-03-21 02:03:06,237 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-21 02:03:06,238 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-21 02:03:06,238 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-21 02:03:06,240 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-21 02:03:06,241 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-21 02:03:18,916 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-21 02:03:18,916 - webagent - DEBUG - Started task: test_task_20250321020318
+2025-03-21 02:26:30,364 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-21 02:26:30,368 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-21 02:26:30,382 - webagent - DEBUG - Function check_system_info executed in 0.0140 seconds
+2025-03-21 02:26:31,799 - webagent - DEBUG - Function check_dependencies executed in 1.4165 seconds
+2025-03-21 02:26:31,799 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-21 02:26:38,416 - webagent - DEBUG - Function check_agents executed in 6.6165 seconds
+2025-03-21 02:28:02,662 - webagent - DEBUG - Function build_agent_workflow executed in 84.2222 seconds
+2025-03-21 02:28:02,662 - webagent - DEBUG - Function get_agent_workflow executed in 84.2224 seconds
+2025-03-21 02:28:02,662 - webagent - DEBUG - Function check_workflow executed in 84.2445 seconds
+2025-03-21 02:28:02,873 - webagent - DEBUG - Function check_performance_metrics executed in 0.2107 seconds
+2025-03-21 02:28:02,874 - webagent - DEBUG - Function check_security_status executed in 0.0014 seconds
+2025-03-21 02:28:02,874 - webagent - DEBUG - Function run_all_checks executed in 92.5064 seconds
+2025-03-21 02:28:02,875 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-21 02:31:52,571 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-21 02:31:58,304 - webagent - DEBUG - Function build_agent_workflow executed in 0.2713 seconds
+2025-03-21 02:32:10,086 - webagent - DEBUG - Function build_agent_workflow executed in 11.7792 seconds
+2025-03-21 02:32:10,087 - webagent - DEBUG - Function get_agent_workflow executed in 11.7794 seconds
+2025-03-21 02:32:10,087 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-21 02:32:22,107 - webagent - DEBUG - Function build_agent_workflow executed in 12.0182 seconds
+2025-03-21 02:32:22,117 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 02:32:22,118 - webagent - DEBUG - Completed task: team_manager_1742538742.117965 with status: completed in 0.00s
+2025-03-21 02:32:22,119 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 02:32:22,119 - webagent - DEBUG - Completed task: team_manager_1742538742.119519 with status: completed in 0.00s
+2025-03-21 02:32:22,120 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 02:32:22,121 - webagent - DEBUG - Completed task: team_manager_1742538742.120976 with status: completed in 0.00s
+2025-03-21 02:32:34,108 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 02:32:34,111 - webagent - DEBUG - Completed task: team_manager_1742538754.109318 with status: error in 0.00s
+2025-03-21 02:32:46,186 - webagent - DEBUG - Function check_system_info executed in 0.0273 seconds
+2025-03-21 02:32:46,270 - webagent - DEBUG - Function check_dependencies executed in 0.0820 seconds
+2025-03-21 02:32:46,272 - webagent - DEBUG - Function check_environment executed in 0.0005 seconds
+2025-03-21 02:32:46,273 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-21 02:32:46,274 - webagent - DEBUG - Function check_workflow executed in 0.0001 seconds
+2025-03-21 02:32:46,276 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-21 02:32:46,277 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-21 02:32:46,277 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-21 02:32:46,279 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-21 02:32:46,280 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-21 02:32:58,892 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-21 02:32:58,892 - webagent - DEBUG - Started task: test_task_20250321023258
+2025-03-21 02:34:34,139 - webagent - DEBUG - Function build_agent_workflow executed in 95.2472 seconds
+2025-03-21 02:34:34,140 - webagent - DEBUG - Function get_agent_workflow executed in 95.2478 seconds
+2025-03-21 02:34:34,162 - webagent - DEBUG - Completed task: test_task_20250321023258 with status: error in 95.27s
+2025-03-21 02:34:34,164 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds

@@ -22,8 +22,8 @@ try:
 except ImportError:
     MLFLOW_AVAILABLE = False
 
-from backend.app.core.logger import logger
-from backend.app.core.config import Settings
+from app.core.logger import logger
+from app.core.config import settings
 
 class MLflowManager:
     """Manages connections and logging to MLflow."""
@@ -72,7 +72,10 @@ class MLflowManager:
             # Get or create experiment
             experiment = mlflow.get_experiment_by_name(experiment_name)
             if experiment is None:
-                experiment_id = mlflow.create_experiment(experiment_name)
+                experiment_id = mlflow.create_experiment(
+                    experiment_name,
+                    artifact_location=os.environ.get("MLFLOW_ARTIFACT_LOCATION", settings.MLRUNS_PATH)
+                )
             else:
                 experiment_id = experiment.experiment_id
                 
@@ -263,7 +266,6 @@ def get_mlflow_manager() -> MLflowManager:
     """
     global _mlflow_manager
     if _mlflow_manager is None:
-        settings = Settings()
         _mlflow_manager = MLflowManager(tracking_uri=settings.MLFLOW_TRACKING_URI)
     return _mlflow_manager
 

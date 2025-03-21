@@ -42,7 +42,8 @@ def check_services():
         print(f"✅ MLflow server is running at {MLFLOW_URL}")
     except Exception as e:
         print(f"❌ MLflow server not reachable at {MLFLOW_URL}: {str(e)}")
-        print(f"   Start MLflow with: mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlflow-artifacts --host 0.0.0.0 --port 5000")
+        print(f"   Start MLflow with: mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root $WEBAGENT_MLRUNS_PATH --host 0.0.0.0 --port 5000")
+        print(f"   (Where $WEBAGENT_MLRUNS_PATH is the path from settings.MLRUNS_PATH)")
         return False
     
     # Check LLM service

@@ -37,3 +37,16 @@
 2025-03-19 23:35:43,973 - webagent - DEBUG - Function check_language_model_availability executed in 0.0078 seconds
 2025-03-19 23:35:43,974 - webagent - DEBUG - Function check_security_status executed in 0.0015 seconds
 2025-03-19 23:35:43,974 - webagent - DEBUG - Function run_all_checks executed in 9.3436 seconds
+2025-03-21 01:48:27,758 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: logs/webagent-dev.log
+2025-03-21 01:48:27,763 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-21 01:48:27,777 - webagent - DEBUG - Function check_system_info executed in 0.0142 seconds
+2025-03-21 01:48:29,232 - webagent - DEBUG - Function check_dependencies executed in 1.4548 seconds
+2025-03-21 01:48:29,232 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-21 01:48:37,322 - webagent - DEBUG - Function check_agents executed in 8.0894 seconds
+2025-03-21 01:48:38,429 - webagent - DEBUG - Function build_agent_workflow executed in 0.9610 seconds
+2025-03-21 01:48:38,429 - webagent - DEBUG - Function get_agent_workflow executed in 0.9612 seconds
+2025-03-21 01:48:38,429 - webagent - DEBUG - Function check_workflow executed in 1.1075 seconds
+2025-03-21 01:48:38,640 - webagent - DEBUG - Function check_performance_metrics executed in 0.2106 seconds
+2025-03-21 01:48:38,641 - webagent - DEBUG - Function check_security_status executed in 0.0012 seconds
+2025-03-21 01:48:38,641 - webagent - DEBUG - Function run_all_checks executed in 10.8787 seconds
+2025-03-21 01:48:38,641 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed

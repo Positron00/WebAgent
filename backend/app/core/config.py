@@ -149,6 +149,13 @@ class Settings(BaseSettings):
         default=os.getenv("WEBAGENT_ARTIFACTS_PATH", os.path.join(BASE_DIR, "backend", "data", "artifacts")),
         description="Path to store document artifacts"
     )
+    
+    # MLflow artifacts storage settings
+    MLRUNS_PATH: str = Field(
+        default=os.getenv("WEBAGENT_MLRUNS_PATH", os.path.join(BASE_DIR, "backend", "mlruns")),
+        description="Path to store MLflow runs and artifacts"
+    )
+    
     ARTIFACTS_REGISTRY_URL: Optional[str] = Field(
         default=None,
         description="URL to remote artifact registry"
