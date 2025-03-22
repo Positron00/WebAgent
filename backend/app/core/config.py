@@ -31,7 +31,10 @@ from pydantic_settings import BaseSettings
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
 
 # Define the base directory for the project
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = "/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent"
+
+# For debugging
+print(f"BASE_DIR set to: {BASE_DIR}")
 
 # Priority order for configuration:
 # 1. .env.local file (highest priority for API keys)
@@ -227,7 +230,7 @@ if app_config:
         DEFAULT_MODEL: str = llm_config.default_model
         
         # Database
-        VECTOR_DB_PATH: str = db_config.vector_db.path
+        VECTOR_DB_PATH: str = db_config.vector_db.path if hasattr(db_config.vector_db, 'path') and db_config.vector_db.path else os.path.join(BASE_DIR, "backend", "data", "vectordb")
         REDIS_HOST: str = db_config.redis.host
         REDIS_PORT: int = db_config.redis.port
         REDIS_DB: int = db_config.redis.db

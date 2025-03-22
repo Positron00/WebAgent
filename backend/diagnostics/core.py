@@ -563,10 +563,10 @@ class SystemDiagnostics:
                 results["status"] = "error"
                 results["error"] = f"Error getting service status: {str(status_err)}"
                 
-                # Fallback to simple API key check
-                if os.getenv("OPENAI_API_KEY"):
+                # Fallback to simple API key check using settings
+                if settings.OPENAI_API_KEY:
                     results["providers"]["openai"] = {"api_key_set": True}
-                if os.getenv("TOGETHER_API_KEY"):
+                if settings.TOGETHER_API_KEY:
                     results["providers"]["together"] = {"api_key_set": True}
         except Exception as e:
             logger.error(f"Error checking LLM availability: {e}")

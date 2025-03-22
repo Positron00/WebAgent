@@ -117,7 +117,12 @@ class RAGRetriever:
         try:
             # Use the same vectordb path as the rest of the application
             # Don't create a separate 'advanced' subdirectory to avoid path inconsistencies
-            vectordb_path = settings.VECTOR_DB_PATH
+            if not settings.VECTOR_DB_PATH or settings.VECTOR_DB_PATH.strip() == '':
+                vectordb_path = os.path.join(settings.DATA_DIR, "vectordb")
+                logger.warning(f"VECTOR_DB_PATH is empty, using default path: {vectordb_path}")
+            else:
+                vectordb_path = settings.VECTOR_DB_PATH
+                
             os.makedirs(vectordb_path, exist_ok=True)
             logger.info(f"Using vector database path: {vectordb_path}")
             

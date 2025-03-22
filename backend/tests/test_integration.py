@@ -37,15 +37,16 @@ from app.core.loadEnvYAML import get_llm_config
 from app.graph.workflows import get_agent_workflow
 from app.models.task import WorkflowState
 from app.services.task_manager import TaskManager
+from app.core.config import settings
 
 async def test_together_ai():
     """Test the Together AI integration."""
     logger.info("Testing Together AI integration...")
     
-    # Check if Together API key is set
-    together_api_key = os.getenv("TOGETHER_API_KEY")
+    # Check if Together API key is set using settings
+    together_api_key = settings.TOGETHER_API_KEY
     if not together_api_key:
-        logger.warning("TOGETHER_API_KEY environment variable not set")
+        logger.warning("TOGETHER_API_KEY not configured in settings (.env.local)")
         # For testing purposes, we'll consider this an expected failure if we're in testing mode
         if os.getenv("TESTING", "False").lower() == "true":
             logger.info("In testing mode, marking as SKIPPED due to missing API key")

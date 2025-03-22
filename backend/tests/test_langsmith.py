@@ -133,10 +133,11 @@ def main():
     """Run all LangSmith tests."""
     logger.info("Starting LangSmith integration tests")
     
-    # Check if LANGSMITH_API_KEY is set
-    api_key = os.getenv("LANGSMITH_API_KEY")
+    # Check if LANGSMITH_API_KEY is set in settings
+    from app.core.config import settings
+    api_key = settings.LANGSMITH_API_KEY
     if not api_key:
-        logger.warning("LANGSMITH_API_KEY environment variable is not set")
+        logger.warning("LANGSMITH_API_KEY not configured in settings (.env.local)")
     else:
         logger.info("LANGSMITH_API_KEY environment variable is set")
     

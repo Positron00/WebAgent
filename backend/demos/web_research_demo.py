@@ -201,9 +201,9 @@ async def run_web_research_demo():
         start_time = datetime.now()
         
         # Record environment variables that might affect search
-        logger.debug(f"Current TAVILY_API_KEY status: {'Set' if os.getenv('TAVILY_API_KEY') else 'Not set'}")
-        logger.debug(f"Current LLM_PROVIDER: {os.getenv('LLM_PROVIDER', 'Not set')}")
-        logger.debug(f"Current TOGETHER_MODEL: {os.getenv('TOGETHER_MODEL', 'Not set')}")
+        logger.debug(f"Current TAVILY_API_KEY status: {'Set' if settings.TAVILY_API_KEY else 'Not set'}")
+        logger.debug(f"Current LLM_PROVIDER: {settings.LLM_DEFAULT_PROVIDER}")
+        logger.debug(f"Current TOGETHER_MODEL: {settings.TOGETHER_MODEL or 'Not set'}")
         
         result_state = await web_agent.run(state)
         duration = (datetime.now() - start_time).total_seconds()

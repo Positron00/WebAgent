@@ -30,7 +30,8 @@ from app.core.observability import (
 logger = logging.getLogger(__name__)
 
 # Define model constants - these should match config.py
-TOGETHER_DEFAULT_MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+TOGETHER_API_BASE = os.getenv("TOGETHER_API_BASE", "https://api.together.xyz/v1")
+TOGETHER_DEFAULT_MODEL = os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
 OPENAI_DEFAULT_MODEL = "gpt-4o-mini-2024-07-18"
 GROQ_DEFAULT_MODEL = "meta-llama/Llama-3.2-1B"
 ANTHROPIC_DEFAULT_MODEL = "claude-3-5-sonnet-20240620"
@@ -441,39 +442,63 @@ def get_together_llm(model_name: Optional[str] = None):
     # Use provided model or default to configured TOGETHER_MODEL
     model = model_name or settings.TOGETHER_MODEL
     
-    together_api_key = os.getenv("TOGETHER_API_KEY")
+    together_api_key = settings.TOGETHER_API_KEY
     
     if not together_api_key:
-        logger.warning("TOGETHER_API_KEY environment variable not set")
+        logger.warning("TOGETHER_API_KEY not configured in settings (.env.local)")
         logger.info("Falling back to OpenAI LLM")
         return get_openai_llm(model_name)
     
     try:
-        # Try different import paths for TogetherLLM
+        # Try different import approaches for TogetherLLM
         try:
-            from langchain_together import Together as TogetherLLM
-        except ImportError:
+            # First try import from langchain_together (preferred modern approach)
+            import langchain_together
+            from langchain_together import Together
+            
+            # Apply rate limiting to avoid hitting Together API rate limits
+            _enforce_together_api_rate_limit()
+            
+            # Initialize using langchain_together
+            llm = Together(
+                model=model,
+                temperature=llm_config.temperature,
+                max_tokens=llm_config.max_tokens,
+                together_api_key=together_api_key,
+                api_base=TOGETHER_API_BASE
+            )
+            
+        except (ImportError, AttributeError):
             try:
+                # Fallback to langchain_community
                 from langchain_community.llms import Together as TogetherLLM
-                logger.warning("Using deprecated Together import from langchain_community")
-            except ImportError:
-                try:
-                    from langchain.llms import Together as TogetherLLM
-                    logger.warning("Using deprecated Together import from langchain")
-                except ImportError:
-                    logger.warning("Unable to import TogetherLLM. Falling back to OpenAI.")
-                    return get_openai_llm(model_name)
+                logger.warning("Using fallback Together import from langchain_community")
+                
+                # Apply rate limiting to avoid hitting Together API rate limits
+                _enforce_together_api_rate_limit()
+                
+                # Initialize using langchain_community approach
+                llm = TogetherLLM(
+                    model=model,
+                    temperature=llm_config.temperature,
+                    max_tokens=llm_config.max_tokens,
+                    together_api_key=together_api_key,
+                    api_base=TOGETHER_API_BASE
+                )
+                
+            except (ImportError, AttributeError):
+                logger.warning("Unable to initialize TogetherLLM. Falling back to OpenAI.")
+                return get_openai_llm(model_name)
         
-        # Apply rate limiting to avoid hitting Together API rate limits
-        _enforce_together_api_rate_limit()
-        
-        # Remove timeout and max_retries parameters which are not supported
-        llm = TogetherLLM(
-            model=model,
-            temperature=llm_config.temperature,
-            max_tokens=llm_config.max_tokens,
-            together_api_key=together_api_key
-        )
+        # Check if the LLM has the necessary methods
+        if not hasattr(llm, "invoke"):
+            # Add compatibility layer for older versions that might use __call__ instead of invoke
+            if hasattr(llm, "__call__"):
+                logger.info("Adding compatibility invoke method to Together LLM")
+                llm.invoke = llm.__call__
+            else:
+                logger.warning("Together LLM does not have invoke or __call__ method. Falling back to OpenAI.")
+                return get_openai_llm(model_name)
         
         # Create a custom wrapper around the model's invoke method to enforce rate limiting
         original_invoke = llm.invoke
@@ -502,6 +527,7 @@ def get_together_llm(model_name: Optional[str] = None):
         error_msg = str(e)
         logger.warning(f"Failed to initialize together LLM: {error_msg}")
         # Fallback to OpenAI
+        logger.info("Falling back to OpenAI LLM")
         return get_openai_llm(model_name)
 
 @log_llm_request(provider="self")
@@ -635,12 +661,12 @@ async def get_llm_status():
     provider = llm_config.provider.lower()
     
     if provider == "together":
-        if not os.getenv("TOGETHER_API_KEY"):
-            return {"status": "unavailable", "error": "Together API key not configured", "provider": "together"}
-        api_key = os.getenv("TOGETHER_API_KEY")
+        if not settings.TOGETHER_API_KEY:
+            return {"status": "unavailable", "error": "Together API key not configured in settings (.env.local)", "provider": "together"}
+        api_key = settings.TOGETHER_API_KEY
     elif provider == "openai":
         if not settings.OPENAI_API_KEY:
-            return {"status": "unavailable", "error": "OpenAI API key not configured", "provider": "openai"}
+            return {"status": "unavailable", "error": "OpenAI API key not configured in settings (.env.local)", "provider": "openai"}
         api_key = settings.OPENAI_API_KEY
     elif provider == "self":
         # Check self-hosted LLM status
@@ -705,12 +731,12 @@ async def get_llm_metrics():
     metrics_data["providers"] = {
         "openai": {
             "enabled": settings.LLM_PROVIDER == "openai" or settings.LLM_PROVIDER == "all",
-            "api_key_set": bool(os.getenv("OPENAI_API_KEY")),
+            "api_key_set": bool(settings.OPENAI_API_KEY),
             "default_model": settings.OPENAI_MODEL_NAME
         },
         "together": {
             "enabled": settings.LLM_PROVIDER == "together" or settings.LLM_PROVIDER == "all",
-            "api_key_set": bool(os.getenv("TOGETHER_API_KEY")),
+            "api_key_set": bool(settings.TOGETHER_API_KEY),
             "default_model": settings.TOGETHER_MODEL_NAME or TOGETHER_DEFAULT_MODEL
         },
         "self": {
@@ -742,12 +768,12 @@ def get_llm_service_status() -> Dict[str, Any]:
             "provider": llm_provider,
             "openai": {
                 "enabled": llm_provider == "openai" or llm_provider == "all",
-                "api_key_set": bool(os.getenv("OPENAI_API_KEY")),
+                "api_key_set": bool(settings.OPENAI_API_KEY),
                 "default_model": getattr(config.openai, "model_name", "gpt-3.5-turbo") if hasattr(config, "openai") else "gpt-3.5-turbo"
             },
             "together": {
                 "enabled": llm_provider == "together" or llm_provider == "all",
-                "api_key_set": bool(os.getenv("TOGETHER_API_KEY")),
+                "api_key_set": bool(settings.TOGETHER_API_KEY),
                 "default_model": getattr(config.together, "model_name", TOGETHER_DEFAULT_MODEL) if hasattr(config, "together") else TOGETHER_DEFAULT_MODEL
             },
             "self": {
@@ -765,8 +791,8 @@ def get_llm_service_status() -> Dict[str, Any]:
         return {
             "provider": "unknown",
             "error": str(e),
-            "openai": {"enabled": bool(os.getenv("OPENAI_API_KEY"))},
-            "together": {"enabled": bool(os.getenv("TOGETHER_API_KEY"))},
+            "openai": {"enabled": bool(settings.OPENAI_API_KEY)},
+            "together": {"enabled": bool(settings.TOGETHER_API_KEY)},
             "self": {"enabled": False}
         }
 
@@ -846,7 +872,7 @@ def confirm_llm_selection():
         if custom_model:
             model = custom_model
     elif provider == "self":
-        model = os.getenv("SELF_HOSTED_MODEL") or "local-model"
+        model = settings.SELF_HOSTED_MODEL if hasattr(settings, "SELF_HOSTED_MODEL") else "local-model"
         print(f"\nUsing self-hosted model: {model}")
     
     # Confirm the selection

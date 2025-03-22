@@ -44,8 +44,16 @@ class VectorDBService:
         self.initialized = False
         
         try:
+            # Handle empty VECTOR_DB_PATH
+            if not settings.VECTOR_DB_PATH or settings.VECTOR_DB_PATH.strip() == '':
+                default_path = os.path.join(settings.DATA_DIR, "vectordb")
+                logger.warning(f"VECTOR_DB_PATH is empty, using default path: {default_path}")
+                self.vector_db_path = default_path
+            else:
+                self.vector_db_path = settings.VECTOR_DB_PATH
+            
             # Ensure the directory exists
-            os.makedirs(settings.VECTOR_DB_PATH, exist_ok=True)
+            os.makedirs(self.vector_db_path, exist_ok=True)
             
             # Create embeddings
             self.embeddings = OpenAIEmbeddings(
@@ -54,7 +62,7 @@ class VectorDBService:
             
             # Create vector database
             self.vectordb = Chroma(
-                persist_directory=settings.VECTOR_DB_PATH,
+                persist_directory=self.vector_db_path,
                 embedding_function=self.embeddings
             )
             
@@ -62,7 +70,7 @@ class VectorDBService:
             self.graph_db = get_graph_db_service()
             
             self.initialized = True
-            logger.info(f"Vector database initialized at {settings.VECTOR_DB_PATH}")
+            logger.info(f"Vector database initialized at {self.vector_db_path}")
         except Exception as e:
             logger.error(f"Error initializing vector database: {str(e)}")
             self.error = str(e)
