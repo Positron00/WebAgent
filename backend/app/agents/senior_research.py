@@ -82,7 +82,7 @@ class SeniorResearchAgent(BaseAgent):
         """Initialize the Senior Research Agent."""
         super().__init__(name="senior_research")
         self.prompt = ChatPromptTemplate.from_template(SENIOR_RESEARCH_PROMPT)
-        self.llm = get_llm("gpt-4-turbo")
+        self.llm = get_llm("meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)

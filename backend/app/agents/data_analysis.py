@@ -60,7 +60,7 @@ class DataAnalysisAgent(BaseAgent):
         """Initialize the Data Analysis Agent."""
         super().__init__(name="data_analysis")
         self.prompt = ChatPromptTemplate.from_template(DATA_ANALYSIS_PROMPT)
-        self.llm = get_llm("gpt-4-turbo")
+        self.llm = get_llm("meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)

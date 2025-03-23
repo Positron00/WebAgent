@@ -85,7 +85,7 @@ export function SourceCanvas({ sources, isVisible }: SourceCanvasProps) {
                 {source.snippet && (
                   <div className="bg-gray-900/50 rounded p-3 mb-3">
                     <p className="text-gray-300 text-xs line-clamp-3">
-                      "{source.snippet}"
+                      &quot;{source.snippet}&quot;
                     </p>
                   </div>
                 )}

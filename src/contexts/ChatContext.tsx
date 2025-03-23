@@ -103,11 +103,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // Load messages from storage on client side
   useEffect(() => {
     try {
+      const loadedMessages = storage.getMessages();
       setState(prev => ({
         ...prev,
-        messages: storage.getMessages(),
+        messages: loadedMessages,
       }));
-      logger.info('Loaded messages from storage', { messageCount: state.messages.length });
+      logger.info('Loaded messages from storage', { messageCount: loadedMessages.length });
     } catch (error) {
       logger.error('Failed to load messages from storage', error);
       // Fallback to empty messages array
@@ -123,7 +124,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       logger.error('Failed to save messages to storage', error);
     }
-  }, [state.messages]);
+  }, [state.messages, state.messages.length]);
 
   const handleError = useCallback((error: any, requestId: string) => {
     logger.error('Chat error occurred', { error, requestId });
@@ -268,7 +269,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }));
       }
     },
-    [state.messages, accessibility.promptStyle, accessibility.knowledgeFocus, accessibility.citeSources, accessibility.agentic]
+    [state.messages, state.isLoading, accessibility.promptStyle, accessibility.knowledgeFocus, accessibility.citeSources, accessibility.agentic]
   );
 
   const clearMessages = useCallback(() => {

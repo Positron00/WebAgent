@@ -2,7 +2,7 @@
 LLM service for the WebAgent backend.
 Provides access to different LLM providers including Together AI, Groq, OpenAI, Anthropic, Gemini, and self-hosted models.
 """
-from typing import Dict, Optional, Any, List, Tuple
+from typing import Dict, Optional, Any, List, Tuple, Callable, Type, TypeVar, cast
 import logging
 import os
 import time
@@ -12,9 +12,14 @@ import requests
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
 
 from langchain_openai import ChatOpenAI
-from langchain_community.llms import Together as TogetherLLM
+# Keep both imports until compatibility is resolved
+try:
+    from langchain_together import Together
+except ImportError:
+    from langchain_community.llms import Together as TogetherLLM
 from langchain.chat_models.base import BaseChatModel
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain.schema.runnable import Runnable
 from app.core.config import settings
 from app.core.loadEnvYAML import get_llm_config
 
@@ -37,6 +42,113 @@ GROQ_DEFAULT_MODEL = "meta-llama/Llama-3.2-1B"
 ANTHROPIC_DEFAULT_MODEL = "claude-3-5-sonnet-20240620"
 GEMINI_DEFAULT_MODEL = "gemini-1.5-flash-002"
 SELF_HOSTED_DEFAULT_URL = "http://localhost:8080"
+
+# Define input/output types for TypeVar
+Input = TypeVar('Input')
+Output = TypeVar('Output')
+
+# Custom wrapper to ensure Together LLM has invoke method
+class TogetherWrapper(Runnable[str, str]):
+    """A wrapper for Together LLM that implements the LangChain Runnable interface."""
+    
+    def __init__(self, model_name: str, temperature: float, max_tokens: int, api_key: str):
+        """Initialize the wrapper."""
+        self.api_key = api_key
+        self.model_name = model_name
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.llm = self._create_llm()
+        
+        # Ensure invoke method exists
+        if not hasattr(self.llm, "invoke"):
+            self._add_invoke_method()
+    
+    def _create_llm(self):
+        """Create the underlying LLM instance."""
+        try:
+            # Try the new package first
+            from langchain_together import Together
+            return Together(
+                model=self.model_name,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                together_api_key=self.api_key
+            )
+        except ImportError:
+            # Fall back to community package
+            from langchain_community.llms import Together as TogetherLLM
+            return TogetherLLM(
+                model=self.model_name,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                together_api_key=self.api_key
+            )
+    
+    def _add_invoke_method(self):
+        """Add invoke method to the LLM if missing."""
+        if hasattr(self.llm, "complete"):
+            # Newer versions might use complete
+            def custom_invoke(prompt, **kwargs):
+                return self.llm.complete(prompt, **kwargs)
+            self.llm.invoke = custom_invoke
+        elif hasattr(self.llm, "generate"):
+            # Older versions might use generate
+            def custom_invoke(prompt, **kwargs):
+                result = self.llm.generate([prompt], **kwargs)
+                return result.generations[0][0].text
+            self.llm.invoke = custom_invoke
+        elif hasattr(self.llm, "__call__"):
+            # Try the call method
+            self.llm.invoke = self.llm.__call__
+        else:
+            raise ValueError("Unable to add invoke method to Together LLM")
+    
+    def invoke(self, input: str, config: Optional[Dict[str, Any]] = None) -> str:
+        """Invoke the LLM. This is the main method required by the Runnable interface."""
+        _enforce_together_api_rate_limit()
+        try:
+            return self.llm.invoke(input, **(config or {}))
+        except Exception as e:
+            logger.error(f"Error invoking Together LLM: {str(e)}")
+            raise
+    
+    async def ainvoke(self, input: str, config: Optional[Dict[str, Any]] = None) -> str:
+        """Async invoke method required by the Runnable interface."""
+        _enforce_together_api_rate_limit()
+        if hasattr(self.llm, "ainvoke"):
+            return await self.llm.ainvoke(input, **(config or {}))
+        else:
+            # Fallback to sync version if async not available
+            return self.invoke(input, config)
+    
+    def batch(self, inputs: List[str], config: Optional[Dict[str, Any]] = None) -> List[str]:
+        """Batch processing method required by the Runnable interface."""
+        return [self.invoke(input, config) for input in inputs]
+    
+    async def abatch(self, inputs: List[str], config: Optional[Dict[str, Any]] = None) -> List[str]:
+        """Async batch processing method required by the Runnable interface."""
+        return [await self.ainvoke(input, config) for input in inputs]
+    
+    def stream(self, input: str, config: Optional[Dict[str, Any]] = None):
+        """Stream processing method required by the Runnable interface."""
+        if hasattr(self.llm, "stream"):
+            return self.llm.stream(input, **(config or {}))
+        else:
+            # If streaming not supported, yield the entire result at once
+            yield self.invoke(input, config)
+    
+    async def astream(self, input: str, config: Optional[Dict[str, Any]] = None):
+        """Async stream processing method required by the Runnable interface."""
+        if hasattr(self.llm, "astream"):
+            async for chunk in self.llm.astream(input, **(config or {})):
+                yield chunk
+        else:
+            # If async streaming not supported, yield the entire result at once
+            yield await self.ainvoke(input, config)
+            
+    def __getattr__(self, name):
+        """Delegate to underlying LLM for other attributes."""
+        return getattr(self.llm, name)
 
 # Define service metrics
 class LLMMetrics:
@@ -450,83 +562,29 @@ def get_together_llm(model_name: Optional[str] = None):
         return get_openai_llm(model_name)
     
     try:
-        # Try different import approaches for TogetherLLM
+        # Apply rate limiting to avoid hitting Together API rate limits
+        _enforce_together_api_rate_limit()
+        
+        # Use our custom wrapper to ensure invoke method is available
+        wrapper = TogetherWrapper(
+            model_name=model,
+            temperature=llm_config.temperature,
+            max_tokens=llm_config.max_tokens,
+            api_key=together_api_key
+        )
+        
+        # Test the LLM
         try:
-            # First try import from langchain_together (preferred modern approach)
-            import langchain_together
-            from langchain_together import Together
+            wrapper.invoke("test")
+            logger.info(f"Successfully initialized Together LLM ({model})")
+            return wrapper
+        except Exception as test_error:
+            logger.warning(f"Test of Together LLM failed: {str(test_error)}")
+            logger.info("Falling back to OpenAI LLM")
+            return get_openai_llm(model_name)
             
-            # Apply rate limiting to avoid hitting Together API rate limits
-            _enforce_together_api_rate_limit()
-            
-            # Initialize using langchain_together
-            llm = Together(
-                model=model,
-                temperature=llm_config.temperature,
-                max_tokens=llm_config.max_tokens,
-                together_api_key=together_api_key,
-                api_base=TOGETHER_API_BASE
-            )
-            
-        except (ImportError, AttributeError):
-            try:
-                # Fallback to langchain_community
-                from langchain_community.llms import Together as TogetherLLM
-                logger.warning("Using fallback Together import from langchain_community")
-                
-                # Apply rate limiting to avoid hitting Together API rate limits
-                _enforce_together_api_rate_limit()
-                
-                # Initialize using langchain_community approach
-                llm = TogetherLLM(
-                    model=model,
-                    temperature=llm_config.temperature,
-                    max_tokens=llm_config.max_tokens,
-                    together_api_key=together_api_key,
-                    api_base=TOGETHER_API_BASE
-                )
-                
-            except (ImportError, AttributeError):
-                logger.warning("Unable to initialize TogetherLLM. Falling back to OpenAI.")
-                return get_openai_llm(model_name)
-        
-        # Check if the LLM has the necessary methods
-        if not hasattr(llm, "invoke"):
-            # Add compatibility layer for older versions that might use __call__ instead of invoke
-            if hasattr(llm, "__call__"):
-                logger.info("Adding compatibility invoke method to Together LLM")
-                llm.invoke = llm.__call__
-            else:
-                logger.warning("Together LLM does not have invoke or __call__ method. Falling back to OpenAI.")
-                return get_openai_llm(model_name)
-        
-        # Create a custom wrapper around the model's invoke method to enforce rate limiting
-        original_invoke = llm.invoke
-        def rate_limited_invoke(*args, **kwargs):
-            _enforce_together_api_rate_limit()
-            return original_invoke(*args, **kwargs)
-        
-        # Replace the invoke method with our rate-limited version
-        llm.invoke = rate_limited_invoke
-        
-        # Test the API connection with a simple query to verify it works correctly
-        try:
-            logger.debug("Testing TogetherAI API connection...")
-            # Just a basic test that won't cost many tokens
-            test_response = llm.invoke("Hello")
-            logger.debug("TogetherAI API connection test successful")
-        except Exception as test_err:
-            logger.warning(f"TogetherAI API connection test failed: {str(test_err)}")
-            # If the test fails with a specific error, we might want to fall back immediately
-            if "401" in str(test_err) or "Unauthorized" in str(test_err):
-                logger.error(f"TogetherAI API authentication failed: {str(test_err)}")
-                return get_openai_llm(model_name)
-        
-        return llm
     except Exception as e:
-        error_msg = str(e)
-        logger.warning(f"Failed to initialize together LLM: {error_msg}")
-        # Fallback to OpenAI
+        logger.warning(f"Failed to initialize Together LLM: {str(e)}")
         logger.info("Falling back to OpenAI LLM")
         return get_openai_llm(model_name)
 

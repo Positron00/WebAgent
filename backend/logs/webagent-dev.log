@@ -127,3 +127,412 @@
 2025-03-21 23:12:29,214 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
 2025-03-21 23:25:23,897 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
 2025-03-21 23:35:26,657 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-21 23:53:46,018 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-21 23:53:46,033 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-21 23:53:46,046 - webagent - DEBUG - Function check_system_info executed in 0.0125 seconds
+2025-03-21 23:53:47,236 - webagent - DEBUG - Function check_dependencies executed in 1.1900 seconds
+2025-03-21 23:53:47,236 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-21 23:53:52,479 - webagent - DEBUG - Function check_agents executed in 5.2430 seconds
+2025-03-21 23:55:16,681 - webagent - DEBUG - Function build_agent_workflow executed in 84.1794 seconds
+2025-03-21 23:55:16,681 - webagent - DEBUG - Function get_agent_workflow executed in 84.1796 seconds
+2025-03-21 23:55:16,681 - webagent - DEBUG - Function check_workflow executed in 84.2016 seconds
+2025-03-21 23:55:16,888 - webagent - DEBUG - Function check_performance_metrics executed in 0.2063 seconds
+2025-03-21 23:55:16,889 - webagent - DEBUG - Function check_security_status executed in 0.0013 seconds
+2025-03-21 23:55:16,889 - webagent - DEBUG - Function run_all_checks executed in 90.8560 seconds
+2025-03-21 23:55:16,889 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-21 23:55:18,668 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-21 23:55:22,742 - webagent - DEBUG - Function build_agent_workflow executed in 0.4024 seconds
+2025-03-21 23:55:34,389 - webagent - DEBUG - Function build_agent_workflow executed in 11.6438 seconds
+2025-03-21 23:55:34,389 - webagent - DEBUG - Function get_agent_workflow executed in 11.6440 seconds
+2025-03-21 23:55:34,389 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-21 23:55:46,403 - webagent - DEBUG - Function build_agent_workflow executed in 12.0115 seconds
+2025-03-21 23:55:46,414 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 23:55:46,415 - webagent - DEBUG - Completed task: team_manager_1742615746.414639 with status: completed in 0.00s
+2025-03-21 23:55:46,416 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 23:55:46,416 - webagent - DEBUG - Completed task: team_manager_1742615746.41656 with status: completed in 0.00s
+2025-03-21 23:55:46,417 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 23:55:46,418 - webagent - DEBUG - Completed task: team_manager_1742615746.418006 with status: completed in 0.00s
+2025-03-21 23:55:58,397 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-21 23:55:58,398 - webagent - DEBUG - Completed task: team_manager_1742615758.397513 with status: error in 0.00s
+2025-03-21 23:56:10,458 - webagent - DEBUG - Function check_system_info executed in 0.0263 seconds
+2025-03-21 23:56:10,515 - webagent - DEBUG - Function check_dependencies executed in 0.0553 seconds
+2025-03-21 23:56:10,516 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-21 23:56:10,517 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-21 23:56:10,517 - webagent - DEBUG - Function check_workflow executed in 0.0001 seconds
+2025-03-21 23:56:10,519 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-21 23:56:10,519 - webagent - DEBUG - Function check_network_connectivity executed in 0.0001 seconds
+2025-03-21 23:56:10,520 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-21 23:56:10,521 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-21 23:56:10,522 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-21 23:56:23,100 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-21 23:56:23,100 - webagent - DEBUG - Started task: test_task_20250321235623
+2025-03-21 23:57:58,427 - webagent - DEBUG - Function build_agent_workflow executed in 95.3265 seconds
+2025-03-21 23:57:58,427 - webagent - DEBUG - Function get_agent_workflow executed in 95.3267 seconds
+2025-03-21 23:57:58,440 - webagent - DEBUG - Completed task: test_task_20250321235623 with status: error in 95.34s
+2025-03-21 23:57:58,441 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-21 23:58:10,436 - webagent - DEBUG - Function build_agent_workflow executed in 11.9876 seconds
+2025-03-21 23:58:10,439 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-21 23:58:10,439 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-21 23:58:22,523 - webagent - DEBUG - Function build_agent_workflow executed in 12.0754 seconds
+2025-03-21 23:58:22,526 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-21 23:58:22,526 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:01:57,878 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 00:01:57,892 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-22 00:01:57,905 - webagent - DEBUG - Function check_system_info executed in 0.0127 seconds
+2025-03-22 00:01:58,717 - webagent - DEBUG - Function check_dependencies executed in 0.8121 seconds
+2025-03-22 00:01:58,718 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-22 00:02:02,645 - webagent - DEBUG - Function check_agents executed in 3.9269 seconds
+2025-03-22 00:03:26,848 - webagent - DEBUG - Function build_agent_workflow executed in 84.0761 seconds
+2025-03-22 00:03:26,849 - webagent - DEBUG - Function get_agent_workflow executed in 84.0765 seconds
+2025-03-22 00:03:26,849 - webagent - DEBUG - Function check_workflow executed in 84.2039 seconds
+2025-03-22 00:03:27,056 - webagent - DEBUG - Function check_performance_metrics executed in 0.2077 seconds
+2025-03-22 00:03:27,057 - webagent - DEBUG - Function check_security_status executed in 0.0009 seconds
+2025-03-22 00:03:27,058 - webagent - DEBUG - Function run_all_checks executed in 89.1655 seconds
+2025-03-22 00:03:27,058 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-22 00:03:28,890 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 00:03:32,426 - webagent - DEBUG - Function build_agent_workflow executed in 0.4361 seconds
+2025-03-22 00:03:44,047 - webagent - DEBUG - Function build_agent_workflow executed in 11.6181 seconds
+2025-03-22 00:03:44,047 - webagent - DEBUG - Function get_agent_workflow executed in 11.6182 seconds
+2025-03-22 00:03:44,047 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:03:56,052 - webagent - DEBUG - Function build_agent_workflow executed in 12.0025 seconds
+2025-03-22 00:03:56,062 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 00:03:56,062 - webagent - DEBUG - Completed task: team_manager_1742616236.062352 with status: completed in 0.00s
+2025-03-22 00:03:56,063 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 00:03:56,063 - webagent - DEBUG - Completed task: team_manager_1742616236.063763 with status: completed in 0.00s
+2025-03-22 00:03:56,065 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 00:03:56,065 - webagent - DEBUG - Completed task: team_manager_1742616236.065444 with status: completed in 0.00s
+2025-03-22 00:04:08,053 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 00:04:08,054 - webagent - DEBUG - Completed task: team_manager_1742616248.053479 with status: error in 0.00s
+2025-03-22 00:04:20,113 - webagent - DEBUG - Function check_system_info executed in 0.0272 seconds
+2025-03-22 00:04:20,171 - webagent - DEBUG - Function check_dependencies executed in 0.0563 seconds
+2025-03-22 00:04:20,172 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 00:04:20,173 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-22 00:04:20,174 - webagent - DEBUG - Function check_workflow executed in 0.0005 seconds
+2025-03-22 00:04:20,175 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-22 00:04:20,176 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-22 00:04:20,177 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-22 00:04:20,178 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-22 00:04:20,179 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-22 00:04:32,688 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-22 00:04:32,688 - webagent - DEBUG - Started task: test_task_20250322000432
+2025-03-22 00:06:08,091 - webagent - DEBUG - Function build_agent_workflow executed in 95.4031 seconds
+2025-03-22 00:06:08,091 - webagent - DEBUG - Function get_agent_workflow executed in 95.4032 seconds
+2025-03-22 00:06:08,102 - webagent - DEBUG - Completed task: test_task_20250322000432 with status: error in 95.41s
+2025-03-22 00:06:08,103 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:06:20,099 - webagent - DEBUG - Function build_agent_workflow executed in 11.9887 seconds
+2025-03-22 00:06:20,102 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:06:20,102 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:06:32,102 - webagent - DEBUG - Function build_agent_workflow executed in 11.9907 seconds
+2025-03-22 00:06:32,105 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:06:32,105 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:10:06,035 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 00:10:06,054 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-22 00:10:06,067 - webagent - DEBUG - Function check_system_info executed in 0.0133 seconds
+2025-03-22 00:10:07,295 - webagent - DEBUG - Function check_dependencies executed in 1.2281 seconds
+2025-03-22 00:10:07,296 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 00:10:12,600 - webagent - DEBUG - Function check_agents executed in 5.3046 seconds
+2025-03-22 00:11:36,831 - webagent - DEBUG - Function build_agent_workflow executed in 84.0933 seconds
+2025-03-22 00:11:36,832 - webagent - DEBUG - Function get_agent_workflow executed in 84.0937 seconds
+2025-03-22 00:11:36,832 - webagent - DEBUG - Function check_workflow executed in 84.2313 seconds
+2025-03-22 00:11:37,043 - webagent - DEBUG - Function check_performance_metrics executed in 0.2107 seconds
+2025-03-22 00:11:37,046 - webagent - DEBUG - Function check_security_status executed in 0.0028 seconds
+2025-03-22 00:11:37,046 - webagent - DEBUG - Function run_all_checks executed in 90.9921 seconds
+2025-03-22 00:11:37,046 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-22 00:11:38,857 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 00:11:42,389 - webagent - DEBUG - Function build_agent_workflow executed in 0.4217 seconds
+2025-03-22 00:11:54,026 - webagent - DEBUG - Function build_agent_workflow executed in 11.6339 seconds
+2025-03-22 00:11:54,026 - webagent - DEBUG - Function get_agent_workflow executed in 11.6340 seconds
+2025-03-22 00:11:54,026 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:12:06,031 - webagent - DEBUG - Function build_agent_workflow executed in 12.0025 seconds
+2025-03-22 00:12:06,041 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 00:12:06,041 - webagent - DEBUG - Completed task: team_manager_1742616726.04139 with status: completed in 0.00s
+2025-03-22 00:12:06,042 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 00:12:06,042 - webagent - DEBUG - Completed task: team_manager_1742616726.042623 with status: completed in 0.00s
+2025-03-22 00:12:06,044 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 00:12:06,044 - webagent - DEBUG - Completed task: team_manager_1742616726.044199 with status: completed in 0.00s
+2025-03-22 00:12:18,032 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 00:12:18,033 - webagent - DEBUG - Completed task: team_manager_1742616738.032581 with status: error in 0.00s
+2025-03-22 00:12:30,093 - webagent - DEBUG - Function check_system_info executed in 0.0276 seconds
+2025-03-22 00:12:30,149 - webagent - DEBUG - Function check_dependencies executed in 0.0547 seconds
+2025-03-22 00:12:30,150 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 00:12:30,151 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-22 00:12:30,152 - webagent - DEBUG - Function check_workflow executed in 0.0001 seconds
+2025-03-22 00:12:30,154 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-22 00:12:30,155 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-22 00:12:30,155 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-22 00:12:30,156 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-22 00:12:30,157 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-22 00:12:42,582 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-22 00:12:42,582 - webagent - DEBUG - Started task: test_task_20250322001242
+2025-03-22 00:14:18,077 - webagent - DEBUG - Function build_agent_workflow executed in 95.4951 seconds
+2025-03-22 00:14:18,077 - webagent - DEBUG - Function get_agent_workflow executed in 95.4952 seconds
+2025-03-22 00:14:18,089 - webagent - DEBUG - Completed task: test_task_20250322001242 with status: error in 95.51s
+2025-03-22 00:14:18,089 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:14:30,082 - webagent - DEBUG - Function build_agent_workflow executed in 11.9847 seconds
+2025-03-22 00:14:30,085 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:14:30,085 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:14:42,078 - webagent - DEBUG - Function build_agent_workflow executed in 11.9854 seconds
+2025-03-22 00:14:42,081 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 00:14:42,081 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:28:24,856 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 22:28:24,860 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-22 22:28:24,874 - webagent - DEBUG - Function check_system_info executed in 0.0135 seconds
+2025-03-22 22:28:26,216 - webagent - DEBUG - Function check_dependencies executed in 1.3424 seconds
+2025-03-22 22:28:26,217 - webagent - DEBUG - Function check_environment executed in 0.0004 seconds
+2025-03-22 22:28:32,696 - webagent - DEBUG - Function check_agents executed in 6.4787 seconds
+2025-03-22 22:29:56,924 - webagent - DEBUG - Function build_agent_workflow executed in 84.2057 seconds
+2025-03-22 22:29:56,924 - webagent - DEBUG - Function get_agent_workflow executed in 84.2058 seconds
+2025-03-22 22:29:56,924 - webagent - DEBUG - Function check_workflow executed in 84.2282 seconds
+2025-03-22 22:29:57,133 - webagent - DEBUG - Function check_performance_metrics executed in 0.2091 seconds
+2025-03-22 22:29:57,136 - webagent - DEBUG - Function check_security_status executed in 0.0022 seconds
+2025-03-22 22:29:57,136 - webagent - DEBUG - Function run_all_checks executed in 92.2754 seconds
+2025-03-22 22:29:57,136 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-22 22:33:04,693 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 22:33:06,914 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 22:33:12,421 - webagent - DEBUG - Function build_agent_workflow executed in 0.2685 seconds
+2025-03-22 22:33:24,219 - webagent - DEBUG - Function build_agent_workflow executed in 11.7946 seconds
+2025-03-22 22:33:24,219 - webagent - DEBUG - Function get_agent_workflow executed in 11.7947 seconds
+2025-03-22 22:33:24,219 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:33:36,226 - webagent - DEBUG - Function build_agent_workflow executed in 12.0043 seconds
+2025-03-22 22:33:36,235 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 22:33:36,236 - webagent - DEBUG - Completed task: team_manager_1742697216.235878 with status: completed in 0.00s
+2025-03-22 22:33:36,237 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 22:33:36,237 - webagent - DEBUG - Completed task: team_manager_1742697216.237071 with status: completed in 0.00s
+2025-03-22 22:33:36,238 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 22:33:36,238 - webagent - DEBUG - Completed task: team_manager_1742697216.238184 with status: completed in 0.00s
+2025-03-22 22:33:48,208 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 22:33:48,210 - webagent - DEBUG - Completed task: team_manager_1742697228.20917 with status: error in 0.00s
+2025-03-22 22:34:00,258 - webagent - DEBUG - Function check_system_info executed in 0.0252 seconds
+2025-03-22 22:34:00,340 - webagent - DEBUG - Function check_dependencies executed in 0.0802 seconds
+2025-03-22 22:34:00,341 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 22:34:00,342 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-22 22:34:00,343 - webagent - DEBUG - Function check_workflow executed in 0.0001 seconds
+2025-03-22 22:34:00,345 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-22 22:34:00,346 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-22 22:34:00,347 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-22 22:34:00,348 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-22 22:34:00,349 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-22 22:34:12,925 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-22 22:34:12,925 - webagent - DEBUG - Started task: test_task_20250322223412
+2025-03-22 22:35:48,236 - webagent - DEBUG - Function build_agent_workflow executed in 95.3106 seconds
+2025-03-22 22:35:48,236 - webagent - DEBUG - Function get_agent_workflow executed in 95.3108 seconds
+2025-03-22 22:35:48,252 - webagent - DEBUG - Completed task: test_task_20250322223412 with status: error in 95.33s
+2025-03-22 22:35:48,253 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:36:00,256 - webagent - DEBUG - Function build_agent_workflow executed in 11.9958 seconds
+2025-03-22 22:36:00,259 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:36:00,259 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:36:12,243 - webagent - DEBUG - Function build_agent_workflow executed in 11.9758 seconds
+2025-03-22 22:36:12,245 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:36:12,245 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:42:58,731 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 22:42:58,736 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-22 22:42:58,751 - webagent - DEBUG - Function check_system_info executed in 0.0154 seconds
+2025-03-22 22:43:00,245 - webagent - DEBUG - Function check_dependencies executed in 1.4940 seconds
+2025-03-22 22:43:00,246 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 22:43:07,096 - webagent - DEBUG - Function check_agents executed in 6.8504 seconds
+2025-03-22 22:44:31,195 - webagent - DEBUG - Function build_agent_workflow executed in 84.0763 seconds
+2025-03-22 22:44:31,195 - webagent - DEBUG - Function get_agent_workflow executed in 84.0764 seconds
+2025-03-22 22:44:31,195 - webagent - DEBUG - Function check_workflow executed in 84.0993 seconds
+2025-03-22 22:44:31,401 - webagent - DEBUG - Function check_performance_metrics executed in 0.2057 seconds
+2025-03-22 22:44:31,403 - webagent - DEBUG - Function check_security_status executed in 0.0014 seconds
+2025-03-22 22:44:31,403 - webagent - DEBUG - Function run_all_checks executed in 92.6673 seconds
+2025-03-22 22:44:31,403 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-22 22:47:47,620 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 22:47:47,623 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-22 22:47:47,634 - webagent - DEBUG - Function check_system_info executed in 0.0102 seconds
+2025-03-22 22:47:48,673 - webagent - DEBUG - Function check_dependencies executed in 1.0391 seconds
+2025-03-22 22:47:48,673 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 22:47:55,030 - webagent - DEBUG - Function check_agents executed in 6.3566 seconds
+2025-03-22 22:48:45,591 - webagent - DEBUG - Function check_workflow executed in 50.5611 seconds
+2025-03-22 22:48:45,802 - webagent - DEBUG - Function check_performance_metrics executed in 0.2107 seconds
+2025-03-22 22:48:45,805 - webagent - DEBUG - Function check_security_status executed in 0.0021 seconds
+2025-03-22 22:48:45,805 - webagent - DEBUG - Function run_all_checks executed in 58.1812 seconds
+2025-03-22 22:48:45,805 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-22 22:49:01,874 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 22:49:01,890 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-22 22:49:01,901 - webagent - DEBUG - Function check_system_info executed in 0.0102 seconds
+2025-03-22 22:49:02,910 - webagent - DEBUG - Function check_dependencies executed in 1.0091 seconds
+2025-03-22 22:49:02,910 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 22:49:07,116 - webagent - DEBUG - Function check_agents executed in 4.2059 seconds
+2025-03-22 22:49:56,372 - webagent - DEBUG - Function check_workflow executed in 49.2554 seconds
+2025-03-22 22:49:56,578 - webagent - DEBUG - Function check_performance_metrics executed in 0.2063 seconds
+2025-03-22 22:49:56,579 - webagent - DEBUG - Function check_security_status executed in 0.0008 seconds
+2025-03-22 22:49:56,579 - webagent - DEBUG - Function run_all_checks executed in 54.6888 seconds
+2025-03-22 22:49:56,579 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-22 22:49:58,612 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 22:50:39,052 - webagent - DEBUG - Function build_agent_workflow executed in 36.4726 seconds
+2025-03-22 22:51:22,211 - webagent - DEBUG - Function build_agent_workflow executed in 43.1564 seconds
+2025-03-22 22:51:22,211 - webagent - DEBUG - Function get_agent_workflow executed in 43.1566 seconds
+2025-03-22 22:51:22,211 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:52:00,543 - webagent - DEBUG - Function build_agent_workflow executed in 38.3288 seconds
+2025-03-22 22:52:00,555 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 22:52:00,555 - webagent - DEBUG - Completed task: team_manager_1742698320.555718 with status: completed in 0.00s
+2025-03-22 22:52:00,557 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 22:52:00,557 - webagent - DEBUG - Completed task: team_manager_1742698320.557316 with status: completed in 0.00s
+2025-03-22 22:52:00,558 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 22:52:00,558 - webagent - DEBUG - Completed task: team_manager_1742698320.558698 with status: completed in 0.00s
+2025-03-22 22:52:12,873 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 22:52:12,875 - webagent - DEBUG - Completed task: team_manager_1742698332.873653 with status: error in 0.00s
+2025-03-22 22:53:25,115 - webagent - DEBUG - Function check_system_info executed in 0.0126 seconds
+2025-03-22 22:53:25,187 - webagent - DEBUG - Function check_dependencies executed in 0.0707 seconds
+2025-03-22 22:53:25,188 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 22:53:25,189 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-22 22:53:25,190 - webagent - DEBUG - Function check_workflow executed in 0.0001 seconds
+2025-03-22 22:53:25,191 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-22 22:53:25,192 - webagent - DEBUG - Function check_network_connectivity executed in 0.0001 seconds
+2025-03-22 22:53:25,192 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-22 22:53:25,193 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-22 22:53:25,194 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-22 22:54:27,309 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-22 22:54:27,309 - webagent - DEBUG - Started task: test_task_20250322225427
+2025-03-22 22:55:00,544 - webagent - DEBUG - Completed task: test_task_20250322225427 with status: error in 33.23s
+2025-03-22 22:57:06,682 - webagent - DEBUG - Function build_agent_workflow executed in 63.0256 seconds
+2025-03-22 22:57:58,192 - webagent - DEBUG - Function build_agent_workflow executed in 51.5064 seconds
+2025-03-22 22:57:58,192 - webagent - DEBUG - Function get_agent_workflow executed in 51.5066 seconds
+2025-03-22 22:57:58,192 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:58:39,250 - webagent - DEBUG - Function build_agent_workflow executed in 41.0481 seconds
+2025-03-22 22:58:39,254 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 22:58:39,254 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:05:52,049 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 23:05:54,391 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 23:06:48,659 - webagent - DEBUG - Function build_agent_workflow executed in 49.6071 seconds
+2025-03-22 23:07:19,453 - webagent - DEBUG - Function build_agent_workflow executed in 30.7912 seconds
+2025-03-22 23:07:19,453 - webagent - DEBUG - Function get_agent_workflow executed in 30.7914 seconds
+2025-03-22 23:07:19,453 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:07:34,455 - webagent - DEBUG - Function build_agent_workflow executed in 14.9987 seconds
+2025-03-22 23:07:34,467 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:07:34,467 - webagent - DEBUG - Completed task: team_manager_1742699254.467639 with status: completed in 0.00s
+2025-03-22 23:07:34,469 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:07:34,469 - webagent - DEBUG - Completed task: team_manager_1742699254.469113 with status: completed in 0.00s
+2025-03-22 23:07:34,470 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:07:34,470 - webagent - DEBUG - Completed task: team_manager_1742699254.470415 with status: completed in 0.00s
+2025-03-22 23:07:55,835 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:07:55,836 - webagent - DEBUG - Completed task: team_manager_1742699275.835219 with status: error in 0.00s
+2025-03-22 23:09:22,572 - webagent - DEBUG - Function check_system_info executed in 0.0150 seconds
+2025-03-22 23:09:22,659 - webagent - DEBUG - Function check_dependencies executed in 0.0859 seconds
+2025-03-22 23:09:22,660 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 23:09:22,662 - webagent - DEBUG - Function check_agents executed in 0.0002 seconds
+2025-03-22 23:09:22,663 - webagent - DEBUG - Function check_workflow executed in 0.0001 seconds
+2025-03-22 23:09:22,664 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-22 23:09:22,665 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-22 23:09:22,665 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-22 23:09:22,667 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-22 23:09:22,667 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-22 23:11:18,315 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-22 23:11:18,315 - webagent - DEBUG - Started task: test_task_20250322231118
+2025-03-22 23:15:06,039 - webagent - DEBUG - Function build_agent_workflow executed in 227.7240 seconds
+2025-03-22 23:15:06,039 - webagent - DEBUG - Function get_agent_workflow executed in 227.7243 seconds
+2025-03-22 23:15:06,051 - webagent - DEBUG - Completed task: test_task_20250322231118 with status: error in 227.74s
+2025-03-22 23:15:06,052 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:16:40,244 - webagent - DEBUG - Function build_agent_workflow executed in 94.1853 seconds
+2025-03-22 23:16:40,247 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:16:40,247 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:17:35,418 - webagent - DEBUG - Function build_agent_workflow executed in 55.1605 seconds
+2025-03-22 23:17:35,422 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:17:35,422 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:24:14,381 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 23:24:14,385 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-22 23:24:14,397 - webagent - DEBUG - Function check_system_info executed in 0.0120 seconds
+2025-03-22 23:24:15,676 - webagent - DEBUG - Function check_dependencies executed in 1.2782 seconds
+2025-03-22 23:24:15,676 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 23:24:22,049 - webagent - DEBUG - Function check_agents executed in 6.3733 seconds
+2025-03-22 23:28:06,022 - webagent - DEBUG - Function build_agent_workflow executed in 223.9512 seconds
+2025-03-22 23:28:06,022 - webagent - DEBUG - Function get_agent_workflow executed in 223.9513 seconds
+2025-03-22 23:28:06,022 - webagent - DEBUG - Function check_workflow executed in 223.9721 seconds
+2025-03-22 23:28:06,232 - webagent - DEBUG - Function check_performance_metrics executed in 0.2107 seconds
+2025-03-22 23:28:06,235 - webagent - DEBUG - Function check_security_status executed in 0.0027 seconds
+2025-03-22 23:28:06,235 - webagent - DEBUG - Function run_all_checks executed in 231.8503 seconds
+2025-03-22 23:28:06,236 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-22 23:28:18,650 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 23:28:20,735 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 23:29:09,352 - webagent - DEBUG - Function build_agent_workflow executed in 44.1845 seconds
+2025-03-22 23:30:28,022 - webagent - DEBUG - Function build_agent_workflow executed in 78.6669 seconds
+2025-03-22 23:30:28,022 - webagent - DEBUG - Function get_agent_workflow executed in 78.6670 seconds
+2025-03-22 23:30:28,022 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:30:43,018 - webagent - DEBUG - Function build_agent_workflow executed in 14.9923 seconds
+2025-03-22 23:30:43,026 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:30:43,026 - webagent - DEBUG - Completed task: team_manager_1742700643.026859 with status: completed in 0.00s
+2025-03-22 23:30:43,027 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:30:43,028 - webagent - DEBUG - Completed task: team_manager_1742700643.028007 with status: completed in 0.00s
+2025-03-22 23:30:43,028 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:30:43,029 - webagent - DEBUG - Completed task: team_manager_1742700643.02902 with status: completed in 0.00s
+2025-03-22 23:31:04,426 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:31:04,427 - webagent - DEBUG - Completed task: team_manager_1742700664.426385 with status: error in 0.00s
+2025-03-22 23:32:19,632 - webagent - DEBUG - Function check_system_info executed in 0.0159 seconds
+2025-03-22 23:32:19,728 - webagent - DEBUG - Function check_dependencies executed in 0.0935 seconds
+2025-03-22 23:32:19,729 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 23:32:19,730 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-22 23:32:19,731 - webagent - DEBUG - Function check_workflow executed in 0.0002 seconds
+2025-03-22 23:32:19,732 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-22 23:32:19,733 - webagent - DEBUG - Function check_network_connectivity executed in 0.0001 seconds
+2025-03-22 23:32:19,734 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-22 23:32:19,736 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-22 23:32:19,736 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-22 23:32:35,661 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-22 23:32:35,661 - webagent - DEBUG - Started task: test_task_20250322233235
+2025-03-22 23:36:44,062 - webagent - DEBUG - Function build_agent_workflow executed in 248.4004 seconds
+2025-03-22 23:36:44,062 - webagent - DEBUG - Function get_agent_workflow executed in 248.4006 seconds
+2025-03-22 23:36:44,072 - webagent - DEBUG - Completed task: test_task_20250322233235 with status: error in 248.41s
+2025-03-22 23:36:44,073 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:38:02,695 - webagent - DEBUG - Function build_agent_workflow executed in 78.6148 seconds
+2025-03-22 23:38:02,698 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:38:02,698 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:38:59,157 - webagent - DEBUG - Function build_agent_workflow executed in 56.4486 seconds
+2025-03-22 23:38:59,161 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:38:59,161 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:50:00,982 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 23:50:00,986 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-22 23:50:00,998 - webagent - DEBUG - Function check_system_info executed in 0.0113 seconds
+2025-03-22 23:50:02,136 - webagent - DEBUG - Function check_dependencies executed in 1.1386 seconds
+2025-03-22 23:50:02,137 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-22 23:50:07,400 - webagent - DEBUG - Function check_agents executed in 5.2629 seconds
+2025-03-22 23:54:41,918 - webagent - DEBUG - Function build_agent_workflow executed in 274.4974 seconds
+2025-03-22 23:54:41,918 - webagent - DEBUG - Function get_agent_workflow executed in 274.4976 seconds
+2025-03-22 23:54:41,918 - webagent - DEBUG - Function check_workflow executed in 274.5183 seconds
+2025-03-22 23:54:42,125 - webagent - DEBUG - Function check_performance_metrics executed in 0.2072 seconds
+2025-03-22 23:54:42,126 - webagent - DEBUG - Function check_security_status executed in 0.0011 seconds
+2025-03-22 23:54:42,127 - webagent - DEBUG - Function run_all_checks executed in 281.1404 seconds
+2025-03-22 23:54:42,127 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-22 23:57:01,870 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 23:57:03,855 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-22 23:58:18,475 - webagent - DEBUG - Function build_agent_workflow executed in 69.9202 seconds
+2025-03-22 23:59:32,259 - webagent - DEBUG - Function build_agent_workflow executed in 73.7814 seconds
+2025-03-22 23:59:32,259 - webagent - DEBUG - Function get_agent_workflow executed in 73.7815 seconds
+2025-03-22 23:59:32,260 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-22 23:59:48,028 - webagent - DEBUG - Function build_agent_workflow executed in 15.7648 seconds
+2025-03-22 23:59:48,039 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:59:48,039 - webagent - DEBUG - Completed task: team_manager_1742702388.039244 with status: completed in 0.00s
+2025-03-22 23:59:48,040 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:59:48,040 - webagent - DEBUG - Completed task: team_manager_1742702388.040665 with status: completed in 0.00s
+2025-03-22 23:59:48,041 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-22 23:59:48,041 - webagent - DEBUG - Completed task: team_manager_1742702388.041928 with status: completed in 0.00s
+2025-03-23 00:00:08,550 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-23 00:00:08,552 - webagent - DEBUG - Completed task: team_manager_1742702408.55063 with status: error in 0.00s
+2025-03-23 00:01:27,797 - webagent - DEBUG - Function check_system_info executed in 0.0142 seconds
+2025-03-23 00:01:27,881 - webagent - DEBUG - Function check_dependencies executed in 0.0826 seconds
+2025-03-23 00:01:27,882 - webagent - DEBUG - Function check_environment executed in 0.0004 seconds
+2025-03-23 00:01:27,884 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-23 00:01:27,885 - webagent - DEBUG - Function check_workflow executed in 0.0002 seconds
+2025-03-23 00:01:27,886 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-23 00:01:27,887 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-23 00:01:27,887 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-23 00:01:27,889 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-23 00:01:27,889 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-23 00:02:20,412 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-23 00:02:20,412 - webagent - DEBUG - Started task: test_task_20250323000220
+2025-03-23 00:05:36,040 - webagent - DEBUG - Function build_agent_workflow executed in 195.6277 seconds
+2025-03-23 00:05:36,040 - webagent - DEBUG - Function get_agent_workflow executed in 195.6278 seconds
+2025-03-23 00:05:36,052 - webagent - DEBUG - Completed task: test_task_20250323000220 with status: error in 195.64s
+2025-03-23 00:05:36,053 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-23 00:06:30,850 - webagent - DEBUG - Function build_agent_workflow executed in 54.7914 seconds
+2025-03-23 00:06:30,853 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-23 00:06:30,853 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-23 00:06:52,118 - webagent - DEBUG - Function build_agent_workflow executed in 21.2550 seconds
+2025-03-23 00:06:52,121 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-23 00:06:52,121 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-23 00:11:52,121 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 00:11:52,125 - webagent.webagent.diagnostics_runner - INFO - Starting WebAgent diagnostics
+2025-03-23 00:11:52,137 - webagent - DEBUG - Function check_system_info executed in 0.0118 seconds
+2025-03-23 00:11:53,266 - webagent - DEBUG - Function check_dependencies executed in 1.1290 seconds
+2025-03-23 00:11:53,267 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-23 00:11:58,430 - webagent - DEBUG - Function check_agents executed in 5.1637 seconds

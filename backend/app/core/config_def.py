@@ -69,7 +69,7 @@ class DatabaseConfig(BaseModel):
 class LLMConfig(BaseModel):
     """LLM provider configuration."""
     provider: str = Field(default="openai")
-    default_model: str = Field(default="gpt-4-turbo")
+    default_model: str = Field(default="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
     temperature: float = Field(default=0.7, ge=0.0, le=1.0)
     timeout_seconds: int = Field(default=60, gt=0)
     max_tokens: int = Field(default=4096, gt=0)
@@ -100,7 +100,7 @@ class TasksConfig(BaseModel):
 
 class AgentConfig(BaseModel):
     """Base agent configuration."""
-    model: str = Field(default="gpt-4-turbo")
+    model: str = Field(default="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
     temperature: float = Field(default=0.2, ge=0.0, le=1.0)
 
 

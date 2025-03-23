@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from '@/types/chat';
 import { useApp } from '@/contexts/AppContext';
 import ReactMarkdown from 'react-markdown';
@@ -161,7 +161,7 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom of messages with respect to reduced motion preference
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     if (!messagesEndRef.current) return;
     
     if (accessibility.reducedMotion) {
@@ -169,11 +169,11 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
     } else {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  };
+  }, [accessibility.reducedMotion]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isLoading, scrollToBottom]);
 
   // Apply custom colors or high contrast theme if enabled
   const getMessageClassName = (role: string) => {

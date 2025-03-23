@@ -9,13 +9,16 @@ import logging
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Union, Any
+from typing import Dict, List, Optional, Union, Any, Set
 import json
 import signal
 import threading
 from datetime import datetime
+import socket
+import subprocess
+import asyncio
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -32,9 +35,7 @@ class CompletionRequest(BaseModel):
     top_p: float = Field(0.9, description="Nucleus sampling parameter")
     stop: Optional[List[str]] = Field(None, description="Stop sequences to end generation")
     
-    model_config = {
-        "protected_namespaces": ()
-    }
+    model_config = ConfigDict(protected_namespaces=())
 
 class CompletionResponse(BaseModel):
     """Common response format for model completions"""
@@ -43,9 +44,7 @@ class CompletionResponse(BaseModel):
     usage: Dict[str, int] = Field(..., description="Token usage information")
     finish_reason: str = Field("stop", description="The reason generation stopped")
     
-    model_config = {
-        "protected_namespaces": ()
-    }
+    model_config = ConfigDict(protected_namespaces=())
 
 class ModelServiceConfig(BaseModel):
     """Configuration for a model service"""
@@ -59,9 +58,7 @@ class ModelServiceConfig(BaseModel):
     capabilities: List[str] = Field(default_factory=list, description="Model capabilities")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Additional model parameters")
     
-    model_config = {
-        "protected_namespaces": ()
-    }
+    model_config = ConfigDict(protected_namespaces=())
 
 class BaseModelService(ABC):
     """Base class for all model services"""
@@ -239,7 +236,6 @@ class BaseModelService(ABC):
     
     def _async_startup(self) -> None:
         """Run startup in a background thread"""
-        import asyncio
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:

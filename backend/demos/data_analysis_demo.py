@@ -133,7 +133,7 @@ def create_sample_datasets():
         # Generate synthetic agent performance data
         agent_types = ["web_research", "document_extraction", "internal_research", 
                        "data_analysis", "coding_assistant", "team_manager"]
-        models = ["gpt-4-turbo", "llama-3-70b", "claude-3-opus", "custom-model-v2"]
+        models = ["meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", "meta-llama/Llama-3.1-8B", "claude-3-opus", "custom-model-v2"]
         
         with open(agent_metrics_path, "w", newline="") as f:
             writer = csv.writer(f)
@@ -165,18 +165,18 @@ def create_sample_datasets():
                             base_tokens = 4800
                         
                         # Models also affect performance
-                        if model == "gpt-4-turbo":
+                        if model == "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free":
                             latency_factor = 1.0
                             success_factor = 1.0
                             token_factor = 1.0
+                        elif model == "meta-llama/Llama-3.1-8B":
+                            latency_factor = 0.8
+                            success_factor = 0.97
+                            token_factor = 0.85
                         elif model == "claude-3-opus":
                             latency_factor = 0.9
                             success_factor = 1.02
                             token_factor = 1.1
-                        elif model == "llama-3-70b":
-                            latency_factor = 0.8
-                            success_factor = 0.97
-                            token_factor = 0.85
                         else:  # custom model
                             latency_factor = 0.75
                             success_factor = 0.95

@@ -327,7 +327,7 @@ describe('ApiClient', () => {
   
   test('should determine API health based on consecutive errors', () => {
     // Create a new instance to avoid affecting other tests
-    const testApiClient = new ApiClient();
+    const testApiClient = ApiClient.getInstance();
     
     // Access the private metrics property using type assertion
     const apiClientAny = testApiClient as any;
