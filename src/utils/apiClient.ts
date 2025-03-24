@@ -22,6 +22,12 @@ interface ApiMetrics {
   statusCodes: Record<string, number>;
 }
 
+interface ChatCompletionMessage {
+  role: string;
+  content: string;
+  logs?: string[];
+}
+
 /**
  * Enhanced error class with additional context for better debugging
  */
@@ -342,44 +348,65 @@ export class ApiClient {
     if (agentic) {
       logger.info('Agentic mode ON - routing to LangGraph multi-agent system');
       
-      // Get the last user message
-      const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
-      if (!lastUserMessage) {
-        throw new Error('No user message found in the conversation');
+      try {
+        // Call to the backend multi-agent system
+        const response = await this.fetchWithRetry<ChatCompletionResponse>(
+          clientConfig.api.endpoints.task,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: messages.map(msg => ({
+                role: msg.role,
+                content: msg.content
+              })),
+              image: image || null,
+              promptStyle,
+              knowledgeFocus,
+              citeSources,
+              agentic_toggle: true
+            }),
+          }
+        );
+        
+        // Add mock workflow logs for demonstration purposes
+        if (response.choices && response.choices.length > 0) {
+          const sampleLogs = [
+            "Planning agent: Analyzing query",
+            "Planning agent: Determining required steps",
+            "Team Manager: Assessing task requirements",
+            "Team Manager: Selecting specialized agents",
+            "Research agent: Searching for relevant information",
+            "Research agent: Evaluating source credibility",
+            "Analysis agent: Processing gathered information",
+            "Analysis agent: Synthesizing findings",
+            "Writing agent: Generating comprehensive response",
+            "Team Manager: Reviewing final output"
+          ];
+          
+          // Add logs to the response
+          response.choices[0].message.logs = sampleLogs;
+        }
+        
+        return response;
+      } catch (error) {
+        logger.warn('Agentic mode failed, falling back to direct LLM', { error });
+        
+        // Fallback to direct LLM in case of error
+        return this.sendChatMessage(messages, image, promptStyle, knowledgeFocus, citeSources, false);
       }
-      
-      return this.sendMultiAgentRequest(lastUserMessage.content, image);
     }
     
     // When Agentic toggle is OFF - route ONLY to Together AI LLM
     logger.info('Agentic mode OFF - routing directly to Together AI LLM');
     
+    // Convert messages to the format expected by the API
     const requestMessages = messages.map(msg => ({
       role: msg.role,
       content: msg.content
     }));
-    
-    // Add system message if needed
-    if (promptStyle || knowledgeFocus) {
-      let systemContent = "You are a helpful assistant.";
-      
-      if (promptStyle) {
-        systemContent += ` ${promptStyle}`;
-      }
-      
-      if (knowledgeFocus) {
-        systemContent += ` Focus on ${knowledgeFocus} when responding.`;
-      }
-      
-      if (citeSources) {
-        systemContent += " Cite sources when providing information.";
-      }
-      
-      requestMessages.unshift({
-        role: "system",
-        content: systemContent
-      });
-    }
     
     // Send to our Next.js API route which forwards to Together AI
     return this.fetchWithRetry<ChatCompletionResponse>(

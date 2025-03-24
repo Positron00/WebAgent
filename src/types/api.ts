@@ -9,6 +9,12 @@ export interface ChatRequestMessage {
   content: string | MessageContent[];
 }
 
+export interface ChatResponseMessage {
+  content: string;
+  role: string;
+  logs?: string[];
+}
+
 export interface ChatCompletionRequest {
   model: string;
   messages: ChatRequestMessage[];

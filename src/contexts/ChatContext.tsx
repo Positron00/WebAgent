@@ -146,75 +146,50 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       if (state.isLoading) return;
       if (!message.trim() && !imageFile) return;
 
-      let imageUrl: string | null = null;
+      // Create user message
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: message,
+        timestamp: new Date().toISOString()
+      };
+
+      // Update state with the new user message and loading status
+      setState(prev => ({
+        ...prev,
+        messages: [...prev.messages, userMessage],
+        isLoading: true,
+        error: undefined
+      }));
 
       try {
-        setState(prev => ({ ...prev, error: undefined, isLoading: true }));
-
-        // Create a user message from the input
-        const userMessage: ChatMessage = {
-          id: `user-${Date.now()}`,
-          role: 'user',
-          content: message,
-          timestamp: new Date().toISOString(),
-        };
-
-        // Update messages with user message
-        const newMessages = [...state.messages, userMessage];
-        setState(prev => ({ ...prev, messages: newMessages }));
-        storage.saveMessages(newMessages);
-
-        // Process image if provided
-        if (imageFile) {
-          // Create a URL for the image to display in the UI
-          imageUrl = URL.createObjectURL(imageFile);
-
-          // Convert image to base64 for the API
-          const base64 = await fileToBase64(imageFile);
-          imageUrl = base64;
-        }
-
-        // Check if rate limited
-        if (rateLimiter.isRateLimited()) {
-          const timeUntilNext = rateLimiter.getTimeUntilNextAllowed();
-          throw new Error(`Rate limit exceeded. Please try again in ${Math.ceil(timeUntilNext / 1000)} seconds`);
-        }
-
-        // Track the request for rate limiting
-        rateLimiter.addRequest();
-
-        // Get response from API client
-        const client = apiClient; 
+        // Log user message info
+        logger.info('Sending user message', { 
+          messageLength: message.length,
+          hasImage: !!imageFile 
+        });
         
-        let response;
-        try {
-          logger.info('Sending message to API', { 
-            agentic: accessibility.agentic, 
-            promptStyle: accessibility.promptStyle,
-            knowledgeFocus: accessibility.knowledgeFocus
+        // Convert image to base64 if provided
+        let imageBase64: string | null = null;
+        if (imageFile) {
+          imageBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(imageFile);
           });
-          
-          response = await client.sendChatMessage(
-            newMessages, 
-            imageUrl, 
-            accessibility.promptStyle, 
-            accessibility.knowledgeFocus, 
-            accessibility.citeSources,
-            accessibility.agentic // Pass the agentic setting
-          );
-        } catch (error) {
-          // Handle rate limit errors
-          if (error instanceof Error && error.message.includes('Rate limit')) {
-            setState(prev => ({ 
-              ...prev, 
-              error: error.message,
-              isLoading: false
-            }));
-            return;
-          }
-          throw error;
         }
-
+        
+        // Get response from API
+        const response = await apiClient.sendChatMessage(
+          [...state.messages, userMessage],
+          imageBase64,
+          accessibility.promptStyle,
+          accessibility.knowledgeFocus,
+          accessibility.citeSources,
+          accessibility.agentic // Pass the agentic setting
+        );
+        
         // Check for error in the response (when using the multi-agent backend)
         if (response.choices[0].finish_reason === 'error') {
           throw new Error(response.choices[0].message.content);
@@ -226,7 +201,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           sources = generateMockSources(response.choices[0].message.content);
         }
 
-        // Create assistant message
+        // Add assistant response
         const assistantMessage: ChatMessage = {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
@@ -234,22 +209,24 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           timestamp: new Date().toISOString(),
           sources: sources
         };
-        
-        logger.info('Received API response', { 
-          responseLength: assistantMessage.content.length,
-          sourceCount: assistantMessage.sources?.length || 0,
-          agentic: accessibility.agentic
-        });
 
-        // Update state with the new message
-        const updatedMessages = [...newMessages, assistantMessage];
+        // Add logs from the API response if they exist and agentic mode is on
+        if (accessibility.agentic && response.choices[0].message.logs) {
+          assistantMessage.logs = response.choices[0].message.logs;
+        }
+
+        // Update messages and save
+        const updatedMessages = [
+          ...state.messages,
+          assistantMessage
+        ];
+
         setState(prev => ({
           ...prev,
           messages: updatedMessages,
           isLoading: false,
         }));
 
-        // Save to storage
         storage.saveMessages(updatedMessages);
 
         logger.info('Updated chat state with response', { 

@@ -15,6 +15,7 @@ export interface ChatMessage {
   content: string;
   timestamp?: string;
   sources?: Source[]; // Sources used for this message
+  logs?: string[]; // Workflow progress logs
 }
 
 export interface ChatState {

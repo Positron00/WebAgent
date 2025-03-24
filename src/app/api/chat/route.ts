@@ -5,9 +5,33 @@ import { ChatCompletionRequest, ChatRequestMessage, ChatCompletionResponse } fro
 import { rateLimiter } from '@/utils/rateLimiter';
 import { logger } from '@/utils/logger';
 import { clientConfig } from '@/config/clientConfig';
+import { ApiError } from '@/utils/errors';
 
 // Mark this route as dynamic to handle POST requests
 export const dynamic = 'force-dynamic';
+
+interface ChatRequestMessage {
+  role: string;
+  content: string;
+}
+
+interface ChatCompletionMessage {
+  role: string;
+  content: string;
+  logs?: string[];
+}
+
+interface ChatCompletionResponse {
+  choices: {
+    message: ChatCompletionMessage;
+    finish_reason: string;
+  }[];
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
 
 // Custom error class for API errors
 class ApiError extends Error {
@@ -174,7 +198,8 @@ export async function POST(req: Request) {
       choices: [{
         message: {
           content: responseContent,
-          role: 'assistant'
+          role: 'assistant',
+          ...(data.choices[0].message.logs && { logs: data.choices[0].message.logs })
         },
         finish_reason: data.choices[0].finish_reason || 'stop'
       }],

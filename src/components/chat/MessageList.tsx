@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from '@/types/chat';
 import { useApp } from '@/contexts/AppContext';
 import ReactMarkdown from 'react-markdown';
-import { InformationCircleIcon, NewspaperIcon, CodeBracketIcon } from '@heroicons/react/24/outline';
+import { InformationCircleIcon, NewspaperIcon, CodeBracketIcon, BeakerIcon } from '@heroicons/react/24/outline';
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -289,6 +289,27 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
     );
   };
 
+  // Render workflow logs
+  const renderWorkflowLogs = (logs?: string[]) => {
+    if (!logs || logs.length === 0 || !accessibility.agentic) {
+      return null;
+    }
+
+    return (
+      <div className="mt-3 text-gray-500 text-xs border-t border-gray-800 pt-2">
+        <div className="flex items-center mb-1">
+          <BeakerIcon className="w-3 h-3 mr-1" />
+          <span className="text-gray-400 font-semibold">Workflow Logs</span>
+        </div>
+        <div className="text-left font-mono pl-1">
+          {logs.map((log, index) => (
+            <div key={index} className="mb-1 whitespace-pre-wrap opacity-75">{log}</div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full text-left mb-4">
       <div 
@@ -371,6 +392,8 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
                           style={getMessageStyles('assistant')}
                         >
                           {processedContent && renderArticleContent(processedContent, hasSources)}
+                          {/* Render workflow logs if available and agentic mode is on */}
+                          {renderWorkflowLogs(assistantMessage.logs)}
                         </div>
                       </div>
                     </div>
