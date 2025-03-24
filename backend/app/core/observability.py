@@ -36,6 +36,7 @@ from prometheus_client import Counter, Gauge, Histogram, Summary
 
 from app.core.logger import logger
 from app.core.metrics import WEBAGENT_REGISTRY
+from app.core.config import settings
 
 # ML Model metrics
 MODEL_PREDICTION_COUNT = Counter(
@@ -314,9 +315,13 @@ def start_gpu_monitoring(interval_seconds: int = 30):
 
 # ================ MLflow integration ================
 
-def log_to_mlflow(metrics=None, params=None, tags=None, artifacts=None, experiment_name=None):
+def log_to_mlflow(metrics: Optional[Dict[str, float]] = None,
+                 params: Optional[Dict[str, Any]] = None,
+                 tags: Optional[Dict[str, str]] = None,
+                 artifacts: Optional[Dict[str, str]] = None,
+                 experiment_name: Optional[str] = None):
     """
-    Log metrics, parameters, and artifacts to MLflow if available.
+    Log metrics, parameters, and artifacts to MLflow.
     
     Args:
         metrics: Dictionary of metrics to log
@@ -330,6 +335,10 @@ def log_to_mlflow(metrics=None, params=None, tags=None, artifacts=None, experime
         return
     
     try:
+        # Use the tracking URI from settings
+        mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
+        logger.debug(f"Using MLflow tracking URI: {settings.MLFLOW_TRACKING_URI}")
+        
         # Set experiment if provided
         if experiment_name:
             mlflow.set_experiment(experiment_name)

@@ -346,7 +346,7 @@ class ResultsWindow(QMainWindow):
         self.results = results
         self.dark_mode = False
         self.setWindowTitle(title)
-        self.setMinimumSize(1200, 800)  # Increased from 1050, 800 to have more space for tabs
+        self.setMinimumSize(1500, 1000)  # Increased from 1050, 800 to have more space for tabs
         
         self.setup_ui()
         
@@ -356,6 +356,8 @@ class ResultsWindow(QMainWindow):
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         main_layout = QVBoxLayout(main_widget)
+        main_layout.setContentsMargins(12, 12, 12, 12)
+        main_layout.setSpacing(10)
         
         # Add keyboard shortcuts
         wrap_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
@@ -363,13 +365,15 @@ class ResultsWindow(QMainWindow):
         
         # Add header info
         self.info_label = QTextBrowser()
-        self.info_label.setMaximumHeight(60)
+        self.info_label.setMaximumHeight(70)
         self.info_label.setMarkdown(f"## {self.windowTitle()}\n\nDisplaying {len(self.results)} queries")
+        self.info_label.setFrameStyle(0)  # Remove frame for a cleaner look
         main_layout.addWidget(self.info_label)
         
         # Create tab widget
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
+        self.tabs.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.tabs)
         
         # Add results to tabs
@@ -502,21 +506,25 @@ class ResultsWindow(QMainWindow):
                 QMainWindow, QWidget {
                     background-color: #1e1e1e;
                     color: #e0e0e0;
+                    font-family: 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
                 }
                 QTabWidget::pane {
                     border: 1px solid #4a4a4a;
                     background-color: #2d2d2d;
-                    border-radius: 4px;
+                    border-radius: 6px;
+                    padding: 2px;
                 }
                 QTabBar::tab {
                     background-color: #3a3a3a;
                     color: #b0b0b0;
-                    padding: 8px 12px;
+                    padding: 10px 14px;
                     margin-right: 2px;
-                    border-top-left-radius: 4px;
-                    border-top-right-radius: 4px;
-                    font-size: 13px;
+                    border-top-left-radius: 6px;
+                    border-top-right-radius: 6px;
+                    font-size: 14px;
                     font-weight: bold;
+                    min-width: 120px;
+                    max-width: 200px;
                 }
                 QTabBar::tab:selected {
                     background-color: #2d2d2d;
@@ -527,10 +535,12 @@ class ResultsWindow(QMainWindow):
                 QPushButton {
                     background-color: #0c6fc0;
                     color: white;
-                    padding: 6px 12px;
+                    padding: 10px 16px;
                     border: none;
-                    border-radius: 4px;
+                    border-radius: 6px;
                     font-weight: bold;
+                    font-size: 14px;
+                    min-height: 36px;
                 }
                 QPushButton:hover {
                     background-color: #1a86e0;
@@ -542,31 +552,50 @@ class ResultsWindow(QMainWindow):
                     background-color: #2d2d2d;
                     color: #e0e0e0;
                     border: 1px solid #4a4a4a;
-                    border-radius: 4px;
+                    border-radius: 6px;
                     selection-background-color: #0c6fc0;
                     selection-color: white;
-                    font-size: 14px;
-                    line-height: 1.5;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    padding: 8px;
                 }
                 QLabel {
                     color: #e0e0e0;
                     font-size: 14px;
+                    margin-right: 6px;
                 }
                 QComboBox {
                     background-color: #3a3a3a;
                     color: #e0e0e0;
                     border: 1px solid #4a4a4a;
-                    border-radius: 4px;
-                    padding: 4px;
+                    border-radius: 5px;
+                    padding: 6px 12px;
                     font-size: 14px;
+                    min-height: 32px;
                 }
                 QComboBox::drop-down {
                     border: none;
+                    padding-right: 10px;
                 }
                 QComboBox QAbstractItemView {
                     background-color: #3a3a3a;
                     color: #e0e0e0;
                     selection-background-color: #0c6fc0;
+                    border-radius: 5px;
+                }
+                QCheckBox {
+                    spacing: 8px;
+                    font-size: 14px;
+                }
+                QCheckBox::indicator {
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 4px;
+                    border: 1px solid #6c6c6c;
+                }
+                QCheckBox::indicator:checked {
+                    background-color: #0c6fc0;
+                    border: 1px solid #0c6fc0;
                 }
             """)
             
@@ -574,81 +603,151 @@ class ResultsWindow(QMainWindow):
             for i in range(self.tabs.count()):
                 tab = self.tabs.widget(i)
                 tab.document().setDefaultStyleSheet("""
-                    h1 { color: #3498db; font-size: 34px; margin-top: 20px; margin-bottom: 14px; }
-                    h2 { color: #2ecc71; font-size: 28px; margin-top: 16px; margin-bottom: 12px; }
-                    h3 { color: #f39c12; font-size: 24px; margin-top: 14px; margin-bottom: 10px; }
-                    p { line-height: 1.6; margin-top: 10px; margin-bottom: 10px; font-size: 16px; }
-                    code { background-color: #3a3a3a; color: #e74c3c; padding: 2px 4px; border-radius: 3px; font-size: 16px; }
+                    h1 { 
+                        color: #3498db; 
+                        font-size: 32px; 
+                        margin-top: 26px; 
+                        margin-bottom: 16px; 
+                        font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                        font-weight: 600;
+                        letter-spacing: -0.5px;
+                    }
+                    h2 { 
+                        color: #2ecc71; 
+                        font-size: 26px; 
+                        margin-top: 22px; 
+                        margin-bottom: 14px; 
+                        font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                        font-weight: 500;
+                        letter-spacing: -0.3px;
+                    }
+                    h3 { 
+                        color: #f39c12; 
+                        font-size: 22px; 
+                        margin-top: 18px; 
+                        margin-bottom: 12px; 
+                        font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                        font-weight: 500;
+                    }
+                    p { 
+                        line-height: 1.7; 
+                        margin-top: 12px; 
+                        margin-bottom: 12px; 
+                        font-size: 16px; 
+                        font-family: 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+                    }
+                    code { 
+                        background-color: #3a3a3a; 
+                        color: #e74c3c; 
+                        padding: 3px 6px; 
+                        border-radius: 4px; 
+                        font-size: 15px;
+                        font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+                    }
                     pre { 
                         background-color: #3a3a3a; 
-                        padding: 12px; 
-                        border-radius: 5px; 
-                        margin: 12px 0; 
+                        padding: 14px 16px; 
+                        border-radius: 6px; 
+                        margin: 14px 0; 
                         border-left: 3px solid #3498db; 
-                        font-size: 16px; 
+                        font-size: 15px; 
                         overflow-x: auto; 
                         white-space: pre;
-                        font-family: "Courier New", monospace;
+                        font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+                        line-height: 1.5;
                     }
                     table { 
                         border-collapse: collapse; 
-                        margin: 15px 0; 
+                        margin: 18px 0; 
                         min-width: 400px;
                         overflow-x: auto;
                         display: block;
+                        border-radius: 4px;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
                     }
                     th, td { 
-                        padding: 8px 15px; 
+                        padding: 10px 16px; 
                         border: 1px solid #4a4a4a; 
                         text-align: left;
+                        font-family: 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
                     }
                     th { 
                         background-color: #3a3a3a;
                         color: #e0e0e0;
-                        font-weight: bold;
+                        font-weight: 600;
+                        font-size: 15px;
                     }
                     tr:nth-child(even) { 
                         background-color: #333333;
                     }
-                    ul, ol { margin-left: 24px; }
-                    li { margin: 8px 0; font-size: 16px; }
-                    a { color: #3498db; text-decoration: underline; }
+                    ul, ol { 
+                        margin-left: 28px;
+                        margin-top: 12px;
+                        margin-bottom: 12px;
+                    }
+                    li { 
+                        margin: 8px 0; 
+                        font-size: 16px;
+                        line-height: 1.6;
+                        font-family: 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+                    }
+                    a { 
+                        color: #3498db; 
+                        text-decoration: none;
+                        border-bottom: 1px solid rgba(52, 152, 219, 0.5);
+                        padding-bottom: 1px;
+                    }
+                    a:hover {
+                        border-bottom: 1px solid #3498db;
+                    }
                     blockquote { 
                         background-color: #2a2a2a; 
                         border-left: 4px solid #3498db; 
-                        padding: 10px 15px; 
-                        margin: 15px 0; 
-                        font-size: 18px; 
+                        padding: 12px 18px; 
+                        margin: 16px 0; 
+                        font-size: 16px; 
                         font-style: italic;
                         color: #e0e0e0;
-                        line-height: 1.6;
+                        line-height: 1.7;
+                        border-radius: 0 4px 4px 0;
                     }
                     strong { 
-                        font-weight: bold; 
-                        font-size: 18px; 
+                        font-weight: 600; 
+                        font-size: 16px; 
                         color: #e0e0e0;
+                    }
+                    hr {
+                        border: none;
+                        height: 1px;
+                        background-color: #4a4a4a;
+                        margin: 24px 0;
                     }
                 """)
         else:
             # Light theme
             self.setStyleSheet("""
-                QMainWindow {
+                QMainWindow, QWidget {
                     background-color: #f5f5f5;
+                    color: #2c3e50;
+                    font-family: 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
                 }
                 QTabWidget::pane {
                     border: 1px solid #cccccc;
                     background-color: white;
-                    border-radius: 4px;
+                    border-radius: 6px;
+                    padding: 2px;
                 }
                 QTabBar::tab {
                     background-color: #e0e0e0;
                     color: #505050;
-                    padding: 8px 12px;
+                    padding: 10px 14px;
                     margin-right: 2px;
-                    border-top-left-radius: 4px;
-                    border-top-right-radius: 4px;
-                    font-size: 13px;
+                    border-top-left-radius: 6px;
+                    border-top-right-radius: 6px;
+                    font-size: 14px;
                     font-weight: bold;
+                    min-width: 120px;
+                    max-width: 200px;
                 }
                 QTabBar::tab:selected {
                     background-color: white;
@@ -659,10 +758,12 @@ class ResultsWindow(QMainWindow):
                 QPushButton {
                     background-color: #3498db;
                     color: white;
-                    padding: 6px 12px;
+                    padding: 10px 16px;
                     border: none;
-                    border-radius: 4px;
+                    border-radius: 6px;
                     font-weight: bold;
+                    font-size: 14px;
+                    min-height: 36px;
                 }
                 QPushButton:hover {
                     background-color: #2980b9;
@@ -674,31 +775,50 @@ class ResultsWindow(QMainWindow):
                     background-color: white;
                     color: #2c3e50;
                     border: 1px solid #e0e0e0;
-                    border-radius: 4px;
+                    border-radius: 6px;
                     selection-background-color: #3498db;
                     selection-color: white;
-                    font-size: 14px;
-                    line-height: 1.5;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    padding: 8px;
                 }
                 QLabel {
                     color: #2c3e50;
                     font-size: 14px;
+                    margin-right: 6px;
                 }
                 QComboBox {
                     background-color: white;
                     color: #2c3e50;
                     border: 1px solid #cccccc;
-                    border-radius: 4px;
-                    padding: 4px;
+                    border-radius: 5px;
+                    padding: 6px 12px;
                     font-size: 14px;
+                    min-height: 32px;
                 }
                 QComboBox::drop-down {
                     border: none;
+                    padding-right: 10px;
                 }
                 QComboBox QAbstractItemView {
                     background-color: white;
                     color: #2c3e50;
                     selection-background-color: #3498db;
+                    border-radius: 5px;
+                }
+                QCheckBox {
+                    spacing: 8px;
+                    font-size: 14px;
+                }
+                QCheckBox::indicator {
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 4px;
+                    border: 1px solid #bbbbbb;
+                }
+                QCheckBox::indicator:checked {
+                    background-color: #3498db;
+                    border: 1px solid #3498db;
                 }
             """)
             
@@ -706,59 +826,124 @@ class ResultsWindow(QMainWindow):
             for i in range(self.tabs.count()):
                 tab = self.tabs.widget(i)
                 tab.document().setDefaultStyleSheet("""
-                    h1 { color: #2c3e50; font-size: 34px; margin-top: 20px; margin-bottom: 14px; }
-                    h2 { color: #16a085; font-size: 28px; margin-top: 16px; margin-bottom: 12px; }
-                    h3 { color: #d35400; font-size: 24px; margin-top: 14px; margin-bottom: 10px; }
-                    p { line-height: 1.6; margin-top: 10px; margin-bottom: 10px; font-size: 16px; }
-                    code { background-color: #f0f0f0; color: #e74c3c; padding: 2px 4px; border-radius: 3px; font-size: 16px; }
+                    h1 { 
+                        color: #2c3e50; 
+                        font-size: 32px; 
+                        margin-top: 26px; 
+                        margin-bottom: 16px; 
+                        font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                        font-weight: 600;
+                        letter-spacing: -0.5px;
+                    }
+                    h2 { 
+                        color: #16a085; 
+                        font-size: 26px; 
+                        margin-top: 22px; 
+                        margin-bottom: 14px; 
+                        font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                        font-weight: 500;
+                        letter-spacing: -0.3px;
+                    }
+                    h3 { 
+                        color: #d35400; 
+                        font-size: 22px; 
+                        margin-top: 18px; 
+                        margin-bottom: 12px; 
+                        font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                        font-weight: 500;
+                    }
+                    p { 
+                        line-height: 1.7; 
+                        margin-top: 12px; 
+                        margin-bottom: 12px; 
+                        font-size: 16px; 
+                        font-family: 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+                    }
+                    code { 
+                        background-color: #f0f0f0; 
+                        color: #e74c3c; 
+                        padding: 3px 6px; 
+                        border-radius: 4px; 
+                        font-size: 15px;
+                        font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+                    }
                     pre { 
                         background-color: #f8f8f8; 
-                        padding: 12px; 
-                        border-radius: 5px; 
-                        margin: 12px 0; 
+                        padding: 14px 16px; 
+                        border-radius: 6px; 
+                        margin: 14px 0; 
                         border-left: 3px solid #2980b9; 
-                        font-size: 16px; 
+                        font-size: 15px; 
                         overflow-x: auto; 
                         white-space: pre;
-                        font-family: "Courier New", monospace;
+                        font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+                        line-height: 1.5;
                     }
                     table { 
                         border-collapse: collapse; 
-                        margin: 15px 0; 
+                        margin: 18px 0; 
                         min-width: 400px;
                         overflow-x: auto;
                         display: block;
+                        border-radius: 4px;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
                     }
                     th, td { 
-                        padding: 8px 15px; 
-                        border: 1px solid #cccccc; 
+                        padding: 10px 16px; 
+                        border: 1px solid #e0e0e0; 
                         text-align: left;
+                        font-family: 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
                     }
                     th { 
-                        background-color: #f0f0f0;
+                        background-color: #f5f5f5;
                         color: #2c3e50;
-                        font-weight: bold;
+                        font-weight: 600;
+                        font-size: 15px;
                     }
                     tr:nth-child(even) { 
-                        background-color: #f5f5f5;
+                        background-color: #f9f9f9;
                     }
-                    ul, ol { margin-left: 24px; }
-                    li { margin: 8px 0; font-size: 16px; }
-                    a { color: #2980b9; text-decoration: underline; }
+                    ul, ol { 
+                        margin-left: 28px;
+                        margin-top: 12px;
+                        margin-bottom: 12px;
+                    }
+                    li { 
+                        margin: 8px 0; 
+                        font-size: 16px;
+                        line-height: 1.6;
+                        font-family: 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+                    }
+                    a { 
+                        color: #2980b9; 
+                        text-decoration: none;
+                        border-bottom: 1px solid rgba(41, 128, 185, 0.3);
+                        padding-bottom: 1px;
+                    }
+                    a:hover {
+                        border-bottom: 1px solid #2980b9;
+                    }
                     blockquote { 
                         background-color: #f5f5f5; 
                         border-left: 4px solid #2980b9; 
-                        padding: 10px 15px; 
-                        margin: 15px 0; 
-                        font-size: 18px; 
+                        padding: 12px 18px; 
+                        margin: 16px 0; 
+                        font-size: 16px; 
                         font-style: italic;
                         color: #333333;
-                        line-height: 1.6;
+                        line-height: 1.7;
+                        border-radius: 0 4px 4px 0;
                     }
                     strong { 
-                        font-weight: bold; 
-                        font-size: 18px; 
+                        font-weight: 600; 
+                        font-size: 16px; 
                         color: #2c3e50;
+                    }
+                    hr {
+                        border: none;
+                        height: 1px;
+                        background-color: #e0e0e0;
+                        margin: 24px 0;
                     }
                 """)
         
@@ -811,24 +996,24 @@ class ResultsWindow(QMainWindow):
         # Calculate optimal tab width based on window width and number of tabs
         # Leave some margin (100px) for tab bar controls
         available_width = self.width() - 100  
-        tab_width = max(80, min(200, available_width // num_tabs))
+        tab_width = max(120, min(220, available_width // num_tabs))
         
         # Update the tab bar style with the calculated width
         self.tabs.setStyleSheet(f"""
             QTabBar::tab {{
                 min-width: {tab_width}px;
                 max-width: {tab_width * 2}px;
-                min-height: 35px;
-                font-size: 13px;
+                min-height: 40px;
+                font-size: 14px;
                 font-weight: bold;
-                padding-left: 10px;
-                padding-right: 10px;
+                padding-left: 12px;
+                padding-right: 12px;
                 text-align: left;
             }}
             
             QTabWidget::pane {{
                 border: 1px solid #4a4a4a;
-                border-radius: 4px;
+                border-radius: 6px;
             }}
             
             QTabBar::tab:selected {{

@@ -19,7 +19,7 @@ Configuration Priority:
 """
 import os
 import sys
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any, ClassVar
 from pathlib import Path
 import logging
 import platform

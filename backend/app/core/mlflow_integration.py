@@ -35,7 +35,8 @@ class MLflowManager:
         Args:
             tracking_uri: URI of the MLflow tracking server (default: from env var MLFLOW_TRACKING_URI)
         """
-        self.tracking_uri = tracking_uri or os.environ.get("MLFLOW_TRACKING_URI")
+        # Use the tracking URI from parameters or settings
+        self.tracking_uri = tracking_uri or settings.MLFLOW_TRACKING_URI
         self.initialized = False
         self.client = None
         

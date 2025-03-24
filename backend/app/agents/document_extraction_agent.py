@@ -370,7 +370,7 @@ class DocumentExtractionAgent(BaseAgent):
         try:
             # Call the LLM using the method that works with the TogetherAI API
             # Different LLM providers may have different response formats, so handle appropriately
-            response_text = self.llm(prompt)
+            response_text = self.llm.invoke(prompt)
             
             # If the response is an object with a content attribute, extract it
             if hasattr(response_text, 'content'):

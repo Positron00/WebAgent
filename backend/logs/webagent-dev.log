@@ -625,3 +625,23 @@
 2025-03-23 20:27:51,923 - webagent - DEBUG - Function check_security_status executed in 0.0018 seconds
 2025-03-23 20:27:51,923 - webagent - DEBUG - Function run_all_checks executed in 446.5901 seconds
 2025-03-23 20:27:51,923 - webagent.webagent.diagnostics_runner - INFO - Diagnostics completed
+2025-03-23 21:06:46,851 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 21:13:30,194 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 21:19:56,288 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 21:32:29,108 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 21:49:52,563 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 21:50:39,484 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-23 21:52:31,387 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 22:00:02,319 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 22:00:18,199 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-23 22:00:18,348 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-23 22:02:38,669 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 22:03:01,720 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-23 22:03:01,858 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-23 22:06:00,184 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 22:06:23,538 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-23 22:06:23,677 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-23 22:11:00,949 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 22:12:11,370 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-23 22:15:43,726 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-23 22:18:27,325 - webagent - DEBUG - Using MLflow tracking URI: None

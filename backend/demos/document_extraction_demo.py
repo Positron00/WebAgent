@@ -24,6 +24,7 @@ from pathlib import Path
 from datetime import datetime
 import json
 from pprint import pprint
+from dotenv import load_dotenv
 
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -31,9 +32,18 @@ os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning"
 
 # Setup path
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
+parent_dir = os.path.dirname(current_dir)  # backend directory
+root_dir = os.path.dirname(parent_dir)     # project root directory
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
+# Load environment variables from root directory first
+load_dotenv(os.path.join(root_dir, ".env"))
+# Load from .env.local in root dir with higher priority
+load_dotenv(os.path.join(root_dir, ".env.local"), override=True)
+
+# Change working directory to backend to ensure mlruns is created there
+os.chdir(parent_dir)
 
 # Configure logging - only show INFO and higher level messages
 logging.basicConfig(
@@ -41,6 +51,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("document_extraction_demo")
+logger.info(f"Changed working directory to: {os.getcwd()}")
 
 # Suppress specific loggers that produce warning messages
 logging.getLogger("numexpr").setLevel(logging.ERROR)
@@ -128,7 +139,7 @@ async def run_document_extraction_demo():
     logger.info("Running document extraction agent...")
     print(f"\nRunning extraction with {provider} ({model}) as the LLM provider...")
     try:
-        result_state = await extraction_agent.run(state)
+        result_state = await extraction_agent(state)
         
         # Print results
         logger.info("Document Extraction Results:")
@@ -151,7 +162,7 @@ async def run_document_extraction_demo():
     state.query = "Create a summary of market analysis and outlook from the report"
     
     try:
-        result_state = await extraction_agent.run(state)
+        result_state = await extraction_agent(state)
         
         # Print results
         logger.info("Market Analysis Extraction Results:")
