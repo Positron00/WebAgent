@@ -1,7 +1,7 @@
 {
   "name": "webagent",
-  "version": "2.9.5",
-  "description": "WebAgent Platform with Vercel deployment capability, serverless Python backend, and improved API routing for cross-environment compatibility (2025-03-24)",
+  "version": "2.9.6",
+  "description": "WebAgent Platform with workflow logs for detailed execution tracking, enhanced diagnostics, and comprehensive test suite for workflow monitoring (2025-03-24)",
   "private": true,
   "scripts": {
     "dev": "next dev",

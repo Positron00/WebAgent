@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-2.9.5-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-2.9.6-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2025--03--24-lightgrey.svg)](https://github.com/yourusername/webagent)
 
 A multi-agent platform for web research and document processing.
@@ -18,6 +18,11 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   - Document Extraction Agent: Processes documents and extracts structured data
   - Team Manager Agent: Synthesizes outputs from multiple agents
   - Specialized Agents: Data analysis and coding assistance
+- **Workflow Logs**: Detailed execution tracking during agent workflow processing when agentic mode is enabled
+  - Records important decision points in the workflow
+  - Shows step-by-step processing of complex queries
+  - Included in final reports for transparency
+  - Fully tested with comprehensive diagnostics
 
 - **Document Processing Pipeline**: Comprehensive document ingestion and knowledge management
   - Batch document loading with multiple format support (PDF, docx, txt, md, html, csv, json)

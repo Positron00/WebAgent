@@ -2,6 +2,22 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 2.9.6 - 2025-03-24
+
+### Added
+- Implemented workflow logs feature to track detailed execution steps during agent workflow processing
+- Added logs field to WorkflowState model for storing workflow execution logs
+- Added add_log method to WorkflowState for recording execution progress
+- Updated all router functions in workflows to record logs at important decision points
+- Created comprehensive test suite in test_workflow_logs.py to verify logs functionality
+- Added workflow logs check to diagnostics system to verify proper implementation
+- Enhanced reports with workflow logs when agentic toggle is enabled
+
+### Changed
+- Modified mark_completed method to conditionally include logs in final reports based on agentic mode
+- Updated diagnostic system to check workflow logs implementation and format
+- Improved test coverage for workflow logging and diagnostics
+
 ## 2.9.5 - 2025-03-24
 
 ### Added

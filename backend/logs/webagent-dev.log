@@ -947,3 +947,59 @@
 2025-03-24 09:13:32,402 - webagent - DEBUG - Using MLflow tracking URI: None
 2025-03-24 09:13:32,420 - webagent - DEBUG - Using MLflow tracking URI: None
 2025-03-24 09:13:32,430 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 11:40:14,270 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 11:43:33,665 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 11:43:33,685 - webagent - DEBUG - Function check_system_info executed in 0.0175 seconds
+2025-03-24 11:43:35,009 - webagent - DEBUG - Function check_dependencies executed in 1.3163 seconds
+2025-03-24 11:43:35,010 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-24 11:43:41,970 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-24 11:43:41,996 - webagent - DEBUG - Function check_workflow executed in 0.0004 seconds
+2025-03-24 11:43:42,040 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-24 11:43:42,041 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-24 11:43:42,042 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-24 11:43:42,044 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-24 11:43:42,045 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-24 11:47:57,328 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 11:47:57,345 - webagent - DEBUG - Function check_system_info executed in 0.0142 seconds
+2025-03-24 11:47:58,597 - webagent - DEBUG - Function check_dependencies executed in 1.2498 seconds
+2025-03-24 11:47:58,598 - webagent - DEBUG - Function check_environment executed in 0.0003 seconds
+2025-03-24 11:48:05,304 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-24 11:48:05,331 - webagent - DEBUG - Function check_workflow executed in 0.0003 seconds
+2025-03-24 11:48:05,337 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-24 11:48:05,338 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-24 11:48:05,339 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-24 11:48:05,341 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-24 11:48:05,342 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-24 11:53:05,813 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 11:53:05,830 - webagent - DEBUG - Function check_system_info executed in 0.0139 seconds
+2025-03-24 11:53:07,217 - webagent - DEBUG - Function check_dependencies executed in 1.3857 seconds
+2025-03-24 11:53:07,219 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-24 11:53:14,197 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-24 11:53:14,226 - webagent - DEBUG - Function check_workflow executed in 0.0004 seconds
+2025-03-24 11:53:14,252 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-24 11:53:14,254 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-24 11:53:14,255 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-24 11:53:14,256 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-24 11:53:14,257 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-24 11:54:09,569 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 11:54:09,586 - webagent - DEBUG - Function check_system_info executed in 0.0139 seconds
+2025-03-24 11:54:10,674 - webagent - DEBUG - Function check_dependencies executed in 1.0864 seconds
+2025-03-24 11:54:10,676 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-24 11:54:15,562 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-24 11:54:15,579 - webagent - DEBUG - Function check_workflow executed in 0.0003 seconds
+2025-03-24 11:54:15,582 - webagent - DEBUG - Function check_performance_metrics executed in 0.0002 seconds
+2025-03-24 11:54:15,583 - webagent - DEBUG - Function check_network_connectivity executed in 0.0001 seconds
+2025-03-24 11:54:15,584 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-24 11:54:15,586 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-24 11:54:15,587 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-24 11:54:25,776 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 11:54:29,713 - webagent - DEBUG - Function check_system_info executed in 0.0298 seconds
+2025-03-24 11:54:29,784 - webagent - DEBUG - Function check_dependencies executed in 0.0686 seconds
+2025-03-24 11:54:29,785 - webagent - DEBUG - Function check_environment executed in 0.0005 seconds
+2025-03-24 11:54:29,786 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-24 11:54:29,788 - webagent - DEBUG - Function check_workflow executed in 0.0002 seconds
+2025-03-24 11:54:29,790 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-24 11:54:29,792 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-24 11:54:29,792 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-24 11:54:29,793 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-24 11:54:29,795 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
