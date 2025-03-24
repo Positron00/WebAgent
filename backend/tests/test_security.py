@@ -43,8 +43,17 @@ from app.graph.workflows import build_agent_workflow, get_agent_workflow
 from app.core.middleware import SecurityHeadersMiddleware, LimitSizeMiddleware
 from app.core.config import settings
 
-# Import test utilities
-from backend.tests.mock_utils import create_mock_agent, create_test_workflow_state, setup_test_environment
+# Import test utilities with flexible path resolution
+try:
+    # Try direct import first (when running from tests directory)
+    from mock_utils import create_mock_agent, create_test_workflow_state, setup_test_environment
+except ImportError:
+    try:
+        # Try relative import (when running from backend directory)
+        from tests.mock_utils import create_mock_agent, create_test_workflow_state, setup_test_environment
+    except ImportError:
+        # Try absolute import (when running from project root)
+        from backend.tests.mock_utils import create_mock_agent, create_test_workflow_state, setup_test_environment
 
 # Import the FastAPI app for testing API security
 try:

@@ -569,7 +569,7 @@ class RAGRetriever:
             if self.initialized:
                 # Use the ensemble retriever for better results
                 docs = await asyncio.to_thread(
-                    self.ensemble_retriever.get_relevant_documents,
+                    lambda q: self.ensemble_retriever.invoke(q),
                     query
                 )
                 

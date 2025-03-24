@@ -466,12 +466,14 @@ export function MessageInput({
               type="button"
               onClick={toggleAgentic}
               className={`p-1 rounded transition-colors flex items-center gap-0.5 text-[10px] ${
-                accessibility.agentic ? 'bg-indigo-600 text-white' : 'hover:bg-white/5 text-gray-300'
+                accessibility.agentic 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'bg-indigo-600/10 text-white/20 hover:bg-indigo-600/40'
               }`}
               aria-pressed={accessibility.agentic}
               aria-label={accessibility.agentic ? "Disable multi-agent mode" : "Enable multi-agent mode"}
             >
-              <BeakerIcon className="w-3 h-3" />
+              <BeakerIcon className={`w-3 h-3 ${!accessibility.agentic ? 'opacity-50' : ''}`} />
               <span className="text-xs">Agentic</span>
             </button>
           </div>

@@ -31,7 +31,7 @@ from pydantic_settings import BaseSettings
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
 
 # Define the base directory for the project
-BASE_DIR = "/Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent"
+BASE_DIR = "/Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent"
 
 # For debugging
 print(f"BASE_DIR set to: {BASE_DIR}")

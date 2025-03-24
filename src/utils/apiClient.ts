@@ -338,8 +338,10 @@ export class ApiClient {
     citeSources?: boolean,
     agentic: boolean = true
   ): Promise<ChatCompletionResponse> {
-    // Always use the multi-agent system for better results
+    // When Agentic toggle is ON - route ONLY to the backend LangGraph multi-agent
     if (agentic) {
+      logger.info('Agentic mode ON - routing to LangGraph multi-agent system');
+      
       // Get the last user message
       const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
       if (!lastUserMessage) {
@@ -349,7 +351,9 @@ export class ApiClient {
       return this.sendMultiAgentRequest(lastUserMessage.content, image);
     }
     
-    // Legacy non-agentic path (fallback) - use our API route instead of direct access
+    // When Agentic toggle is OFF - route ONLY to Together AI LLM
+    logger.info('Agentic mode OFF - routing directly to Together AI LLM');
+    
     const requestMessages = messages.map(msg => ({
       role: msg.role,
       content: msg.content
@@ -377,7 +381,7 @@ export class ApiClient {
       });
     }
     
-    // Send to our Next.js API route instead of directly to Together AI
+    // Send to our Next.js API route which forwards to Together AI
     return this.fetchWithRetry<ChatCompletionResponse>(
       clientConfig.api.endpoints.chat,
       {
@@ -397,7 +401,7 @@ export class ApiClient {
           promptStyle,
           knowledgeFocus,
           citeSources,
-          agentic,
+          agentic: false, // Explicitly set agentic to false for direct LLM path
           // Include image if provided
           image: image || null
         }),
@@ -405,7 +409,7 @@ export class ApiClient {
     );
   }
 
-  // New method to handle multi-agent API requests
+  // Method to handle multi-agent API requests
   private async sendMultiAgentRequest(
     query: string,
     image?: string | null
@@ -443,33 +447,74 @@ export class ApiClient {
       
       return response;
     } catch (error) {
-      logger.error('Multi-agent request failed', { 
+      logger.error('Multi-agent request failed, falling back to Together AI LLM', { 
         requestId, 
         error: error instanceof Error ? error.message : String(error),
-        query: query.substring(0, 100) // Only log the beginning of the query for privacy
+        query: query.substring(0, 100), // Only log the beginning of the query for privacy
+        fallback: 'togetherlm'
       });
       
-      // Create a fallback response for better user experience
-      const fallbackResponse: ChatCompletionResponse = {
-        choices: [{
-          message: {
-            role: 'assistant',
-            content: 'I apologize, but I encountered an error processing your request. Please try again or contact support if the issue persists.'
+      // Fallback to Together AI LLM (with agentic=false)
+      try {
+        logger.info('Using Together AI fallback for failed multi-agent request', { requestId });
+        
+        // Create a simple message array with just the user query
+        const fallbackMessages = [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant. The multi-agent system is currently unavailable, so you are operating in fallback mode.'
           },
-          finish_reason: 'stop'
-        }],
-        usage: {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0
-        }
-      };
-      
-      // Only throw in development, provide fallback in production
-      if (clientConfig.isDevelopment) {
-        throw error;
-      } else {
+          {
+            role: 'user',
+            content: query
+          }
+        ];
+        
+        // Send request to Together AI
+        const fallbackResponse = await this.fetchWithRetry<ChatCompletionResponse>(
+          clientConfig.api.endpoints.chat,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Request-ID': `${requestId}_fallback`
+            },
+            body: JSON.stringify({
+              messages: fallbackMessages,
+              model: clientConfig.together.model,
+              max_tokens: CHAT_SETTINGS.maxTokens,
+              temperature: CHAT_SETTINGS.temperature,
+              top_p: CHAT_SETTINGS.topP,
+              agentic: false, // Explicitly mark as non-agentic for the fallback
+              image: image || null,
+              requestType: 'multi-agent-fallback' // Indicate this is a fallback request
+            }),
+          }
+        );
+        
         return fallbackResponse;
+      } catch (fallbackError) {
+        logger.error('Fallback to Together AI also failed', {
+          requestId,
+          originalError: error instanceof Error ? error.message : String(error),
+          fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+        });
+        
+        // Create a generic error response for better user experience
+        return {
+          choices: [{
+            message: {
+              role: 'assistant',
+              content: 'I apologize, but I encountered an error processing your request. Both the multi-agent system and the fallback service are currently unavailable. Please try again later.'
+            },
+            finish_reason: 'stop'
+          }],
+          usage: {
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            total_tokens: 0
+          }
+        };
       }
     }
   }

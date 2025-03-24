@@ -44,7 +44,8 @@ export async function POST(req: Request) {
       promptStyle = 'balanced',
       knowledgeFocus = 'general',
       citeSources = true,
-      agentic = false
+      agentic = false,
+      requestType = null
     } = body;
 
     if (!validateRequest(messages)) {
@@ -57,14 +58,20 @@ export async function POST(req: Request) {
       knowledgeFocus,
       citeSources,
       agentic,
+      requestType,
       version: clientConfig.version
     });
 
-    // If agentic mode is true, this shouldn't be called as the frontend should route directly
-    // to the multi-agent backend. Log a warning just in case.
+    // If agentic mode is true, we're serving as a fallback for the multi-agent system
+    // Log appropriately but continue processing to provide fallback functionality
     if (agentic) {
-      logger.warn('Agentic mode is true but request was sent to standard API endpoint', {
-        shouldBeHandledBy: 'frontend',
+      logger.warn('Agentic mode is ON - this endpoint is being used as a fallback for the multi-agent system', {
+        fallback: true,
+        version: clientConfig.version
+      });
+    } else {
+      logger.info('Agentic mode is OFF - serving direct LLM request via Together AI', {
+        fallback: false,
         version: clientConfig.version
       });
     }
@@ -115,33 +122,58 @@ export async function POST(req: Request) {
     };
 
     // Make API call
-    const response = await fetch(config.together.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.together.apiKey}`
-      },
-      body: JSON.stringify(chatRequest)
-    });
+    let response;
+    try {
+      response = await fetch(config.together.endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.together.apiKey}`
+        },
+        body: JSON.stringify(chatRequest)
+      });
+    } catch (error) {
+      logger.error('Error calling Together AI API', { error: (error as Error).message });
+      throw new ApiError(503, `Unable to reach LLM API: ${(error as Error).message}`);
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        response.status,
-        errorData.error?.message || `API error: ${response.statusText}`
-      );
+      const errorMessage = errorData.error?.message || `API error: ${response.statusText}`;
+      logger.error('Together AI API returned an error', { 
+        status: response.status, 
+        message: errorMessage,
+        errorData
+      });
+      throw new ApiError(response.status, errorMessage);
     }
 
     const data = (await response.json()) as ChatCompletionResponse;
     
     if (!data.choices?.[0]?.message?.content) {
+      logger.error('Invalid response format from Together AI API', { data });
       throw new ApiError(500, 'Invalid response format from API');
+    }
+
+    // Log successful response
+    logger.info('Successfully received response from Together AI', {
+      responseLength: data.choices[0].message.content.length,
+      finishReason: data.choices[0].finish_reason,
+      tokenUsage: data.usage
+    });
+
+    // Get the original content
+    let responseContent = data.choices[0].message.content;
+    
+    // Only add fallback announcement if this is a multi-agent fallback request
+    if (requestType === 'multi-agent-fallback') {
+      responseContent = `I'm currently operating in fallback mode as the multi-agent system is unavailable. Here's my response:\n\n${responseContent}`;
     }
 
     return NextResponse.json({
       choices: [{
         message: {
-          content: data.choices[0].message.content,
+          content: responseContent,
           role: 'assistant'
         },
         finish_reason: data.choices[0].finish_reason || 'stop'

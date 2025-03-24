@@ -19,7 +19,8 @@ export const clientConfig = {
   api: {
     baseUrl: '/api',
     endpoints: {
-      chat: '/chat',
+      chat: '/chat',  // Direct LLM endpoint (non-agentic mode)
+      task: '/task',  // Multi-agent endpoint (agentic mode)
       ping: '/ping',
       health: '/health',
     },
@@ -29,9 +30,12 @@ export const clientConfig = {
     // Note: API key is NOT included here for security reasons
     endpoint: '/api/chat', // Use our local API endpoint instead of direct access
     model: 'meta-llama/Llama-3.3-70b-instruct-turbo-free',
+    fallbackModel: 'meta-llama/Llama-3.3-8b-instruct', // Smaller model as backup if needed
   },
   features: {
     enableAgenticMode: true,
+    enableNonAgenticFallback: true, // Ensure non-agentic mode works as a fallback
+    enableMultiAgentFallback: true, // Allow multi-agent system to fall back to direct LLM
     enableImageUploads: true,
     enableDevTools: typeof window !== 'undefined' 
       ? process.env.NODE_ENV !== 'production'

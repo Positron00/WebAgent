@@ -645,3 +645,305 @@
 2025-03-23 22:12:11,370 - webagent - DEBUG - Using MLflow tracking URI: None
 2025-03-23 22:15:43,726 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/GoogleDrive-cdan118@gmail.com/My Drive/Work/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
 2025-03-23 22:18:27,325 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:44,283 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 08:50:44,314 - webagent - DEBUG - Function check_system_info executed in 0.0302 seconds
+2025-03-24 08:50:45,744 - webagent - DEBUG - Function check_dependencies executed in 1.4305 seconds
+2025-03-24 08:50:45,745 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-24 08:50:53,734 - webagent - DEBUG - Function check_agents executed in 7.9889 seconds
+2025-03-24 08:50:53,857 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,163 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,182 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,189 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,878 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,892 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,906 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,912 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,926 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,933 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,950 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,964 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,977 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,982 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:54,996 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:55,003 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 08:50:55,012 - webagent - DEBUG - Function build_agent_workflow executed in 1.1681 seconds
+2025-03-24 08:50:55,012 - webagent - DEBUG - Function get_agent_workflow executed in 1.1681 seconds
+2025-03-24 08:50:55,012 - webagent - DEBUG - Function check_workflow executed in 1.2778 seconds
+2025-03-24 08:50:55,219 - webagent - DEBUG - Function check_performance_metrics executed in 0.2076 seconds
+2025-03-24 08:50:55,681 - webagent - DEBUG - Function check_network_connectivity executed in 0.4574 seconds
+2025-03-24 08:50:55,693 - webagent - DEBUG - Function check_language_model_availability executed in 0.0120 seconds
+2025-03-24 08:50:55,763 - webagent - DEBUG - Function check_security_status executed in 0.0702 seconds
+2025-03-24 08:50:55,763 - webagent - DEBUG - Function run_all_checks executed in 11.4797 seconds
+2025-03-24 08:51:46,041 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 08:51:46,062 - webagent - DEBUG - Function check_system_info executed in 0.0174 seconds
+2025-03-24 08:51:47,316 - webagent - DEBUG - Function check_dependencies executed in 1.2519 seconds
+2025-03-24 08:51:47,317 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-24 08:51:53,633 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-24 08:51:53,661 - webagent - DEBUG - Function check_workflow executed in 0.0002 seconds
+2025-03-24 08:51:53,663 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-24 08:51:53,664 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-24 08:51:53,665 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-24 08:51:53,666 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-24 08:51:53,667 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-24 08:54:13,861 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 08:57:54,883 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 08:58:40,042 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 09:00:18,094 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 09:00:28,073 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,175 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,192 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,208 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,919 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,925 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,939 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,949 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,964 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,971 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,986 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:28,996 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:29,013 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:29,026 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:29,053 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:29,062 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:29,073 - webagent - DEBUG - Function build_agent_workflow executed in 1.0095 seconds
+2025-03-24 09:00:29,085 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:29,094 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:29,113 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:29,136 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,635 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,643 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,663 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,670 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,687 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,693 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,707 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,713 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,726 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,732 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,739 - webagent - DEBUG - Function build_agent_workflow executed in 2.6637 seconds
+2025-03-24 09:00:31,739 - webagent - DEBUG - Function get_agent_workflow executed in 2.6638 seconds
+2025-03-24 09:00:31,739 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:00:31,750 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,757 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,773 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:31,782 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,026 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,036 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,055 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,063 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,080 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,089 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,106 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,115 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,133 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,142 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,152 - webagent - DEBUG - Function build_agent_workflow executed in 0.4103 seconds
+2025-03-24 09:00:32,169 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,178 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,199 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,208 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,219 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:00:32,219 - webagent - DEBUG - Completed task: team_manager_1742821232.219347 with status: completed in 0.00s
+2025-03-24 09:00:32,229 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,238 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,249 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:00:32,249 - webagent - DEBUG - Completed task: team_manager_1742821232.249598 with status: completed in 0.00s
+2025-03-24 09:00:32,259 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,268 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,283 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:00:32,283 - webagent - DEBUG - Completed task: team_manager_1742821232.283357 with status: completed in 0.00s
+2025-03-24 09:00:32,299 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,311 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,320 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:00:32,322 - webagent - DEBUG - Completed task: team_manager_1742821232.320988 with status: error in 0.00s
+2025-03-24 09:00:32,337 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,351 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,366 - webagent - DEBUG - Function build_agent_workflow executed in 0.0388 seconds
+2025-03-24 09:00:32,386 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,395 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,409 - webagent - DEBUG - Function build_agent_workflow executed in 0.0320 seconds
+2025-03-24 09:00:32,409 - webagent - DEBUG - Function get_agent_workflow executed in 0.0321 seconds
+2025-03-24 09:00:32,409 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:00:32,424 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,434 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,445 - webagent - DEBUG - Function build_agent_workflow executed in 0.0299 seconds
+2025-03-24 09:00:32,457 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:00:32,457 - webagent - DEBUG - Completed task: team_manager_1742821232.457175 with status: completed in 0.00s
+2025-03-24 09:00:32,458 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:00:32,458 - webagent - DEBUG - Completed task: team_manager_1742821232.458542 with status: completed in 0.00s
+2025-03-24 09:00:32,459 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:00:32,459 - webagent - DEBUG - Completed task: team_manager_1742821232.459648 with status: completed in 0.00s
+2025-03-24 09:00:32,470 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,483 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,491 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:00:32,491 - webagent - DEBUG - Completed task: team_manager_1742821232.491088 with status: error in 0.00s
+2025-03-24 09:00:32,702 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:32,719 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:33,614 - webagent - DEBUG - Function check_system_info executed in 0.0184 seconds
+2025-03-24 09:00:33,873 - webagent - DEBUG - Function check_dependencies executed in 0.2574 seconds
+2025-03-24 09:00:33,874 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-24 09:00:33,875 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-24 09:00:33,876 - webagent - DEBUG - Function check_workflow executed in 0.0001 seconds
+2025-03-24 09:00:33,877 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-24 09:00:33,878 - webagent - DEBUG - Function check_network_connectivity executed in 0.0001 seconds
+2025-03-24 09:00:33,879 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-24 09:00:33,880 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-24 09:00:33,881 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-24 09:00:33,888 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-24 09:00:33,888 - webagent - DEBUG - Started task: test_task_20250324090033
+2025-03-24 09:00:33,889 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:00:33,894 - webagent - DEBUG - Completed task: test_task_20250324090033 with status: error in 0.01s
+2025-03-24 09:00:33,895 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:00:33,913 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:33,922 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:33,934 - webagent - DEBUG - Function build_agent_workflow executed in 0.0293 seconds
+2025-03-24 09:00:33,936 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:00:33,936 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:00:33,956 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:33,967 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:33,984 - webagent - DEBUG - Function build_agent_workflow executed in 0.0361 seconds
+2025-03-24 09:00:33,987 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:00:33,987 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:00:34,245 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,254 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,272 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,281 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,300 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,310 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,330 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,336 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,355 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,364 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,386 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:00:34,393 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:04:18,191 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 09:04:24,908 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:04:24,995 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:17,794 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-24 09:13:27,183 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:27,296 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:27,314 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:27,323 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,007 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,017 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,039 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,049 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,070 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,080 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,098 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,107 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,124 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,134 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,153 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,163 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,179 - webagent - DEBUG - Function build_agent_workflow executed in 1.0081 seconds
+2025-03-24 09:13:28,191 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,202 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,221 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:28,230 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,032 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,040 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,055 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,062 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,077 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,085 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,104 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,112 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,129 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,138 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,150 - webagent - DEBUG - Function build_agent_workflow executed in 0.9675 seconds
+2025-03-24 09:13:29,150 - webagent - DEBUG - Function get_agent_workflow executed in 0.9676 seconds
+2025-03-24 09:13:29,150 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:13:29,161 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,170 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,189 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,199 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,967 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,975 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:29,992 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,000 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,016 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,025 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,040 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,048 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,065 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,076 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,086 - webagent - DEBUG - Function build_agent_workflow executed in 0.9337 seconds
+2025-03-24 09:13:30,102 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,112 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,135 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,147 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,157 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:13:30,157 - webagent - DEBUG - Completed task: team_manager_1742822010.157181 with status: completed in 0.00s
+2025-03-24 09:13:30,171 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,184 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,194 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:13:30,195 - webagent - DEBUG - Completed task: team_manager_1742822010.195044 with status: completed in 0.00s
+2025-03-24 09:13:30,205 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,215 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,225 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:13:30,225 - webagent - DEBUG - Completed task: team_manager_1742822010.225699 with status: completed in 0.00s
+2025-03-24 09:13:30,236 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,245 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,255 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:13:30,257 - webagent - DEBUG - Completed task: team_manager_1742822010.25582 with status: error in 0.00s
+2025-03-24 09:13:30,268 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,278 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,293 - webagent - DEBUG - Function build_agent_workflow executed in 0.0335 seconds
+2025-03-24 09:13:30,305 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,314 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,326 - webagent - DEBUG - Function build_agent_workflow executed in 0.0298 seconds
+2025-03-24 09:13:30,326 - webagent - DEBUG - Function get_agent_workflow executed in 0.0299 seconds
+2025-03-24 09:13:30,326 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:13:30,337 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,346 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,358 - webagent - DEBUG - Function build_agent_workflow executed in 0.0289 seconds
+2025-03-24 09:13:30,366 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:13:30,366 - webagent - DEBUG - Completed task: team_manager_1742822010.366251 with status: completed in 0.00s
+2025-03-24 09:13:30,367 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:13:30,367 - webagent - DEBUG - Completed task: team_manager_1742822010.367461 with status: completed in 0.00s
+2025-03-24 09:13:30,368 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:13:30,368 - webagent - DEBUG - Completed task: team_manager_1742822010.368541 with status: completed in 0.00s
+2025-03-24 09:13:30,378 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,388 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,398 - webagent - DEBUG - Function run executed in 0.0000 seconds
+2025-03-24 09:13:30,398 - webagent - DEBUG - Completed task: team_manager_1742822010.398112 with status: error in 0.00s
+2025-03-24 09:13:30,631 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:30,644 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:31,603 - webagent - DEBUG - Function check_system_info executed in 0.0172 seconds
+2025-03-24 09:13:31,713 - webagent - DEBUG - Function check_dependencies executed in 0.1080 seconds
+2025-03-24 09:13:31,714 - webagent - DEBUG - Function check_environment executed in 0.0002 seconds
+2025-03-24 09:13:31,715 - webagent - DEBUG - Function check_agents executed in 0.0001 seconds
+2025-03-24 09:13:31,717 - webagent - DEBUG - Function check_workflow executed in 0.0002 seconds
+2025-03-24 09:13:31,719 - webagent - DEBUG - Function check_performance_metrics executed in 0.0001 seconds
+2025-03-24 09:13:31,719 - webagent - DEBUG - Function check_network_connectivity executed in 0.0000 seconds
+2025-03-24 09:13:31,720 - webagent - DEBUG - Function check_language_model_availability executed in 0.0000 seconds
+2025-03-24 09:13:31,722 - webagent - DEBUG - Function check_security_status executed in 0.0000 seconds
+2025-03-24 09:13:31,723 - webagent - DEBUG - Function run_all_checks executed in 0.0000 seconds
+2025-03-24 09:13:31,731 - webagent - DEBUG - Function run_workflow executed in 0.0000 seconds
+2025-03-24 09:13:31,731 - webagent - DEBUG - Started task: test_task_20250324091331
+2025-03-24 09:13:31,731 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:13:31,740 - webagent - DEBUG - Completed task: test_task_20250324091331 with status: error in 0.01s
+2025-03-24 09:13:31,741 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:13:31,954 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:31,962 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:31,974 - webagent - DEBUG - Function build_agent_workflow executed in 0.0295 seconds
+2025-03-24 09:13:31,976 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:13:31,976 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:13:31,994 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,007 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,020 - webagent - DEBUG - Function build_agent_workflow executed in 0.0348 seconds
+2025-03-24 09:13:32,029 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:13:32,029 - webagent - DEBUG - Function get_agent_workflow executed in 0.0000 seconds
+2025-03-24 09:13:32,284 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,294 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,310 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,323 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,340 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,350 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,366 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,376 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,393 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,402 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,420 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-24 09:13:32,430 - webagent - DEBUG - Using MLflow tracking URI: None

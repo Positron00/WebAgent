@@ -110,8 +110,20 @@ const addCitationReferences = (content: string, sourcesCount: number): string =>
 
 // Enhanced message formatting for article-like appearance
 const formatArticleContent = (content: string): string => {
+  // Check if this message has multiple sections by counting headings
+  const headingCount = (content.match(/^#+\s+.+/gm) || []).length;
+  const hasNumberedSections = (content.match(/^\d+\.\s+.+/gm) || []).length > 2;
+  const hasSectionKeywords = content.toLowerCase().includes('conclusion') || 
+                          content.toLowerCase().includes('summary') || 
+                          content.toLowerCase().includes('next steps') ||
+                          content.toLowerCase().includes('recommendation');
+  
+  // Only add introduction if there are multiple sections in the response
+  const hasMultipleSections = headingCount > 1 || hasNumberedSections || hasSectionKeywords;
+  
   // Check if this is a longer, more structured response that needs an introduction
   const needsIntroduction = content.length > 250 && 
+                          hasMultipleSections &&
                           (content.includes('# ') || content.includes('## ') || 
                            content.includes('1. ') || content.includes('2. ') ||
                            content.split('\n\n').length > 3);
@@ -138,9 +150,9 @@ const formatArticleContent = (content: string): string => {
       }
       return match;
     })
-    // Add conclusion if there isn't one and content is long enough
+    // Add conclusion if there isn't one and content is long enough and has multiple sections
     .replace(/(.+)$/m, (match) => {
-      if (content.length > 200 && !content.includes('# Conclusion') && !content.includes('## Conclusion')) {
+      if (content.length > 200 && hasMultipleSections && !content.includes('# Conclusion') && !content.includes('## Conclusion')) {
         // Find the last paragraph that might be a conclusion
         const lastParagraphs = content.split('\n\n').slice(-2);
         if (lastParagraphs.some((p: string) => p.toLowerCase().includes('conclusion') || 
@@ -178,7 +190,7 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
   // Apply custom colors or high contrast theme if enabled
   const getMessageClassName = (role: string) => {
     if (role === 'user') {
-      const baseClass = 'py-2 px-4 rounded-lg break-words max-w-[95%] text-center mx-auto';
+      const baseClass = 'py-2 px-4 rounded-lg break-words max-w-[95%] text-left mx-auto';
       const colorClass = accessibility.highContrast
         ? 'bg-blue-950 text-white'
         : 'bg-blue-800 text-white';
@@ -236,27 +248,27 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
         {/* Article content with enhanced typography */}
         <ReactMarkdown components={{
           // Enhanced paragraph styling
-          p: ({node, ...props}) => <p className="text-left mb-4 leading-relaxed" {...props} />,
+          p: ({node, ...props}: {node?: any; [key: string]: any}) => <p className="text-left mb-4 leading-relaxed text-base" {...props} />,
           // Improved heading hierarchy with left-justification
-          h1: ({node, ...props}) => <h1 className="text-left font-bold text-xl mb-6 mt-4 text-blue-300 border-b border-gray-700 pb-1" {...props} />,
-          h2: ({node, ...props}) => <h2 className="text-left font-bold text-lg mb-5 mt-6 text-blue-400 border-b border-gray-700 pb-1" {...props} />,
-          h3: ({node, ...props}) => <h3 className="text-left font-bold text-base mb-4 mt-5 text-blue-500" {...props} />,
-          h4: ({node, ...props}) => <h4 className="text-left font-bold text-sm mb-3 mt-4 text-blue-600" {...props} />,
+          h1: ({node, ...props}: {node?: any; [key: string]: any}) => <h1 className="text-left font-bold text-xl mb-6 mt-4 text-blue-300 border-b border-gray-700 pb-1" {...props} />,
+          h2: ({node, ...props}: {node?: any; [key: string]: any}) => <h2 className="text-left font-bold text-lg mb-5 mt-6 text-blue-400 border-b border-gray-700 pb-1" {...props} />,
+          h3: ({node, ...props}: {node?: any; [key: string]: any}) => <h3 className="text-left font-bold text-base mb-4 mt-5 text-blue-500" {...props} />,
+          h4: ({node, ...props}: {node?: any; [key: string]: any}) => <h4 className="text-left font-bold text-sm mb-3 mt-4 text-blue-600" {...props} />,
           // Enhanced list styling
-          ul: ({node, ...props}) => <ul className="text-left mb-4 ml-6 list-disc" {...props} />,
-          ol: ({node, ...props}) => <ol className="text-left mb-4 ml-6 list-decimal" {...props} />,
-          li: ({node, ...props}) => <li className="mb-2 leading-relaxed" {...props} />,
+          ul: ({node, ...props}: {node?: any; [key: string]: any}) => <ul className="text-left mb-4 ml-6 list-disc" {...props} />,
+          ol: ({node, ...props}: {node?: any; [key: string]: any}) => <ol className="text-left mb-4 ml-6 list-decimal" {...props} />,
+          li: ({node, ...props}: {node?: any; [key: string]: any}) => <li className="text-left mb-2 leading-relaxed text-base" {...props} />,
           // Better blockquote styling
-          blockquote: ({node, ...props}) => <blockquote className="text-left border-l-4 border-blue-500 pl-4 my-4 text-gray-300 bg-gray-700/30 py-2 pr-2 rounded-r" {...props} />,
+          blockquote: ({node, ...props}: {node?: any; [key: string]: any}) => <blockquote className="text-left border-l-4 border-blue-500 pl-4 my-4 text-gray-300 bg-gray-700/30 py-2 pr-2 rounded-r" {...props} />,
           // Enhanced emphasis
-          strong: ({node, ...props}) => <strong className="font-bold text-blue-200" {...props} />,
-          em: ({node, ...props}) => <em className="italic text-gray-300" {...props} />,
+          strong: ({node, ...props}: {node?: any; [key: string]: any}) => <strong className="text-left font-bold text-blue-200" {...props} />,
+          em: ({node, ...props}: {node?: any; [key: string]: any}) => <em className="text-left italic text-gray-300" {...props} />,
           // Add proper table styling
-          table: ({node, ...props}) => <table className="w-full mb-4 border-collapse border border-gray-700" {...props} />,
-          th: ({node, ...props}) => <th className="border border-gray-700 p-2 bg-gray-700 text-left" {...props} />,
-          td: ({node, ...props}) => <td className="border border-gray-700 p-2" {...props} />,
+          table: ({node, ...props}: {node?: any; [key: string]: any}) => <table className="w-full mb-4 border-collapse border border-gray-700" {...props} />,
+          th: ({node, ...props}: {node?: any; [key: string]: any}) => <th className="text-left border border-gray-700 p-2 bg-gray-700" {...props} />,
+          td: ({node, ...props}: {node?: any; [key: string]: any}) => <td className="text-left border border-gray-700 p-2" {...props} />,
           // Code formatting without inline prop
-          code: ({node, className, ...props}) => {
+          code: ({node, className, ...props}: {node?: any; className?: string; [key: string]: any}) => {
             const isInline = !className || !className.includes('language-');
             return isInline ? 
               <code className="bg-gray-900 px-1 rounded text-blue-300 font-mono text-sm" {...props} /> : 
@@ -278,7 +290,7 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
   };
 
   return (
-    <div className="w-full text-center mb-4">
+    <div className="w-full text-left mb-4">
       <div 
         className="w-full flex-1 min-h-[50vh] max-h-[70vh] bg-gray-900 text-white rounded-lg border border-gray-700 overflow-y-auto px-[2px] py-1 dark:bg-gray-900 dark:text-white dark:border-gray-700"
         style={{ backgroundColor: '#111827', color: 'white', borderColor: 'rgba(55, 65, 81, 0.5)' }}
@@ -288,9 +300,9 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
         key={messages.length}
       >
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-gray-300">
-            <span>Start a conversation...</span>
-            <span>Responses will appear here</span>
+          <div className="h-full flex flex-col items-start justify-center text-gray-300 p-8">
+            <span className="text-left">Start a conversation...</span>
+            <span className="text-left">Responses will appear here</span>
           </div>
         ) : (
           <>
@@ -320,22 +332,23 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
                       aria-label="user's message"
                       style={getMessageStyles('user')}
                     >
+                      <div className="text-left">
                       <ReactMarkdown components={{
                         // Left-justified paragraph styling
-                        p: ({node, ...props}) => <p className="text-left mb-4 leading-relaxed" {...props} />,
+                        p: ({node, ...props}: {node?: any; [key: string]: any}) => <p className="text-left mb-4 leading-relaxed text-base" {...props} />,
                         // Left-justified heading hierarchy with clear separation
-                        h1: ({node, ...props}) => <h1 className="text-left font-bold text-xl mb-6 mt-4 border-b border-gray-700 pb-1" {...props} />,
-                        h2: ({node, ...props}) => <h2 className="text-left font-bold text-lg mb-5 mt-6 border-b border-gray-700 pb-1" {...props} />,
-                        h3: ({node, ...props}) => <h3 className="text-left font-bold text-base mb-4 mt-5" {...props} />,
-                        h4: ({node, ...props}) => <h4 className="text-left font-bold text-sm mb-3 mt-4" {...props} />,
+                        h1: ({node, ...props}: {node?: any; [key: string]: any}) => <h1 className="text-left font-bold text-xl mb-6 mt-4 border-b border-gray-700 pb-1" {...props} />,
+                        h2: ({node, ...props}: {node?: any; [key: string]: any}) => <h2 className="text-left font-bold text-lg mb-5 mt-6 border-b border-gray-700 pb-1" {...props} />,
+                        h3: ({node, ...props}: {node?: any; [key: string]: any}) => <h3 className="text-left font-bold text-base mb-4 mt-5" {...props} />,
+                        h4: ({node, ...props}: {node?: any; [key: string]: any}) => <h4 className="text-left font-bold text-sm mb-3 mt-4" {...props} />,
                         // Enhanced list styling
-                        ul: ({node, ...props}) => <ul className="text-left mb-4 ml-6 list-disc" {...props} />,
-                        ol: ({node, ...props}) => <ol className="text-left mb-4 ml-6 list-decimal" {...props} />,
-                        li: ({node, ...props}) => <li className="mb-2" {...props} />,
+                        ul: ({node, ...props}: {node?: any; [key: string]: any}) => <ul className="text-left mb-4 ml-6 list-disc" {...props} />,
+                        ol: ({node, ...props}: {node?: any; [key: string]: any}) => <ol className="text-left mb-4 ml-6 list-decimal" {...props} />,
+                        li: ({node, ...props}: {node?: any; [key: string]: any}) => <li className="text-left mb-2 text-base" {...props} />,
                         // Better section separation with blockquotes
-                        blockquote: ({node, ...props}) => <blockquote className="text-left border-l-4 border-gray-500 pl-4 my-4 py-1 pr-2 rounded-r" {...props} />,
+                        blockquote: ({node, ...props}: {node?: any; [key: string]: any}) => <blockquote className="text-left border-l-4 border-gray-500 pl-4 my-4 py-1 pr-2 rounded-r" {...props} />,
                         // Code formatting
-                        code: ({node, className, ...props}) => {
+                        code: ({node, className, ...props}: {node?: any; className?: string; [key: string]: any}) => {
                           const isInline = !className || !className.includes('language-');
                           return isInline ? 
                             <code className="bg-gray-800 px-1 rounded font-mono text-sm" {...props} /> : 
@@ -344,6 +357,7 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
                       }}>
                         {userMessage.content}
                       </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                   {/* Assistant message as article */}
@@ -368,7 +382,7 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
         )}
         {isLoading && (
           <div 
-            className="flex items-center justify-center text-gray-300 space-x-2"
+            className="flex items-center justify-start text-gray-300 space-x-2 ml-8 mt-4"
             role="status"
             aria-label="Loading response"
           >
@@ -382,9 +396,9 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
           </div>
         )}
         {error && (
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-start ml-8 mt-4">
             <div 
-              className="text-center text-red-400 p-2 bg-red-900/50 rounded w-full mb-2"
+              className="text-left text-red-400 p-2 bg-red-900/50 rounded w-full mb-2"
               role="alert"
               aria-live="assertive"
             >
@@ -440,7 +454,7 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
                 
                 alert("Diagnostic information has been logged to the console. Please open the browser developer tools to view it.");
               }}
-              className="text-xs bg-blue-800 hover:bg-blue-700 text-white py-1 px-2 rounded transition-colors"
+              className="text-xs bg-blue-800 hover:bg-blue-700 text-white py-1 px-2 rounded transition-colors text-left"
             >
               Run Diagnostics
             </button>
