@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns/cad8ad178c524a548826604c53126e92/artifacts
+end_time: 1742837810713
+entry_point_name: ''
+experiment_id: '919649153366234346'
+lifecycle_stage: active
+run_id: cad8ad178c524a548826604c53126e92
+run_name: stylish-pig-91
+run_uuid: cad8ad178c524a548826604c53126e92
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742837810708
+status: 3
+tags: []
+user_id: danc

@@ -24,6 +24,7 @@ except ImportError:
 
 from app.core.logger import logger
 from app.core.config import settings
+from app.core.mlflow_utils import get_or_create_experiment
 
 class MLflowManager:
     """Manages connections and logging to MLflow."""
@@ -70,15 +71,23 @@ class MLflowManager:
             return None
             
         try:
-            # Get or create experiment
+            # Get or create experiment 
             experiment = mlflow.get_experiment_by_name(experiment_name)
             if experiment is None:
+                logger.info(f"Creating new MLflow experiment '{experiment_name}' with artifact location: {settings.MLFLOW_ARTIFACT_LOCATION}")
                 experiment_id = mlflow.create_experiment(
                     experiment_name,
                     artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
                 )
             else:
                 experiment_id = experiment.experiment_id
+                # Check if the existing experiment has the correct artifact location
+                if experiment.artifact_location != settings.MLFLOW_ARTIFACT_LOCATION:
+                    logger.warning(
+                        f"Experiment '{experiment_name}' exists but has artifact location "
+                        f"'{experiment.artifact_location}' instead of '{settings.MLFLOW_ARTIFACT_LOCATION}'. "
+                        f"Cannot change the artifact location of an existing experiment."
+                    )
                 
             # Start run
             active_run = mlflow.start_run(

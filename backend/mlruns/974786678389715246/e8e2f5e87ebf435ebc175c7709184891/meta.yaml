@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns/e8e2f5e87ebf435ebc175c7709184891/artifacts
+end_time: 1742837809308
+entry_point_name: ''
+experiment_id: '974786678389715246'
+lifecycle_stage: active
+run_id: e8e2f5e87ebf435ebc175c7709184891
+run_name: fearless-swan-994
+run_uuid: e8e2f5e87ebf435ebc175c7709184891
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742837809303
+status: 3
+tags: []
+user_id: danc

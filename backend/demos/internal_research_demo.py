@@ -150,6 +150,24 @@ class SimpleRetriever:
         
         logger.info(f"SimpleRetriever found {len(results)} relevant documents")
         return results
+    
+    # Add compatibility with RAGRetriever interface
+    async def retrieve(self, query, k=20, **kwargs):
+        """
+        Compatibility method that matches the RAGRetriever interface.
+        
+        Args:
+            query: The search query
+            k: Number of results to return
+            **kwargs: Additional arguments
+            
+        Returns:
+            List of relevant documents
+        """
+        logger.info(f"SimpleRetriever retrieve method called for: {query}")
+        # Call get_relevant_documents and limit to k results
+        results = await self.get_relevant_documents(query, **kwargs)
+        return results[:k] if k else results
 
 class SimpleReranker:
     """
@@ -577,7 +595,7 @@ async def run_internal_research_demo(debug_mode=False):
             try:
                 # Run the research agent
                 start_time = datetime.now()
-                updated_state = await research_agent.run(state)
+                updated_state = await research_agent(state)
                 
                 # Try to extract result data
                 agent_output = updated_state.reports.get("internal_research", {})

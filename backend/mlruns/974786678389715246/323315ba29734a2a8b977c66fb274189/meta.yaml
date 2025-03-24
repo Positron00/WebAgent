@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns/323315ba29734a2a8b977c66fb274189/artifacts
+end_time: 1742837810704
+entry_point_name: ''
+experiment_id: '974786678389715246'
+lifecycle_stage: active
+run_id: 323315ba29734a2a8b977c66fb274189
+run_name: dapper-quail-252
+run_uuid: 323315ba29734a2a8b977c66fb274189
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742837810700
+status: 3
+tags: []
+user_id: danc

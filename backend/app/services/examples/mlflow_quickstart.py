@@ -20,6 +20,7 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
+from app.core.config import settings
 
 # Configuration
 LLM_SERVICE_URL = "http://localhost:8080"
@@ -110,6 +111,16 @@ def simple_experiment():
     
     # Set up MLflow
     mlflow.set_tracking_uri(MLFLOW_URL)
+    
+    # Create the experiment if it doesn't exist with the correct artifact location
+    experiment = mlflow.get_experiment_by_name(EXPERIMENT_NAME)
+    if experiment is None:
+        print(f"Creating experiment '{EXPERIMENT_NAME}' with artifact location {settings.MLFLOW_ARTIFACT_LOCATION}")
+        mlflow.create_experiment(
+            EXPERIMENT_NAME,
+            artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
+        )
+    
     mlflow.set_experiment(EXPERIMENT_NAME)
     
     prompts = [

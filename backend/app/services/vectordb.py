@@ -147,77 +147,61 @@ class VectorDBService:
         try:
             logger.debug(f"Searching vector database for: '{query}'")
             
-            # Get embeddings for the query
-            embedding = await self.get_embedding(query)
-            
-            if not embedding:
-                logger.error("Failed to generate embedding for query")
+            # Use the vectordb's similarity_search method directly
+            # instead of using embeddings manually
+            try:
+                results = self.vectordb.similarity_search_with_score(query, k=top_k)
+                
+                # Convert to the expected format
+                formatted_results = []
+                for doc, score in results:
+                    formatted_results.append({
+                        "score": float(score),
+                        "text": doc.page_content,
+                        "metadata": doc.metadata
+                    })
+                
+                processing_time = time.time() - start_time
+                
+                # Log to MLflow
+                log_to_mlflow(
+                    metrics={
+                        "search_latency": processing_time,
+                        "search_result_count": len(formatted_results)
+                    },
+                    params={
+                        "query_length": len(query),
+                        "top_k": top_k,
+                        "namespace": namespace or "default"
+                    },
+                    experiment_name="vectordb_operations"
+                )
+                
+                # Record the latency in our metrics
+                VECTORDB_QUERY_LATENCY.observe(processing_time)
+                
+                logger.debug(f"Vector search completed in {processing_time:.4f}s with {len(formatted_results)} results")
+                
+                if not formatted_results:
+                    logger.warning(f"No results found for query: '{query}'")
+                    VECTORDB_QUERY_COUNT.labels(status="empty").inc()
+                
+                # Track successful query
+                VECTORDB_QUERY_COUNT.labels(status="success").inc()
+                
+                # Basic quality check
+                if formatted_results:
+                    top_score = formatted_results[0]["score"]
+                    quality_score = min(max(top_score * 100, 0), 100)  
+                    record_data_quality("vector_search", "relevance", quality_score)
+                    
+                return formatted_results
+                
+            except Exception as e:
+                logger.error(f"Error searching vector database: {str(e)}")
+                VECTORDB_QUERY_COUNT.labels(status="error").inc()
                 return []
                 
-            # Get the vector database client
-            if not self.client:
-                await self.connect()
-                
-            # Search the vector database
-            results = await self.client.search(
-                collection_name=self.collection_name,
-                query_vector=embedding,
-                top_k=top_k,
-                namespace=namespace or self.namespace
-            )
-            
-            processing_time = time.time() - start_time
-            
-            # Log to MLflow
-            log_to_mlflow(
-                metrics={
-                    "search_latency": processing_time,
-                    "search_result_count": len(results) if results else 0
-                },
-                params={
-                    "query_length": len(query),
-                    "top_k": top_k,
-                    "namespace": namespace or self.namespace
-                },
-                experiment_name="vectordb_operations"
-            )
-            
-            # Record the latency in our metrics
-            VECTORDB_QUERY_LATENCY.observe(processing_time)
-            
-            logger.debug(f"Vector search completed in {processing_time:.4f}s with {len(results)} results")
-            
-            if not results:
-                logger.warning(f"No results found for query: '{query}'")
-                VECTORDB_QUERY_COUNT.labels(status="empty").inc()
-                return []
-                
-            # Format results for return
-            formatted_results = []
-            for result in results:
-                metadata = result.get("metadata", {})
-                formatted_results.append({
-                    "score": float(result.get("score", 0)),
-                    "text": result.get("payload", {}).get("text", ""),
-                    "metadata": {
-                        "document_id": metadata.get("document_id", ""),
-                        "source": metadata.get("source", ""),
-                        "chunk_id": metadata.get("chunk_id", ""),
-                        "page_number": metadata.get("page_number", 0)
-                    }
-                })
-                
-            # Track successful query
-            VECTORDB_QUERY_COUNT.labels(status="success").inc()
-            
-            # Basic quality check
-            if formatted_results:
-                top_score = formatted_results[0]["score"]
-                quality_score = min(max(top_score * 100, 0), 100)  
-                record_data_quality("vector_search", "relevance", quality_score)
-                
-            return formatted_results
-            
         except Exception as e:
             processing_time = time.time() - start_time
             logger.error(f"Error searching vector database: {str(e)}")

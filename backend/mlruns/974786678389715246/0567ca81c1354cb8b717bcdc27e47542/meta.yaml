@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns/0567ca81c1354cb8b717bcdc27e47542/artifacts
+end_time: 1742837717135
+entry_point_name: ''
+experiment_id: '974786678389715246'
+lifecycle_stage: active
+run_id: 0567ca81c1354cb8b717bcdc27e47542
+run_name: languid-moose-194
+run_uuid: 0567ca81c1354cb8b717bcdc27e47542
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742837717131
+status: 3
+tags: []
+user_id: danc

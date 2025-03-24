@@ -778,7 +778,7 @@ class InternalResearchAgent(BaseAgent):
         self.retriever = RAGRetriever(config)
         self.reranker = RAGReranker(config)
         
-        # Initialize LLM and chain
+        # Initialize LLM and prompt template
         self.prompt = ChatPromptTemplate.from_template(INTERNAL_RESEARCH_PROMPT)
         
         try:
@@ -792,15 +792,25 @@ class InternalResearchAgent(BaseAgent):
                 model_name = default_model
                 logger.info(f"Using default model from settings: {model_name}")
             
+            # Get the LLM with minimal configuration
             self.llm = get_llm(model_name)
-        except Exception as e:
-            logger.error(f"Error initializing LLM: {str(e)}")
-            logger.warning("Using fallback OpenAI LLM due to initialization error")
-            self.llm = get_llm("gpt-3.5-turbo")  # Fallback to more reliable model
+            logger.info(f"Successfully initialized LLM with model: {model_name}")
             
-        self.parser = StrOutputParser()
-        self.chain = self.prompt | self.llm | self.parser
-        self.chain = self.trace_chain(self.chain)
+        except Exception as e:
+            logger.error(f"Error initializing primary LLM: {str(e)}")
+            logger.warning("Using fallback OpenAI LLM due to initialization error")
+            try:
+                self.llm = get_llm("gpt-3.5-turbo")  # Fallback to more reliable model
+                logger.info("Successfully initialized fallback LLM")
+            except Exception as fallback_error:
+                logger.critical(f"Failed to initialize fallback LLM: {str(fallback_error)}")
+                # Create a minimal mock LLM as last resort
+                from langchain.llms.fake import FakeListLLM
+                self.llm = FakeListLLM(responses=["ERROR: Unable to initialize any LLM. Internal research results cannot be generated."])
+                logger.warning("Using mock LLM as emergency fallback")
+        
+        # We don't create a chain anymore since we're now invoking the LLM directly in the
+        # _generate_findings_with_retry method to avoid tags conflicts
         
         logger.info("Advanced RAG-based Internal Research Agent initialized")
     
@@ -808,16 +818,101 @@ class InternalResearchAgent(BaseAgent):
         """Format internal documents for the prompt, including relevance scores."""
         if not documents:
             return "No relevant internal documents found."
+        
+        # First, combine chunks from the same source documents
+        combined_docs = self._combine_document_chunks(documents)
             
         formatted_docs = ""
-        for i, doc in enumerate(documents, 1):
+        for i, doc in enumerate(combined_docs, 1):
             score = doc.get("score", 0)
+            source = doc.get("metadata", {}).get("source", "Internal knowledge base")
+            section = doc.get("metadata", {}).get("document_section", "")
+            chunk_info = ""
+            if "chunk_id" in doc.get("metadata", {}) and "total_chunks" in doc.get("metadata", {}):
+                chunk_id = doc.get("metadata", {}).get("chunk_id")
+                total_chunks = doc.get("metadata", {}).get("total_chunks")
+                chunk_info = f" (Section {chunk_id+1}/{total_chunks})"
+            
             formatted_docs += f"DOCUMENT {i} (Relevance: {score:.4f}):\n"
             formatted_docs += f"Title: {doc.get('metadata', {}).get('title', 'No title')}\n"
-            formatted_docs += f"Source: {doc.get('metadata', {}).get('source', 'Internal knowledge base')}\n"
+            formatted_docs += f"Source: {source}{chunk_info}\n"
+            
+            if section:
+                formatted_docs += f"Section: {section.capitalize()} of document\n"
+                
             formatted_docs += f"Content: {doc.get('page_content', 'No content')}\n\n"
             
         return formatted_docs
+        
+    def _combine_document_chunks(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Combine chunks from the same source document to avoid duplication in citations.
+        
+        Args:
+            documents: List of document chunks
+            
+        Returns:
+            List of combined documents (one per unique source)
+        """
+        if not documents:
+            return []
+            
+        # Group documents by source
+        source_groups = {}
+        for doc in documents:
+            source = doc.get("metadata", {}).get("source", "unknown")
+            if source not in source_groups:
+                source_groups[source] = []
+            source_groups[source].append(doc)
+        
+        # For each source, either select the best chunk or combine chunks
+        combined_docs = []
+        for source, docs in source_groups.items():
+            if len(docs) == 1:
+                # If only one chunk, just use it
+                combined_docs.append(docs[0])
+            else:
+                # Sort chunks by chunk_id if available
+                docs.sort(key=lambda d: d.get("metadata", {}).get("chunk_id", 0))
+                
+                # If there are multiple chunks, we have options:
+                # 1. Take the highest scoring chunk
+                best_chunk = max(docs, key=lambda d: d.get("score", 0))
+                
+                # 2. Or combine them (but this can make very long docs)
+                # Only combine if we have less than 3 chunks to avoid making it too long
+                if len(docs) <= 3:
+                    # Combine content with section markers
+                    combined_content = ""
+                    max_score = 0
+                    for i, doc in enumerate(docs):
+                        score = doc.get("score", 0)
+                        max_score = max(max_score, score)
+                        section_num = doc.get("metadata", {}).get("chunk_id", i)
+                        total_sections = doc.get("metadata", {}).get("total_chunks", len(docs))
+                        section_name = doc.get("metadata", {}).get("document_section", f"Section {section_num+1}/{total_sections}")
+                        
+                        combined_content += f"[{section_name.upper()}]\n"
+                        combined_content += doc.get("page_content", "") + "\n\n"
+                    
+                    # Create a new combined document
+                    combined_doc = docs[0].copy()  # Use the first doc as a base
+                    combined_doc["page_content"] = combined_content
+                    combined_doc["score"] = max_score  # Use the highest score
+                    combined_doc["metadata"] = combined_doc.get("metadata", {}).copy()
+                    combined_doc["metadata"]["is_combined"] = True
+                    combined_doc["metadata"]["num_chunks_combined"] = len(docs)
+                    
+                    combined_docs.append(combined_doc)
+                else:
+                    # If too many chunks, just use the best one
+                    combined_docs.append(best_chunk)
+        
+        # Resort the combined documents by score
+        combined_docs.sort(key=lambda d: d.get("score", 0), reverse=True)
+        
+        logger.info(f"Combined {len(documents)} chunks into {len(combined_docs)} unique source documents")
+        return combined_docs
     
     def _format_feedback(self, state: WorkflowState) -> str:
         """Format feedback from Senior Research Agent if available."""
@@ -862,11 +957,33 @@ class InternalResearchAgent(BaseAgent):
         
         while attempts < max_retries:
             try:
-                # Generate the research findings using the LLM
-                return await self.chain.ainvoke(prompt_inputs)
+                # Format the prompt using the prompt template directly
+                formatted_prompt = self.prompt.format_messages(**prompt_inputs)
+                
+                # Invoke the LLM directly, avoiding the chain to prevent tags conflicts
+                from langchain_core.output_parsers import StrOutputParser
+                
+                logger.info("Invoking LLM directly without chain to avoid tags conflict")
+                raw_llm_output = await self.llm.ainvoke(formatted_prompt)
+                
+                # Extract the content from the LLM output
+                if hasattr(raw_llm_output, "content"):
+                    # Handle ChatMessage or similar objects
+                    return raw_llm_output.content
+                elif isinstance(raw_llm_output, str):
+                    # Handle direct string output
+                    return raw_llm_output
+                elif isinstance(raw_llm_output, dict) and "content" in raw_llm_output:
+                    # Handle dictionary with content field
+                    return raw_llm_output["content"]
+                else:
+                    # Try to convert to string
+                    return str(raw_llm_output)
+                
             except Exception as e:
                 error_msg = str(e)
                 attempts += 1
+                logger.error(f"LLM invocation attempt {attempts} failed: {error_msg}")
                 
                 # Check for rate limiting errors
                 if "429" in error_msg or "Too Many Requests" in error_msg:
@@ -875,12 +992,38 @@ class InternalResearchAgent(BaseAgent):
                     await asyncio.sleep(delay)
                     continue
                 
-                # For other errors, return an error message
-                logger.error(f"Error generating research findings: {error_msg}")
-                return f"Error generating research findings: {error_msg}"
+                # Try alternative approach if there's a tags error
+                if "tags" in error_msg and attempts < max_retries:
+                    try:
+                        logger.warning("Trying alternative LLM invocation method")
+                        # Create a brand new LLM instance without any config
+                        from app.services.llm import get_llm
+                        temporary_llm = get_llm("gpt-3.5-turbo")
+                        
+                        # Format the prompt and invoke directly
+                        raw_output = await temporary_llm.ainvoke(formatted_prompt)
+                        
+                        # Extract content from output
+                        if hasattr(raw_output, "content"):
+                            return raw_output.content
+                        elif isinstance(raw_output, str):
+                            return raw_output
+                        elif isinstance(raw_output, dict) and "content" in raw_output:
+                            return raw_output["content"]
+                        else:
+                            return str(raw_output)
+                    except Exception as alt_error:
+                        logger.error(f"Alternative LLM invocation failed: {str(alt_error)}")
+                        # Continue to next attempt or return error
+                
+                # For other errors, continue to the next attempt
+                if attempts >= max_retries:
+                    # Return error message on final attempt
+                    logger.error(f"All attempts failed. Last error: {error_msg}")
+                    return f"Error generating research findings: {error_msg}"
                 
         # If we've exhausted retries
-        return "Error generating research findings: Rate limit exceeded after multiple retries."
+        return "Error generating research findings: Maximum retry attempts exceeded."
     
     @timing_decorator
     @log_memory_usage

@@ -207,6 +207,10 @@ class Settings(BaseSettings):
     
     # MLflow tracking
     MLFLOW_TRACKING_URI: Optional[str] = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:8080")
+    MLFLOW_DEFAULT_ARTIFACT_ROOT: str = os.getenv(
+        "MLFLOW_DEFAULT_ARTIFACT_ROOT", 
+        f"file://{os.path.join(BASE_DIR, 'backend', 'mlruns')}"
+    )
 
     # Grafana settings
     GRAFANA_URL: Optional[str] = os.getenv("GRAFANA_URL", "http://127.0.0.1:3000")

@@ -1,0 +1,6 @@
+artifact_location: file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns
+creation_time: 1742837713515
+experiment_id: '974786678389715246'
+last_update_time: 1742837713515
+lifecycle_stage: active
+name: vectordb_operations

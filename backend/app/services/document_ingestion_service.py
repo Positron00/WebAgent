@@ -436,12 +436,14 @@ class DocumentIngestionService:
                     
                     # Try to search for similar content in the vector database
                     search_query = content[:300]  # Use beginning of the document as search query
-                    results = await vector_db.search(search_query, k=5)
+                    results = await vector_db.search(search_query, top_k=5)
                     
                     # Check if any results match our document by filename or content similarity
                     doc_exists = False
-                    for doc, score in results:
-                        result_filename = doc.metadata.get("source", "").split("/")[-1] if isinstance(doc.metadata.get("source", ""), str) else ""
+                    for result in results:
+                        # The search method returns a list of dict objects with metadata
+                        result_filename = result.get("metadata", {}).get("source", "").split("/")[-1] if isinstance(result.get("metadata", {}).get("source", ""), str) else ""
+                        result_text = result.get("text", "")
                         
                         # Check if filenames match exactly
                         if result_filename == doc_name:
@@ -450,8 +452,8 @@ class DocumentIngestionService:
                             break
                             
                         # Check if content is very similar (first 200 + last 200 chars)
-                        if len(doc.page_content) > 400 and len(content) > 400:
-                            if doc.page_content[:200] == content[:200] and doc.page_content[-200:] == content[-200:]:
+                        if len(result_text) > 400 and len(content) > 400:
+                            if result_text[:200] == content[:200] and result_text[-200:] == content[-200:]:
                                 logger.info(f"Document '{doc_name}' already exists in vector database (content match)")
                                 doc_exists = True
                                 break
@@ -466,9 +468,19 @@ class DocumentIngestionService:
                 
                 # Document doesn't exist, load it into vector database
                 logger.info(f"Ingesting new document: {doc_name}")
-                result = await doc_loader.ingest_document(doc_path)
+                result = await doc_loader.load_document(doc_path, metadata=doc_metadata)
                 
                 successful += 1
+                # Adjust below since load_document returns an artifact ID string, not a dict
+                # Convert to a dict format for consistency
+                if isinstance(result, str):
+                    artifact_id = result
+                    result = {
+                        "artifact_id": artifact_id,
+                        "tokens": 0,  # We don't have this info from load_document
+                        "chunks": 0   # We don't have this info from load_document
+                    }
+                
                 total_tokens += result.get("tokens", 0)
                 total_chunks += result.get("chunks", 0)
                 

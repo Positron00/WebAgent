@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns/dcf1daef6cbc43f68819b666102629d7/artifacts
+end_time: 1742837810484
+entry_point_name: ''
+experiment_id: '974786678389715246'
+lifecycle_stage: active
+run_id: dcf1daef6cbc43f68819b666102629d7
+run_name: stylish-smelt-967
+run_uuid: dcf1daef6cbc43f68819b666102629d7
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742837810472
+status: 3
+tags: []
+user_id: danc

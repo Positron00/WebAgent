@@ -148,6 +148,20 @@ class DocumentLoaderService:
             )
             chunks = text_splitter.split_documents(documents)
             
+            # Add chunk identifiers to metadata
+            for i, chunk in enumerate(chunks):
+                chunk.metadata["chunk_id"] = i
+                chunk.metadata["total_chunks"] = len(chunks)
+                # Also add a document section identifier to help with citations
+                start_percent = int((i / len(chunks)) * 100)
+                end_percent = int(((i + 1) / len(chunks)) * 100)
+                if start_percent == 0 and end_percent <= 33:
+                    chunk.metadata["document_section"] = "beginning"
+                elif start_percent >= 33 and end_percent <= 66:
+                    chunk.metadata["document_section"] = "middle"
+                else:
+                    chunk.metadata["document_section"] = "end"
+            
             # Add to vector database (not async, so don't use await)
             self.vector_db.add_documents(chunks)
             

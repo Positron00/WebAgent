@@ -341,6 +341,16 @@ def log_to_mlflow(metrics: Optional[Dict[str, float]] = None,
         
         # Set experiment if provided
         if experiment_name:
+            # Check if experiment exists first
+            experiment = mlflow.get_experiment_by_name(experiment_name)
+            if experiment is None:
+                # Create the experiment with the correct artifact location
+                logger.info(f"Creating new experiment '{experiment_name}' with artifact location {settings.MLFLOW_ARTIFACT_LOCATION}")
+                mlflow.create_experiment(
+                    experiment_name,
+                    artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
+                )
+            
             mlflow.set_experiment(experiment_name)
         
         # Check if a run is already active
