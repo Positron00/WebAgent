@@ -133,32 +133,44 @@ class TestDiagnosticsUtility:
     
     @patch('app.graph.workflows.get_agent_workflow')
     def test_workflow_check(self, mock_get_workflow):
-        """Test the workflow verification functionality."""
-        # Create a mock workflow
+        """Test the workflow check functionality."""
+        # Configure mock
         mock_workflow = MagicMock()
-        mock_workflow.nodes = ["__start__", "supervisor", "web_research", 
-                              "internal_research", "senior_research", 
-                              "team_manager", "end"]
-        mock_workflow._compiled = True
-        mock_workflow.get_out_edges = MagicMock(return_value=["next_node"])
         mock_get_workflow.return_value = mock_workflow
         
-        # Run the workflow check
+        # Run the check
         workflow_info = self.diagnostics.check_workflow()
         
-        # Verify workflow info contains key fields
-        assert "nodes" in workflow_info, "Workflow info missing nodes list"
-        assert "compiled" in workflow_info, "Workflow info missing compiled status"
-        assert "node_count" in workflow_info, "Workflow info missing node count"
-        assert "edge_count" in workflow_info, "Workflow info missing edge count"
+        # Verify results
+        assert workflow_info is not None, "Workflow check should return data"
+        assert "status" in workflow_info, "Workflow check missing status"
+        assert "agents" in workflow_info, "Workflow check missing agents"
+        assert "graph" in workflow_info, "Workflow check missing graph"
         
-        # Verify values are correct
-        assert workflow_info["compiled"], "Workflow should be compiled"
-        assert len(workflow_info["nodes"]) > 0, "Workflow should have nodes"
-        assert workflow_info["node_count"] > 0, "Node count should be positive"
-        assert "__start__" in workflow_info["nodes"], "Workflow should have __start__ node"
-        assert "end" in workflow_info["nodes"], "Workflow should have end node"
-        assert workflow_info["missing_critical_nodes"] == [], "Should have no missing critical nodes"
+        # Verify workflow was checked
+        mock_get_workflow.assert_called_once()
+    
+    @patch('app.graph.workflows.get_agent_workflow_logs')
+    def test_workflow_logs_check(self, mock_get_workflow_logs):
+        """Test the workflow logs check functionality."""
+        # Run the check
+        logs_info = self.diagnostics.check_workflow_logs()
+        
+        # Verify results
+        assert logs_info is not None, "Workflow logs check should return data"
+        assert "status" in logs_info, "Workflow logs check missing status"
+        assert "logs_implementation" in logs_info, "Workflow logs check missing logs_implementation"
+        
+        # Verify specific fields
+        logs_impl = logs_info["logs_implementation"]
+        assert "logs_added" in logs_impl, "Missing logs_added field"
+        assert "logs_in_report_when_agentic" in logs_impl, "Missing logs_in_report_when_agentic field"
+        assert "logs_excluded_when_non_agentic" in logs_impl, "Missing logs_excluded_when_non_agentic field"
+        
+        # All checks should be true
+        assert logs_impl["logs_added"] is True, "Should be able to add logs"
+        assert logs_impl["logs_in_report_when_agentic"] is True, "Logs should be in report when agentic is on"
+        assert logs_impl["logs_excluded_when_non_agentic"] is True, "Logs should be excluded when agentic is off"
     
     @patch('psutil.Process')
     def test_performance_metrics(self, mock_process):

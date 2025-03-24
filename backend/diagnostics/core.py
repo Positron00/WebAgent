@@ -102,6 +102,7 @@ class SystemDiagnostics:
         self.check_environment()
         self.check_agents()
         self.check_workflow()
+        self.check_workflow_logs()
         self.check_performance_metrics()
         self.check_network_connectivity()
         self.check_language_model_availability()
@@ -411,6 +412,83 @@ class SystemDiagnostics:
             result["edge_count"] = 0
         
         return result
+    
+    @timing_decorator
+    def check_workflow_logs(self, verbose=False):
+        """
+        Check that workflow logs functionality is properly implemented.
+        
+        Args:
+            verbose: Whether to output detailed information
+            
+        Returns:
+            Dictionary with log check status
+        """
+        try:
+            # Import required modules
+            from app.models.task import WorkflowState
+            
+            # Create test state
+            state = WorkflowState(
+                query="Test workflow logs",
+                context={"agentic_toggle": True},
+                current_step="testing"
+            )
+            
+            # Test adding logs
+            state.add_log("Test log message 1")
+            state.add_log("Test log message 2")
+            
+            # Check logs are accessible
+            logs_count = len(state.logs)
+            
+            # Create a final report and test logs transfer 
+            test_report = {"title": "Test Report", "content": "Test content"}
+            state.mark_completed(test_report)
+            
+            # Check logs are in the final report
+            logs_in_report = "logs" in state.final_report and len(state.final_report["logs"]) == logs_count
+            
+            # Test with agentic toggle off
+            non_agentic_state = WorkflowState(
+                query="Test without agentic mode",
+                context={"agentic_toggle": False},
+                current_step="testing"
+            )
+            
+            # Add logs
+            non_agentic_state.add_log("Test log without agentic mode")
+            
+            # Mark as completed
+            non_agentic_report = {"title": "Non-agentic Test", "content": "Test content"}
+            non_agentic_state.mark_completed(non_agentic_report)
+            
+            # Logs should not be in final report when agentic is off
+            logs_excluded = "logs" not in non_agentic_state.final_report
+            
+            if verbose:
+                print("Workflow logs checking results:")
+                print(f"  - Logs added: {logs_count}")
+                print(f"  - Logs included in report (agentic on): {logs_in_report}")
+                print(f"  - Logs excluded from report (agentic off): {logs_excluded}")
+            
+            return {
+                "status": "passed" if logs_count > 0 and logs_in_report and logs_excluded else "failed",
+                "logs_implementation": {
+                    "logs_added": logs_count > 0,
+                    "logs_in_report_when_agentic": logs_in_report,
+                    "logs_excluded_when_non_agentic": logs_excluded
+                }
+            }
+        except Exception as e:
+            if verbose:
+                print(f"Error checking workflow logs: {e}")
+                import traceback
+                traceback.print_exc()
+            return {
+                "status": "error",
+                "error": str(e)
+            }
     
     @timing_decorator
     def check_performance_metrics(self) -> Dict[str, Any]:

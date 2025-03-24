@@ -46,6 +46,7 @@ class WorkflowState(BaseModel):
     current_step: str = "planning"
     completed: bool = False
     error: Optional[str] = None
+    logs: List[str] = Field(default_factory=list)  # Store workflow logs
     
     @property
     def agent_outputs(self) -> Dict[str, Any]:
@@ -60,10 +61,17 @@ class WorkflowState(BaseModel):
             "timestamp": datetime.now().isoformat(),
             "output": str(output)
         })
+    
+    def add_log(self, log_message: str):
+        """Add a log message to the workflow logs."""
+        self.logs.append(log_message)
         
     def mark_completed(self, final_report: Dict[str, Any]):
         """Mark the workflow as completed."""
         self.completed = True
+        # Add logs to the final report if in agentic mode
+        if self.context.get("agentic_toggle") and self.logs:
+            final_report["logs"] = self.logs
         self.final_report = final_report
         
     def mark_error(self, error: str):
