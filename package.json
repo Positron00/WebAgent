@@ -1,12 +1,13 @@
 {
   "name": "webagent",
-  "version": "2.9.4",
-  "description": "WebAgent Platform with comprehensive agent demos, enhanced logging for LangGraph workflow, improved MLflow artifact configuration, standardized MLrun paths, and updated documentation for MLflow integration (2025-03-23)",
+  "version": "2.9.5",
+  "description": "WebAgent Platform with Vercel deployment capability, serverless Python backend, and improved API routing for cross-environment compatibility (2025-03-24)",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p 3001",
+    "start": "next start",
+    "start:local": "next start -p 3001",
     "test": "jest",
     "lint": "next lint",
     "check-types": "tsc --noEmit",
@@ -15,7 +16,8 @@
     "diagnostics": "conda run -n agents python -m backend.diagnostics.runners.run_diagnostics",
     "tests": "conda run -n agents python -m backend.diagnostics.runners.run_tests",
     "check": "conda run -n agents python -m backend.diagnostics.runners.run_all",
-    "research": "node scripts/run_webagent.js --mode workflow"
+    "research": "node scripts/run_webagent.js --mode workflow",
+    "vercel-build": "next build"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
@@ -60,5 +62,8 @@
       "eslint --fix",
       "prettier --write"
     ]
+  },
+  "engines": {
+    "node": ">=18.x"
   }
 }

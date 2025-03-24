@@ -41,6 +41,23 @@ const nextConfig = {
 
     return existingConfig;
   },
+  // Add rewrites for development environment to route API requests to the Python backend
+  async rewrites() {
+    const isProd = process.env.NODE_ENV === 'production';
+    
+    // In production, we'll use Vercel's routing in vercel.json
+    if (isProd) {
+      return [];
+    }
+
+    // In development, proxy to the Flask backend
+    return [
+      {
+        source: '/api/task/:path*',
+        destination: 'http://127.0.0.1:5000/api/task/:path*', // Flask server port
+      }
+    ];
+  },
 }
 
 module.exports = nextConfig 

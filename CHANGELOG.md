@@ -2,6 +2,21 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 2.9.5 - 2025-03-24
+
+### Added
+- Added Vercel deployment capability with serverless Python backend
+- Created serverless API handlers for chat and task endpoints
+- Added comprehensive deployment documentation in VERCEL_DEPLOYMENT.md
+- Created vercel.json configuration for build and routing settings
+- Added environment variable template in .env.example
+
+### Changed
+- Updated next.config.js with development-only API rewrites 
+- Improved clientConfig.ts to automatically detect Vercel deployment URLs
+- Updated package.json with proper Vercel build scripts
+- Modified API handlers to work in both development and production environments
+
 ## 2.9.4 - 2025-03-23
 
 ### Changed
