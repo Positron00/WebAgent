@@ -8,6 +8,7 @@ import { MessageList, hasCodeBlocks, extractCodeBlocks } from './chat/MessageLis
 import { SourceCanvas } from './chat/SourceCanvas';
 import { CodeCanvas } from './chat/CodeCanvas';
 import { XMarkIcon, PaperClipIcon, InformationCircleIcon, CodeBracketIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 export default function Chat() {
   const { state, sendMessage, clearMessages } = useChat();
@@ -176,10 +177,13 @@ export default function Chat() {
               </button>
             </div>
             <div className="p-3 overflow-auto flex-grow">
-              <img 
+              <Image 
                 src={screenshotPreview} 
                 alt="Screenshot preview" 
                 className="max-w-full h-auto rounded"
+                width={800}
+                height={600}
+                style={{ width: 'auto', height: 'auto' }}
               />
             </div>
             <div className="flex justify-end gap-2 p-3 bg-gray-800 border-t border-gray-700">

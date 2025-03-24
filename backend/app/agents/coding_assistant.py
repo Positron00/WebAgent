@@ -68,7 +68,7 @@ class CodingAssistantAgent(BaseAgent):
         """Initialize the Coding Assistant Agent."""
         super().__init__(name="coding_assistant")
         self.prompt = ChatPromptTemplate.from_template(CODING_ASSISTANT_PROMPT)
-        self.llm = get_llm("gpt-4-turbo")
+        self.llm = get_llm()
         self.parser = StrOutputParser()
         
         # Get configuration for allowed modules

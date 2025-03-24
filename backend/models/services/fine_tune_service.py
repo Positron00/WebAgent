@@ -283,9 +283,6 @@ class FineTuneService(BaseModelService):
         self.experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME", "model-fine-tuning")
         self.run_id = None
         
-        # Use the MLRUNS_PATH from settings
-        default_mlruns_path = settings.MLRUNS_PATH
-        
         # Initialize MLflow
         mlflow.set_tracking_uri(self.mlflow_tracking_uri)
         
@@ -293,7 +290,7 @@ class FineTuneService(BaseModelService):
         try:
             self.experiment_id = mlflow.create_experiment(
                 self.experiment_name,
-                artifact_location=os.environ.get("MLFLOW_ARTIFACT_LOCATION", default_mlruns_path)
+                artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
             )
         except mlflow.exceptions.MlflowException:
             self.experiment_id = mlflow.get_experiment_by_name(self.experiment_name).experiment_id

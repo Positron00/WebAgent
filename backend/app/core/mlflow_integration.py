@@ -74,7 +74,7 @@ class MLflowManager:
             if experiment is None:
                 experiment_id = mlflow.create_experiment(
                     experiment_name,
-                    artifact_location=os.environ.get("MLFLOW_ARTIFACT_LOCATION", settings.MLRUNS_PATH)
+                    artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
                 )
             else:
                 experiment_id = experiment.experiment_id

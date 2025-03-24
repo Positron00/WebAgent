@@ -29,7 +29,7 @@ For local development, start the MLflow tracking server:
 ```bash
 # Start MLflow server with SQLite backend and local artifact storage
 # Uses the MLRUNS_PATH setting from app/core/config.py
-mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root $WEBAGENT_MLRUNS_PATH --host 0.0.0.0 --port 5000
+mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root file:///path/to/backend/mlruns --host 0.0.0.0 --port 5000
 ```
 
 For production deployments, use more robust backends:
@@ -286,13 +286,13 @@ Response:
     {
       "experiment_id": "1",
       "name": "model-quality",
-      "artifact_location": "$WEBAGENT_MLRUNS_PATH/1",
+      "artifact_location": "file:///path/to/backend/mlruns/1",
       "lifecycle_stage": "active"
     },
     {
       "experiment_id": "2",
       "name": "performance-testing",
-      "artifact_location": "$WEBAGENT_MLRUNS_PATH/2",
+      "artifact_location": "file:///path/to/backend/mlruns/2",
       "lifecycle_stage": "active"
     }
   ],

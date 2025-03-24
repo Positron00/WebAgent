@@ -2,6 +2,19 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 2.9.4 - 2025-03-23
+
+### Changed
+- Standardized MLflow artifact storage configuration to use backend/mlruns directory consistently
+- Removed mlruns settings from .env.local file to use centralized config.py settings
+- Updated MLFLOW_INTEGRATION.md documentation to reflect new configuration approach
+- Ensured all code references to mlruns use the path from config.py
+- Added proper synchronization between existing mlruns data and backend/mlruns directory
+- Standardized vector database path configuration to use backend/data/vectordb directory consistently
+- Updated README_observability.md documentation to reflect new configuration approach
+- Standardized data and sample document directory path configuration to use backend/data directory consistently
+- Standardized default provider and model configuration to use config.py settings
+
 ## 2.9.3 - 2025-03-18
 
 ### Enhanced

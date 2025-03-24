@@ -81,7 +81,7 @@ class TeamManagerAgent(BaseAgent):
         """Initialize the Team Manager Agent."""
         super().__init__(name="team_manager")
         self.prompt = ChatPromptTemplate.from_template(TEAM_MANAGER_PROMPT)
-        self.llm = get_llm("gpt-4-turbo")
+        self.llm = get_llm()
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)

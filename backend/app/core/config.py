@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = os.getenv("WEBAGENT_API_PREFIX", "/api/v1")
     PROJECT_NAME: str = "WebAgent Backend"
     PROJECT_DESCRIPTION: str = "Multi-Agent Research and Analysis Platform"
-    VERSION: str = "2.9.3"
+    VERSION: str = "2.9.4"
     
     # Environment
     WEBAGENT_ENV: str = os.getenv("WEBAGENT_ENV", "dev")
@@ -155,8 +155,14 @@ class Settings(BaseSettings):
     
     # MLflow artifacts storage settings
     MLRUNS_PATH: str = Field(
-        default=os.getenv("WEBAGENT_MLRUNS_PATH", os.path.join(BASE_DIR, "backend", "mlruns")),
+        default=os.path.join(BASE_DIR, "backend", "mlruns"),
         description="Path to store MLflow runs and artifacts"
+    )
+    
+    # MLflow artifact location (file URI format)
+    MLFLOW_ARTIFACT_LOCATION: str = Field(
+        default=f"file://{os.path.join(BASE_DIR, 'backend', 'mlruns')}",
+        description="File URI path for MLflow artifacts"
     )
     
     ARTIFACTS_REGISTRY_URL: Optional[str] = Field(

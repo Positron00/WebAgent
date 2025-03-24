@@ -5,6 +5,7 @@ import { MicrophoneIcon, PaperClipIcon, ComputerDesktopIcon, SparklesIcon, Paper
 import { useApp } from '@/contexts/AppContext';
 import path from 'path';
 import { saveAs } from 'file-saver';
+import Image from 'next/image';
 
 interface MessageInputProps {
   value: string;
@@ -351,10 +352,12 @@ export function MessageInput({
         {imagePreviewUrl && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex items-center">
             <div className="relative">
-              <img 
+              <Image 
                 src={imagePreviewUrl} 
                 alt="Attached image" 
                 className="w-8 h-8 object-cover rounded"
+                width={32}
+                height={32}
               />
               {onClearScreenshot && (
                 <button
