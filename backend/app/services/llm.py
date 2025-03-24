@@ -546,7 +546,7 @@ def get_together_llm(model_name: Optional[str] = None):
         model_name: Optional model name to override the default
     
     Returns:
-        TogetherLLM instance or fallback to OpenAI if TogetherLLM is not available
+        TogetherLLM instance
     """
     # Get LLM configuration from settings
     llm_config = get_llm_config()
@@ -554,12 +554,18 @@ def get_together_llm(model_name: Optional[str] = None):
     # Use provided model or default to configured TOGETHER_MODEL
     model = model_name or settings.TOGETHER_MODEL
     
+    # First try the API key from settings
     together_api_key = settings.TOGETHER_API_KEY
     
+    # Debug logging for API key
+    logger.info(f"TOGETHER_API_KEY exists: {bool(together_api_key)}")
+    logger.info(f"Current directory: {os.getcwd()}")
+    logger.info(f".env.local exists in project root: {os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '.env.local'))}")
+    
     if not together_api_key:
-        logger.warning("TOGETHER_API_KEY not configured in settings (.env.local)")
-        logger.info("Falling back to OpenAI LLM")
-        return get_openai_llm(model_name)
+        error_msg = "TOGETHER_API_KEY not configured in settings (.env.local)"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
     
     try:
         # Apply rate limiting to avoid hitting Together API rate limits
@@ -579,14 +585,14 @@ def get_together_llm(model_name: Optional[str] = None):
             logger.info(f"Successfully initialized Together LLM ({model})")
             return wrapper
         except Exception as test_error:
-            logger.warning(f"Test of Together LLM failed: {str(test_error)}")
-            logger.info("Falling back to OpenAI LLM")
-            return get_openai_llm(model_name)
+            error_msg = f"Test of Together LLM failed: {str(test_error)}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
             
     except Exception as e:
-        logger.warning(f"Failed to initialize Together LLM: {str(e)}")
-        logger.info("Falling back to OpenAI LLM")
-        return get_openai_llm(model_name)
+        error_msg = f"Failed to initialize Together LLM: {str(e)}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
 @log_llm_request(provider="self")
 def get_self_hosted_llm(model_name: Optional[str] = None):
@@ -854,10 +860,13 @@ def get_llm_service_status() -> Dict[str, Any]:
             "self": {"enabled": False}
         }
 
-def confirm_llm_selection():
+def confirm_llm_selection(required_provider=None):
     """
     Interactive function to confirm LLM provider and model selection.
     Sets environment variables based on user selection.
+    
+    Args:
+        required_provider: If provided, forces the use of this provider
     
     Returns:
         Tuple[str, str]: Selected provider and model name
@@ -866,36 +875,41 @@ def confirm_llm_selection():
     default_provider = settings.LLM_DEFAULT_PROVIDER or "together"
     default_model = settings.LLM_DEFAULT_MODEL or TOGETHER_DEFAULT_MODEL
     
-    print("\n" + "=" * 80)
-    print("SELECT LLM PROVIDER")
-    print("=" * 80)
-    print("1. TogetherAI (default)")
-    print("2. Groq")
-    print("3. OpenAI")
-    print("4. Anthropic")
-    print("5. Gemini")
-    print("6. Self-hosted LLM")
-    
-    provider_choice = input("\nSelect LLM provider (1-6, default=1): ").strip()
-    
-    provider = default_provider
-    if provider_choice == "2":
-        provider = "groq"
-        print("\nSelected Groq as the LLM provider")
-    elif provider_choice == "3":
-        provider = "openai"
-        print("\nSelected OpenAI as the LLM provider")
-    elif provider_choice == "4":
-        provider = "anthropic"
-        print("\nSelected Anthropic as the LLM provider")
-    elif provider_choice == "5":
-        provider = "gemini"
-        print("\nSelected Gemini as the LLM provider")
-    elif provider_choice == "6":
-        provider = "self"
-        print("\nSelected self-hosted LLM as the provider")
+    # If required provider is set, use it
+    if required_provider:
+        provider = required_provider
+        print(f"\nUsing required provider: {provider}")
     else:
-        print("\nSelected TogetherAI as the LLM provider")
+        print("\n" + "=" * 80)
+        print("SELECT LLM PROVIDER")
+        print("=" * 80)
+        print("1. TogetherAI (default)")
+        print("2. Groq")
+        print("3. OpenAI")
+        print("4. Anthropic")
+        print("5. Gemini")
+        print("6. Self-hosted LLM")
+        
+        provider_choice = input("\nSelect LLM provider (1-6, default=1): ").strip()
+        
+        provider = default_provider
+        if provider_choice == "2":
+            provider = "groq"
+            print("\nSelected Groq as the LLM provider")
+        elif provider_choice == "3":
+            provider = "openai"
+            print("\nSelected OpenAI as the LLM provider")
+        elif provider_choice == "4":
+            provider = "anthropic"
+            print("\nSelected Anthropic as the LLM provider")
+        elif provider_choice == "5":
+            provider = "gemini"
+            print("\nSelected Gemini as the LLM provider")
+        elif provider_choice == "6":
+            provider = "self"
+            print("\nSelected self-hosted LLM as the provider")
+        else:
+            print("\nSelected TogetherAI as the LLM provider")
     
     # Default model based on provider
     if provider == "together":
@@ -943,7 +957,7 @@ def confirm_llm_selection():
     confirmation = input("\nConfirm this selection? (Y/n): ")
     if confirmation.lower() not in ["y", "yes", ""]:
         print("Selection not confirmed. Please try again.")
-        return confirm_llm_selection()
+        return confirm_llm_selection(required_provider)
     
     # Set environment variables to control provider and model
     os.environ["CONFIRM_LLM_SELECTION"] = "True"

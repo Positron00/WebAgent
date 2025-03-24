@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns/794350666005122925/9e14b17ba205401aa3d55540f97fd088/artifacts
+end_time: 1742835497697
+entry_point_name: ''
+experiment_id: '794350666005122925'
+lifecycle_stage: active
+run_id: 9e14b17ba205401aa3d55540f97fd088
+run_name: languid-crab-25
+run_uuid: 9e14b17ba205401aa3d55540f97fd088
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742835497691
+status: 3
+tags: []
+user_id: danc

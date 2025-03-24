@@ -91,10 +91,10 @@ def setup_mlflow(tracking_uri: str, experiment_name: str):
         # Create the experiment if it doesn't exist
         experiment = mlflow.get_experiment_by_name(experiment_name)
         if experiment is None:
-            # Use settings.MLRUNS_PATH for artifact location
+            # Always use settings.MLFLOW_ARTIFACT_LOCATION for artifacts
             mlflow.create_experiment(
                 experiment_name,
-                artifact_location=os.environ.get("MLFLOW_ARTIFACT_LOCATION", settings.MLRUNS_PATH)
+                artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
             )
         
         mlflow.set_experiment(experiment_name)

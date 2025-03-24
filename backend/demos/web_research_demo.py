@@ -88,7 +88,7 @@ async def run_web_research_demo():
     try:
         # Confirm LLM provider and model
         logger.debug("Calling confirm_llm_selection() to get provider and model")
-        provider, model = confirm_llm_selection()
+        provider, model = confirm_llm_selection(required_provider="together")
         logger.info(f"User selected LLM provider: {provider}")
         logger.info(f"User selected model: {model}")
     except Exception as e:
@@ -108,6 +108,19 @@ async def run_web_research_demo():
         logger.error(f"Failed to initialize Web Research Agent: {str(e)}")
         logger.error(traceback.format_exc())
         print(f"ERROR: Failed to initialize Web Research Agent: {e}")
+        
+        # Check if the error is related to the TogetherAI API key
+        if "TOGETHER_API_KEY" in str(e):
+            print("\nThe TogetherAI API key is missing or invalid.")
+            print("Please ensure the TOGETHER_API_KEY is properly set in your .env.local file")
+            print(f"Looking for .env.local at: {os.path.join(os.getcwd(), '.env.local')}")
+            
+            # Suggest solution
+            print("\nPossible solutions:")
+            print("1. Check that .env.local exists in the project root")
+            print("2. Ensure TOGETHER_API_KEY is properly set in the .env.local file")
+            print("3. Restart the application after making changes")
+            
         return
     
     # Define research queries to test
@@ -197,7 +210,7 @@ async def run_web_research_demo():
     print(f"Research priority: {research_priority}, Max sources: {max_sources}")
     
     try:
-        logger.debug("Starting web_agent.run()")
+        logger.debug("Starting web_agent function")
         start_time = datetime.now()
         
         # Record environment variables that might affect search
@@ -205,7 +218,8 @@ async def run_web_research_demo():
         logger.debug(f"Current LLM_PROVIDER: {settings.LLM_DEFAULT_PROVIDER}")
         logger.debug(f"Current TOGETHER_MODEL: {settings.TOGETHER_MODEL or 'Not set'}")
         
-        result_state = await web_agent.run(state)
+        # Call the web_agent function directly, not as a method
+        result_state = await web_agent(state)
         duration = (datetime.now() - start_time).total_seconds()
         logger.info(f"Web research completed in {duration:.2f} seconds")
         

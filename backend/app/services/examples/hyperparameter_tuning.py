@@ -9,10 +9,13 @@ import argparse
 import json
 import time
 import requests
+import os
+import numpy as np
 import mlflow
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
+from app.core.config import settings
 
 def test_parameter_combination(base_url, prompt, temperature, top_p, experiment_name):
     """Test a specific combination of temperature and top_p."""
@@ -77,7 +80,10 @@ def optimize_parameters(base_url, prompt="Explain quantum computing in simple te
     # Create or get experiment
     experiment = mlflow.get_experiment_by_name(experiment_name)
     if experiment is None:
-        mlflow.create_experiment(experiment_name)
+        mlflow.create_experiment(
+            experiment_name,
+            artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
+        )
     mlflow.set_experiment(experiment_name)
     
     # Define parameter grid

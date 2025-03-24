@@ -45,7 +45,12 @@ print(f"BASE_DIR set to: {BASE_DIR}")
 load_dotenv(".env")
 
 # Load API keys from .env.local file (highest priority)
-load_dotenv(".env.local", override=True)
+env_local_path = os.path.join(BASE_DIR, ".env.local")
+if os.path.exists(env_local_path):
+    print(f"Loading environment variables from {env_local_path}")
+    load_dotenv(env_local_path, override=True)
+else:
+    print(f"Warning: .env.local file not found at {env_local_path}")
 
 # Then load from YAML configuration (middle priority)
 try:

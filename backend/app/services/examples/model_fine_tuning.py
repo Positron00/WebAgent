@@ -9,12 +9,15 @@ import argparse
 import os
 import json
 import time
+import signal
 import requests
 import subprocess
-import mlflow
 import pandas as pd
+import numpy as np
+import mlflow
 import matplotlib.pyplot as plt
 from datetime import datetime
+from app.core.config import settings
 
 def start_llm_service(model_path, port, mlflow_tracking_uri, experiment_name, quantize=None):
     """Start the self-hosted LLM service with a specific model."""
@@ -225,7 +228,10 @@ def compare_models(model_paths, test_set, mlflow_tracking_uri="http://localhost:
     # Create or get experiment
     experiment = mlflow.get_experiment_by_name(experiment_name)
     if experiment is None:
-        mlflow.create_experiment(experiment_name)
+        mlflow.create_experiment(
+            experiment_name,
+            artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
+        )
     mlflow.set_experiment(experiment_name)
     
     base_port = 8100

@@ -1,0 +1,6 @@
+artifact_location: file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns/794350666005122925
+creation_time: 1742835497579
+experiment_id: '794350666005122925'
+last_update_time: 1742835497579
+lifecycle_stage: active
+name: llm_service

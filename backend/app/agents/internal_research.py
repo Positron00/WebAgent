@@ -82,12 +82,12 @@ Please focus on finding this information in your analysis.
 TRACKING_ENABLED = os.environ.get("MLFLOW_TRACKING_URI") is not None
 if TRACKING_ENABLED:
     import mlflow
-    # Use settings.MLRUNS_PATH for artifact location
+    # Always use settings.MLFLOW_ARTIFACT_LOCATION for artifacts
     experiment = mlflow.get_experiment_by_name("rag_agent_performance")
     if experiment is None:
         mlflow.create_experiment(
             "rag_agent_performance",
-            artifact_location=os.environ.get("MLFLOW_ARTIFACT_LOCATION", settings.MLRUNS_PATH)
+            artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
         )
     else:
         mlflow.set_experiment("rag_agent_performance")
