@@ -92,14 +92,9 @@ class BaseAgent:
         if self.langsmith_config.tracing_enabled and self.tracer:
             logger.debug(f"Adding LangSmith tracing to {self.name} chain")
             
-            # Check if the chain already has config with tags to avoid duplicates
-            existing_config = getattr(chain, "config", None)
-            if existing_config and "tags" in existing_config:
-                logger.debug("Chain already has tags configured, only adding callbacks")
-                return chain.with_config({"callbacks": [self.tracer]})
-            else:
-                # Add the full trace config including tags
-                return chain.with_config(self.get_trace_config())
+            # Only add the tracer callback without tags to avoid duplicate tags
+            return chain.with_config({"callbacks": [self.tracer]})
+            
         return chain
     
     async def run(self, state: WorkflowState) -> WorkflowState:

@@ -983,4 +983,40 @@ def confirm_llm_selection(required_provider=None):
     os.environ["WEBAGENT_LLM_DEFAULT_MODEL"] = model
     
     print(f"\nSelection confirmed. Using {provider} with model {model}")
-    return provider, model 
+    return provider, model
+
+def get_llm_without_tags(model_name: Optional[str] = None):
+    """
+    Get a LangChain LLM instance based on the configured provider, but with no tags.
+    This helps prevent duplicate tags when chaining with prompts that already have tags.
+    
+    Args:
+        model_name: Optional model name to use (defaults to provider-specific default)
+        
+    Returns:
+        A configured LLM instance without tags
+    """
+    llm = get_llm(model_name)
+    
+    # Remove any tags by wrapping the LLM in a simple wrapper that doesn't pass tags
+    class NoTagsLLMWrapper:
+        def __init__(self, base_llm):
+            self.base_llm = base_llm
+            
+        async def ainvoke(self, input, **kwargs):
+            # Remove tags from kwargs to avoid conflicts
+            if "tags" in kwargs:
+                del kwargs["tags"]
+            return await self.base_llm.ainvoke(input, **kwargs)
+            
+        def invoke(self, input, **kwargs):
+            # Remove tags from kwargs to avoid conflicts
+            if "tags" in kwargs:
+                del kwargs["tags"]
+            return self.base_llm.invoke(input, **kwargs)
+            
+        # Delegate all other attributes to the base LLM
+        def __getattr__(self, name):
+            return getattr(self.base_llm, name)
+    
+    return NoTagsLLMWrapper(llm) 

@@ -128,6 +128,42 @@ def format_result(query_result, dark_mode=False):
             
         return markdown
     
+    # Handle coding assistant output
+    if isinstance(result, dict) and ("code" in result or "explanation" in result):
+        # Show explanation if available
+        if "explanation" in result and result["explanation"]:
+            markdown += "# Explanation\n\n"
+            markdown += f"{result['explanation']}\n\n"
+            markdown += f"{divider}\n\n"
+        
+        # Show code if available
+        if "code" in result and result["code"]:
+            markdown += "# Generated Code\n\n"
+            
+            # Format the code properly with syntax highlighting
+            code = result["code"]
+            
+            # Clean up the code - remove markdown code blocks if present
+            if code.startswith("```") and code.endswith("```"):
+                # Extract code from markdown code blocks
+                lines = code.split("\n")
+                if len(lines) > 2:  # At least 3 lines (opening, content, closing)
+                    # Remove the first and last lines (opening and closing ```)
+                    code = "\n".join(lines[1:-1])
+                    
+                    # If the first line has language identifier (e.g., "python"), remove it
+                    if code.startswith("python"):
+                        code = code[6:].strip()
+            
+            # Add the code block with proper formatting
+            markdown += f"```python\n{code}\n```\n\n"
+            
+            # Add a note about saving
+            markdown += f"{divider}\n\n"
+            markdown += "*Note: The generated code has been saved to the demo_outputs directory.*\n\n"
+        
+        return markdown
+    
     # Handle internal research agent state
     if hasattr(result, 'reports') and 'internal_research' in result.reports:
         internal_research = result.reports.get('internal_research', {})
