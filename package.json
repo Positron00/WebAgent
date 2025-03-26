@@ -1,7 +1,7 @@
 {
   "name": "webagent",
-  "version": "2.9.6",
-  "description": "WebAgent Platform with workflow logs for detailed execution tracking, enhanced diagnostics, and comprehensive test suite for workflow monitoring (2025-03-24)",
+  "version": "2.9.7",
+  "description": "WebAgent Platform with improved plot directory handling and file path management for the demo outputs, ensuring all generated files are saved in the correct locations (2025-03-25)",
   "private": true,
   "scripts": {
     "dev": "next dev",

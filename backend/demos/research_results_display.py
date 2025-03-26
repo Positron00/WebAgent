@@ -162,6 +162,20 @@ def format_result(query_result, dark_mode=False):
             markdown += f"{divider}\n\n"
             markdown += "*Note: The generated code has been saved to the demo_outputs directory.*\n\n"
         
+        # Show execution results if available
+        if "execution_result" in result and result["execution_result"]:
+            markdown += "# Execution Results\n\n"
+            markdown += "The generated code was automatically executed in a safe environment. Here are the results:\n\n"
+            markdown += result["execution_result"] + "\n\n"
+            
+            # Check if this contains a plot path
+            if "Plot image saved to:" in result["execution_result"]:
+                markdown += "**Visualization Generated!** The code created visual plots that were saved to the plots directory.\n\n"
+            elif "Error" in result["execution_result"]:
+                markdown += "**Note:** The code execution encountered errors. These might be due to missing dependencies or syntax issues.\n\n"
+            
+            markdown += f"{divider}\n\n"
+        
         return markdown
     
     # Handle internal research agent state

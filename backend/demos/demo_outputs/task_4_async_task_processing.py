@@ -6,44 +6,42 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Set the aesthetic style of the plots
+# Set the aesthetics for the plots
 sns.set(style="whitegrid")
 
-# Generate synthetic data for document processing times (in seconds)
+# Generate sample data for document processing tasks
 np.random.seed(42)  # For reproducibility
 num_tasks = 100
-processing_times = np.random.exponential(scale=5, size=num_tasks)  # Simulate processing times
+statuses = np.random.choice(['Success', 'Failed'], size=num_tasks, p=[0.8, 0.2])
+processing_times = np.random.exponential(scale=2, size=num_tasks)  # Simulating processing times in seconds
 
-# Create a DataFrame to hold the processing times
-df = pd.DataFrame({
-    'Task_ID': range(1, num_tasks + 1),
-    'Processing_Time': processing_times
+# Create a DataFrame
+data = pd.DataFrame({
+    'Status': statuses,
+    'Processing Time (s)': processing_times
 })
 
-# Function to visualize the processing times
-def visualize_processing_times(dataframe):
-    """Visualizes the document processing times using a histogram and box plot."""
-    
-    # Create a figure with subplots
-    fig, axs = plt.subplots(2, 1, figsize=(10, 10))
-    
-    # Histogram of processing times
-    sns.histplot(dataframe['Processing_Time'], bins=20, kde=True, ax=axs[0], color='skyblue')
-    axs[0].set_title('Distribution of Document Processing Times', fontsize=16)
-    axs[0].set_xlabel('Processing Time (seconds)', fontsize=12)
-    axs[0].set_ylabel('Frequency', fontsize=12)
+# Display the first few rows of the DataFrame
+print("Sample Data:")
+print(data.head())
 
-    # Box plot of processing times
-    sns.boxplot(x=dataframe['Processing_Time'], ax=axs[1], color='lightgreen')
-    axs[1].set_title('Box Plot of Document Processing Times', fontsize=16)
-    axs[1].set_xlabel('Processing Time (seconds)', fontsize=12)
+# Visualization 1: Bar plot of task statuses
+plt.figure(figsize=(10, 5))
+status_counts = data['Status'].value_counts()
+sns.barplot(x=status_counts.index, y=status_counts.values, palette='viridis')
+plt.title('Number of Document Processing Tasks by Status')
+plt.xlabel('Status')
+plt.ylabel('Number of Tasks')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
 
-    # Adjust layout for better readability
-    plt.tight_layout()
-    plt.show()
-
-# Call the visualization function with the generated DataFrame
-try:
-    visualize_processing_times(df)
-except Exception as e:
-    print(f"An error occurred while visualizing processing times: {e}")
+# Visualization 2: Box plot of processing times by status
+plt.figure(figsize=(10, 5))
+sns.boxplot(x='Status', y='Processing Time (s)', data=data, palette='coolwarm')
+plt.title('Distribution of Processing Times by Task Status')
+plt.xlabel('Status')
+plt.ylabel('Processing Time (s)')
+plt.ylim(0, max(data['Processing Time (s)']) + 5)  # Set the y-limit for better visibility
+plt.tight_layout()
+plt.show()

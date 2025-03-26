@@ -2,6 +2,26 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 2.9.7 - 2025-03-25
+
+### Added
+- Added code evaluation in the coding assistant demo
+- Added Vercel deployment capability with serverless Python backend
+- Created serverless API handlers for chat and task endpoints
+- Added comprehensive deployment documentation in VERCEL_DEPLOYMENT.md
+- Created vercel.json configuration for build and routing settings
+- Added environment variable template in .env.example
+
+### Fixed
+- Updated all demo scripts to save plots to the correct directories
+- Added automatic creation of plots directory if it doesn't exist
+- Fixed web API endpoint to save plots in designated directory
+- Updated batch processor to use script directory for logs
+- Fixed file path handling in simple data processing function
+- Improved error handling for missing files
+- Enhanced logging with plot save locations
+- Removed stray files from root directory
+
 ## 2.9.6 - 2025-03-24
 
 ### Added

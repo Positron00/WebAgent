@@ -3,115 +3,120 @@
 
 import os
 import logging
-import numpy as np
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from time import time
+from typing import List, Dict, Any
 
-# Configure logging
+# Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class DocumentProcessor:
-    def __init__(self, file_paths):
+    def __init__(self, file_paths: List[str]):
         """
-        Initialize the DocumentProcessor with a list of file paths.
-
-        :param file_paths: List of file paths to process
+        Initializes the DocumentProcessor with a list of file paths.
+        
+        Args:
+            file_paths (List[str]): List of paths to the documents to process.
         """
         self.file_paths = file_paths
-        self.metrics = {'file_type': [], 'count': [], 'average_time': []}
-    
+        self.processed_data = []
+        self.metrics = {'file_type': [], 'processing_time': []}
+
     def process_documents(self):
         """
-        Process each document and log metrics such as file type, count, and processing time.
+        Processes the documents at the specified file paths, logging metrics for each file type.
         """
         for file_path in self.file_paths:
+            file_type = self.get_file_type(file_path)
+            start_time = time()
             try:
-                file_type = self._get_file_type(file_path)
-                processing_time = self._mock_processing(file_path)  # Mock processing for demonstration
-                
-                # Update metrics
-                self._update_metrics(file_type, processing_time)
-                
+                self.process_file(file_path)
+                processing_time = time() - start_time
+                self.record_metrics(file_type, processing_time)
             except Exception as e:
                 logging.error(f"Error processing {file_path}: {e}")
 
-        self._visualize_metrics()
-
-    def _get_file_type(self, file_path):
+    def get_file_type(self, file_path: str) -> str:
         """
-        Get the file type based on the file extension.
-
-        :param file_path: Path to the file
-        :return: File type as a string
+        Retrieves the file type from the file extension.
+        
+        Args:
+            file_path (str): The path to the file.
+        
+        Returns:
+            str: The file type based on the file extension.
         """
-        _, file_extension = os.path.splitext(file_path)
-        return file_extension[1:]  # Remove the dot
+        return os.path.splitext(file_path)[1][1:]
 
-    def _mock_processing(self, file_path):
+    def process_file(self, file_path: str):
         """
-        Mock processing of a document and return a random processing time.
-
-        :param file_path: Path to the file
-        :return: Random processing time in seconds
+        A placeholder method for processing the file. Replace with actual processing logic.
+        
+        Args:
+            file_path (str): The path to the file to process.
         """
-        # Simulate varying processing times
-        time_taken = np.random.uniform(0.1, 2.0)  # Random time between 0.1 and 2 seconds
-        logging.info(f"Processed {file_path} in {time_taken:.2f} seconds.")
-        return time_taken
-
-    def _update_metrics(self, file_type, processing_time):
-        """
-        Update metrics for the processed document.
-
-        :param file_type: Type of the file processed
-        :param processing_time: Time taken to process the file
-        """
-        if file_type not in self.metrics['file_type']:
-            self.metrics['file_type'].append(file_type)
-            self.metrics['count'].append(1)
-            self.metrics['average_time'].append(processing_time)
+        # Simulating processing time
+        if file_path.endswith('.txt'):
+            time.sleep(np.random.uniform(0.1, 0.5))
+        elif file_path.endswith('.csv'):
+            time.sleep(np.random.uniform(0.2, 0.7))
+        elif file_path.endswith('.pdf'):
+            time.sleep(np.random.uniform(0.3, 0.9))
         else:
-            index = self.metrics['file_type'].index(file_type)
-            self.metrics['count'][index] += 1
-            self.metrics['average_time'][index] = (
-                (self.metrics['average_time'][index] * (self.metrics['count'][index] - 1)) + processing_time
-            ) / self.metrics['count'][index]
+            raise ValueError("Unsupported file type")
 
-    def _visualize_metrics(self):
+    def record_metrics(self, file_type: str, processing_time: float):
         """
-        Visualize the processing metrics using bar plots.
+        Records the metrics for processed files.
+        
+        Args:
+            file_type (str): The type of the file processed.
+            processing_time (float): The time taken to process the file.
         """
-        # Create a DataFrame from metrics
+        self.metrics['file_type'].append(file_type)
+        self.metrics['processing_time'].append(processing_time)
+        logging.info(f"Processed {file_type} in {processing_time:.2f} seconds")
+
+    def visualize_metrics(self):
+        """
+        Visualizes the processing metrics using bar charts and boxplots.
+        """
         df = pd.DataFrame(self.metrics)
 
-        # Set the aesthetic style of the plots
-        sns.set_style("whitegrid")
-
-        # Create a figure with two subplots
-        fig, ax1 = plt.subplots(2, 1, figsize=(10, 10))
-
-        # Bar plot for the count of processed documents
-        sns.barplot(x='file_type', y='count', data=df, ax=ax1[0], palette='viridis')
-        ax1[0].set_title('Count of Processed Documents by File Type')
-        ax1[0].set_xlabel('File Type')
-        ax1[0].set_ylabel('Count')
-
-        # Bar plot for the average processing time
-        sns.barplot(x='file_type', y='average_time', data=df, ax=ax1[1], palette='plasma')
-        ax1[1].set_title('Average Processing Time by File Type (seconds)')
-        ax1[1].set_xlabel('File Type')
-        ax1[1].set_ylabel('Average Time (seconds)')
-
-        # Adjust layout and show the plot
+        # Bar chart for number of documents processed per file type
+        plt.figure(figsize=(12, 6))
+        sns.countplot(data=df, x='file_type', order=df['file_type'].value_counts().index)
+        plt.title('Number of Documents Processed per File Type')
+        plt.xlabel('File Type')
+        plt.ylabel('Count of Documents')
+        plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
 
-# Example usage:
+        # Boxplot for processing time per file type
+        plt.figure(figsize=(12, 6))
+        sns.boxplot(data=df, x='file_type', y='processing_time')
+        plt.title('Distribution of Processing Time per File Type')
+        plt.xlabel('File Type')
+        plt.ylabel('Processing Time (seconds)')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+
+# Example usage
 if __name__ == "__main__":
-    # List of sample file paths
-    sample_files = ['document1.pdf', 'document2.docx', 'document3.txt', 'document4.pdf', 'document5.docx']
+    # Sample file paths for demonstration
+    sample_files = [
+        'document1.txt',
+        'document2.csv',
+        'document3.pdf',
+        'document4.txt',
+        'document5.csv'
+    ]
     
-    # Create an instance of DocumentProcessor and process documents
     processor = DocumentProcessor(sample_files)
     processor.process_documents()
+    processor.visualize_metrics()
