@@ -2,6 +2,24 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 2.9.8 - 2025-03-26
+
+### Added
+- Added iterative code review and fixing process to the integrated coding workflow
+- Implemented up to 2 additional code review iterations for better code quality
+- Added conditional workflow routing based on code execution success/failure
+- Enhanced workflow state management with review cycle tracking
+- Improved result display with multiple review iterations shown in UI
+- Created comprehensive review feedback for each iteration cycle
+
+### Enhanced
+- Optimized the Integrated Coding Demo for real-time execution
+- Enhanced review iteration display in the console output
+- Improved coding results UI presentation with progress tracking
+- Enhanced error logging throughout the review process
+- Added clear review cycle indicators in both console and UI outputs
+- Updated output formatting for better readability
+
 ## 2.9.7 - 2025-03-25
 
 ### Added

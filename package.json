@@ -1,7 +1,7 @@
 {
   "name": "webagent",
-  "version": "2.9.7",
-  "description": "WebAgent Platform with improved plot directory handling and file path management for the demo outputs, ensuring all generated files are saved in the correct locations (2025-03-25)",
+  "version": "2.9.8",
+  "description": "WebAgent Platform with improved integrated coding workflow that includes iterative code review and fixing capabilities for better code quality (2025-03-26)",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -19,7 +19,7 @@ Run demos with:
 python -m backend.demos.[demo_file_name_without_extension]
 """
 
-__version__ = "2.9.3"
+__version__ = "2.9.8"
 
 import os
 import sys
