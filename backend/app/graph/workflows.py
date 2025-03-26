@@ -22,6 +22,7 @@ from app.agents.internal_research import get_internal_research_agent
 from app.agents.senior_research import get_senior_research_agent
 from app.agents.data_analysis import get_data_analysis_agent
 from app.agents.coding_assistant import get_coding_assistant_agent
+from app.agents.coding_review import get_coding_review_agent
 from app.agents.team_manager import get_team_manager_agent
 from app.agents.document_extraction_agent import get_document_extraction_agent
 from app.core.config import settings
@@ -268,6 +269,7 @@ def _build_agent_workflow_impl(config=None, workflow=None) -> StateGraph:
     senior_research = get_senior_research_agent()
     data_analysis = get_data_analysis_agent()
     coding_assistant = get_coding_assistant_agent()
+    coding_review = get_coding_review_agent()
     team_manager = get_team_manager_agent()
     logger.debug(f"All agent instances initialized in {time.time() - start_time:.2f} seconds")
     
@@ -285,6 +287,7 @@ def _build_agent_workflow_impl(config=None, workflow=None) -> StateGraph:
     workflow.add_node("senior_research", senior_research)
     workflow.add_node("data_analysis", data_analysis)
     workflow.add_node("coding_assistant", coding_assistant)
+    workflow.add_node("coding_review", coding_review)
     workflow.add_node("team_manager", team_manager)
     
     # Add special node for parallel research execution
@@ -340,7 +343,8 @@ def _build_agent_workflow_impl(config=None, workflow=None) -> StateGraph:
     
     # From specialized agents back to team manager
     workflow.add_edge("data_analysis", "team_manager")
-    workflow.add_edge("coding_assistant", "team_manager")
+    workflow.add_edge("coding_assistant", "coding_review")
+    workflow.add_edge("coding_review", "team_manager")
     
     # Configure LangSmith tracing if enabled
     if settings.LANGCHAIN_TRACING_V2:
