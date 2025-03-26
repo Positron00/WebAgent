@@ -9,7 +9,7 @@ export const clientConfig = {
   environment: typeof window !== 'undefined' 
     ? (process.env.NODE_ENV || 'development') 
     : 'server',
-  version: '2.9.8',
+  version: '2.9.9',
   isProduction: typeof window !== 'undefined' 
     ? process.env.NODE_ENV === 'production' 
     : false,
@@ -48,7 +48,7 @@ export const clientConfig = {
     defaultTheme: 'dark',
     maxMessagesDisplayed: 50,
   },
-  name: 'WebAgent',
+  name: 'WebAgent Platform',
   slogan: 'Your AI Research Assistant',
   logoText: 'WebAgent',
   footerText: '© 2025 WebAgent Platform',

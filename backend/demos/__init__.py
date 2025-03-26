@@ -19,7 +19,11 @@ Run demos with:
 python -m backend.demos.[demo_file_name_without_extension]
 """
 
-__version__ = "2.9.8"
+__description__ = "Demo modules for the WebAgent Platform"
+__url__ = "https://github.com/username/webagent"
+__license__ = "MIT"
+__copyright__ = "Copyright 2025"
+__version__ = "2.9.9"
 
 import os
 import sys

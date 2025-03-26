@@ -1,6 +1,6 @@
 {
-  "name": "webagent",
-  "version": "2.9.8",
+  "name": "webagent-platform",
+  "version": "2.9.9",
   "description": "WebAgent Platform with improved integrated coding workflow that includes iterative code review and fixing capabilities for better code quality (2025-03-26)",
   "private": true,
   "scripts": {
