@@ -101,24 +101,113 @@ def format_result(query_result, dark_mode=False):
     if isinstance(result, dict) and "analysis" in result:
         if result.get("analysis"):
             markdown += "# Analysis\n\n"
-            markdown += f"{result['analysis']}\n\n"
-            markdown += f"{divider}\n\n"
+            
+            # First check if this is an error message
+            analysis_text = result['analysis']
+            
+            if "Error occurred during analysis" in analysis_text:
+                # Make the error message more prominent and helpful
+                markdown += "### ⚠️ Analysis Error\n\n"
+                markdown += "There was a problem generating the analysis. Below is an auto-generated summary based on source titles:\n\n"
+                
+                # Add basic information from the sources
+                if "sources" in result and result["sources"]:
+                    for i, source in enumerate(result["sources"], 1):
+                        title = source.get("title", "Untitled")
+                        markdown += f"- {title} [Source {i}]\n"
+                    
+                    markdown += "\n*For detailed information, please review the references below.*\n\n"
+            else:
+                # Apply formatting improvements to the analysis content
+                # First, remove the "Here is the analysis:" text that sometimes appears
+                analysis_text = re.sub(r'^Here is the analysis:\s*', '', analysis_text)
+                
+                # Remove feedback section if present
+                analysis_text = re.sub(r'Feedback Section.*?\n\n', '', analysis_text, flags=re.DOTALL)
+                
+                # Clean up any "step X" instructions that might have leaked through
+                analysis_text = re.sub(r'(?i)Step \d+:.*?\n', '', analysis_text)
+                
+                # Clean up any "final answer is:" text
+                analysis_text = re.sub(r'(?i)The final answer is:\s*', '', analysis_text)
+                
+                # Only convert to headings if the line is short enough and looks like a heading
+                # This prevents converting paragraphs to headings
+                def heading_replacer(match):
+                    line = match.group(1)
+                    if len(line) <= 60 and not line.endswith('.'):
+                        return f"### {line}"
+                    return line
+                
+                # Only apply heading formatting to lines that look like headings
+                analysis_text = re.sub(r'(?m)^([A-Z][A-Za-z\s:]{3,59})$', heading_replacer, analysis_text)
+                
+                # Remove duplicate "References:" section if it appears in the analysis
+                analysis_text = re.sub(r'(?m)^References:?\s*(\[\d+\].*?)(\n\n|\n$|$)', '', analysis_text)
+                analysis_text = re.sub(r'(?m)^### References:?\s*(\[\d+\].*?)(\n\n|\n$|$)', '', analysis_text)
+                
+                # Ensure proper bullet point formatting
+                analysis_text = re.sub(r'(?m)^(\s*[-*])(\S)', r'\1 \2', analysis_text)
+                
+                # Process the text line by line for better formatting
+                lines = analysis_text.split('\n')
+                formatted_lines = []
+                in_list = False
+                
+                for i, line in enumerate(lines):
+                    # Skip lines with just whitespace
+                    if not line.strip():
+                        formatted_lines.append('')
+                        in_list = False
+                        continue
+                    
+                    # Skip lines that look like meta-instructions
+                    if re.match(r'(?i)^(note:|important:|remember:|guidelines?:|instruction)', line.strip()):
+                        continue
+                    
+                    # Process headings - add space before them
+                    if line.strip().startswith('#'):
+                        # Add extra space before headings (except the first one)
+                        if i > 0 and formatted_lines and formatted_lines[-1].strip() != '':
+                            formatted_lines.append('')
+                        formatted_lines.append(line)
+                        in_list = False
+                    # Process list items
+                    elif line.strip().startswith(('-', '*')) or re.match(r'^\d+\.', line.strip()):
+                        formatted_lines.append(line)
+                        in_list = True
+                    # Handle paragraph text
+                    else:
+                        # If this continues a list item, indent it
+                        if in_list and i > 0 and (lines[i-1].strip().startswith(('-', '*')) or re.match(r'^\d+\.', lines[i-1].strip())):
+                            indent = re.match(r'^(\s*)', lines[i-1]).group(1) + '  '
+                            formatted_lines.append(indent + line.strip())
+                        else:
+                            formatted_lines.append(line)
+                            in_list = False
+                
+                # Join back into a single string
+                analysis_text = '\n'.join(formatted_lines)
+                
+                # Add a bit of space between paragraphs for readability
+                analysis_text = re.sub(r'\n{3,}', '\n\n', analysis_text)
+                
+                markdown += f"{analysis_text}\n\n"
         
         if "sources" in result and result["sources"]:
-            markdown += "# Sources\n\n"
+            markdown += "## References\n\n"
+            
+            # Create a numbered list of references with better formatting
             for i, source in enumerate(result["sources"], 1):
                 title = source.get("title", "Untitled")
                 url = source.get("url", "No URL")
-                snippet = source.get("content_snippet", "")
                 
-                markdown += f"### {i}. {title}\n"
-                markdown += f"**URL**: [{url}]({url})\n\n"
-                if snippet:
-                    markdown += f"**Preview**: {snippet}\n\n"
+                # More academic-style reference format
+                markdown += f"**[{i}]** [{title}]({url})\n\n"
             
             markdown += f"{divider}\n\n"
         elif "sources" in result and not result["sources"]:
-            markdown += "# Sources\n\n*No sources found*\n\n"
+            markdown += "## References\n\n*No sources found*\n\n"  # Changed from Sources to References
             markdown += f"{divider}\n\n"
             
         # If empty analysis but we have sources, show a message

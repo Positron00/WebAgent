@@ -32,20 +32,56 @@ from datetime import datetime
 import json
 from pprint import pprint
 
+# Add ColoredFormatter for console output
+import logging.config
+import colorama
+
+# Initialize colorama for cross-platform colored terminal output
+colorama.init()
+
+# Define color codes
+class ColorCodes:
+    GREY = "\033[38;5;240m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    ORANGE = "\033[38;5;208m" 
+    RED = "\033[31m"
+    BOLD_RED = "\033[31;1m"
+    BLUE = "\033[34m"
+    RESET = "\033[0m"
+
+# Custom formatter with colors
+class ColoredFormatter(logging.Formatter):
+    FORMATS = {
+        logging.DEBUG: ColorCodes.GREY + "%(asctime)s - %(name)s - %(levelname)s - %(message)s" + ColorCodes.RESET,
+        logging.INFO: "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        logging.WARNING: ColorCodes.ORANGE + "%(asctime)s - %(name)s - %(levelname)s - %(message)s" + ColorCodes.RESET,
+        logging.ERROR: ColorCodes.RED + "%(asctime)s - %(name)s - %(levelname)s - %(message)s" + ColorCodes.RESET,
+        logging.CRITICAL: ColorCodes.BOLD_RED + "%(asctime)s - %(name)s - %(levelname)s - %(message)s" + ColorCodes.RESET,
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
 # Setup path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(os.path.dirname(current_dir))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-# Configure logging
+# Configure logging - use console handler with colors
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(ColoredFormatter())
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    handlers=[console_handler]
 )
 logger = logging.getLogger("web_research_demo")
 
-# Create file handler to save logs
+# Create file handler to save logs (without colors)
 log_dir = os.path.join(current_dir, "logs")
 os.makedirs(log_dir, exist_ok=True)
 log_file = os.path.join(log_dir, f"web_research_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")

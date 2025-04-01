@@ -88,7 +88,7 @@ class WebSearchService:
             sanitized_query = "general information"
             
         # Ensure search_depth is valid
-        valid_depths = ["basic", "comprehensive"]
+        valid_depths = ["basic", "advanced"]
         if search_depth not in valid_depths:
             logger.warning(f"Invalid search_depth: {search_depth}, defaulting to 'basic'")
             search_depth = "basic"

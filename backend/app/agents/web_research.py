@@ -30,15 +30,23 @@ You have been provided with the following search results:
 {feedback_section}
 
 Your task:
-1. Analyze the search results and extract relevant information for the query
-2. Organize the information in a clear, structured format
-3. Cite your sources with URLs
-4. Only include information that is directly related to the query
-5. Highlight key facts, statistics, and quotes
-6. Format your findings as markdown
-7. If additional research was requested, focus on addressing the specific questions and missing information
+1. Create a SINGLE, comprehensive analysis that directly answers the query
+2. Cite sources inline with numbers in square brackets [1], [2], etc.
+3. Only include information that is directly related to the query
+4. Use clear headings and bullet points where appropriate
+5. Format your findings as markdown
+6. If additional research was requested, address the specific questions and missing information
 
-IMPORTANT: Be thorough, accurate, and objective. Cite all sources.
+IMPORTANT GUIDELINES:
+- DO NOT show your step-by-step thinking or planning process
+- DO NOT repeat the same information multiple times
+- DO NOT include phrases like "The final answer is:" or "Step X:"
+- Create a single, unified summary rather than separate sections
+- Be thorough, accurate, and objective
+- Cite all sources within your analysis with [1], [2] notation
+- Deduplicate information from multiple sources
+
+The sources will be automatically appended after your analysis with full details.
 """
 
 # Prompt for follow-up research
@@ -156,7 +164,11 @@ class WebResearchAgent(BaseAgent):
             # Map the search depth to valid values
             depth = "basic"  # Default to basic for reliability
             if research_plan.get("search_depth") == "deep":
-                depth = "comprehensive"
+                depth = "advanced"
+            elif research_plan.get("search_depth") == "standard":
+                depth = "basic"  # Map standard to basic
+            elif research_plan.get("search_depth") == "quick":
+                depth = "basic"  # Map quick to basic as well
             
             logger.debug(f"Using search depth: {depth}")
             
@@ -242,6 +254,9 @@ class WebResearchAgent(BaseAgent):
                 logger.warning("Empty response from LLM")
                 assistant_message = "No analysis was generated. Please review the sources directly."
             
+            # Clean up the response to remove thinking process and duplications
+            assistant_message = self._clean_analysis(assistant_message)
+            
             # Parse the response
             parsed_response = {
                 "analysis": assistant_message,
@@ -250,10 +265,22 @@ class WebResearchAgent(BaseAgent):
             
             # Add the sources from the search results
             sources = []
+            seen_urls = set()  # Track URLs we've already processed
+            
             for result in search_results:
+                url = result.get("url", "")
+                
+                # Skip this source if we've already seen this URL
+                if url and url in seen_urls:
+                    continue
+                    
+                # Add URL to our tracking set
+                if url:
+                    seen_urls.add(url)
+                
                 sources.append({
                     "title": result.get("title", "Unknown title"),
-                    "url": result.get("url", ""),
+                    "url": url,
                     "content_snippet": result.get("content", "")[:150] + "..." if result.get("content") else ""
                 })
             
@@ -269,23 +296,120 @@ class WebResearchAgent(BaseAgent):
             return state
             
         except Exception as e:
-            logger.error(f"Error in web research analysis: {str(e)}")
-            # Provide a basic fallback response with the sources in case of error
+            # Log detailed error information
+            logger.error(f"Error during LLM analysis: {str(e)}")
+            
+            # Create a more helpful fallback analysis based on source titles
+            fallback_analysis = self._create_fallback_analysis(search_results, query)
+            
+            # Process sources with deduplication
             sources = []
+            seen_urls = set()  # Track URLs we've already processed
+            
             for result in search_results:
+                url = result.get("url", "")
+                
+                # Skip this source if we've already seen this URL
+                if url and url in seen_urls:
+                    continue
+                    
+                # Add URL to our tracking set
+                if url:
+                    seen_urls.add(url)
+                
                 sources.append({
                     "title": result.get("title", "Unknown title"),
-                    "url": result.get("url", ""),
+                    "url": url,
                     "content_snippet": result.get("content", "")[:150] + "..." if result.get("content") else ""
                 })
-                
-            state.context["web_search_results"] = search_results
-            state.context["web_research_results"] = {
-                "analysis": "Error occurred during analysis. Please review the sources directly.",
+            
+            # Create response with fallback analysis
+            parsed_response = {
+                "analysis": fallback_analysis,
                 "sources": sources
             }
+            
+            # Update the workflow state with the research results
+            state.context["web_search_results"] = search_results
+            state.context["web_research_results"] = parsed_response
             return state
 
+    def _clean_analysis(self, analysis: str) -> str:
+        """Clean up the analysis to remove thinking steps and repetitions."""
+        # Remove lines that indicate step-by-step thinking
+        lines = analysis.split('\n')
+        cleaned_lines = []
+        skip_line = False
+        in_sources_section = False
+        
+        for line in lines:
+            # Check if we're entering a sources section
+            if line.strip().lower().startswith(("sources:", "# sources", "## sources")):
+                in_sources_section = True
+                continue
+            
+            # Skip source listings as they'll be automatically added
+            if in_sources_section:
+                continue
+            
+            # Skip lines showing step-by-step thinking
+            if line.strip().startswith(("Step ", "step ", "- Step ", "STEP ")) or \
+               "final answer" in line.lower() or \
+               "feedback section" in line.lower():
+                skip_line = True
+                continue
+            
+            # Start capturing again when we hit a meaningful header
+            if line.strip().startswith('#') or line.strip().startswith('##'):
+                skip_line = False
+            
+            if not skip_line:
+                cleaned_lines.append(line)
+        
+        # Join back into a single string
+        cleaned = '\n'.join(cleaned_lines)
+        
+        # Further process to remove duplicate paragraphs
+        paragraphs = cleaned.split('\n\n')
+        unique_paragraphs = []
+        paragraph_content = set()
+        
+        for paragraph in paragraphs:
+            # Normalize the paragraph for comparison (lowercase, remove whitespace)
+            normalized = ' '.join(paragraph.lower().split())
+            if normalized and normalized not in paragraph_content and len(normalized) > 10:
+                paragraph_content.add(normalized)
+                unique_paragraphs.append(paragraph)
+        
+        # Join back into a single string
+        return '\n\n'.join(unique_paragraphs)
+
+    def _create_fallback_analysis(self, search_results, query):
+        """Create a fallback analysis when LLM fails, based on search result titles."""
+        if not search_results:
+            return "No search results were found for this query. Please try a different query or check your internet connection."
+        
+        # Extract main topics from the titles
+        titles = [result.get("title", "").strip() for result in search_results if result.get("title")]
+        
+        # Filter out empty titles and limit to the first 5
+        titles = [t for t in titles if t][:5]
+        
+        if not titles:
+            return "Search results were found but couldn't be analyzed. Please review the sources below for information on this topic."
+        
+        # Create a simple analysis based on source titles
+        fallback_text = f"### Key Information on {query}\n\n"
+        fallback_text += "Based on the search results, here are some key topics related to your query:\n\n"
+        
+        # Add bullet points for each title
+        for i, title in enumerate(titles, 1):
+            fallback_text += f"- {title} [Source {i}]\n"
+        
+        fallback_text += "\n### Note\n\n"
+        fallback_text += "This is an automated summary generated from search result titles. For more detailed information, please review the full sources listed below."
+        
+        return fallback_text
 
 def get_web_research_agent():
     """

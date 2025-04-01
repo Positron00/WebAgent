@@ -1,0 +1,37 @@
+2025-03-31 23:05:44,011 - web_research_demo - DEBUG - Starting asyncio.run(run_web_research_demo())
+2025-03-31 23:05:44,011 - web_research_demo - INFO - Starting Web Research Agent Demo
+2025-03-31 23:05:44,011 - web_research_demo - DEBUG - Script path: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/demos/web_research_demo.py
+2025-03-31 23:05:44,011 - web_research_demo - DEBUG - Current directory: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent
+2025-03-31 23:05:44,011 - web_research_demo - DEBUG - Environment: dev
+2025-03-31 23:05:44,011 - web_research_demo - DEBUG - Tavily API key configured: True
+2025-03-31 23:05:44,011 - web_research_demo - DEBUG - Together API key configured: True
+2025-03-31 23:05:44,011 - web_research_demo - DEBUG - OpenAI API key configured: True
+2025-03-31 23:05:44,011 - web_research_demo - DEBUG - Anthropic API key configured: True
+2025-03-31 23:05:44,011 - web_research_demo - INFO - Prompting user for LLM provider and model selection
+2025-03-31 23:05:44,011 - web_research_demo - DEBUG - Calling confirm_llm_selection() to get provider and model
+2025-03-31 23:06:49,313 - web_research_demo - INFO - User selected LLM provider: together
+2025-03-31 23:06:49,315 - web_research_demo - INFO - User selected model: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+2025-03-31 23:06:49,315 - web_research_demo - INFO - Initializing Web Research Agent
+2025-03-31 23:07:34,851 - web_research_demo - DEBUG - Web Research Agent successfully initialized
+2025-03-31 23:07:34,851 - web_research_demo - INFO - Prompting user to select a research query
+2025-03-31 23:08:12,767 - web_research_demo - DEBUG - User selected query choice: 3
+2025-03-31 23:08:12,769 - web_research_demo - INFO - Selected query about RAG systems
+2025-03-31 23:08:12,769 - web_research_demo - INFO - Final query: What are the best practices for document processing in RAG systems?
+2025-03-31 23:08:12,769 - web_research_demo - INFO - Prompting user for research parameters
+2025-03-31 23:08:15,873 - web_research_demo - DEBUG - User selected parameter choice: 2
+2025-03-31 23:08:15,873 - web_research_demo - INFO - Selected comprehensive research approach
+2025-03-31 23:08:15,873 - web_research_demo - DEBUG - Research parameters: priority=accuracy, max_sources=5, depth=deep
+2025-03-31 23:08:15,873 - web_research_demo - DEBUG - Creating workflow state
+2025-03-31 23:08:15,873 - web_research_demo - DEBUG - Workflow state created: query='What are the best practices for document processing in RAG systems?' context={'query': 'What are the best practices for document processing in RAG systems?', 'research_priority': 'accuracy', 'max_sources': 5, 'search_depth': 'deep', 'research_plan': {'plan': 'Research about What are the best practices for document processing in RAG systems? with accuracy priority.', 'requires_web_search': True, 'search_depth': 'deep'}} history=[] reports={} inputs={} output=None final_report=None current_step='planning' completed=False error=None logs=[]
+2025-03-31 23:08:15,873 - web_research_demo - INFO - Running web research for: What are the best practices for document processing in RAG systems?
+2025-03-31 23:08:15,873 - web_research_demo - DEBUG - Starting web_agent function
+2025-03-31 23:08:15,873 - web_research_demo - DEBUG - Current TAVILY_API_KEY status: Set
+2025-03-31 23:08:15,874 - web_research_demo - DEBUG - Current LLM_PROVIDER: together
+2025-03-31 23:08:15,874 - web_research_demo - DEBUG - Current TOGETHER_MODEL: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+2025-03-31 23:08:24,399 - web_research_demo - INFO - Web research completed in 8.53 seconds
+2025-03-31 23:08:24,399 - web_research_demo - DEBUG - Output contains 5 sources
+2025-03-31 23:08:24,399 - web_research_demo - DEBUG - Source domains: pub.towardsai.net, medium.com, www.reddit.com, www.kapa.ai, medium.com
+2025-03-31 23:08:24,399 - web_research_demo - INFO - Displaying results in GUI
+2025-03-31 23:08:44,559 - web_research_demo - DEBUG - Successfully displayed results in GUI
+2025-03-31 23:08:44,559 - web_research_demo - INFO - Saving research results to /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/demos/results/web_research_result_20250331_230844.json
+2025-03-31 23:08:44,559 - web_research_demo - INFO - Web Research Agent Demo completed
