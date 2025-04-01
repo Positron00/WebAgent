@@ -1220,3 +1220,8 @@
 2025-03-26 20:14:14,640 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
 2025-03-26 20:16:03,699 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
 2025-03-26 20:17:59,826 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-31 21:45:23,978 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-31 21:46:32,718 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-03-31 21:46:32,731 - webagent - INFO - Creating new experiment 'llm_service' with artifact location file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns
+2025-03-31 21:56:00,672 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-03-31 21:57:13,010 - webagent - DEBUG - Using MLflow tracking URI: None

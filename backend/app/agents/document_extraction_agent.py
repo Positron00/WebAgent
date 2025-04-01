@@ -377,14 +377,12 @@ class DocumentExtractionAgent(BaseAgent):
                 response_text = response_text.content
             
             # Try to extract JSON from the response using a more robust approach
+            extracted_data = None
+            
             try:
                 # First try direct JSON parsing of the whole response
                 try:
-                    extraction_data = json.loads(response_text.strip())
-                    return {
-                        "extraction_data": extraction_data,
-                        "extraction_type": "llm"
-                    }
+                    extracted_data = json.loads(response_text.strip())
                 except json.JSONDecodeError:
                     # If that fails, try to find and extract the JSON portion
                     import re
@@ -394,53 +392,111 @@ class DocumentExtractionAgent(BaseAgent):
                     if json_match:
                         try:
                             json_str = json_match.group(1)
-                            extraction_data = json.loads(json_str)
-                            return {
-                                "extraction_data": extraction_data,
-                                "extraction_type": "llm"
-                            }
+                            extracted_data = json.loads(json_str)
                         except json.JSONDecodeError:
                             pass
                     
-                    # If we still can't parse, let's extract the content more aggressively
-                    # Try to find content between triple backticks
-                    code_block_match = re.search(r'```(?:json)?(.*?)```', response_text, re.DOTALL)
-                    if code_block_match:
-                        try:
-                            code_block = code_block_match.group(1).strip()
-                            extraction_data = json.loads(code_block)
-                            return {
-                                "extraction_data": extraction_data,
-                                "extraction_type": "llm"
-                            }
-                        except json.JSONDecodeError:
-                            pass
+                    # If we still can't parse, try to find content between triple backticks
+                    if not extracted_data:
+                        code_block_match = re.search(r'```(?:json)?(.*?)```', response_text, re.DOTALL)
+                        if code_block_match:
+                            try:
+                                code_block = code_block_match.group(1).strip()
+                                extracted_data = json.loads(code_block)
+                            except json.JSONDecodeError:
+                                pass
                 
                 # If all parsing attempts fail, create a structured response from the raw text
-                logger.warning("Failed to parse JSON from LLM response - creating structured response manually")
-                # Return structured data extracted from text response
-                extraction_data = self._extract_structured_data_from_text(response_text)
-                return {
-                    "extraction_data": extraction_data,
-                    "extraction_type": "llm"
-                }
+                if not extracted_data:
+                    logger.warning("Failed to parse JSON from LLM response - creating structured response manually")
+                    extracted_data = self._extract_structured_data_from_text(response_text)
                 
             except Exception as parse_error:
                 logger.warning(f"Failed to parse JSON from LLM response: {str(parse_error)}")
-                # Return raw response as fallback
+                # Create a fallback structured response
+                extracted_data = {
+                    "main_topics": [],
+                    "key_entities": [],
+                    "summary": f"Failed to parse response: {str(parse_error)}",
+                    "key_points": ["Error occurred during extraction"],
+                    "document_type": "unknown"
+                }
+            
+            # Handle function-call format or other inconsistent formats
+            # Ensure we always return a standardized structure
+            if isinstance(extracted_data, dict):
+                # Check if this is a function-call format
+                if "name" in extracted_data and "parameters" in extracted_data and "type" in extracted_data:
+                    # Convert function-call format to structured format
+                    params = extracted_data.get("parameters", {})
+                    if "text" in params:
+                        # This appears to be raw text, so extract structured data from it
+                        logger.info("Converting function-call format to structured format")
+                        structured_data = self._extract_structured_data_from_text(params.get("text", ""))
+                    else:
+                        # Use parameters as structured data if available
+                        structured_data = params
+                    
+                    # Ensure required fields are present
+                    for field in ["main_topics", "key_entities", "summary", "key_points", "document_type"]:
+                        if field not in structured_data:
+                            structured_data[field] = [] if field in ["main_topics", "key_entities", "key_points"] else ""
+                            if field == "document_type":
+                                structured_data[field] = "unknown"
+                    
+                    # Return standardized data
+                    return {
+                        "extraction_data": structured_data,
+                        "extraction_type": "llm"
+                    }
+                
+                # Check if we already have a properly structured response
+                if any(key in extracted_data for key in ["main_topics", "key_entities", "summary", "key_points", "document_type"]):
+                    # Ensure all required fields exist
+                    for field in ["main_topics", "key_entities", "summary", "key_points", "document_type"]:
+                        if field not in extracted_data:
+                            extracted_data[field] = [] if field in ["main_topics", "key_entities", "key_points"] else ""
+                            if field == "document_type":
+                                extracted_data[field] = "unknown"
+                    
+                    return {
+                        "extraction_data": extracted_data,
+                        "extraction_type": "llm"
+                    }
+                
+                # If we have other dictionary format, convert it to our standard format
                 return {
                     "extraction_data": {
-                        "raw_response": response_text,
-                        "error": "Failed to parse structured data"
+                        "main_topics": extracted_data.get("topics", []),
+                        "key_entities": extracted_data.get("entities", []),
+                        "summary": extracted_data.get("summary", ""),
+                        "key_points": extracted_data.get("points", []),
+                        "document_type": extracted_data.get("document_type", "unknown")
                     },
                     "extraction_type": "llm"
                 }
+            
+            # If we got a non-dictionary response, create a structured format
+            return {
+                "extraction_data": {
+                    "main_topics": [],
+                    "key_entities": [],
+                    "summary": "Failed to extract structured information from the document.",
+                    "key_points": ["Unable to extract structured data"],
+                    "document_type": "unknown"
+                },
+                "extraction_type": "llm"
+            }
                 
         except Exception as e:
             logger.error(f"Error in LLM extraction: {str(e)}")
             return {
                 "extraction_data": {
-                    "error": f"Failed to extract information: {str(e)}"
+                    "main_topics": [],
+                    "key_entities": [],
+                    "summary": f"Failed to extract information: {str(e)}",
+                    "key_points": ["Error occurred during extraction"],
+                    "document_type": "unknown"
                 },
                 "extraction_type": "llm"
             }
