@@ -99,10 +99,20 @@ class CodingReviewAgent(BaseAgent):
                 max_tokens=5000
             )
             logger.info(f"Initialized OpenAI {self.openai_model} for Coding Review with max_tokens={self.openai_llm.max_tokens}")
+            
+            # Initialize smaller o3-mini model for code cleaning
+            self.code_cleaner_model = ChatOpenAI(
+                temperature=0.1,  # Very low temperature for consistent code formatting
+                model="o3-mini",
+                api_key=self.openai_api_key,
+                max_tokens=5000
+            )
+            logger.info(f"Initialized OpenAI o3-mini for code cleaning")
         else:
             # Fallback to the default LLM if OpenAI key not found
             logger.warning("OpenAI API key not found. Using fallback LLM")
             self.openai_llm = None
+            self.code_cleaner_model = None
             self.llm = get_llm_without_tags()
     
     def get_openai_api_key(self):
@@ -231,6 +241,15 @@ class CodingReviewAgent(BaseAgent):
         # Fix common escaped characters
         clean_code = clean_code.replace("\\n", "\n").replace('\\"', '"').replace("\\t", "\t")
         
+        # Use LLM to further clean up the code if available.
+        if hasattr(self, 'llm_clean_code'):
+            try:
+                llm_cleaned_code = self.llm_clean_code(clean_code)
+                if llm_cleaned_code:
+                    clean_code = llm_cleaned_code
+            except Exception as e:
+                logger.warning("LLM cleaning failed, using basic cleaned code", exc_info=True)
+
         return clean_code
     
     def extract_section(self, text: str, section_name: str) -> str:
@@ -359,6 +378,60 @@ except Exception as e:
             result = await chain.ainvoke(prompt_dict)
         
         return result
+
+    def llm_clean_code(self, code: str) -> str:
+        """
+        Clean up code using OpenAI o3-mini model.
+        
+        This function sends the code to the OpenAI o3-mini model with instructions
+        to format it properly and fix any obvious syntax issues.
+        
+        Args:
+            code: The code to clean up
+            
+        Returns:
+            Cleaned code or original code if cleaning fails
+        """
+        if not code or not self.code_cleaner_model:
+            return code
+            
+        try:
+            # Create a prompt for code cleaning
+            prompt = f"""You are a Python code formatter. Your only task is to properly format the following 
+Python code while preserving all functionality. Fix any obvious syntax errors, 
+adjust indentation, and ensure consistent style. Do not add comments, explanations, 
+or change the logic. Return only the cleaned code without any markdown formatting.
+
+CODE TO FORMAT:
+```python
+{code}
+```
+
+CLEANED CODE:"""
+
+            # Use the o3-mini model for efficient code cleaning
+            messages = [HumanMessage(content=prompt)]
+            response = self.code_cleaner_model.invoke(messages)
+            cleaned_code = response.content.strip()
+            
+            # Remove any markdown code block markers if present
+            if cleaned_code.startswith("```python"):
+                cleaned_code = cleaned_code[len("```python"):].strip()
+            if cleaned_code.startswith("```"):
+                cleaned_code = cleaned_code[3:].strip()
+            if cleaned_code.endswith("```"):
+                cleaned_code = cleaned_code[:-3].strip()
+                
+            # If the cleaned code is empty or unusually short, return the original
+            if not cleaned_code or len(cleaned_code) < len(code) * 0.5:
+                logger.warning("LLM code cleaning returned unusually short result, using original code")
+                return code
+                
+            return cleaned_code
+            
+        except Exception as e:
+            logger.warning(f"Error in LLM code cleaning: {str(e)}")
+            return code  # Return original code if cleaning fails
 
 
 def get_coding_review_agent():

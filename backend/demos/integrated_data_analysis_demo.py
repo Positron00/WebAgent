@@ -57,7 +57,7 @@ def get_proper_model_format(provider, model):
     if provider == "openai":
         # Ensure OpenAI model has correct format
         if not model.startswith("gpt-"):
-            model = f"gpt-{model}" if "-" in model else f"gpt-{model}"
+            model = f"gpt-{model}"
     return model
 
 # Import required modules
