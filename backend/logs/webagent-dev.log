@@ -1244,3 +1244,24 @@
 2025-03-31 23:07:34,698 - webagent - DEBUG - Using MLflow tracking URI: None
 2025-03-31 23:12:18,488 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
 2025-03-31 23:12:52,561 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:00:27,401 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-04-02 19:02:43,782 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:02:43,792 - webagent - INFO - Creating new experiment 'llm_service' with artifact location file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns
+2025-04-02 19:02:44,957 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:02:44,959 - webagent - INFO - Creating new experiment 'vectordb_operations' with artifact location file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns
+2025-04-02 19:02:46,075 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:02:46,397 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:02:46,788 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:02:47,641 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:02:48,334 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:02:48,351 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:02:48,352 - webagent - INFO - Creating new experiment 'document_ingestion' with artifact location file:///Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/mlruns
+2025-04-02 19:18:57,880 - webagent - INFO - Logger initialized - Environment: dev, Level: DEBUG, File: /Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent/backend/data/../logs/webagent-dev.log
+2025-04-02 19:24:40,471 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:24:41,492 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:24:42,279 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:24:42,722 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:24:43,161 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:24:43,602 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:24:44,262 - webagent - DEBUG - Using MLflow tracking URI: None
+2025-04-02 19:24:44,278 - webagent - DEBUG - Using MLflow tracking URI: None

@@ -49,6 +49,62 @@ class QueryResult:
         return self.error is not None
 
 
+def extract_cited_documents(findings):
+    """
+    Extract document numbers cited in research findings.
+    
+    Args:
+        findings: String containing research findings
+        
+    Returns:
+        Set of document numbers (1-based) that are cited in the findings
+    """
+    if not findings or not isinstance(findings, str):
+        return set()
+    
+    # Look for references like [1], [2], DOCUMENT 1, DOCUMENT 2, etc.
+    citation_patterns = [
+        r'DOCUMENT\s+(\d+)',     # DOCUMENT 1
+        r'\[(\d+)\]',            # [1]
+        r'Source\s+(\d+)',       # Source 1
+        r'document\s+(\d+)',     # document 1
+    ]
+    
+    cited_docs = set()
+    for pattern in citation_patterns:
+        for match in re.finditer(pattern, findings, re.IGNORECASE):
+            try:
+                doc_num = int(match.group(1))
+                cited_docs.add(doc_num)
+            except (ValueError, IndexError):
+                continue
+    
+    return cited_docs
+
+def filter_documents_by_citations(documents, cited_doc_numbers):
+    """
+    Filter documents to only include those that are cited.
+    
+    Args:
+        documents: List of document dictionaries
+        cited_doc_numbers: Set of document numbers (1-based) that are cited
+        
+    Returns:
+        List of documents that are cited
+    """
+    if not cited_doc_numbers:
+        return documents  # If no citations found, return all documents
+    
+    # Only keep documents whose index+1 is in cited_doc_numbers
+    # (since document numbering is 1-based but list is 0-based)
+    filtered_docs = []
+    for i, doc in enumerate(documents):
+        doc_num = i + 1
+        if doc_num in cited_doc_numbers:
+            filtered_docs.append(doc)
+    
+    return filtered_docs
+
 def format_result(query_result, dark_mode=False):
     """
     Format query result as Markdown
@@ -286,73 +342,88 @@ def format_result(query_result, dark_mode=False):
             markdown += f"{findings}\n\n"
             markdown += f"{divider}\n\n"
         
+        # Extract cited document numbers from findings
+        cited_doc_numbers = extract_cited_documents(findings)
+        
         # Add source documents if available
         if documents:
-            # Capture unique sources to show deduplication is working
-            unique_sources = {}
-            for doc in documents:
-                if isinstance(doc, dict):
-                    metadata = doc.get('metadata', {})
-                    source = metadata.get('source', 'Unknown')
-                    score = doc.get('score', 0)
-                    
-                    # Count occurrences of each source
-                    if source in unique_sources:
-                        unique_sources[source]['count'] += 1
-                        if score > unique_sources[source]['best_score']:
-                            unique_sources[source]['best_score'] = score
-                    else:
-                        unique_sources[source] = {
-                            'count': 1,
-                            'best_score': score
-                        }
-            
-            # Show source document information with deduplication metrics
-            markdown += f"# Source Documents\n\n"
-            
-            # Try to get deduplication metrics if available
-            metrics = internal_research.get('metrics', {})
-            dedup_metrics = metrics.get('deduplication', {})
-            
-            if dedup_metrics:
-                docs_before = dedup_metrics.get('documents_before_dedup', 0)
-                docs_after = dedup_metrics.get('documents_after_dedup', len(documents))
-                sources_before = dedup_metrics.get('sources_before', 0)
-                sources_after = dedup_metrics.get('sources_after', len(unique_sources))
-                
-                markdown += f"Found {len(documents)} relevant documents from {len(unique_sources)} unique sources.\n"
-                markdown += f"(Reduced from {docs_before} initial documents through deduplication.)\n\n"
+            # Filter documents to only show those that are cited
+            if cited_doc_numbers:
+                filtered_documents = filter_documents_by_citations(documents, cited_doc_numbers)
             else:
-                markdown += f"Found {len(documents)} relevant documents from {len(unique_sources)} unique sources.\n\n"
+                filtered_documents = documents  # Show all if no citations found
             
-            # First show a summary of sources and their counts
-            markdown += "## Sources Summary\n\n"
-            for source, info in sorted(unique_sources.items(), key=lambda x: x[1]['best_score'], reverse=True):
-                markdown += f"* **{source}**: {info['count']} document(s), best relevance score: {info['best_score']:.2f}\n"
-            
-            markdown += f"\n{divider}\n\n"
-            
-            # Then show details of the top documents
-            markdown += "## Top Documents\n\n"
-            top_docs = documents[:3]  # Only show top 3
-            for i, doc in enumerate(top_docs, 1):
-                if isinstance(doc, dict):
-                    metadata = doc.get('metadata', {})
-                    source = metadata.get('source', 'Unknown')
-                    score = doc.get('score', None)
+            # Only add the Source Documents section if we have documents to show
+            if filtered_documents:
+                # Capture unique sources to show deduplication is working
+                unique_sources = {}
+                for doc in filtered_documents:
+                    if isinstance(doc, dict):
+                        metadata = doc.get('metadata', {})
+                        source = metadata.get('source', 'Unknown')
+                        score = doc.get('score', 0)
+                        
+                        # Count occurrences of each source
+                        if source in unique_sources:
+                            unique_sources[source]['count'] += 1
+                            if score > unique_sources[source]['best_score']:
+                                unique_sources[source]['best_score'] = score
+                        else:
+                            unique_sources[source] = {
+                                'count': 1,
+                                'best_score': score
+                            }
+                
+                # Show source document information with deduplication metrics
+                markdown += f"# Source Documents\n\n"
+                
+                if cited_doc_numbers and len(filtered_documents) < len(documents):
+                    markdown += f"Found {len(filtered_documents)} cited documents from {len(unique_sources)} unique sources.\n"
+                    markdown += f"(Only showing sources cited in the findings)\n\n"
+                else:
+                    # Try to get deduplication metrics if available
+                    metrics = internal_research.get('metrics', {})
+                    dedup_metrics = metrics.get('deduplication', {})
                     
-                    markdown += f"### Document {i}\n"
-                    markdown += f"**Source**: {source}\n"
-                    if score is not None:
-                        markdown += f"**Relevance Score**: {score:.2f}\n"
-                    
-                    # Add a preview of the content
-                    content = doc.get('page_content', '')
-                    if content:
-                        preview = content[:200] + "..." if len(content) > 200 else content
-                        markdown += f"\n**Preview**:\n```\n{preview}\n```\n\n"
-            
-            markdown += f"{divider}\n\n"
+                    if dedup_metrics:
+                        docs_before = dedup_metrics.get('documents_before_dedup', 0)
+                        docs_after = dedup_metrics.get('documents_after_dedup', len(documents))
+                        sources_before = dedup_metrics.get('sources_before', 0)
+                        sources_after = dedup_metrics.get('sources_after', len(unique_sources))
+                        
+                        markdown += f"Found {len(filtered_documents)} relevant documents from {len(unique_sources)} unique sources.\n"
+                        markdown += f"(Reduced from {docs_before} initial documents through deduplication.)\n\n"
+                    else:
+                        markdown += f"Found {len(filtered_documents)} relevant documents from {len(unique_sources)} unique sources.\n\n"
+                
+                # First show a summary of sources and their counts
+                markdown += "## Sources Summary\n\n"
+                for source, info in sorted(unique_sources.items(), key=lambda x: x[1]['best_score'], reverse=True):
+                    markdown += f"* **{source}**: {info['count']} document(s), best relevance score: {info['best_score']:.2f}\n"
+                
+                markdown += f"\n{divider}\n\n"
+                
+                # Then show details of the top documents
+                markdown += "## Top Documents\n\n"
+                top_docs = filtered_documents[:3]  # Only show top 3
+                for i, doc in enumerate(top_docs, 1):
+                    if isinstance(doc, dict):
+                        metadata = doc.get('metadata', {})
+                        source = metadata.get('source', 'Unknown')
+                        score = doc.get('score', None)
+                        
+                        markdown += f"### Document {i}\n"
+                        markdown += f"**Source**: {source}\n"
+                        if score is not None:
+                            markdown += f"**Relevance Score**: {score:.2f}\n"
+                        
+                        # Add a preview of the content
+                        content = doc.get('page_content', '')
+                        if content:
+                            preview = content[:200] + "..." if len(content) > 200 else content
+                            markdown += f"\n**Preview**:\n```\n{preview}\n```\n\n"
+                
+                markdown += f"{divider}\n\n"
     # If result is a dictionary with summary and contexts
     elif isinstance(result, dict):
         if "summary" in result:
@@ -420,43 +491,58 @@ def format_result(query_result, dark_mode=False):
             markdown += f"{findings}\n\n"
             markdown += f"{divider}\n\n"
         
+        # Extract cited document numbers from findings
+        cited_doc_numbers = extract_cited_documents(findings)
+        
         # Handle documents directly
         if "documents" in result:
             documents = result["documents"]
             if documents:
-                # Suppress the full source document contents, just show a count
-                markdown += f"# Source Documents\n\n"
-                
-                # Try to get deduplication metrics if available
-                metrics = result.get('metrics', {})
-                dedup_metrics = metrics.get('deduplication', {}) if isinstance(metrics, dict) else {}
-                
-                if dedup_metrics and isinstance(dedup_metrics, dict):
-                    docs_before = dedup_metrics.get('documents_before_dedup', 0)
-                    docs_after = dedup_metrics.get('documents_after_dedup', len(documents))
-                    
-                    if docs_before > docs_after:
-                        markdown += f"Found {len(documents)} relevant documents.\n"
-                        markdown += f"(Reduced from {docs_before} initial documents through deduplication.)\n\n"
-                    else:
-                        markdown += f"Found {len(documents)} relevant documents.\n\n"
+                # Filter documents to only show those that are cited
+                if cited_doc_numbers:
+                    filtered_documents = filter_documents_by_citations(documents, cited_doc_numbers)
                 else:
-                    markdown += f"Found {len(documents)} relevant documents.\n\n"
+                    filtered_documents = documents  # Show all if no citations found
                 
-                # Add a brief summary of the top 3 sources without the full content
-                top_docs = documents[:3]  # Only show top 3
-                for i, doc in enumerate(top_docs, 1):
-                    if isinstance(doc, dict):
-                        metadata = doc.get('metadata', {})
-                        source = metadata.get('source', 'Unknown')
-                        score = doc.get('score', None)
+                # Only show documents section if we have documents to display
+                if filtered_documents:
+                    # Suppress the full source document contents, just show a count
+                    markdown += f"# Source Documents\n\n"
+                    
+                    if cited_doc_numbers and len(filtered_documents) < len(documents):
+                        markdown += f"Found {len(filtered_documents)} cited documents.\n"
+                        markdown += f"(Only showing sources cited in the findings)\n\n"
+                    else:
+                        # Try to get deduplication metrics if available
+                        metrics = result.get('metrics', {})
+                        dedup_metrics = metrics.get('deduplication', {}) if isinstance(metrics, dict) else {}
                         
-                        markdown += f"**Source {i}**: {source}"
-                        if score is not None:
-                            markdown += f" (Relevance: {score:.2f})"
-                        markdown += "\n\n"
-                
-                markdown += f"{divider}\n\n"
+                        if dedup_metrics and isinstance(dedup_metrics, dict):
+                            docs_before = dedup_metrics.get('documents_before_dedup', 0)
+                            docs_after = dedup_metrics.get('documents_after_dedup', len(documents))
+                            
+                            if docs_before > docs_after:
+                                markdown += f"Found {len(filtered_documents)} relevant documents.\n"
+                                markdown += f"(Reduced from {docs_before} initial documents through deduplication.)\n\n"
+                            else:
+                                markdown += f"Found {len(filtered_documents)} relevant documents.\n\n"
+                        else:
+                            markdown += f"Found {len(filtered_documents)} relevant documents.\n\n"
+                    
+                    # Add a brief summary of the top 3 sources without the full content
+                    top_docs = filtered_documents[:3]  # Only show top 3
+                    for i, doc in enumerate(top_docs, 1):
+                        if isinstance(doc, dict):
+                            metadata = doc.get('metadata', {})
+                            source = metadata.get('source', 'Unknown')
+                            score = doc.get('score', None)
+                            
+                            markdown += f"**Source {i}**: {source}"
+                            if score is not None:
+                                markdown += f" (Relevance: {score:.2f})"
+                            markdown += "\n\n"
+                    
+                    markdown += f"{divider}\n\n"
     else:
         # Just display the result as is
         # Clean up the text if it's a string
