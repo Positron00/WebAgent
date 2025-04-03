@@ -1,6 +1,8 @@
 # Simple Data Processing with Bug
 # Query: Write a Python function to parse a CSV file containing user data (name, email, age) and return a list of users who are over 18 years old. The function should handle errors gracefully.
 
+# WARNING: Using fallback example, actual code generation failed
+
 import csv
 
 def parse_user_data(file_path):

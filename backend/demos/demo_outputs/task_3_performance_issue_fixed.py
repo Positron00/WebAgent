@@ -1,6 +1,8 @@
 # Performance Issue (Fixed Version)
 # Query: Write a function that finds all prime numbers up to a given limit using the Sieve of Eratosthenes algorithm.
 
+# WARNING: Using fallback example, actual code review failed
+
 def find_primes(limit):
     """
     Find all prime numbers up to a given limit using the Sieve of Eratosthenes algorithm.

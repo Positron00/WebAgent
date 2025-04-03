@@ -1,6 +1,8 @@
 # Incomplete Exception Handling (Fixed Version)
 # Query: Create a function that connects to an API, fetches data, and processes it. Include error handling for API timeouts.
 
+# WARNING: Using fallback example, actual code review failed
+
 import requests
 import json
 import time

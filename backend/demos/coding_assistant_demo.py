@@ -76,6 +76,10 @@ def execute_python_script(filepath):
         plots_dir = os.path.join(os.path.dirname(script_dir), "demo_outputs", "plots")
         os.makedirs(plots_dir, exist_ok=True)
         
+        # Create data directory for sample data if needed
+        data_dir = os.path.join(os.path.dirname(script_dir), "demo_outputs", "data")
+        os.makedirs(data_dir, exist_ok=True)
+        
         # Create a modified version of the script with matplotlib non-blocking
         with open(filepath, 'r') as f:
             code_content = f.read()
@@ -214,6 +218,45 @@ def execute_python_script(filepath):
                 
                 f.write("print('Note: FastAPI dependencies have been mocked for demonstration purposes.')\n")
                 f.write("print('This code would require a proper FastAPI environment to run normally.')\n\n")
+            
+            # Add a mock input function to simulate user input for missing files
+            f.write("# Mock user input function\n")
+            f.write("_original_input = input\n\n")
+            f.write("def mock_input(prompt):\n")
+            f.write("    print(f\"[User Input Request]: {prompt}\")\n")
+            f.write("    # For demo purposes, we'll simulate providing a default path\n")
+            f.write("    if 'file' in prompt.lower() or 'path' in prompt.lower() or 'csv' in prompt.lower():\n")
+            f.write(f"        data_dir = '{data_dir}'\n")
+            f.write("        sample_file = os.path.join(data_dir, 'sample_data.csv')\n")
+            f.write("        # Create sample data file if it doesn't exist\n")
+            f.write("        if not os.path.exists(sample_file):\n")
+            f.write("            import pandas as pd\n")
+            f.write("            if 'user' in prompt.lower():\n")
+            f.write("                # Create sample user data\n")
+            f.write("                sample_df = pd.DataFrame({\n")
+            f.write("                    'name': ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Heidi', 'Ivan', 'Judy'],\n")
+            f.write("                    'email': ['alice@example.com', 'bob@example.com', 'charlie@example.com', 'david@example.com',\n")
+            f.write("                             'eve@example.com', 'frank@example.com', 'grace@example.com', 'heidi@example.com',\n") 
+            f.write("                             'ivan@example.com', 'judy@example.com'],\n")
+            f.write("                    'age': [25, 32, 17, 42, 19, 29, 15, 22, 38, 27]\n")
+            f.write("                })\n")
+            f.write("            else:\n")
+            f.write("                # Generic sample data\n") 
+            f.write("                sample_df = pd.DataFrame({\n")
+            f.write("                    'x': list(range(10)),\n")
+            f.write("                    'y': [x**2 for x in range(10)],\n")
+            f.write("                    'category': ['A', 'B', 'A', 'B', 'C', 'C', 'A', 'B', 'C', 'D']\n")
+            f.write("                })\n")
+            f.write("            # Save the sample data\n")
+            f.write("            sample_df.to_csv(sample_file, index=False)\n")
+            f.write("            print(f\"[Demo] Created sample data file at {sample_file}\")\n")
+            f.write("        return sample_file\n")
+            f.write("    # For other prompts asking for values, provide reasonable defaults\n")
+            f.write("    if 'age' in prompt.lower() or 'threshold' in prompt.lower() or 'filter' in prompt.lower():\n")
+            f.write("        return '18'\n")  
+            f.write("    return 'default_input'\n\n")
+            f.write("# Replace built-in input with our mock\n")
+            f.write("input = mock_input\n\n")
             
             # Inject the fixed code
             f.write(fixed_code)
@@ -478,13 +521,26 @@ async def run_coding_assistant_demo():
                 print("\nExecuting the generated code...")
                 success, output = execute_python_script(filepath)
                 if success:
-                    logger.info("Code executed successfully")
-                    print("Code executed successfully. Output:")
-                    print("```")
-                    print(output)
-                    print("```")
-                    # Update execution result in all_results
-                    execution_result = f"Execution successful:\n\n```\n{output}\n```"
+                    # Check if the output contains error messages that indicate a failure
+                    error_indicators = ["Error:", "Exception:", "not found", "Failed to"]
+                    contains_errors = any(indicator in output for indicator in error_indicators)
+                    
+                    if contains_errors:
+                        logger.warning("Code executed without crashing but had errors")
+                        print("Code executed without crashing but contained errors:")
+                        print("```")
+                        print(output)
+                        print("```")
+                        # Update execution result in all_results
+                        execution_result = f"Execution completed with errors:\n\n```\n{output}\n```"
+                    else:
+                        logger.info("Code executed successfully")
+                        print("Code executed successfully. Output:")
+                        print("```")
+                        print(output)
+                        print("```")
+                        # Update execution result in all_results
+                        execution_result = f"Execution successful:\n\n```\n{output}\n```"
                 else:
                     logger.warning(f"Code execution failed: {output}")
                     print(f"Code execution failed:\n{output}")
@@ -688,13 +744,26 @@ async def run_coding_assistant_demo():
                 print("\nExecuting the generated code...")
                 success, output = execute_python_script(filepath)
                 if success:
-                    logger.info("Code executed successfully")
-                    print("Code executed successfully. Output:")
-                    print("```")
-                    print(output)
-                    print("```")
-                    # Update execution result in all_results
-                    execution_result = f"Execution successful:\n\n```\n{output}\n```"
+                    # Check if the output contains error messages that indicate a failure
+                    error_indicators = ["Error:", "Exception:", "not found", "Failed to"]
+                    contains_errors = any(indicator in output for indicator in error_indicators)
+                    
+                    if contains_errors:
+                        logger.warning("Code executed without crashing but had errors")
+                        print("Code executed without crashing but contained errors:")
+                        print("```")
+                        print(output)
+                        print("```")
+                        # Update execution result in all_results
+                        execution_result = f"Execution completed with errors:\n\n```\n{output}\n```"
+                    else:
+                        logger.info("Code executed successfully")
+                        print("Code executed successfully. Output:")
+                        print("```")
+                        print(output)
+                        print("```")
+                        # Update execution result in all_results
+                        execution_result = f"Execution successful:\n\n```\n{output}\n```"
                 else:
                     logger.warning(f"Code execution failed: {output}")
                     print(f"Code execution failed:\n{output}")

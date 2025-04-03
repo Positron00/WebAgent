@@ -5,76 +5,75 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def parse_users_over_18(csv_file):
+def parse_users_over_18(file_path):
     """
-    Parses a CSV file to filter users over 18 years old.
-
+    Parse the CSV file and return a list of users who are over 18 years old.
+    
     Parameters:
-    csv_file (str): The path to the CSV file containing user data.
-
+    file_path (str): The path to the CSV file containing user data.
+    
     Returns:
-    pd.DataFrame: A DataFrame containing users over 18 years old.
+    list: A list of dictionaries of users over 18.
     """
     try:
-        # Load the CSV file into a DataFrame
-        users_df = pd.read_csv(csv_file)
-
-        # Check if necessary columns are present
-        if not all(col in users_df.columns for col in ['name', 'email', 'age']):
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(file_path)
+        
+        # Check if required columns are in the DataFrame
+        if not {'name', 'email', 'age'}.issubset(df.columns):
             raise ValueError("CSV must contain 'name', 'email', and 'age' columns.")
 
-        # Filter users who are over 18 years old
-        users_over_18 = users_df[users_df['age'] > 18]
-
-        return users_over_18
-
+        # Filter users who are older than 18
+        users_over_18 = df[df['age'] > 18]
+        
+        # Convert the filtered DataFrame to a list of dictionaries
+        return users_over_18.to_dict(orient='records')
+    
     except FileNotFoundError:
-        print(f"Error: The file {csv_file} was not found.")
-        return pd.DataFrame()
+        print(f"Error: The file {file_path} was not found.")
+        return []
+    except pd.errors.EmptyDataError:
+        print("Error: The file is empty.")
+        return []
     except Exception as e:
         print(f"An error occurred: {e}")
-        return pd.DataFrame()
+        return []
 
-def visualize_user_data(users_df):
+def visualize_age_distribution(df):
     """
-    Visualizes the age distribution and the proportion of users over 18.
-
+    Visualize the age distribution of users using a histogram and a bar plot.
+    
     Parameters:
-    users_df (pd.DataFrame): A DataFrame containing user data.
+    df (DataFrame): The DataFrame containing user data.
     """
-    if users_df.empty:
-        print("No data to visualize.")
-        return
+    plt.figure(figsize=(14, 6))
 
-    # Set the style of seaborn
-    sns.set(style="whitegrid")
-
-    # Create a histogram of ages
-    plt.figure(figsize=(12, 5))
-
+    # Histogram of ages
     plt.subplot(1, 2, 1)
-    sns.histplot(users_df['age'], bins=10, kde=True, color='blue')
+    sns.histplot(df['age'], bins=10, kde=True, color='skyblue')
     plt.title('Age Distribution of Users')
     plt.xlabel('Age')
+    plt.ylabel('Frequency')
+
+    # Count of users above and below 18
+    age_counts = df['age'].apply(lambda x: 'Over 18' if x > 18 else '18 or Under').value_counts()
+    plt.subplot(1, 2, 2)
+    sns.barplot(x=age_counts.index, y=age_counts.values, palette='viridis')
+    plt.title('Count of Users by Age Group')
+    plt.xlabel('Age Group')
     plt.ylabel('Number of Users')
 
-    # Create a pie chart for the proportion of users over and under 18
-    age_counts = {
-        'Under 18': len(users_df[users_df['age'] <= 18]),
-        '18 and Over': len(users_df[users_df['age'] > 18])
-    }
-
-    plt.subplot(1, 2, 2)
-    plt.pie(age_counts.values(), labels=age_counts.keys(), autopct='%1.1f%%', startangle=90, colors=['orange', 'lightgreen'])
-    plt.axis('equal')  # Equal aspect ratio ensures that pie chart is a circle.
-    plt.title('Proportion of Users Over and Under 18')
-
-    # Show the plots
     plt.tight_layout()
     plt.show()
 
-# Example usage:
+# Example usage
 if __name__ == "__main__":
-    # Assuming you have a CSV file named 'users.csv'
-    users_df = parse_users_over_18('users.csv')
-    visualize_user_data(users_df)
+    file_path = 'user_data.csv'  # Replace with your CSV file path
+    users_over_18 = parse_users_over_18(file_path)
+    
+    # Visualize only if there are users over 18
+    if users_over_18:
+        df = pd.DataFrame(users_over_18)
+        visualize_age_distribution(df)
+    else:
+        print("No users over 18 found.")

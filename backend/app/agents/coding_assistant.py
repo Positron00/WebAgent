@@ -42,9 +42,15 @@ ALLOWED LIBRARIES: {allowed_libraries}
 Your code should:
 - Be self-contained and executable
 - Have appropriate error handling
-- Use sensible default data when specific data is not available
+- Use sensible default data when specific data is not available (IMPORTANT: Generate sample data if input files don't exist)
 - Create visually appealing and informative charts
 - Include a title and labels for all visualizations
+
+IMPORTANT: When handling missing files or data:
+1. Use try-except blocks to gracefully catch errors
+2. Provide users with clear instructions on how to input their own data
+3. Generate sample data as a fallback with a note explaining it's sample data
+4. Never assume external files exist without checking first
 
 IMPORTANT: Focus on code that directly supports the insights from the research. Make sure your code is clean, well-documented, and follows best practices.
 

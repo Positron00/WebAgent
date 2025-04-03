@@ -5,91 +5,82 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from chromadb import Client  # Assuming ChromaDB has a client library
+from openai import OpenAI  # Assuming there's an OpenAI library to handle embeddings
 
-# Function to connect to ChromaDB, embed documents, and store them in the database
-def embed_and_store_documents(documents):
+# Set the aesthetics for seaborn
+sns.set(style='whitegrid')
+
+def embed_and_store_document(document, db_url, openai_api_key):
     """
-    Connects to ChromaDB, embeds the provided documents using OpenAI embeddings,
-    and stores them in the vector database.
-
+    Connects to ChromaDB and embeds a document using OpenAI embeddings,
+    then stores it in the vector database.
+    
     Parameters:
-    documents (list): A list of documents to embed and store.
+    - document (str): The document to be embedded and stored.
+    - db_url (str): The URL of the ChromaDB instance.
+    - openai_api_key (str): The API key for OpenAI embeddings.
 
     Returns:
-    pd.DataFrame: A DataFrame containing the documents and their embeddings.
+    - bool: True if the document was stored successfully, False otherwise.
     """
-    import chromadb
-    from openai import OpenAI
-
-    # Create mock embeddings for demonstration
-    embeddings = []
-    for doc in documents:
-        try:
-            # Simulate an embedding function (this should call OpenAI's actual embedding API)
-            embedding = np.random.rand(5)  # Replace this with actual embedding API call
-            embeddings.append(embedding)
-        except Exception as e:
-            print(f"Error embedding document '{doc}': {e}")
-            embeddings.append(np.nan * 5)
-
-    # Create a DataFrame to hold documents and their embeddings
-    df = pd.DataFrame(embeddings, columns=[f'embedding_{i}' for i in range(1, 6)])
-    df['document'] = documents
-
-    # Store embeddings in ChromaDB (mock implementation)
     try:
-        # Assuming a ChromaDB client is created here
-        client = chromadb.Client()
-        collection = client.get_collection("documents")
-
-        for index, row in df.iterrows():
-            collection.add(documents=[row['document']], embeddings=[row[['embedding_1', 'embedding_2', 'embedding_3', 'embedding_4', 'embedding_5']].values.tolist()])
+        # Connect to ChromaDB
+        client = Client(db_url)
+        
+        # Initialize OpenAI with the provided API key
+        openai.api_key = openai_api_key
+        
+        # Get the embedding for the document
+        embedding = OpenAI.Embedding.create(input=document)
+        vector = embedding['data'][0]['embedding']
+        
+        # Store the vector in the database
+        client.store_vector(vector)
+        
+        return True
     except Exception as e:
-        print(f"Error storing documents in ChromaDB: {e}")
+        print(f"Error occurred: {e}")
+        return False
 
-    return df
-
-# Function to visualize the embeddings
-def visualize_embeddings(df):
+def visualize_storage_results(success_count, failure_count):
     """
-    Visualizes the embeddings of the documents using scatter plot and histogram.
-
+    Visualizes the results of document storage in ChromaDB using a bar chart.
+    
     Parameters:
-    df (pd.DataFrame): DataFrame containing document embeddings.
+    - success_count (int): The number of documents successfully stored.
+    - failure_count (int): The number of documents that failed to store.
     """
-    plt.figure(figsize=(12, 6))
-
-    # Scatter Plot
-    plt.subplot(1, 2, 1)
-    plt.scatter(df['embedding_1'], df['embedding_2'], alpha=0.7, c='blue', edgecolors='k')
-    plt.title('Scatter Plot of Document Embeddings')
-    plt.xlabel('Embedding Dimension 1')
-    plt.ylabel('Embedding Dimension 2')
-    plt.grid(True)
-
-    # Histogram of Embeddings
-    plt.subplot(1, 2, 2)
-    sns.histplot(df[['embedding_1', 'embedding_2']].values.flatten(), bins=30, kde=True, color='purple')
-    plt.title('Histogram of Embedding Values')
-    plt.xlabel('Embedding Values')
-    plt.ylabel('Frequency')
-
-    plt.tight_layout()
+    # Data for visualization
+    categories = ['Success', 'Failure']
+    counts = [success_count, failure_count]
+    
+    # Create a DataFrame for better plotting
+    df = pd.DataFrame({'Category': categories, 'Count': counts})
+    
+    # Plotting
+    plt.figure(figsize=(8, 5))
+    sns.barplot(x='Category', y='Count', data=df, palette='viridis')
+    
+    # Adding titles and labels
+    plt.title('Document Storage Results', fontsize=16)
+    plt.xlabel('Storage Status', fontsize=14)
+    plt.ylabel('Number of Documents', fontsize=14)
+    
+    # Display the plot
     plt.show()
 
-# Example usage
+# Example usage of the function
 if __name__ == "__main__":
-    # Mock documents for embedding
-    mock_documents = [
-        "Document 1: The quick brown fox jumps over the lazy dog.",
-        "Document 2: A journey of a thousand miles begins with a single step.",
-        "Document 3: To be or not to be, that is the question.",
-        "Document 4: All that glitters is not gold.",
-        "Document 5: The only thing we have to fear is fear itself."
-    ]
+    document_text = "This is an example document text to embed."
+    db_url = "YOUR_CHROMADB_URL"  # Replace with your actual ChromaDB URL
+    openai_api_key = "YOUR_OPENAI_API_KEY"  # Replace with your actual OpenAI API key
+
+    # Attempt to embed and store the document
+    success = embed_and_store_document(document_text, db_url, openai_api_key)
     
-    # Embed and store documents
-    embeddings_df = embed_and_store_documents(mock_documents)
-    
-    # Visualize the embeddings
-    visualize_embeddings(embeddings_df)
+    # Visualize the results
+    if success:
+        visualize_storage_results(success_count=1, failure_count=0)
+    else:
+        visualize_storage_results(success_count=0, failure_count=1)

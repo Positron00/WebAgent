@@ -1,122 +1,78 @@
 # Batch Document Processor with Specific Requirements
 # Create a Python class for batch processing documents with vector embedding. It should handle multiple file types, implement proper error handling, and log processing metrics.
 
-import os
-import logging
-import pandas as pd
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from time import time
-from typing import List, Dict, Any
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Set the aesthetics for seaborn
+sns.set(style="whitegrid")
 
-class DocumentProcessor:
-    def __init__(self, file_paths: List[str]):
+class DocumentBatchProcessor:
+    def __init__(self, data):
         """
-        Initializes the DocumentProcessor with a list of file paths.
+        Initialize the DocumentBatchProcessor with data.
         
-        Args:
-            file_paths (List[str]): List of paths to the documents to process.
+        :param data: A DataFrame containing file types, processing times, and success flags.
         """
-        self.file_paths = file_paths
-        self.processed_data = []
-        self.metrics = {'file_type': [], 'processing_time': []}
+        self.data = data
+        self.metrics = None
 
     def process_documents(self):
         """
-        Processes the documents at the specified file paths, logging metrics for each file type.
+        Process documents and calculate metrics.
         """
-        for file_path in self.file_paths:
-            file_type = self.get_file_type(file_path)
-            start_time = time()
-            try:
-                self.process_file(file_path)
-                processing_time = time() - start_time
-                self.record_metrics(file_type, processing_time)
-            except Exception as e:
-                logging.error(f"Error processing {file_path}: {e}")
-
-    def get_file_type(self, file_path: str) -> str:
-        """
-        Retrieves the file type from the file extension.
-        
-        Args:
-            file_path (str): The path to the file.
-        
-        Returns:
-            str: The file type based on the file extension.
-        """
-        return os.path.splitext(file_path)[1][1:]
-
-    def process_file(self, file_path: str):
-        """
-        A placeholder method for processing the file. Replace with actual processing logic.
-        
-        Args:
-            file_path (str): The path to the file to process.
-        """
-        # Simulating processing time
-        if file_path.endswith('.txt'):
-            time.sleep(np.random.uniform(0.1, 0.5))
-        elif file_path.endswith('.csv'):
-            time.sleep(np.random.uniform(0.2, 0.7))
-        elif file_path.endswith('.pdf'):
-            time.sleep(np.random.uniform(0.3, 0.9))
-        else:
-            raise ValueError("Unsupported file type")
-
-    def record_metrics(self, file_type: str, processing_time: float):
-        """
-        Records the metrics for processed files.
-        
-        Args:
-            file_type (str): The type of the file processed.
-            processing_time (float): The time taken to process the file.
-        """
-        self.metrics['file_type'].append(file_type)
-        self.metrics['processing_time'].append(processing_time)
-        logging.info(f"Processed {file_type} in {processing_time:.2f} seconds")
+        try:
+            # Calculate the number of files processed by type
+            self.metrics = self.data.groupby('file_type').agg(
+                total_files=('file_type', 'count'),
+                success_rate=('success', 'mean'),
+                average_processing_time=('processing_time', 'mean')
+            ).reset_index()
+            print("Processing completed successfully.")
+        except Exception as e:
+            print(f"Error during processing: {e}")
 
     def visualize_metrics(self):
         """
-        Visualizes the processing metrics using bar charts and boxplots.
+        Create visualizations for the metrics.
         """
-        df = pd.DataFrame(self.metrics)
+        if self.metrics is None:
+            print("No metrics available. Please run process_documents first.")
+            return
 
-        # Bar chart for number of documents processed per file type
-        plt.figure(figsize=(12, 6))
-        sns.countplot(data=df, x='file_type', order=df['file_type'].value_counts().index)
-        plt.title('Number of Documents Processed per File Type')
+        # Create a bar plot for total files processed by type
+        plt.figure(figsize=(10, 5))
+        sns.barplot(data=self.metrics, x='file_type', y='total_files', palette='viridis')
+        plt.title('Total Files Processed by Type')
         plt.xlabel('File Type')
-        plt.ylabel('Count of Documents')
+        plt.ylabel('Total Files')
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
 
-        # Boxplot for processing time per file type
-        plt.figure(figsize=(12, 6))
-        sns.boxplot(data=df, x='file_type', y='processing_time')
-        plt.title('Distribution of Processing Time per File Type')
+        # Create a line plot for average processing time by type
+        plt.figure(figsize=(10, 5))
+        sns.lineplot(data=self.metrics, x='file_type', y='average_processing_time', marker='o')
+        plt.title('Average Processing Time by File Type')
         plt.xlabel('File Type')
-        plt.ylabel('Processing Time (seconds)')
+        plt.ylabel('Average Processing Time (seconds)')
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
 
-# Example usage
-if __name__ == "__main__":
-    # Sample file paths for demonstration
-    sample_files = [
-        'document1.txt',
-        'document2.csv',
-        'document3.pdf',
-        'document4.txt',
-        'document5.csv'
-    ]
-    
-    processor = DocumentProcessor(sample_files)
-    processor.process_documents()
-    processor.visualize_metrics()
+# Sample Data
+data = {
+    'file_type': ['pdf', 'docx', 'pdf', 'txt', 'docx', 'pdf'],
+    'processing_time': [1.2, 0.8, 1.0, 0.5, 1.4, 1.3],
+    'success': [1, 1, 1, 0, 1, 1]  # 1 indicates success, 0 indicates failure
+}
+
+# Create a DataFrame
+df = pd.DataFrame(data)
+
+# Create an instance of DocumentBatchProcessor and process the data
+processor = DocumentBatchProcessor(df)
+processor.process_documents()
+processor.visualize_metrics()
