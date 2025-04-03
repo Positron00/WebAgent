@@ -1,78 +1,112 @@
 # Batch Document Processor with Specific Requirements
 # Create a Python class for batch processing documents with vector embedding. It should handle multiple file types, implement proper error handling, and log processing metrics.
 
-import numpy as np
+import os
+import logging
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from datetime import datetime
 
-# Set the aesthetics for seaborn
-sns.set(style="whitegrid")
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class DocumentBatchProcessor:
-    def __init__(self, data):
+    def __init__(self, file_paths):
         """
-        Initialize the DocumentBatchProcessor with data.
+        Initialize the DocumentBatchProcessor with file paths.
         
-        :param data: A DataFrame containing file types, processing times, and success flags.
+        Parameters:
+        file_paths (list): List of file paths to process.
         """
-        self.data = data
-        self.metrics = None
+        self.file_paths = file_paths
+        self.metrics = {
+            'file_type': [],
+            'process_time': [],
+            'status': []
+        }
 
-    def process_documents(self):
-        """
-        Process documents and calculate metrics.
-        """
-        try:
-            # Calculate the number of files processed by type
-            self.metrics = self.data.groupby('file_type').agg(
-                total_files=('file_type', 'count'),
-                success_rate=('success', 'mean'),
-                average_processing_time=('processing_time', 'mean')
-            ).reset_index()
-            print("Processing completed successfully.")
-        except Exception as e:
-            print(f"Error during processing: {e}")
+    def process_files(self):
+        """Process each file and log metrics."""
+        for file_path in self.file_paths:
+            try:
+                # Check if file exists
+                if not os.path.isfile(file_path):
+                    raise FileNotFoundError(f"File not found: {file_path}")
+
+                # Simulate processing time
+                start_time = datetime.now()
+                file_type = self.get_file_type(file_path)
+                self.simulate_embedding_process(file_path)  # Placeholder for actual embedding logic
+                end_time = datetime.now()
+                
+                process_time = (end_time - start_time).total_seconds()
+                self.log_metrics(file_type, process_time, 'Processed successfully')
+
+            except Exception as e:
+                logging.error(f"Error processing {file_path}: {e}")
+                self.log_metrics(file_type, 0, 'Error')
+
+    def get_file_type(self, file_path):
+        """Get the file type based on the file extension."""
+        return os.path.splitext(file_path)[1][1:]  # Return file extension without dot
+
+    def simulate_embedding_process(self, file_path):
+        """Simulate embedding processing (replace with actual logic)."""
+        # Simulating a delay for processing
+        import time
+        time.sleep(np.random.uniform(0.1, 0.5))  # Simulating variable processing time
+
+    def log_metrics(self, file_type, process_time, status):
+        """Log processing metrics."""
+        self.metrics['file_type'].append(file_type)
+        self.metrics['process_time'].append(process_time)
+        self.metrics['status'].append(status)
 
     def visualize_metrics(self):
-        """
-        Create visualizations for the metrics.
-        """
-        if self.metrics is None:
-            print("No metrics available. Please run process_documents first.")
-            return
+        """Visualize the processing metrics."""
+        df = pd.DataFrame(self.metrics)
 
-        # Create a bar plot for total files processed by type
-        plt.figure(figsize=(10, 5))
-        sns.barplot(data=self.metrics, x='file_type', y='total_files', palette='viridis')
-        plt.title('Total Files Processed by Type')
-        plt.xlabel('File Type')
-        plt.ylabel('Total Files')
+        # Filter successful processes for visualization
+        success_df = df[df['status'] == 'Processed successfully']
+
+        # Create bar plot for number of documents processed by file type
+        plt.figure(figsize=(10, 6))
+        sns.countplot(data=success_df, x='file_type', palette='viridis')
+        plt.title("Number of Documents Processed by File Type")
+        plt.xlabel("File Type")
+        plt.ylabel("Count")
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
 
-        # Create a line plot for average processing time by type
-        plt.figure(figsize=(10, 5))
-        sns.lineplot(data=self.metrics, x='file_type', y='average_processing_time', marker='o')
-        plt.title('Average Processing Time by File Type')
-        plt.xlabel('File Type')
-        plt.ylabel('Average Processing Time (seconds)')
+        # Create bar plot for average processing time by file type
+        avg_time = success_df.groupby('file_type')['process_time'].mean().reset_index()
+        plt.figure(figsize=(10, 6))
+        sns.barplot(data=avg_time, x='file_type', y='process_time', palette='coolwarm')
+        plt.title("Average Processing Time by File Type")
+        plt.xlabel("File Type")
+        plt.ylabel("Average Processing Time (seconds)")
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
 
-# Sample Data
-data = {
-    'file_type': ['pdf', 'docx', 'pdf', 'txt', 'docx', 'pdf'],
-    'processing_time': [1.2, 0.8, 1.0, 0.5, 1.4, 1.3],
-    'success': [1, 1, 1, 0, 1, 1]  # 1 indicates success, 0 indicates failure
-}
+# Sample usage
+if __name__ == "__main__":
+    # Sample data: Replace with actual file paths
+    sample_files = [
+        "document_1.txt",
+        "document_2.pdf",
+        "document_3.docx",
+        "non_existent_file.txt"
+    ]
 
-# Create a DataFrame
-df = pd.DataFrame(data)
-
-# Create an instance of DocumentBatchProcessor and process the data
-processor = DocumentBatchProcessor(df)
-processor.process_documents()
-processor.visualize_metrics()
+    # Create an instance of the DocumentBatchProcessor
+    processor = DocumentBatchProcessor(sample_files)
+    
+    # Process files
+    processor.process_files()
+    
+    # Visualize the metrics
+    processor.visualize_metrics()

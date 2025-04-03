@@ -2,78 +2,86 @@
 # Write a Python function to parse a CSV file containing user data (name, email, age) and return a list of users who are over 18 years old.
 
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
-def parse_users_over_18(file_path):
+def load_user_data(file_path='user_data.csv'):
     """
-    Parse the CSV file and return a list of users who are over 18 years old.
-    
-    Parameters:
-    file_path (str): The path to the CSV file containing user data.
-    
+    Load user data from a CSV file. If the file does not exist,
+    generate sample user data.
+
+    Args:
+        file_path (str): The path to the CSV file.
+
     Returns:
-    list: A list of dictionaries of users over 18.
+        DataFrame: A pandas DataFrame containing user data.
     """
     try:
-        # Read the CSV file into a DataFrame
+        # Attempt to read the CSV file
         df = pd.read_csv(file_path)
-        
-        # Check if required columns are in the DataFrame
-        if not {'name', 'email', 'age'}.issubset(df.columns):
-            raise ValueError("CSV must contain 'name', 'email', and 'age' columns.")
-
-        # Filter users who are older than 18
-        users_over_18 = df[df['age'] > 18]
-        
-        # Convert the filtered DataFrame to a list of dictionaries
-        return users_over_18.to_dict(orient='records')
-    
+        print(f"Loaded data from {file_path}.")
     except FileNotFoundError:
-        print(f"Error: The file {file_path} was not found.")
-        return []
-    except pd.errors.EmptyDataError:
-        print("Error: The file is empty.")
-        return []
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return []
+        print(f"{file_path} not found. Generating sample data.")
+        # Generate sample data
+        sample_data = {
+            'name': ['Alice', 'Bob', 'Charlie', 'David', 'Eve'],
+            'email': ['alice@example.com', 'bob@example.com', 
+                      'charlie@example.com', 'david@example.com', 
+                      'eve@example.com'],
+            'age': [22, 17, 24, 15, 30]
+        }
+        df = pd.DataFrame(sample_data)
+    return df
 
-def visualize_age_distribution(df):
+def filter_users_over_18(df):
     """
-    Visualize the age distribution of users using a histogram and a bar plot.
-    
-    Parameters:
-    df (DataFrame): The DataFrame containing user data.
-    """
-    plt.figure(figsize=(14, 6))
+    Filter users who are over 18 years old.
 
-    # Histogram of ages
+    Args:
+        df (DataFrame): The DataFrame containing user data.
+
+    Returns:
+        DataFrame: A filtered DataFrame containing users over 18.
+    """
+    return df[df['age'] > 18]
+
+def visualize_age_distribution(original_df, filtered_df):
+    """
+    Visualize the age distribution of all users and those over 18.
+
+    Args:
+        original_df (DataFrame): The original DataFrame containing user data.
+        filtered_df (DataFrame): The filtered DataFrame containing users over 18.
+    """
+    plt.figure(figsize=(12, 6))
+
+    # Set up the subplots
     plt.subplot(1, 2, 1)
-    sns.histplot(df['age'], bins=10, kde=True, color='skyblue')
-    plt.title('Age Distribution of Users')
+    sns.histplot(original_df['age'], bins=10, kde=True, color='skyblue')
+    plt.title('Age Distribution of All Users')
     plt.xlabel('Age')
     plt.ylabel('Frequency')
 
-    # Count of users above and below 18
-    age_counts = df['age'].apply(lambda x: 'Over 18' if x > 18 else '18 or Under').value_counts()
     plt.subplot(1, 2, 2)
-    sns.barplot(x=age_counts.index, y=age_counts.values, palette='viridis')
-    plt.title('Count of Users by Age Group')
-    plt.xlabel('Age Group')
-    plt.ylabel('Number of Users')
+    sns.histplot(filtered_df['age'], bins=10, kde=True, color='salmon')
+    plt.title('Age Distribution of Users Over 18')
+    plt.xlabel('Age')
+    plt.ylabel('Frequency')
 
     plt.tight_layout()
     plt.show()
 
-# Example usage
-if __name__ == "__main__":
-    file_path = 'user_data.csv'  # Replace with your CSV file path
-    users_over_18 = parse_users_over_18(file_path)
+def main():
+    # Load user data
+    user_data = load_user_data()
     
-    # Visualize only if there are users over 18
-    if users_over_18:
-        df = pd.DataFrame(users_over_18)
-        visualize_age_distribution(df)
-    else:
-        print("No users over 18 found.")
+    # Filter users who are over 18
+    users_over_18 = filter_users_over_18(user_data)
+    
+    # Visualize the age distribution
+    visualize_age_distribution(user_data, users_over_18)
+
+if __name__ == '__main__':
+    main()

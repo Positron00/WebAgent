@@ -6,61 +6,59 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Setting the style for seaborn
+# Set the style for the seaborn plots
 sns.set(style="whitegrid")
 
-# Generate a simulated dataset
-def generate_simulated_data(num_tasks=100):
-    """
-    Generate a simulated dataset for task processing.
-    
-    Parameters:
-    num_tasks (int): Number of tasks to simulate.
-    
-    Returns:
-    pd.DataFrame: DataFrame containing task processing results.
-    """
-    np.random.seed(0)  # For reproducibility
-    task_ids = np.arange(num_tasks)
-    processing_time = np.random.exponential(scale=2, size=num_tasks)  # Simulated processing times
-    success_rate = np.random.choice([True, False], size=num_tasks, p=[0.8, 0.2])  # 80% success rate
+# Generate sample data if specific data files do not exist
+def generate_sample_data(num_entries=100):
+    """Generates sample data for document processing."""
+    statuses = ['Completed', 'In Progress', 'Failed']
+    # Randomly generate statuses for the specified number of entries
+    data = {
+        'Document ID': [f'Doc_{i}' for i in range(num_entries)],
+        'Status': np.random.choice(statuses, num_entries, p=[0.7, 0.2, 0.1]),
+        'Timestamp': pd.date_range(start='2023-01-01', periods=num_entries, freq='H')
+    }
+    return pd.DataFrame(data)
 
-    return pd.DataFrame({
-        'Task ID': task_ids,
-        'Processing Time (s)': processing_time,
-        'Success': success_rate
-    })
+# Load or generate the data
+try:
+    # Here we would normally load data from a file
+    # For the sake of this example, we will generate sample data
+    data = generate_sample_data(100)
+except Exception as e:
+    print(f"Error loading data: {e}")
+    print("Generating sample data as a fallback.")
+    data = generate_sample_data(100)
 
-# Create the dataset
-tasks_df = generate_simulated_data()
+# Data Processing
+# Count the number of documents in each status
+status_counts = data['Status'].value_counts().reset_index()
+status_counts.columns = ['Status', 'Count']
 
-# Data for visualizations
-tasks_df['Status'] = np.where(tasks_df['Success'], 'Success', 'Failure')
-tasks_over_time = tasks_df.groupby('Task ID').agg({'Processing Time (s)': 'sum', 'Success': 'mean'}).reset_index()
-tasks_over_time['Success'] = tasks_over_time['Success'].apply(lambda x: 'Success' if x >= 0.8 else 'Failure')
+# Create a time series for processing over time
+time_series = data.groupby([data['Timestamp'].dt.date, 'Status']).size().unstack(fill_value=0)
+time_series = time_series.reset_index()
 
-# Set up the subplots
-fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+# Visualization 1: Bar Chart of Document Status Counts
+plt.figure(figsize=(10, 5))
+sns.barplot(x='Status', y='Count', data=status_counts, palette='viridis')
+plt.title('Document Processing Status Counts')
+plt.xlabel('Status')
+plt.ylabel('Number of Documents')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
 
-# 1. Line plot of tasks processed over time
-axs[0].plot(tasks_over_time['Task ID'], tasks_over_time['Processing Time (s)'], marker='o', color='b')
-axs[0].set_title('Tasks Processed Over Time', fontsize=16)
-axs[0].set_xlabel('Task ID', fontsize=14)
-axs[0].set_ylabel('Processing Time (seconds)', fontsize=14)
-axs[0].grid(True)
+# Visualization 2: Line Chart of Document Processing Over Time
+plt.figure(figsize=(10, 5))
+for status in time_series.columns[1:]:
+    plt.plot(time_series['Timestamp'], time_series[status], marker='o', label=status)
 
-# 2. Bar chart for success and failure rates
-sns.countplot(data=tasks_df, x='Status', ax=axs[1], palette='Set2')
-axs[1].set_title('Success vs Failure of Tasks', fontsize=16)
-axs[1].set_xlabel('Task Status', fontsize=14)
-axs[1].set_ylabel('Number of Tasks', fontsize=14)
-
-# 3. Pie chart for the proportion of successful vs failed tasks
-task_counts = tasks_df['Status'].value_counts()
-axs[2].pie(task_counts, labels=task_counts.index, autopct='%1.1f%%', startangle=90, colors=['#66c2a5', '#fc8d62'])
-axs[2].axis('equal')  # Equal aspect ratio ensures that pie chart is circular
-axs[2].set_title('Proportion of Successful vs Failed Tasks', fontsize=16)
-
-# Adjust layout
+plt.title('Document Processing Trend Over Time')
+plt.xlabel('Date')
+plt.ylabel('Number of Documents Processed')
+plt.legend(title='Status')
+plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()

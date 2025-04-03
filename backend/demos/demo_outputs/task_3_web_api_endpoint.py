@@ -1,44 +1,79 @@
 # Web API Endpoint
 # Write a FastAPI endpoint that accepts file uploads, validates them for size and type (PDF only), and returns a JSON response with the file's metadata.
 
-import matplotlib.pyplot as plt
-import seaborn as sns
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import JSONResponse
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
+import os
 
-# Generate synthetic data for the visualization
-# Simulating file metadata
-np.random.seed(42)  # For reproducibility
+app = FastAPI()
 
-# Simulated file sizes (in KB) for 100 uploads
-file_sizes_kb = np.random.randint(1, 5000, size=100)  # Sizes between 1KB and 5000KB
-file_types = np.random.choice(['pdf', 'docx', 'jpg', 'png', 'pdf', 'pdf'], size=100, p=[0.1, 0.1, 0.2, 0.2, 0.3, 0.1])
+# Constants for validation
+MAX_FILE_SIZE_MB = 5
+ALLOWED_FILE_TYPE = "application/pdf"
 
-# Create a DataFrame to hold the simulated data
-file_data = pd.DataFrame({
-    'file_size_kb': file_sizes_kb,
-    'file_type': file_types
-})
+# Sample data for visualization
+sample_data = {
+    'file_name': ['sample1.pdf', 'sample2.pdf', 'sample3.pdf'],
+    'file_size_MB': [1.2, 3.4, 2.1]
+}
 
-# Set up the matplotlib figure
-plt.figure(figsize=(14, 6))
+def create_sample_visualizations():
+    """Create visualizations from sample data."""
+    df = pd.DataFrame(sample_data)
+    
+    # Bar chart showing the count of files
+    plt.figure(figsize=(10, 5))
+    df['file_name'].value_counts().plot(kind='bar', color='skyblue')
+    plt.title('Count of Uploaded PDF Files')
+    plt.xlabel('File Name')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig('uploads_count.png')
+    plt.close()
 
-# Plot 1: Histogram of file sizes
-plt.subplot(1, 2, 1)
-sns.histplot(file_data['file_size_kb'], bins=30, kde=True, color='blue', stat="density", alpha=0.6)
-plt.title('Distribution of File Sizes')
-plt.xlabel('File Size (KB)')
-plt.ylabel('Density')
-plt.grid(True)
+    # Pie chart showing file size distribution
+    plt.figure(figsize=(8, 8))
+    plt.pie(df['file_size_MB'], labels=df['file_name'], autopct='%1.1f%%', startangle=140)
+    plt.title('File Size Distribution of Uploaded PDFs')
+    plt.axis('equal')  # Equal aspect ratio ensures pie chart is circular.
+    plt.savefig('file_size_distribution.png')
+    plt.close()
 
-# Plot 2: Count of file types
-plt.subplot(1, 2, 2)
-sns.countplot(x='file_type', data=file_data, palette='viridis')
-plt.title('Count of Uploaded File Types')
-plt.xlabel('File Type')
-plt.ylabel('Count')
-plt.grid(True)
+@app.post("/uploadfile/")
+async def upload_file(file: UploadFile = File(...)):
+    """Endpoint to upload a PDF file and return its metadata."""
+    try:
+        # Validate the file type
+        if file.content_type != ALLOWED_FILE_TYPE:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only PDF files are allowed.")
+        
+        # Validate the file size
+        file_size_mb = len(await file.read()) / (1024 * 1024)  # Convert bytes to MB
+        if file_size_mb > MAX_FILE_SIZE_MB:
+            raise HTTPException(status_code=400, detail=f"File size exceeds the limit of {MAX_FILE_SIZE_MB} MB.")
+        
+        # Prepare response metadata
+        metadata = {
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "size_MB": round(file_size_mb, 2)
+        }
+        
+        return JSONResponse(content=metadata)
 
-# Show the plots
-plt.tight_layout()
-plt.show()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    finally:
+        # Ensure the file is closed
+        await file.close()
+
+# Generate visualizations from sample data
+try:
+    create_sample_visualizations()
+except Exception as e:
+    print(f"An error occurred while generating visualizations: {e}")

@@ -5,82 +5,78 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from chromadb import Client  # Assuming ChromaDB has a client library
-from openai import OpenAI  # Assuming there's an OpenAI library to handle embeddings
 
-# Set the aesthetics for seaborn
-sns.set(style='whitegrid')
+# Set the style for seaborn
+sns.set(style="whitegrid")
 
-def embed_and_store_document(document, db_url, openai_api_key):
+def generate_sample_data(num_samples=100):
     """
-    Connects to ChromaDB and embeds a document using OpenAI embeddings,
-    then stores it in the vector database.
+    Generates sample data for visualization.
     
     Parameters:
-    - document (str): The document to be embedded and stored.
-    - db_url (str): The URL of the ChromaDB instance.
-    - openai_api_key (str): The API key for OpenAI embeddings.
-
+    num_samples (int): The number of samples to generate.
+    
     Returns:
-    - bool: True if the document was stored successfully, False otherwise.
+    pd.DataFrame: A DataFrame containing the sample data.
     """
-    try:
-        # Connect to ChromaDB
-        client = Client(db_url)
-        
-        # Initialize OpenAI with the provided API key
-        openai.api_key = openai_api_key
-        
-        # Get the embedding for the document
-        embedding = OpenAI.Embedding.create(input=document)
-        vector = embedding['data'][0]['embedding']
-        
-        # Store the vector in the database
-        client.store_vector(vector)
-        
-        return True
-    except Exception as e:
-        print(f"Error occurred: {e}")
-        return False
+    np.random.seed(0)  # For reproducibility
+    categories = ['A', 'B', 'C', 'D']
+    data = {
+        'Category': np.random.choice(categories, size=num_samples),
+        'Value': np.random.randn(num_samples) * 10 + 50  # Random values centered around 50
+    }
+    return pd.DataFrame(data)
 
-def visualize_storage_results(success_count, failure_count):
+def plot_category_counts(data):
     """
-    Visualizes the results of document storage in ChromaDB using a bar chart.
+    Plots the counts of each category in the dataset.
     
     Parameters:
-    - success_count (int): The number of documents successfully stored.
-    - failure_count (int): The number of documents that failed to store.
+    data (pd.DataFrame): The input DataFrame containing the data.
     """
-    # Data for visualization
-    categories = ['Success', 'Failure']
-    counts = [success_count, failure_count]
-    
-    # Create a DataFrame for better plotting
-    df = pd.DataFrame({'Category': categories, 'Count': counts})
-    
-    # Plotting
-    plt.figure(figsize=(8, 5))
-    sns.barplot(x='Category', y='Count', data=df, palette='viridis')
-    
-    # Adding titles and labels
-    plt.title('Document Storage Results', fontsize=16)
-    plt.xlabel('Storage Status', fontsize=14)
-    plt.ylabel('Number of Documents', fontsize=14)
-    
-    # Display the plot
+    plt.figure(figsize=(10, 6))
+    sns.countplot(x='Category', data=data, palette='pastel')
+    plt.title('Counts of Each Category')
+    plt.xlabel('Category')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
     plt.show()
 
-# Example usage of the function
-if __name__ == "__main__":
-    document_text = "This is an example document text to embed."
-    db_url = "YOUR_CHROMADB_URL"  # Replace with your actual ChromaDB URL
-    openai_api_key = "YOUR_OPENAI_API_KEY"  # Replace with your actual OpenAI API key
-
-    # Attempt to embed and store the document
-    success = embed_and_store_document(document_text, db_url, openai_api_key)
+def plot_value_distribution(data):
+    """
+    Plots the distribution of the value column in the dataset.
     
-    # Visualize the results
-    if success:
-        visualize_storage_results(success_count=1, failure_count=0)
-    else:
-        visualize_storage_results(success_count=0, failure_count=1)
+    Parameters:
+    data (pd.DataFrame): The input DataFrame containing the data.
+    """
+    plt.figure(figsize=(10, 6))
+    sns.histplot(data['Value'], bins=15, kde=True, color='blue', stat='density')
+    plt.title('Distribution of Values')
+    plt.xlabel('Value')
+    plt.ylabel('Density')
+    plt.axvline(data['Value'].mean(), color='red', linestyle='--', label='Mean')
+    plt.axvline(data['Value'].median(), color='green', linestyle='--', label='Median')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def main():
+    """
+    Main function to execute the data generation and plotting.
+    """
+    try:
+        # Generate sample data
+        sample_data = generate_sample_data()
+        
+        # Plot category counts
+        plot_category_counts(sample_data)
+        
+        # Plot value distribution
+        plot_value_distribution(sample_data)
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    main()
