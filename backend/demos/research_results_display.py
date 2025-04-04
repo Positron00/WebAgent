@@ -1252,7 +1252,7 @@ class ResultsWindow(QMainWindow):
         self.adjust_tab_width()
 
 
-def display_research_results(queries, results=None, errors=None, title="Research Results"):
+def display_research_results(queries, results=None, errors=None, findings=None, title="Research Results"):
     """
     Display research results in a GUI window
     
@@ -1260,6 +1260,7 @@ def display_research_results(queries, results=None, errors=None, title="Research
         queries: List of query strings
         results: List of result dictionaries (can be None for queries with no results)
         errors: List of error messages (can be None for queries with no errors)
+        findings: List of finding texts (can be None for queries with no findings)
         title: Title for the window
     """
     # Validate inputs
@@ -1273,6 +1274,8 @@ def display_research_results(queries, results=None, errors=None, title="Research
         results = [None] * len(queries)
     if errors is None:
         errors = [None] * len(queries)
+    if findings is None:
+        findings = [None] * len(queries)
     
     # Validate results - if empty dict, convert to None
     for i in range(len(results)):

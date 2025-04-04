@@ -216,15 +216,63 @@ async def run_coding_review_demo():
     
     # Display results in a structured format
     logger.info("\nDisplaying summary of all results...")
+    
+    # Initialize findings list and other variables in the outer scope
+    findings = []
+    results = []
+    errors = []
+    
     try:
+        # Check if there are any results to process
+        if not all_results:
+            logger.warning("No results to display")
+            
+            # Create empty findings for each task to match the length of queries
+            findings = ["No results available"] * len(CODING_TASKS)
+            
+            # Still display the empty results
+            display_research_results(
+                queries=[task["query"] for task in CODING_TASKS],
+                results=[{}] * len(CODING_TASKS),
+                errors=[None] * len(CODING_TASKS),
+                findings=findings,
+                title="Coding Review Agent Results (No Results)"
+            )
+            return
+            
+        # Extract findings from the review and execution analysis for each result
+        for result in all_results:
+            finding = f"{result.get('review', '')}\n\n{result.get('execution_analysis', '')}"
+            findings.append(finding)
+        
+        # If findings length doesn't match the number of tasks, pad with empty strings
+        while len(findings) < len(CODING_TASKS):
+            findings.append("No results for this task")
+            
         display_research_results(
             queries=[task["query"] for task in CODING_TASKS],
             results=all_results,
             errors=[None] * len(CODING_TASKS),
+            findings=findings,
             title="Coding Review Agent Results"
         )
     except Exception as e:
         logger.error(f"Error displaying results: {e}")
+        # Try to display what we have so far
+        try:
+            # Ensure we have findings for all tasks
+            while len(findings) < len(CODING_TASKS):
+                findings.append("Error occurred during processing")
+                
+            display_research_results(
+                queries=[task["query"] for task in CODING_TASKS],
+                results=[{}] * len(CODING_TASKS),
+                errors=[str(e)] * len(CODING_TASKS),
+                findings=findings,
+                title="Coding Review Agent Results (Error Occurred)"
+            )
+        except Exception as inner_e:
+            logger.error(f"Failed to display partial results: {inner_e}")
     
     logger.info("Coding Review Agent Demo completed.")
 
