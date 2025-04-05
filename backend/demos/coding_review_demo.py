@@ -242,7 +242,29 @@ async def run_coding_review_demo():
             
         # Extract findings from the review and execution analysis for each result
         for result in all_results:
-            finding = f"{result.get('review', '')}\n\n{result.get('execution_analysis', '')}"
+            # Get execution results
+            original_success = result.get('original_execution', {}).get('success', False)
+            original_result = result.get('original_execution', {}).get('result', '')
+            fixed_success = result.get('fixed_execution', {}).get('success', False)
+            fixed_result = result.get('fixed_execution', {}).get('result', '')
+            
+            # Create comprehensive findings that include all important information
+            finding = f"{result.get('review', '')}\n\n{result.get('execution_analysis', '')}\n\n"
+            
+            # Add original code execution result
+            finding += f"ORIGINAL CODE EXECUTION: {'Success' if original_success else 'Failed'}\n"
+            finding += f"{original_result}\n\n"
+            
+            # Add fixed code and its execution result if available
+            if result.get('fixed_code'):
+                finding += f"FIXED CODE:\n```python\n{result.get('fixed_code')}\n```\n\n"
+                finding += f"FIXED CODE EXECUTION: {'Success' if fixed_success else 'Failed'}\n"
+                finding += f"{fixed_result}\n\n"
+            
+            # Add improvement explanation if available
+            if result.get('improvement_explanation'):
+                finding += f"IMPROVEMENT EXPLANATION:\n{result.get('improvement_explanation')}"
+            
             findings.append(finding)
         
         # If findings length doesn't match the number of tasks, pad with empty strings

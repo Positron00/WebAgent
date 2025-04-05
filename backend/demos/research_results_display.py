@@ -274,7 +274,7 @@ def format_result(query_result, dark_mode=False):
         return markdown
     
     # Handle coding assistant output
-    if isinstance(result, dict) and ("code" in result or "explanation" in result):
+    if isinstance(result, dict) and ("code" in result or "explanation" in result or "fixed_code" in result):
         # Show explanation if available
         if "explanation" in result and result["explanation"]:
             markdown += "# Explanation\n\n"
@@ -302,24 +302,54 @@ def format_result(query_result, dark_mode=False):
             
             # Add the code block with proper formatting
             markdown += f"```python\n{code}\n```\n\n"
+        
+        # Show fixed code if available (for code review results)
+        if "fixed_code" in result and result["fixed_code"]:
+            markdown += "# Fixed Code\n\n"
             
-            # Add a note about saving
+            # Format the code properly with syntax highlighting
+            fixed_code = result["fixed_code"]
+            
+            # Clean up the code - remove markdown code blocks if present
+            if fixed_code.startswith("```") and fixed_code.endswith("```"):
+                # Extract code from markdown code blocks
+                lines = fixed_code.split("\n")
+                if len(lines) > 2:  # At least 3 lines (opening, content, closing)
+                    # Remove the first and last lines (opening and closing ```)
+                    fixed_code = "\n".join(lines[1:-1])
+                    
+                    # If the first line has language identifier (e.g., "python"), remove it
+                    if fixed_code.startswith("python"):
+                        fixed_code = fixed_code[6:].strip()
+            
+            # Add the code block with proper formatting
+            markdown += f"```python\n{fixed_code}\n```\n\n"
+        
+        # Show review if available
+        if "review" in result and result["review"]:
+            markdown += "# Code Review\n\n"
+            markdown += f"{result['review']}\n\n"
             markdown += f"{divider}\n\n"
-            markdown += "*Note: The generated code has been saved to the demo_outputs directory.*\n\n"
         
         # Show execution results if available
         if "execution_result" in result and result["execution_result"]:
             markdown += "# Execution Results\n\n"
             markdown += "The generated code was automatically executed in a safe environment. Here are the results:\n\n"
             markdown += result["execution_result"] + "\n\n"
+        
+        # Show fixed execution results if available
+        if "fixed_execution" in result and result["fixed_execution"]:
+            markdown += "# Fixed Code Execution Results\n\n"
+            fixed_execution = result["fixed_execution"]
+            success = fixed_execution.get("success", False)
+            result_text = fixed_execution.get("result", "No result available")
             
-            # Check if this contains a plot path
-            if "Plot image saved to:" in result["execution_result"]:
-                markdown += "**Visualization Generated!** The code created visual plots that were saved to the plots directory.\n\n"
-            elif "Error" in result["execution_result"]:
-                markdown += "**Note:** The code execution encountered errors. These might be due to missing dependencies or syntax issues.\n\n"
-            
-            markdown += f"{divider}\n\n"
+            markdown += f"Execution: {'SUCCESS' if success else 'FAILED'}\n\n"
+            markdown += f"```\n{result_text}\n```\n\n"
+        
+        # Add a note about saving
+        markdown += f"{divider}\n\n"
+        markdown += "*Note: The generated code has been saved to the demo_outputs directory.*\n\n"
         
         return markdown
     
@@ -490,6 +520,9 @@ def format_result(query_result, dark_mode=False):
             markdown += "# Research Findings\n\n"
             markdown += f"{findings}\n\n"
             markdown += f"{divider}\n\n"
+        else:
+            # Initialize findings as empty if not found
+            findings = ""
         
         # Extract cited document numbers from findings
         cited_doc_numbers = extract_cited_documents(findings)
