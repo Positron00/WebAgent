@@ -245,6 +245,122 @@ async def run_integrated_coding_demo():
                     except:
                         pass
             
+            # Add debug prints to examine the final_state in more detail
+            print("\nExamining final_state object in depth:")
+            if hasattr(final_state, '__dict__'):
+                try:
+                    print(f"final_state.__dict__: {final_state.__dict__}")
+                except:
+                    print("Could not access __dict__")
+                
+            # Check if we can access nested values
+            if hasattr(final_state, 'values'):
+                try:
+                    # For LangGraph's specific nested structure
+                    values = final_state.values()
+                    print(f"values type: {type(values)}")
+                    if isinstance(values, dict):
+                        print(f"values keys: {list(values.keys())}")
+                        if 'values' in values:
+                            print(f"values['values'] type: {type(values['values'])}")
+                            if isinstance(values['values'], dict):
+                                print(f"values['values'] keys: {list(values['values'].keys())}")
+                                if 'nodes' in values['values']:
+                                    print(f"Found nodes in values['values']")
+                                    nodes = values['values']['nodes']
+                                    if isinstance(nodes, dict):
+                                        print(f"nodes keys: {list(nodes.keys())}")
+                                        # Look for agent reports in the nodes
+                                        if 'coding_assistant' in nodes:
+                                            coding_assistant_data = nodes['coding_assistant']
+                                            print(f"Found coding_assistant data: {type(coding_assistant_data)}")
+                                            if isinstance(coding_assistant_data, dict) and "output" in coding_assistant_data:
+                                                print(f"Found output in coding_assistant data")
+                                                output = coding_assistant_data["output"]
+                                                if isinstance(output, dict) and "code" in output:
+                                                    original_code = output["code"]
+                                                    explanation = output.get("explanation", "")
+                                                    logger.info(f"Found original code with length: {len(original_code)}")
+                                                    print(f"Extracted code from nested structure!")
+                                                
+                                        if 'coding_review' in nodes:
+                                            coding_review_data = nodes['coding_review']
+                                            print(f"Found coding_review data: {type(coding_review_data)}")
+                                            if isinstance(coding_review_data, dict) and "output" in coding_review_data:
+                                                print(f"Found output in coding_review data")
+                                                output = coding_review_data["output"]
+                                                if isinstance(output, dict):
+                                                    fixed_code = output.get("fixed_code", "")
+                                                    review = output.get("review", "")
+                                                    improvement_explanation = output.get("improvement_explanation", "")
+                                                    
+                                                    # Get execution results
+                                                    if "original_execution" in output:
+                                                        original_execution = output["original_execution"]
+                                                    
+                                                    if "fixed_execution" in output:
+                                                        fixed_execution = output["fixed_execution"]
+                                                    
+                                                    # Add first review iteration
+                                                    review_iterations.append({
+                                                        "review": review,
+                                                        "original_code": original_code,
+                                                        "fixed_code": fixed_code,
+                                                        "original_execution": original_execution,
+                                                        "fixed_execution": fixed_execution,
+                                                        "improvement_explanation": improvement_explanation
+                                                    })
+                                                    print(f"Extracted review data from nested structure!")
+                except Exception as e:
+                    print(f"Error exploring values: {e}")
+            
+            # Add more investigation into the LangGraph structure
+            # The state may have a '_state' property with more details
+            if hasattr(final_state, '_state'):
+                try:
+                    _state = final_state._state
+                    print(f"_state type: {type(_state)}")
+                    if hasattr(_state, 'values'):
+                        print(f"_state.values: {_state.values if isinstance(_state.values, (list, dict)) else type(_state.values)}")
+                    if hasattr(_state, 'artifacts'):
+                        print(f"_state.artifacts: {_state.artifacts if isinstance(_state.artifacts, (list, dict)) else type(_state.artifacts)}")
+                        if hasattr(_state.artifacts, 'items'):
+                            for k, v in _state.artifacts.items():
+                                print(f"  artifact {k}: {type(v)}")
+                except Exception as e:
+                    print(f"Error inspecting _state: {e}")
+            
+            # Try one more approach - check if there's a property named `artifacts`
+            if hasattr(final_state, 'artifacts'):
+                try:
+                    artifacts = final_state.artifacts
+                    print(f"artifacts type: {type(artifacts)}")
+                    if isinstance(artifacts, dict):
+                        print(f"artifacts keys: {list(artifacts.keys())}")
+                        if 'coding_assistant' in artifacts:
+                            coding_assistant_data = artifacts['coding_assistant']
+                            print(f"Found coding_assistant in artifacts: {type(coding_assistant_data)}")
+                            if isinstance(coding_assistant_data, dict) and "code" in coding_assistant_data:
+                                original_code = coding_assistant_data["code"]
+                                explanation = coding_assistant_data.get("explanation", "")
+                                logger.info(f"Found original code in artifacts: {len(original_code)}")
+                except Exception as e:
+                    print(f"Error inspecting artifacts: {e}")
+            
+            # Attempt to convert the values to something we can view better
+            if hasattr(final_state, 'values'):
+                try:
+                    # Try to interpret values as a JSON string
+                    import json
+                    values_str = str(final_state.values())
+                    print(f"values string preview: {values_str[:100]}...")
+                    
+                    # Display the query and context from the state directly
+                    print(f"Query from state: {final_state.get('query', 'Not found')}")
+                    print(f"Context from state: {final_state.get('context', {}).keys()}")
+                except Exception as e:
+                    print(f"Error inspecting values as string: {e}")
+            
             # Process the task output - extract actual code from the workflow results
             task_name = task["title"].lower().replace(' ', '_')
             filename_base = f"task_{idx+1}_{task_name}"
@@ -259,58 +375,140 @@ async def run_integrated_coding_demo():
             fixed_execution = {"success": False, "result": "No fixed execution results available"}
             review_iterations = []
             
-            # Access the contents correctly based on the AddableValuesDict structure
+            # Try different methods to access the final state data based on its type
             try:
-                # Check if we can access the data directly through keys
-                coding_assistant_data = final_state.get('coding_assistant', None)
-                coding_review_data = final_state.get('coding_review', None)
-                
-                # Get initial code from the coding_assistant dictionary
-                if coding_assistant_data:
-                    if isinstance(coding_assistant_data, dict) and "code" in coding_assistant_data:
-                        original_code = coding_assistant_data["code"]
-                        explanation = coding_assistant_data.get("explanation", "")
-                        logger.info(f"Found original code with length: {len(original_code)}")
-                
-                # Get review results from the coding_review dictionary
-                if coding_review_data:
-                    if isinstance(coding_review_data, dict):
-                        fixed_code = coding_review_data.get("fixed_code", "")
-                        review = coding_review_data.get("review", "")
-                        improvement_explanation = coding_review_data.get("improvement_explanation", "")
-                        
-                        # Get execution results
-                        if "original_execution" in coding_review_data:
-                            original_execution = coding_review_data["original_execution"]
-                        
-                        if "fixed_execution" in coding_review_data:
-                            fixed_execution = coding_review_data["fixed_execution"]
-                        
-                        # Add first review iteration
-                        review_iterations.append({
-                            "review": review,
-                            "original_code": original_code,
-                            "fixed_code": fixed_code,
-                            "original_execution": original_execution,
-                            "fixed_execution": fixed_execution,
-                            "improvement_explanation": improvement_explanation
-                        })
-                
-                # Print debug information about what we found
-                print(f"\nFound data from workflow:")
-                print(f"- Original code found: {len(original_code) > 0}")
-                print(f"- Fixed code found: {len(fixed_code) > 0}")
-                print(f"- Review found: {len(review) > 0 if 'review' in locals() else False}")
-                
-                # Debug print first 100 chars of code if found
-                if len(original_code) > 0:
-                    print(f"\nPreview of original code: {original_code[:100]}...")
-                if len(fixed_code) > 0:
-                    print(f"\nPreview of fixed code: {fixed_code[:100]}...")
+                # Direct approach: Access the specific agent reports as properties
+                if hasattr(final_state, 'reports'):
+                    reports = final_state.reports
+                    if 'coding_assistant' in reports:
+                        coding_assistant_data = reports['coding_assistant']
+                        if isinstance(coding_assistant_data, dict) and "code" in coding_assistant_data:
+                            original_code = coding_assistant_data["code"]
+                            explanation = coding_assistant_data.get("explanation", "")
+                            logger.info(f"Found original code with length: {len(original_code)}")
                     
+                    if 'coding_review' in reports:
+                        coding_review_data = reports['coding_review']
+                        if isinstance(coding_review_data, dict):
+                            fixed_code = coding_review_data.get("fixed_code", "")
+                            review = coding_review_data.get("review", "")
+                            improvement_explanation = coding_review_data.get("improvement_explanation", "")
+                            
+                            # Get execution results
+                            if "original_execution" in coding_review_data:
+                                original_execution = coding_review_data["original_execution"]
+                            
+                            if "fixed_execution" in coding_review_data:
+                                fixed_execution = coding_review_data["fixed_execution"]
+                            
+                            # Add first review iteration
+                            review_iterations.append({
+                                "review": review,
+                                "original_code": original_code,
+                                "fixed_code": fixed_code,
+                                "original_execution": original_execution,
+                                "fixed_execution": fixed_execution,
+                                "improvement_explanation": improvement_explanation
+                            })
+                    
+                    # Print debug information about the reports structure
+                    logger.info(f"Reports structure: {reports.keys() if hasattr(reports, 'keys') else type(reports)}")
+                else:
+                    # Try alternate approaches for different LangGraph versions
+                    if hasattr(final_state, 'values'):
+                        values = final_state.values()
+                        if isinstance(values, dict) and 'reports' in values:
+                            reports = values['reports']
+                            logger.info(f"Found reports in values: {reports.keys() if hasattr(reports, 'keys') else type(reports)}")
+                    elif isinstance(final_state, dict):
+                        # Try to access directly as a dictionary
+                        coding_assistant_data = final_state.get('coding_assistant', None)
+                        coding_review_data = final_state.get('coding_review', None)
+                        
+                        # Get initial code from the coding_assistant dictionary
+                        if coding_assistant_data:
+                            if isinstance(coding_assistant_data, dict) and "code" in coding_assistant_data:
+                                original_code = coding_assistant_data["code"]
+                                explanation = coding_assistant_data.get("explanation", "")
+                                logger.info(f"Found original code with length: {len(original_code)}")
+                        
+                        # Get review results from the coding_review dictionary
+                        if coding_review_data:
+                            if isinstance(coding_review_data, dict):
+                                fixed_code = coding_review_data.get("fixed_code", "")
+                                review = coding_review_data.get("review", "")
+                                improvement_explanation = coding_review_data.get("improvement_explanation", "")
+                                
+                                # Get execution results
+                                if "original_execution" in coding_review_data:
+                                    original_execution = coding_review_data["original_execution"]
+                                
+                                if "fixed_execution" in coding_review_data:
+                                    fixed_execution = coding_review_data["fixed_execution"]
+                                
+                                # Add first review iteration
+                                review_iterations.append({
+                                    "review": review,
+                                    "original_code": original_code,
+                                    "fixed_code": fixed_code,
+                                    "original_execution": original_execution,
+                                    "fixed_execution": fixed_execution,
+                                    "improvement_explanation": improvement_explanation
+                                })
+                
+                # If we couldn't extract the data from the LangGraph result, try to access agent outputs directly
+                if not original_code or not fixed_code:
+                    try:
+                        # Get the coding assistant node output directly
+                        from backend.app.agents.coding_assistant import get_coding_assistant_agent
+                        coding_assistant_function = get_coding_assistant_agent()
+                        # The function doesn't have a get_last_output method, as it's just a callable wrapper
+                        # Instead, we need to check if the final_state has agent outputs in reports
+                        
+                        if hasattr(final_state, 'reports') and isinstance(final_state.reports, dict):
+                            # Try to get coding_assistant output from reports
+                            if "coding_assistant" in final_state.reports:
+                                coding_assistant_output = final_state.reports["coding_assistant"]
+                                if isinstance(coding_assistant_output, dict) and "code" in coding_assistant_output:
+                                    original_code = coding_assistant_output["code"]
+                                    logger.info(f"Found original code from reports: {len(original_code)}")
+                            
+                            # Try to get coding_review output from reports
+                            if "coding_review" in final_state.reports:
+                                coding_review_output = final_state.reports["coding_review"]
+                                if isinstance(coding_review_output, dict):
+                                    fixed_code = coding_review_output.get("fixed_code", "")
+                                    review = coding_review_output.get("review", "")
+                                    improvement_explanation = coding_review_output.get("improvement_explanation", "")
+                                    
+                                    # Get execution results
+                                    if "original_execution" in coding_review_output:
+                                        original_execution = coding_review_output["original_execution"]
+                                    
+                                    if "fixed_execution" in coding_review_output:
+                                        fixed_execution = coding_review_output["fixed_execution"]
+                                    
+                                    # Add review iteration if we found all the data
+                                    if review and original_code and not any(r.get("review") == review for r in review_iterations):
+                                        review_iterations.append({
+                                            "review": review,
+                                            "original_code": original_code,
+                                            "fixed_code": fixed_code,
+                                            "original_execution": original_execution,
+                                            "fixed_execution": fixed_execution,
+                                            "improvement_explanation": improvement_explanation
+                                        })
+                        
+                    except Exception as e:
+                        logger.error(f"Error accessing agent outputs: {str(e)}")
+                        # Print exception traceback for debugging
+                        traceback.print_exc()
+            
             except Exception as e:
                 logger.error(f"Error extracting data from workflow result: {str(e)}")
                 print(f"Error extracting data: {str(e)}")
+                # Print exception traceback for debugging
+                traceback.print_exc()
             
             # If no code was found in the reports, log an error
             if not original_code:
@@ -429,6 +627,18 @@ async def run_integrated_coding_demo():
                         print("```")
                         print(review_iter["fixed_execution"].get("result", "No result available"))
                         print("```")
+            
+            # Print debug information about what we found
+            print(f"\nFound data from workflow:")
+            print(f"- Original code found: {len(original_code) > 0}")
+            print(f"- Fixed code found: {len(fixed_code) > 0}")
+            print(f"- Review found: {len(review_iterations[0]['review']) > 0 if review_iterations else False}")
+            
+            # Debug print first 100 chars of code if found
+            if len(original_code) > 0:
+                print(f"\nPreview of original code: {original_code[:100]}...")
+            if len(fixed_code) > 0:
+                print(f"\nPreview of fixed code: {fixed_code[:100]}...")
             
             # Store results for display
             all_results.append({
