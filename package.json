@@ -1,7 +1,7 @@
 {
   "name": "webagent-platform",
-  "version": "2.9.9",
-  "description": "WebAgent Platform with improved integrated coding workflow that includes iterative code review and fixing capabilities for better code quality (2025-03-26)",
+  "version": "2.9.10",
+  "description": "WebAgent Platform with custom transformer model and improved model-as-a-service architecture (2025-04-17)",
   "private": true,
   "scripts": {
     "dev": "next dev",

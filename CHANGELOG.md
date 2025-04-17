@@ -2,6 +2,20 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 2.9.10 - 2025-04-17
+
+### Added
+- Added custom Core Transformer model implementation to the model registry
+- Created CoreTransformerModelService as a model-as-a-service implementation
+- Added configuration for Core Transformer in models.yaml
+- Implemented sequence-to-sequence capabilities with the Transformer architecture
+- Added proper token handling and text generation with temperature and top-p sampling
+
+### Changed
+- Reorganized model storage to use backend/models/core_transformer directory
+- Improved model service architecture to handle multiple model implementations
+- Updated run_model_service.py to support both Hugging Face Transformers and custom implementations
+
 ## 2.9.9 - 2025-03-26
 
 ### Fixed

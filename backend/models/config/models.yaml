@@ -60,4 +60,29 @@ models:
     parameters:
       max_new_tokens: 4096
       temperature: 0.7
-      top_p: 0.95 
+      top_p: 0.95
+      
+  # Custom Core Transformer model implementation
+  # This uses our internal Transformer implementation rather than Hugging Face
+  core-transformer:
+    display_name: "Core Transformer"
+    model_type: llm
+    model_path: "backend/models/core_transformer"
+    device: "cpu"  # Can be changed to cuda:0 for GPU acceleration
+    host: localhost
+    port: 8504
+    capabilities:
+      - text-generation
+      - sequence-to-sequence
+    parameters:
+      src_vocab_size: 5000
+      tgt_vocab_size: 5000
+      d_model: 512
+      num_heads: 8
+      num_encoder_layers: 6
+      num_decoder_layers: 6
+      d_ff: 2048
+      dropout: 0.1
+      max_seq_length: 1024
+      temperature: 0.7
+      top_p: 0.9 
