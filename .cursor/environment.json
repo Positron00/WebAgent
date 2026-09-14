@@ -1,0 +1,11 @@
+{
+  "name": "WebAgent Platform",
+  "install": "npm install",
+  "terminals": [
+    {
+      "name": "next-dev",
+      "command": "npm run dev"
+    }
+  ],
+  "ports": [3000]
+}
