@@ -14,7 +14,7 @@ export const config = {
   together: {
     apiKey: getEnvVar('TOGETHER_API_KEY'),
     endpoint: 'https://api.together.xyz/v1/chat/completions',
-    model: 'meta-llama/Llama-3.3-70b-instruct-turbo-free',
+    model: process.env.TOGETHER_MODEL || 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
   },
 } as const;
 

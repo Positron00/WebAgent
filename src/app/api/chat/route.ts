@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { config } from '@/config/env';
 import { SYSTEM_PROMPT, SYSTEM_PROMPTS, KNOWLEDGE_PROMPTS, CHAT_SETTINGS } from '@/config/chat';
-import { ChatCompletionRequest, ChatRequestMessage, ChatCompletionResponse } from '@/types/api';
+import { ChatCompletionRequest } from '@/types/api';
 import { rateLimiter } from '@/utils/rateLimiter';
 import { logger } from '@/utils/logger';
 import { clientConfig } from '@/config/clientConfig';
-import { ApiError } from '@/utils/errors';
 
 // Mark this route as dynamic to handle POST requests
 export const dynamic = 'force-dynamic';
