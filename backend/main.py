@@ -20,11 +20,19 @@ if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
 # Now import application modules
-from app.api.router import api_router
+from app.api.router import api_router, health_router
+from app.api.endpoints.task import router as task_router
 from app.core.config import settings
 from app.core.middleware import setup_middlewares, LimitSizeMiddleware, SecurityHeadersMiddleware
 from app.core.logger import logger
 from app.core.metrics import setup_metrics, PrometheusMiddleware, ERROR_COUNT
+from app.core.security import (
+    setup_security,
+    INSECURE_SECRET_DEFAULT,
+    require_api_key,
+    sanitize_error_message,
+)
+from fastapi import Depends
 
 # Create FastAPI app with OpenAPI documentation
 app = FastAPI(
@@ -69,9 +77,35 @@ app.add_middleware(
 
 # Set up metrics endpoints
 setup_metrics(app)
+setup_security(app)
+
+# Model-written code must not run inside the API server unless explicitly enabled.
+settings.ENABLE_CODE_EXECUTION = (
+    os.getenv("WEBAGENT_ENABLE_CODE_EXECUTION", "false").lower() == "true"
+)
+
+
+@app.on_event("startup")
+async def validate_production_settings() -> None:
+    if settings.WEBAGENT_ENV not in ("uat", "prod"):
+        return
+    if settings.SECRET_KEY == INSECURE_SECRET_DEFAULT:
+        raise RuntimeError(
+            "SECRET_KEY must be set to a non-default value in uat/prod (WEBAGENT_SECURITY_SECRET_KEY)"
+        )
+    if settings.API_KEY_ENABLED and not os.getenv("WEBAGENT_API_KEY"):
+        raise RuntimeError("WEBAGENT_API_KEY must be set when API key auth is enabled in uat/prod")
+
 
 # Include API router
+app.include_router(health_router, prefix=settings.API_V1_STR)
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(
+    task_router,
+    prefix="/api/task",
+    tags=["task"],
+    dependencies=[Depends(require_api_key)],
+)
 
 # Global exception handler
 @app.exception_handler(Exception)
@@ -108,7 +142,11 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Internal Server Error",
-            "message": exception_msg if settings.DEBUG_MODE else "An unexpected error occurred",
+            "message": (
+                sanitize_error_message(exception_msg)
+                if settings.DEBUG_MODE
+                else "An unexpected error occurred"
+            ),
             "error_id": error_id,
             "timestamp": datetime.now().isoformat(),
         },

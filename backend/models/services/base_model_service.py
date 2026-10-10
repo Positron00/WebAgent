@@ -24,6 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from ..registry import ModelInfo, ModelEndpoint, get_model_registry
+from ..cors_origins import get_model_service_cors_origins
 
 logger = logging.getLogger(__name__)
 
@@ -155,9 +156,10 @@ class BaseModelService(ABC):
     
     def _setup_cors(self) -> None:
         """Set up CORS middleware"""
+        origins = get_model_service_cors_origins()
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],  # In production, restrict this to specific domains
+            allow_origins=origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],

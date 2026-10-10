@@ -22,6 +22,7 @@ import uvicorn
 from pydantic import BaseModel, Field
 
 from ..registry import get_model_registry, ModelInfo
+from ..cors_origins import get_model_service_cors_origins
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class ModelListResponse(BaseModel):
 class ModelAPIGateway:
     """API gateway for model services"""
     
-    def __init__(self, host: str = "0.0.0.0", port: int = 8000):
+    def __init__(self, host: str = "0.0.0.0", port: int = 8100):
         """Initialize the API gateway"""
         self.host = host
         self.port = port
@@ -209,9 +210,10 @@ class ModelAPIGateway:
     def _configure_middleware(self) -> None:
         """Configure middleware for the API"""
         # CORS middleware for cross-origin requests
+        origins = get_model_service_cors_origins()
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
@@ -307,7 +309,7 @@ class ModelAPIGateway:
             log_level="info"
         )
 
-def run_gateway(host: str = "localhost", port: int = 8000):
+def run_gateway(host: str = "localhost", port: int = 8100):
     """Run the API gateway"""
     gateway = ModelAPIGateway(host=host, port=port)
     gateway.run()

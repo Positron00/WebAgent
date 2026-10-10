@@ -3,7 +3,7 @@
 # Global settings
 gateway:
   host: localhost
-  port: 8000
+  port: 8100
   log_level: info
 
 # Default model parameters (applied to all models unless overridden)
@@ -62,8 +62,7 @@ models:
       temperature: 0.7
       top_p: 0.95
       
-  # Custom Core Transformer model implementation
-  # This uses our internal Transformer implementation rather than Hugging Face
+  # Experimental: requires trained model.pt weights (empty placeholder is skipped at load)
   core-transformer:
     display_name: "Core Transformer"
     model_type: llm

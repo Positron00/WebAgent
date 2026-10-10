@@ -13,6 +13,7 @@ from app.graph.workflows import get_agent_workflow
 from app.services.task_manager import TaskManager
 from app.services.llm import get_llm_status
 from app.core.config import settings
+from app.api.http_errors import raise_safe_http_exception
 
 router = APIRouter()
 task_manager = TaskManager()
@@ -33,6 +34,7 @@ class FrontendChatRequest(BaseModel):
     frequency_penalty: float = Field(default=0.0)
     presence_penalty: float = Field(default=0.0)
     agentic_toggle: bool = Field(default=False, description="Whether to use the agentic workflow")
+    document_id: Optional[str] = Field(default=None, description="Document to extract from, if any")
 
 class FrontendChatResponse(BaseModel):
     """Chat response format expected by the frontend."""
@@ -62,10 +64,13 @@ async def frontend_chat_completions(
             ],
             "agentic_toggle": request.agentic_toggle  # Pass the agentic toggle to the workflow
         }
+        if request.document_id:
+            context["document_id"] = request.document_id
         
         # Generate a unique task ID
         task_id = str(uuid4())
-        
+        task_manager.register_pending(task_id, last_message.content)
+
         # Start the workflow in the background
         background_tasks.add_task(
             task_manager.run_workflow,
@@ -93,7 +98,7 @@ async def frontend_chat_completions(
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_safe_http_exception(500, e, public_message="Chat completion failed")
 
 @router.get("/chat/status/{task_id}", response_model=Dict[str, Any])
 async def get_chat_completion_status(task_id: str):
@@ -117,7 +122,8 @@ async def get_chat_completion_status(task_id: str):
                     {
                         "message": {
                             "role": "assistant",
-                            "content": result.get("content", "")
+                            "content": result.get("content", ""),
+                            **({"logs": result["logs"]} if result.get("logs") else {}),
                         },
                         "finish_reason": "stop"
                     }

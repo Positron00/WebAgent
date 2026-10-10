@@ -136,6 +136,7 @@ class AgentsConfig(BaseModel):
     data_analysis: AgentConfig = Field(default_factory=AgentConfig)
     coding: CodingAgentConfig = Field(default_factory=CodingAgentConfig)
     team_manager: AgentConfig = Field(default_factory=AgentConfig)
+    document_extraction: AgentConfig = Field(default_factory=AgentConfig)
 
 
 class LoggingConfig(BaseModel):
@@ -156,6 +157,13 @@ class SecurityConfig(BaseModel):
     token_expire_minutes: int = Field(default=30, gt=0)
     algorithm: str = Field(default="HS256")
     password_min_length: int = Field(default=8, ge=8)
+    api_key_enabled: bool = Field(default=False)
+    jwt_enabled: bool = Field(default=False)
+    rate_limit_enabled: bool = Field(default=True)
+    rate_limit_max_requests: int = Field(default=60, gt=0)
+    rate_limit_window_size: int = Field(default=60, gt=0)
+    rate_limit_burst_limit: int = Field(default=120, gt=0)
+    request_size_limit: int = Field(default=10485760, gt=0)
 
 
 class LangSmithConfig(BaseModel):

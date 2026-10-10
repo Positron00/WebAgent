@@ -9,6 +9,7 @@ from typing import Dict, Optional, Tuple, List, Any, Union
 
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Security, status
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
 from pydantic import BaseModel, Field
 
@@ -22,8 +23,39 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 # database in production
 DEV_API_KEYS = {
     "admin": {"key": "dev_admin_key", "scope": "admin"},
-    "user": {"key": "dev_user_key", "scope": "user"}
+    "user": {"key": "dev_user_key", "scope": "user"},
 }
+
+INSECURE_SECRET_DEFAULT = "insecure_key_for_dev_only_change_in_production"
+
+
+def _configured_api_keys() -> List[str]:
+    """Valid API keys. The hard-coded dev keys are accepted only in the dev environment."""
+    keys: List[str] = []
+    if settings.WEBAGENT_ENV == "dev":
+        keys.extend(data["key"] for data in DEV_API_KEYS.values())
+    env_key = os.getenv("WEBAGENT_API_KEY")
+    if env_key:
+        keys.append(env_key)
+    return keys
+
+
+async def require_api_key(api_key: Optional[str] = Security(api_key_header)) -> None:
+    """Require a valid API key when API_KEY_ENABLED is on."""
+    if not settings.API_KEY_ENABLED:
+        return
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key required",
+        )
+    for valid in _configured_api_keys():
+        if secrets.compare_digest(api_key, valid):
+            return
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid API key",
+    )
 
 # Rate limiting implementation
 rate_limit_data: Dict[str, Dict[str, Any]] = {}
@@ -54,9 +86,13 @@ def validate_auth(auth_value: str) -> Dict[str, Any]:
     # Try to validate as API key
     if settings.API_KEY_ENABLED:
         api_key = auth_value.split("Bearer ")[-1] if auth_value.startswith("Bearer ") else auth_value
-        for user_id, data in DEV_API_KEYS.items():
-            if secrets.compare_digest(api_key, data["key"]):
-                return {"user_id": user_id, "scope": data["scope"]}
+        if settings.WEBAGENT_ENV == "dev":
+            for user_id, data in DEV_API_KEYS.items():
+                if secrets.compare_digest(api_key, data["key"]):
+                    return {"user_id": user_id, "scope": data["scope"]}
+        env_key = os.getenv("WEBAGENT_API_KEY")
+        if env_key and secrets.compare_digest(api_key, env_key):
+            return {"user_id": "api_client", "scope": "user"}
     
     # If we reach here, auth failed
     raise HTTPException(
@@ -187,17 +223,16 @@ def setup_security(app: FastAPI) -> None:
         
         # Apply rate limiting
         if not apply_rate_limit(client_host):
-            return HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many requests"
+                content={"error": "Too many requests"},
             )
-        
-        # Check request size
+
         content_length = request.headers.get("content-length")
         if content_length and int(content_length) > settings.REQUEST_SIZE_LIMIT:
-            return HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail="Request too large"
+                content={"error": "Request too large"},
             )
         
         # Continue processing the request

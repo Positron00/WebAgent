@@ -28,13 +28,11 @@ from datetime import datetime
 from dotenv import load_dotenv
 from pydantic import Field, ConfigDict
 from pydantic_settings import BaseSettings
+from app import __version__
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
 
-# Define the base directory for the project
-BASE_DIR = "/Users/danc/Library/CloudStorage/Dropbox/MachineLearning/Repos/WebAgent"
-
-# For debugging
-print(f"BASE_DIR set to: {BASE_DIR}")
+# Define the base directory for the project (repo root)
+BASE_DIR = str(Path(__file__).resolve().parents[3])
 
 # Priority order for configuration:
 # 1. .env.local file (highest priority for API keys)
@@ -47,10 +45,7 @@ load_dotenv(".env")
 # Load API keys from .env.local file (highest priority)
 env_local_path = os.path.join(BASE_DIR, ".env.local")
 if os.path.exists(env_local_path):
-    print(f"Loading environment variables from {env_local_path}")
     load_dotenv(env_local_path, override=True)
-else:
-    print(f"Warning: .env.local file not found at {env_local_path}")
 
 # Then load from YAML configuration (middle priority)
 try:
@@ -61,8 +56,9 @@ try:
     db_config = get_database_config()
 except Exception as e:
     # Fall back to .env and default values if YAML config fails
-    print(f"Warning: Failed to load YAML configuration: {e}")
-    print("Falling back to .env file and default values")
+    logging.getLogger(__name__).warning(
+        "Failed to load YAML configuration (%s); falling back to .env and defaults", e
+    )
     app_config = None
 
 
@@ -73,7 +69,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = os.getenv("WEBAGENT_API_PREFIX", "/api/v1")
     PROJECT_NAME: str = "WebAgent Backend"
     PROJECT_DESCRIPTION: str = "Multi-Agent Research and Analysis Platform"
-    VERSION: str = "2.9.9"
+    VERSION: str = __version__
     
     # Environment
     WEBAGENT_ENV: str = os.getenv("WEBAGENT_ENV", "dev")
@@ -82,6 +78,10 @@ class Settings(BaseSettings):
     HOST: str = os.getenv("WEBAGENT_API_HOST", "0.0.0.0")
     PORT: int = int(os.getenv("WEBAGENT_API_PORT", "8000"))
     DEBUG_MODE: bool = os.getenv("WEBAGENT_API_DEBUG_MODE", "False").lower() == "true"
+    # On for local demos; backend/main.py turns it off for the API server.
+    ENABLE_CODE_EXECUTION: bool = (
+        os.getenv("WEBAGENT_ENABLE_CODE_EXECUTION", "true").lower() == "true"
+    )
     
     # CORS
     CORS_ORIGINS: List[str] = os.getenv("WEBAGENT_CORS_ORIGINS", "http://localhost:3000").split(",")
@@ -89,6 +89,9 @@ class Settings(BaseSettings):
     # Default LLM services
     LLM_DEFAULT_PROVIDER: str = os.getenv("WEBAGENT_LLM_DEFAULT_PROVIDER", "together")
     LLM_DEFAULT_MODEL: str = os.getenv("WEBAGENT_LLM_DEFAULT_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
+    DEFAULT_MODEL: str = os.getenv(
+        "WEBAGENT_LLM_DEFAULT_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    )
     
     # OpenAI
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
@@ -104,7 +107,7 @@ class Settings(BaseSettings):
     
     # Groq
     GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY")
-    GROQ_MODEL: Optional[str] = os.getenv("GROQ_MODEL", "meta-llama/Llama-3.2-1B")
+    GROQ_MODEL: Optional[str] = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 
     # LangSmith for tracing and observability
     LANGSMITH_API_KEY: Optional[str] = os.getenv("LANGSMITH_API_KEY")
@@ -236,7 +239,7 @@ if app_config:
         DEBUG_MODE: bool = api_config.debug_mode
         
         # Environment
-        WEBAGENT_ENV: str = getattr(app_config, 'env', 'dev') if app_config else 'dev'
+        WEBAGENT_ENV: str = os.getenv("WEBAGENT_ENV", "dev")
         
         # CORS
         CORS_ORIGINS: List[str] = cors_config.origins

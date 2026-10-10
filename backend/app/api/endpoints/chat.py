@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from app.models.chat import ChatRequest, ChatResponse
 from app.graph.workflows import get_agent_workflow
 from app.services.task_manager import TaskManager
+from app.api.http_errors import raise_safe_http_exception
 
 router = APIRouter()
 task_manager = TaskManager()
@@ -25,7 +26,8 @@ async def create_chat(
     try:
         # Generate a unique task ID
         task_id = str(uuid4())
-        
+        task_manager.register_pending(task_id, request.message)
+
         # Start the workflow in the background
         background_tasks.add_task(
             task_manager.run_workflow,
@@ -41,7 +43,7 @@ async def create_chat(
             message="Your request is being processed. Check the status using the task ID."
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_safe_http_exception(500, e, public_message="Chat request failed")
 
 @router.get("/{task_id}", response_model=ChatResponse)
 async def get_chat_status(task_id: str):

@@ -56,7 +56,7 @@ class ModelManager:
         # Initialize model registry
         self.registry = get_model_registry()
     
-    def start_gateway(self, host: str = "localhost", port: int = 8000) -> None:
+    def start_gateway(self, host: str = "localhost", port: int = 8100) -> None:
         """
         Start the model API gateway
         

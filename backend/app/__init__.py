@@ -73,5 +73,15 @@ backend_dir = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if backend_dir.name == 'backend' and str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-# Import version information
-__version__ = "2.9.3"  # Released on 2025-03-18
+# Version is defined once, in the repo-root package.json.
+def _read_version() -> str:
+    import json
+
+    try:
+        package_json = Path(__file__).resolve().parents[2] / "package.json"
+        return json.loads(package_json.read_text())["version"]
+    except (OSError, KeyError, ValueError):
+        return "0.0.0"
+
+
+__version__ = _read_version()

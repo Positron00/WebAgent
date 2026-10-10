@@ -21,6 +21,7 @@ from app.services.vectordb import get_vectordb_service
 from app.services.graphdb import get_graph_db_service
 from app.core.config import settings
 from app.utils.metrics import timing_decorator
+from app.api.http_errors import raise_safe_http_exception
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -122,7 +123,7 @@ async def upload_document(
         )
     except Exception as e:
         logger.error(f"Error processing document: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+        raise_safe_http_exception(500, e, public_message="Error processing document")
     finally:
         # Clean up temp file
         os.unlink(temp_file_path)
@@ -165,7 +166,7 @@ async def search_documents(
         return responses
     except Exception as e:
         logger.error(f"Error searching documents: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error searching documents: {str(e)}")
+        raise_safe_http_exception(500, e, public_message="Error searching documents")
 
 @router.get("/document/{document_id}", response_model=DocumentResponse)
 @timing_decorator
@@ -224,7 +225,7 @@ async def get_document(
         return response
     except Exception as e:
         logger.error(f"Error retrieving document: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving document: {str(e)}")
+        raise_safe_http_exception(500, e, public_message="Error retrieving document")
 
 @router.get("/related/{document_id}", response_model=List[DocumentResponse])
 @timing_decorator
@@ -286,4 +287,4 @@ async def get_related_documents(
         return responses
     except Exception as e:
         logger.error(f"Error getting related documents: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error getting related documents: {str(e)}") 
+        raise_safe_http_exception(500, e, public_message="Error getting related documents") 

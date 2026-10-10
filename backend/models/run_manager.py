@@ -29,7 +29,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Run the Model Manager")
     parser.add_argument("--config", help="Path to the models configuration file")
     parser.add_argument("--gateway-host", default="localhost", help="Host for the API gateway")
-    parser.add_argument("--gateway-port", type=int, default=8000, help="Port for the API gateway")
+    parser.add_argument("--gateway-port", type=int, default=8100, help="Port for the API gateway")
     parser.add_argument("--models", nargs="+", help="Specific models to load (default: all in config)")
     return parser.parse_args()
 
