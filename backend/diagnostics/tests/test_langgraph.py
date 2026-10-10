@@ -113,8 +113,7 @@ class TestLangGraphWorkflow:
              patch('backend.app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
              patch('backend.app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
              patch('backend.app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
-             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]), \
-             patch('backend.app.graph.workflows.get_research_router', return_value=MagicMock()):
+             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
             
             # Build the workflow
             workflow = build_agent_workflow()
@@ -137,8 +136,7 @@ class TestLangGraphWorkflow:
              patch('backend.app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
              patch('backend.app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
              patch('backend.app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
-             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]), \
-             patch('backend.app.graph.workflows.get_research_router', return_value=MagicMock()):
+             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
             
             # Get the workflow twice
             workflow1 = get_agent_workflow()
@@ -170,8 +168,7 @@ class TestLangGraphWorkflow:
              patch('backend.app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
              patch('backend.app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
              patch('backend.app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
-             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]), \
-             patch('backend.app.graph.workflows.get_research_router', return_value=MagicMock()):
+             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
             
             # Build the workflow
             workflow = build_agent_workflow()
@@ -202,8 +199,7 @@ class TestLangGraphWorkflow:
              patch('backend.app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
              patch('backend.app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
              patch('backend.app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
-             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]), \
-             patch('backend.app.graph.workflows.get_research_router', return_value=MagicMock()):
+             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
             
             # Call the agent directly to test error handling
             state = await mock_agents["supervisor"].run(test_state)
@@ -235,8 +231,7 @@ class TestLangGraphWorkflow:
              patch('backend.app.graph.workflows.get_senior_research_agent', return_value=mock_agents["senior_research"]), \
              patch('backend.app.graph.workflows.get_data_analysis_agent', return_value=mock_agents["data_analysis"]), \
              patch('backend.app.graph.workflows.get_coding_assistant_agent', return_value=mock_agents["coding_assistant"]), \
-             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]), \
-             patch('backend.app.graph.workflows.get_research_router', return_value=MagicMock()):
+             patch('backend.app.graph.workflows.get_team_manager_agent', return_value=mock_agents["team_manager"]):
             
             # Call agent directly
             await mock_agents["supervisor"].run(test_state)

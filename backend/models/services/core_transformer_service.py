@@ -9,14 +9,23 @@ import torch
 import json
 from typing import Dict, List, Optional, Any
 import asyncio
+from pathlib import Path
 
 from .base_model_service import BaseModelService, ModelServiceConfig, CompletionResponse
-from ..core_transformer import Transformer
+from .core_transformer import Transformer
 
 logger = logging.getLogger(__name__)
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
 class CoreTransformerModelService(BaseModelService):
     """Service implementation for the custom core Transformer model"""
+
+    def _resolve_model_dir(self) -> str:
+        """Resolve a relative model_path (from models.yaml) against the repository root."""
+        if os.path.isabs(self.config.model_path):
+            return self.config.model_path
+        return str(REPO_ROOT / self.config.model_path)
     
     async def load_model(self) -> None:
         """Load the Transformer model into memory"""
@@ -55,8 +64,9 @@ class CoreTransformerModelService(BaseModelService):
             )
             
             # Load saved model if a checkpoint exists
-            model_path = os.path.join(self.config.model_path, "model.pt")
-            if os.path.exists(model_path):
+            model_dir = self._resolve_model_dir()
+            model_path = os.path.join(model_dir, "model.pt")
+            if os.path.isfile(model_path) and os.path.getsize(model_path) > 0:
                 logger.info(f"Loading model weights from {model_path}")
                 self.model.load_state_dict(torch.load(model_path, map_location=self.device))
             else:
@@ -67,7 +77,7 @@ class CoreTransformerModelService(BaseModelService):
             self.model.eval()  # Set to evaluation mode
             
             # Load tokenizer info if available
-            tokenizer_path = os.path.join(self.config.model_path, "tokenizer.json")
+            tokenizer_path = os.path.join(model_dir, "tokenizer.json")
             if os.path.exists(tokenizer_path):
                 with open(tokenizer_path, 'r') as f:
                     self.tokenizer_info = json.load(f)

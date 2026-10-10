@@ -34,7 +34,7 @@ from sklearn.metrics import silhouette_score
 
 # Import local modules
 from app.core.config import settings
-from app.services.llm import get_llm
+from app.services.llm import get_agent_llm
 from app.agents.base_agent import BaseAgent
 from app.utils.metrics import timing_decorator, log_memory_usage
 from app.utils.document_utils import extract_text_from_document
@@ -60,7 +60,7 @@ class DocumentExtractionAgent(BaseAgent):
             config: Configuration dictionary (falls back to settings if None)
         """
         super().__init__(name="document_extraction", config=config)
-        self.llm = get_llm()
+        self.llm = get_agent_llm("document_extraction")
         self.extraction_methods = {
             "lda": self.extract_with_lda,
             "llm": self.extract_with_llm,
@@ -691,9 +691,15 @@ class DocumentExtractionAgent(BaseAgent):
             # Execute extraction
             extraction_result = self.extraction_methods[method](text, extraction_params)
             
-            # Update state with results
             state.output = extraction_result
-            
+            state.mark_completed(
+                {
+                    "title": f"Document extraction: {document_id}",
+                    "content": json.dumps(extraction_result, indent=2, default=str),
+                    "type": "document_extraction",
+                }
+            )
+
             # Route to team manager if requested
             if state.inputs.get("route_to_team_manager", False):
                 self._route_to_team_manager(extraction_result)

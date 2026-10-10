@@ -82,7 +82,7 @@ class CodingAssistantAgent(BaseAgent):
         self.timeout_seconds = agents_config.coding.timeout_seconds
         
         # Initialize OpenAI client - we'll use GPT-4o mini with code interpreter
-        self.openai_api_key = self.get_openai_api_key()
+        self.openai_api_key = settings.OPENAI_API_KEY
         self.openai_model = "gpt-4o-mini"
         
         if self.openai_api_key:
@@ -99,34 +99,6 @@ class CodingAssistantAgent(BaseAgent):
             self.openai_llm = None
             self.llm = get_llm_without_tags()
     
-    def get_openai_api_key(self):
-        """Get OpenAI API key from environment variables or .env.local file."""
-        # Check if key is already in environment
-        if "OPENAI_API_KEY" in os.environ:
-            return os.environ["OPENAI_API_KEY"]
-        
-        # Check settings from app config
-        if hasattr(settings, "OPENAI_API_KEY") and settings.OPENAI_API_KEY:
-            return settings.OPENAI_API_KEY
-        
-        # Try loading from .env.local file
-        try:
-            env_path = os.path.join(os.getcwd(), ".env.local")
-            if os.path.exists(env_path):
-                with open(env_path, "r") as f:
-                    for line in f:
-                        if line.strip().startswith("OPENAI_API_KEY="):
-                            key = line.strip().split("=", 1)[1].strip()
-                            # Remove quotes if present
-                            if (key.startswith('"') and key.endswith('"')) or \
-                               (key.startswith("'") and key.endswith("'")):
-                                key = key[1:-1]
-                            return key
-        except Exception as e:
-            logger.error(f"Error reading .env.local file: {str(e)}")
-        
-        return None
-
     async def run(self, state: WorkflowState) -> WorkflowState:
         """
         Run the Coding Assistant Agent on the current workflow state.

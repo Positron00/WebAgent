@@ -12,7 +12,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 
 from app.models.task import WorkflowState
-from app.services.llm import get_llm
+from app.services.llm import get_agent_llm
 from app.services.web_search import perform_web_search
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
@@ -73,7 +73,7 @@ class WebResearchAgent(BaseAgent):
         """Initialize the Web Research Agent."""
         super().__init__(name="web_research")
         self.prompt = WEB_RESEARCH_PROMPT
-        self.llm = get_llm(settings.LLM_DEFAULT_MODEL)
+        self.llm = get_agent_llm("web_research")
         self.output_parser = StrOutputParser()
         self.llm_chain = self.llm
     
@@ -91,14 +91,9 @@ class WebResearchAgent(BaseAgent):
             
         return formatted_results
     
-    def _format_feedback(self, feedback: Dict) -> str:
+    def _format_feedback(self, feedback: Dict, iteration: int) -> str:
         """Format feedback from Senior Research Agent if available."""
-        # Check if there's feedback in the context
-        if not feedback:
-            return ""
-            
-        iteration = feedback.get("iteration", 1)
-        if iteration <= 1:
+        if not feedback or iteration <= 1:
             return ""
             
         # Format the feedback section
@@ -121,7 +116,7 @@ class WebResearchAgent(BaseAgent):
         
     async def run(self, state: WorkflowState) -> WorkflowState:
         """Execute the Web Research Agent to search and analyze information."""
-        query = state.context.get("query", "")
+        query = state.query or state.context.get("query", "")
         logger.info(f"Processing query: {query}")
 
         # Update workflow state with current step
@@ -137,11 +132,13 @@ class WebResearchAgent(BaseAgent):
         # Check if the research plan doesn't require a web search
         if not research_plan.get("requires_web_search", True):
             logger.info("Research plan does not require a web search")
-            state.context["web_search_results"] = []
-            state.context["web_research_results"] = {
+            skipped = {
                 "skipped": True,
                 "reasoning": "The research question doesn't require a web search."
             }
+            state.context["web_search_results"] = []
+            state.context["web_research_results"] = skipped
+            state.update_with_agent_output("web_research", skipped)
             return state
         
         # Use a different search query for follow-up research
@@ -215,11 +212,13 @@ class WebResearchAgent(BaseAgent):
         # Handle the case where no search results are found
         if not search_results:
             logger.warning("No relevant search results found")
-            state.context["web_search_results"] = []
-            state.context["web_research_results"] = {
+            empty = {
                 "analysis": "No relevant information found on the web for this query.",
                 "sources": []
             }
+            state.context["web_search_results"] = []
+            state.context["web_research_results"] = empty
+            state.update_with_agent_output("web_research", empty)
             return state
         
         # Format the search results for the prompt
@@ -233,20 +232,22 @@ class WebResearchAgent(BaseAgent):
 {query}
 
 # Research Plan
-{research_plan.get("plan", "No specific research plan provided.")}
+{chr(10).join(f"- {q}" for q in research_plan.get("questions", [])) or "No specific research plan provided."}
 
 # Web Search Results
 {formatted_results}
 
-{self._format_feedback(state.context.get("research_feedback", {}))}
+{self._format_feedback(state.context.get("research_feedback", {}), iteration)}
 """}
         ]
         
         # Call the language model to analyze the results
         try:
             # Call the LLM directly
-            response = self.llm.invoke(messages)
-            assistant_message = response if isinstance(response, str) else response.get("content", "")
+            response = await self.llm.ainvoke(messages)
+            assistant_message = (
+                response if isinstance(response, str) else getattr(response, "content", "")
+            )
             
             # Log response for debugging
             logger.debug(f"LLM response type: {type(response)}")
@@ -290,9 +291,9 @@ class WebResearchAgent(BaseAgent):
             logger.debug(f"Final response structure: {list(parsed_response.keys())}")
             logger.debug(f"Number of sources: {len(sources)}")
             
-            # Update the workflow state with the research results
             state.context["web_search_results"] = search_results
             state.context["web_research_results"] = parsed_response
+            state.update_with_agent_output("web_research", parsed_response)
             return state
             
         except Exception as e:
@@ -329,9 +330,9 @@ class WebResearchAgent(BaseAgent):
                 "sources": sources
             }
             
-            # Update the workflow state with the research results
             state.context["web_search_results"] = search_results
             state.context["web_research_results"] = parsed_response
+            state.update_with_agent_output("web_research", parsed_response)
             return state
 
     def _clean_analysis(self, analysis: str) -> str:
@@ -411,19 +412,24 @@ class WebResearchAgent(BaseAgent):
         
         return fallback_text
 
+_web_research_function = None
+
+
 def get_web_research_agent():
     """
-    Get an instance of the Web Research Agent.
-    
+    Get the shared Web Research Agent (created once, reused on every research pass).
+
     Returns:
         A callable function that takes a WorkflowState and calls the agent's run method.
         This makes it compatible with LangGraph which expects nodes to be callable.
     """
-    agent = WebResearchAgent()
-    
-    # Return a callable function instead of the agent directly
-    async def web_research_function(state: WorkflowState) -> WorkflowState:
-        """Callable wrapper for the web research agent"""
-        return await agent.run(state)
-    
-    return web_research_function 
+    global _web_research_function
+    if _web_research_function is None:
+        agent = WebResearchAgent()
+
+        async def web_research_function(state: WorkflowState) -> WorkflowState:
+            """Callable wrapper for the web research agent"""
+            return await agent.run(state)
+
+        _web_research_function = web_research_function
+    return _web_research_function

@@ -6,6 +6,7 @@ for monitoring the application's performance and health.
 """
 import time
 import os
+import inspect
 from functools import wraps
 from typing import Callable, Dict, Optional, List, Set
 
@@ -337,48 +338,50 @@ def setup_metrics(app: FastAPI):
 # Dictionary to store execution times for functions
 _execution_times = {}
 
+def _record_execution_time(func_name: str, duration: float) -> None:
+    if func_name not in _execution_times:
+        _execution_times[func_name] = {
+            "total": 0.0,
+            "count": 0,
+            "min": float("inf"),
+            "max": 0.0,
+            "average": 0.0,
+        }
+    _execution_times[func_name]["total"] += duration
+    _execution_times[func_name]["count"] += 1
+    _execution_times[func_name]["min"] = min(_execution_times[func_name]["min"], duration)
+    _execution_times[func_name]["max"] = max(_execution_times[func_name]["max"], duration)
+    _execution_times[func_name]["average"] = (
+        _execution_times[func_name]["total"] / _execution_times[func_name]["count"]
+    )
+    logger.debug(f"Function {func_name} executed in {duration:.4f} seconds")
+
+
 def timing_decorator(func):
     """
     Decorator to measure and record function execution time.
-    
-    Args:
-        func: Function to measure
-        
-    Returns:
-        Wrapped function that measures execution time
+    Supports both sync and async callables (e.g. FastAPI route handlers).
     """
+    if inspect.iscoroutinefunction(func):
+
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                _record_execution_time(func.__name__, time.perf_counter() - start_time)
+
+        return async_wrapper
+
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # Get function name
-        func_name = func.__name__
-        
-        # Initialize stats if not already present
-        if func_name not in _execution_times:
-            _execution_times[func_name] = {
-                "total": 0.0,
-                "count": 0,
-                "min": float("inf"),
-                "max": 0.0,
-                "average": 0.0
-            }
-        
-        # Measure execution time
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        duration = time.time() - start_time
-        
-        # Update stats
-        _execution_times[func_name]["total"] += duration
-        _execution_times[func_name]["count"] += 1
-        _execution_times[func_name]["min"] = min(_execution_times[func_name]["min"], duration)
-        _execution_times[func_name]["max"] = max(_execution_times[func_name]["max"], duration)
-        _execution_times[func_name]["average"] = _execution_times[func_name]["total"] / _execution_times[func_name]["count"]
-        
-        # Log execution time
-        logger.debug(f"Function {func_name} executed in {duration:.4f} seconds")
-        
-        return result
-    
+        start_time = time.perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            _record_execution_time(func.__name__, time.perf_counter() - start_time)
+
     return wrapper
 
 def get_metric_statistics():

@@ -123,7 +123,7 @@ class TestTeamManagerAgent:
     @pytest.mark.asyncio
     async def test_agent_initialization(self, mock_llm):
         """Test that the agent initializes correctly."""
-        with patch('backend.app.agents.team_manager.get_llm', return_value=mock_llm):
+        with patch('backend.app.agents.team_manager.get_agent_llm', return_value=mock_llm):
             agent = TeamManagerAgent()
             
             # Check basic properties
@@ -133,7 +133,7 @@ class TestTeamManagerAgent:
     @pytest.mark.asyncio
     async def test_agent_run(self, mock_llm, test_state):
         """Test that the agent processes the state correctly."""
-        with patch('backend.app.agents.team_manager.get_llm', return_value=mock_llm):
+        with patch('backend.app.agents.team_manager.get_agent_llm', return_value=mock_llm):
             agent = TeamManagerAgent()
             
             # Mock the chain's ainvoke method
@@ -165,7 +165,7 @@ class TestTeamManagerAgent:
     @pytest.mark.asyncio
     async def test_final_report_formatting(self, mock_llm, test_state):
         """Test that the final report is properly formatted for the UI."""
-        with patch('backend.app.agents.team_manager.get_llm', return_value=mock_llm):
+        with patch('backend.app.agents.team_manager.get_agent_llm', return_value=mock_llm):
             agent = TeamManagerAgent()
             
             # Mock the chain's ainvoke method
@@ -191,7 +191,7 @@ class TestTeamManagerAgent:
     @pytest.mark.asyncio
     async def test_sources_handling(self, mock_llm, test_state):
         """Test that research sources are properly included in the output."""
-        with patch('backend.app.agents.team_manager.get_llm', return_value=mock_llm):
+        with patch('backend.app.agents.team_manager.get_agent_llm', return_value=mock_llm):
             agent = TeamManagerAgent()
             
             # Mock the chain's ainvoke method
@@ -220,7 +220,7 @@ class TestTeamManagerAgent:
     @pytest.mark.asyncio
     async def test_singleton_pattern(self, mock_llm):
         """Test the singleton pattern for get_team_manager_agent."""
-        with patch('backend.app.agents.team_manager.get_llm', return_value=mock_llm):
+        with patch('backend.app.agents.team_manager.get_agent_llm', return_value=mock_llm):
             # Get the agent twice
             agent1 = get_team_manager_agent()
             agent2 = get_team_manager_agent()

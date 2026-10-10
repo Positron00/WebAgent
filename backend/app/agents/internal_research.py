@@ -784,30 +784,24 @@ class InternalResearchAgent(BaseAgent):
         try:
             # Use the default model from settings instead of hardcoded "gpt-4-turbo"
             # which is not supported by TogetherAI
-            from app.core.config import settings
-            default_model = settings.LLM_DEFAULT_MODEL
-            # Only use the model specified in config if it's not "gpt-4-turbo"
-            model_name = self.config.get("llm_model")
-            if not model_name or model_name.startswith("gpt-"):
-                model_name = default_model
-                logger.info(f"Using default model from settings: {model_name}")
-            
-            # Get the LLM with minimal configuration
-            self.llm = get_llm(model_name)
-            logger.info(f"Successfully initialized LLM with model: {model_name}")
-            
+            from app.services.llm import get_agent_llm
+
+            self.llm = get_agent_llm("internal_research")
+            logger.info("Successfully initialized internal research LLM from agents config")
+
         except Exception as e:
             logger.error(f"Error initializing primary LLM: {str(e)}")
-            logger.warning("Using fallback OpenAI LLM due to initialization error")
-            try:
-                self.llm = get_llm("gpt-3.5-turbo")  # Fallback to more reliable model
-                logger.info("Successfully initialized fallback LLM")
-            except Exception as fallback_error:
-                logger.critical(f"Failed to initialize fallback LLM: {str(fallback_error)}")
-                # Create a minimal mock LLM as last resort
-                from langchain.llms.fake import FakeListLLM
-                self.llm = FakeListLLM(responses=["ERROR: Unable to initialize any LLM. Internal research results cannot be generated."])
+            if os.getenv("WEBAGENT_ALLOW_FAKE_LLM", "false").lower() == "true":
+                from langchain_community.llms.fake import FakeListLLM
+
+                self.llm = FakeListLLM(
+                    responses=[
+                        "ERROR: Unable to initialize any LLM. Internal research results cannot be generated."
+                    ]
+                )
                 logger.warning("Using mock LLM as emergency fallback")
+            else:
+                raise
         
         # We don't create a chain anymore since we're now invoking the LLM directly in the
         # _generate_findings_with_retry method to avoid tags conflicts
@@ -1370,19 +1364,24 @@ class InternalResearchAgent(BaseAgent):
         return intersection / union
 
 
+_internal_research_function = None
+
+
 def get_internal_research_agent():
     """
-    Get an instance of the advanced RAG-based Internal Research Agent.
-    
+    Get the shared RAG-based Internal Research Agent (created once, reused on every research pass).
+
     Returns:
         A callable function that takes a WorkflowState and calls the agent's run method.
         This makes it compatible with LangGraph which expects nodes to be callable.
     """
-    agent = InternalResearchAgent()
-    
-    # Return a callable function instead of the agent directly
-    async def internal_research_function(state: WorkflowState) -> WorkflowState:
-        """Callable wrapper for the internal research agent"""
-        return await agent.run(state)
-    
-    return internal_research_function 
+    global _internal_research_function
+    if _internal_research_function is None:
+        agent = InternalResearchAgent()
+
+        async def internal_research_function(state: WorkflowState) -> WorkflowState:
+            """Callable wrapper for the internal research agent"""
+            return await agent.run(state)
+
+        _internal_research_function = internal_research_function
+    return _internal_research_function

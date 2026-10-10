@@ -57,11 +57,15 @@ except ImportError:
 
 # Import the FastAPI app for testing API security
 try:
-    from app.main import app
+    from main import app
     has_app = True
 except ImportError:
-    logger.warning("Could not import FastAPI app, API security tests will be skipped")
-    has_app = False
+    try:
+        from app.main import app
+        has_app = True
+    except ImportError:
+        logger.warning("Could not import FastAPI app, API security tests will be skipped")
+        has_app = False
 
 
 class TestLangGraphSecurity:
@@ -160,9 +164,9 @@ class TestLangGraphSecurity:
         result1 = await mock_agents["supervisor"](test_state)
         
         # Verify routing works correctly
-        from app.graph.workflows import research_router
-        next_step = research_router(result1["state"])
-        assert next_step == "web_research", "Should route to web_research"
+        from app.models.research_plan import normalize_research_plan
+        plan = normalize_research_plan(result1["state"].context["research_plan"])
+        assert plan.requires_web_search, "Plan should route to web research"
         
         # Call web_research
         result2 = await mock_agents["web_research"](result1["state"])
@@ -203,9 +207,9 @@ class TestLangGraphSecurity:
         assert supervisor_result["state"].context.get("secret_api_token") == "SECRET_VALUE_12345"
         
         # Verify the proper routing is determined
-        from app.graph.workflows import research_router
-        next_step = research_router(supervisor_result["state"])
-        assert next_step == "web_research"
+        from app.models.research_plan import normalize_research_plan
+        plan = normalize_research_plan(supervisor_result["state"].context["research_plan"])
+        assert plan.requires_web_search
         
         # In a real system with state isolation, we would want to verify
         # the secret is not passed to web research. For this test, we're just
@@ -332,7 +336,7 @@ class TestAPISecuritySuite:
         """Create a TestClient for the FastAPI app."""
         try:
             from fastapi.testclient import TestClient
-            from app.main import app  # Try to import here to ensure it's available
+            from main import app
             return TestClient(app)
         except ImportError:
             pytest.skip("app.main module not available - skipping API security test")
@@ -380,14 +384,14 @@ class TestAPISecuritySuite:
         """Test that rate limiting middleware is configured."""
         # Try to import app.main, skip test if not available
         try:
-            from app.main import app
+            from main import app
             
             # Look for rate limiting middleware in the app's middleware stack
             rate_limit_middleware_exists = False
-            for middleware in app.middleware:
-                # Check middleware name or class (implementation might vary)
-                middleware_str = str(middleware)
-                if "rate_limit" in middleware_str.lower() or "ratelimit" in middleware_str.lower():
+            for middleware in app.user_middleware:
+                # setup_security() registers rate limiting as the "security_middleware" dispatch
+                middleware_str = str(middleware).lower()
+                if any(name in middleware_str for name in ("rate_limit", "ratelimit", "security_middleware")):
                     rate_limit_middleware_exists = True
                     break
             

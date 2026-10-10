@@ -34,6 +34,17 @@ class TaskManager:
         self.task_errors = {}   # task_id -> error details
         logger.info("Task Manager initialized")
         
+    def register_pending(self, task_id: str, message: str) -> None:
+        """Record a task as processing before its background job starts, so early polls find it."""
+        self.active_tasks[task_id] = TaskInfo(
+            task_id=task_id,
+            status="processing",
+            created_at=datetime.now(),
+            message="Task queued",
+            query=message,
+            current_step="queued",
+        )
+
     @timing_decorator
     async def run_workflow(self, task_id: str, message: str, context: Optional[Dict[str, Any]] = None):
         """
@@ -67,10 +78,15 @@ class TaskManager:
             workflow = get_agent_workflow()
             
             # Initialize the state
+            ctx = context or {}
+            inputs: Dict[str, Any] = {}
+            if ctx.get("document_id"):
+                inputs["document_id"] = ctx["document_id"]
             initial_state = WorkflowState(
                 query=message,
-                context=context or {},
-                current_step="planning"
+                context=ctx,
+                inputs=inputs,
+                current_step="planning",
             )
             
             # Update task info
@@ -79,38 +95,44 @@ class TaskManager:
             
             # Run the workflow
             logger.info(f"Starting workflow for task {task_id}")
-            final_state = await workflow.ainvoke(initial_state)
-            
+            result = await workflow.ainvoke(initial_state)
+            final_state = (
+                result
+                if isinstance(result, WorkflowState)
+                else WorkflowState.model_validate(result)
+            )
+
             # Calculate duration for metrics
             duration = (datetime.now() - start_time).total_seconds()
-            
-            # Update task info
-            task_info.status = "completed"
-            task_info.completed_at = datetime.now()
-            task_info.message = "Task completed successfully"
-            task_info.current_step = "completed"
-            
+
             # Log completion
-            logger.info(f"Task {task_id} completed in {duration:.2f} seconds")
-            
-            # Store the result
+            logger.info(f"Task {task_id} finished workflow in {duration:.2f} seconds")
+
             if final_state.final_report:
-                logger.info(f"Storing final report for task {task_id} (content length: {len(final_state.final_report.get('content', ''))})")
+                task_info.status = "completed"
+                task_info.completed_at = datetime.now()
+                task_info.message = "Task completed successfully"
+                task_info.current_step = "completed"
+                logger.info(
+                    f"Storing final report for task {task_id} "
+                    f"(content length: {len(final_state.final_report.get('content', ''))})"
+                )
                 self.task_results[task_id] = final_state.final_report
-                
-                # Track successful completion for metrics
                 track_task_completion(task_id, duration, "completed")
             else:
-                logger.warning(f"Workflow completed for task {task_id} but no final report was generated")
-                error_msg = "Workflow did not complete successfully - no final report"
+                task_info.status = "error"
+                task_info.completed_at = datetime.now()
+                error_msg = final_state.error or "Workflow ended without a report"
+                task_info.message = f"Task failed: {error_msg}"
+                task_info.error = error_msg
+                task_info.current_step = "error"
+                logger.warning(f"Workflow for task {task_id} ended without a final report")
                 self.task_results[task_id] = {"error": error_msg}
                 self.task_errors[task_id] = {
                     "message": error_msg,
-                    "workflow_error": final_state.error
+                    "workflow_error": final_state.error,
                 }
-                
-                # Track completion with warning for metrics
-                track_task_completion(task_id, duration, "incomplete")
+                track_task_completion(task_id, duration, "error")
                 
         except Exception as e:
             # Calculate duration for metrics

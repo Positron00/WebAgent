@@ -13,7 +13,7 @@ from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
 from app.models.task import WorkflowState
-from app.services.llm import get_llm
+from app.services.llm import get_agent_llm
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
 
@@ -82,7 +82,7 @@ class SeniorResearchAgent(BaseAgent):
         """Initialize the Senior Research Agent."""
         super().__init__(name="senior_research")
         self.prompt = ChatPromptTemplate.from_template(SENIOR_RESEARCH_PROMPT)
-        self.llm = get_llm("meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
+        self.llm = get_agent_llm("senior_research")
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)
@@ -220,9 +220,8 @@ class SeniorResearchAgent(BaseAgent):
             supervisor_output = state.reports.get("supervisor", {})
             requirements = supervisor_output.get("requirements", ["No specific requirements provided"])
             
-            # Track research iterations
-            current_iteration = state.context.get("research_loops", 0) + 1
-            state.context["research_loops"] = current_iteration
+            # The research node sets research_iteration before each research pass.
+            current_iteration = state.context.get("research_iteration", 1)
             
             # Get the findings from both research agents
             web_findings = state.reports.get("web_research", "No web research findings available.")
@@ -255,7 +254,7 @@ class SeniorResearchAgent(BaseAgent):
                 "requirements_met": evaluation.get("requirements_met", []),
                 "missing_information": evaluation.get("missing_information", []),
                 "research_questions": evaluation.get("research_questions", []),
-                "current_iteration": current_iteration,
+                "research_iteration": current_iteration,
                 "synthesis": synthesis,
                 "timestamp": datetime.now().isoformat()
             }
@@ -263,15 +262,13 @@ class SeniorResearchAgent(BaseAgent):
             # Update the state with the senior research output
             state.update_with_agent_output("senior_research", senior_research_output)
             
-            # Set final_report value for tests expecting it
-            state.final_report = synthesis
-            
             # Check if we've reached max iterations - force research complete
             reached_max_iterations = current_iteration >= self.max_iterations
             
             # If we need more research and haven't reached the maximum iterations
             if (research_status == "needs_more_research" or requires_additional_research) and not reached_max_iterations:
                 logger.info(f"Senior Research Agent requesting additional research (iteration {current_iteration}/3)")
+                state.add_log(f"Senior Research: Requesting more research after iteration {current_iteration}")
                 
                 # Add feedback to the context for other agents to use
                 state.context["research_feedback"] = senior_research_output
@@ -284,6 +281,7 @@ class SeniorResearchAgent(BaseAgent):
                 state.context["research_complete"] = True
             else:
                 logger.info("Senior Research Agent completed synthesis, proceeding to Team Manager")
+                state.add_log("Senior Research: Findings verified, passing to Team Manager")
                 # If research is complete, mark it in the context
                 state.context["research_complete"] = True
                 state.context["continue_research"] = False

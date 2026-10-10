@@ -88,7 +88,7 @@ class CodingReviewAgent(BaseAgent):
         self.timeout_seconds = getattr(agents_config.coding, "timeout_seconds", 30) if hasattr(agents_config, "coding") else 30
         
         # Initialize OpenAI client
-        self.openai_api_key = self.get_openai_api_key()
+        self.openai_api_key = settings.OPENAI_API_KEY
         self.openai_model = "gpt-4o-mini"  # Use a good model for code review
         
         if self.openai_api_key:
@@ -115,33 +115,6 @@ class CodingReviewAgent(BaseAgent):
             self.code_cleaner_model = None
             self.llm = get_llm_without_tags()
     
-    def get_openai_api_key(self):
-        """Get OpenAI API key from environment variables or .env.local file."""
-        # Check if key is already in environment
-        if "OPENAI_API_KEY" in os.environ:
-            return os.environ["OPENAI_API_KEY"]
-        
-        # Check settings from app config
-        if hasattr(settings, "OPENAI_API_KEY") and settings.OPENAI_API_KEY:
-            return settings.OPENAI_API_KEY
-        
-        # Try loading from .env.local file
-        try:
-            env_path = os.path.join(os.getcwd(), ".env.local")
-            if os.path.exists(env_path):
-                with open(env_path, "r") as f:
-                    for line in f:
-                        if line.strip().startswith("OPENAI_API_KEY="):
-                            key = line.strip().split("=", 1)[1].strip()
-                            # Remove quotes if present
-                            if (key.startswith('"') and key.endswith('"')) or \
-                               (key.startswith("'") and key.endswith("'")):
-                                key = key[1:-1]
-                            return key
-        except Exception as e:
-            logger.error(f"Error reading .env.local file: {str(e)}")
-        
-        return None
 
     async def run(self, state: WorkflowState) -> WorkflowState:
         """
@@ -269,6 +242,10 @@ class CodingReviewAgent(BaseAgent):
     
     def execute_python_code(self, code: str) -> tuple:
         """Execute Python code and return the result."""
+        from app.core.config import settings
+
+        if not getattr(settings, "ENABLE_CODE_EXECUTION", False):
+            return False, "Code execution is disabled on this server"
         if not code:
             return False, "No code provided"
             

@@ -12,7 +12,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 
 from app.models.task import WorkflowState
-from app.services.llm import get_llm
+from app.services.llm import get_agent_llm
 from app.agents.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -41,14 +41,14 @@ Consider:
 IMPORTANT: Be analytical, precise, and data-driven. Focus on extracting meaningful insights rather than just summarizing the research.
 
 Your output should be structured as JSON with the following format:
-{
+{{
   "analysis_summary": "Brief overview of key insights found",
   "quantitative_insights": ["insight 1", "insight 2", ...],
   "qualitative_insights": ["insight 1", "insight 2", ...],
   "correlations": ["correlation 1", "correlation 2", ...],
   "anomalies": ["anomaly 1", "anomaly 2", ...],
   "full_analysis": "Complete formatted markdown analysis with all details"
-}
+}}
 """
 
 class DataAnalysisAgent(BaseAgent):
@@ -60,7 +60,7 @@ class DataAnalysisAgent(BaseAgent):
         """Initialize the Data Analysis Agent."""
         super().__init__(name="data_analysis")
         self.prompt = ChatPromptTemplate.from_template(DATA_ANALYSIS_PROMPT)
-        self.llm = get_llm("meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
+        self.llm = get_agent_llm("data_analysis")
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)

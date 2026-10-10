@@ -32,9 +32,10 @@ from langchain.schema.output_parser import StrOutputParser
 from app.core.config import settings
 from app.agents.base_agent import BaseAgent
 from app.agents.document_extraction_agent import DocumentExtractionAgent
-from app.services.llm import get_llm
+from app.services.llm import get_agent_llm
 from app.utils.metrics import timing_decorator, log_memory_usage
 from app.models.task import WorkflowState
+from app.models.research_plan import normalize_research_plan
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -55,15 +56,16 @@ Your task:
 5. Determine which specialized agents should handle each part of the research
 
 Output your analysis in JSON format with these fields:
-{
+{{
   "task_type": "document_extraction" or "complex_research",
   "requirements": [list of specific requirements needed to complete the task],
-  "research_plan": {
-    "needs_web_research": true/false,
-    "needs_internal_research": true/false,
+  "research_plan": {{
+    "requires_web_search": true/false,
+    "requires_internal_knowledge": true/false,
+    "requires_document_extraction": true/false,
     "questions": [list of specific questions to research]
-  }
-}
+  }}
+}}
 """
 
 class SupervisorAgent(BaseAgent):
@@ -83,7 +85,7 @@ class SupervisorAgent(BaseAgent):
         
         # Set up LLM and chain for research planning
         self.prompt = ChatPromptTemplate.from_template(SUPERVISOR_PROMPT)
-        self.llm = get_llm()
+        self.llm = get_agent_llm("supervisor")
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)
@@ -122,6 +124,17 @@ class SupervisorAgent(BaseAgent):
             state.status = "error"
             return state
     
+    @staticmethod
+    def _with_history(state: WorkflowState) -> str:
+        """Prefix the query with recent chat turns so follow-up questions keep their meaning."""
+        previous = state.context.get("previous_messages", [])
+        if not previous:
+            return state.query
+        history = "\n".join(
+            f"{m.get('role', 'user')}: {m.get('content', '')}" for m in previous[-8:]
+        )
+        return f"Conversation so far:\n{history}\n\nCurrent query: {state.query}"
+
     async def run(self, state: WorkflowState) -> WorkflowState:
         """
         Execute the Supervisor Agent to analyze the query and create a research plan.
@@ -135,10 +148,27 @@ class SupervisorAgent(BaseAgent):
         """
         logger.info(f"Supervisor Agent analyzing query: {state.query}")
         state.current_step = "supervisor"
+
+        if not state.context.get("agentic_toggle", False):
+            try:
+                direct = await self.llm.ainvoke(self._with_history(state))
+                content = direct if isinstance(direct, str) else getattr(direct, "content", str(direct))
+                state.mark_completed(
+                    {
+                        "title": "Response",
+                        "content": content,
+                        "type": "direct_response",
+                    }
+                )
+                return state
+            except Exception as e:
+                logger.error(f"Direct response failed: {e}")
+                state.mark_error(f"Supervisor Agent failed: {str(e)}")
+                return state
         
         try:
-            # Run the LLM chain to analyze the query
-            result = await self.chain.ainvoke({"query": state.query})
+            state.add_log("Supervisor: Analyzing query and planning research")
+            result = await self.chain.ainvoke({"query": self._with_history(state)})
             
             # Parse the JSON output
             try:
@@ -187,8 +217,14 @@ class SupervisorAgent(BaseAgent):
             # Update the state with the supervisor's analysis
             state.update_with_agent_output("supervisor", plan_data)
             
-            # Add the analysis to the context for other agents to use
-            state.context["research_plan"] = plan_data.get("research_plan", {})
+            plan = normalize_research_plan(plan_data.get("research_plan", {}))
+            state.context["research_plan"] = plan.model_dump()
+            state.add_log(
+                "Supervisor: Plan ready - "
+                f"web search: {plan.requires_web_search}, "
+                f"internal knowledge: {plan.requires_internal_knowledge}, "
+                f"document extraction: {plan.requires_document_extraction}"
+            )
             
             logger.info(f"Supervisor completed analysis. Task type: {plan_data.get('task_type', 'undefined')}")
             return state

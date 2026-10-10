@@ -3,6 +3,7 @@ Web search service for the WebAgent backend.
 Provides access to Tavily search API.
 """
 from typing import Dict, List, Optional, Any
+import asyncio
 import logging
 import json
 import re
@@ -28,6 +29,8 @@ class WebSearchService:
     
     def _initialize(self):
         """Initialize the Tavily client."""
+        self.initialized = False
+        self.tavily_client = None
         if not settings.TAVILY_API_KEY:
             logger.warning("TAVILY_API_KEY not found in environment")
             return
@@ -102,12 +105,13 @@ class WebSearchService:
         try:
             logger.info(f"Searching for: {sanitized_query}")
             
-            response = self.tavily_client.search(
+            response = await asyncio.to_thread(
+                self.tavily_client.search,
                 query=sanitized_query,
                 search_depth=search_depth,
                 max_results=max_results,
                 include_domains=include_domains if include_domains else None,
-                exclude_domains=exclude_domains if exclude_domains else None
+                exclude_domains=exclude_domains if exclude_domains else None,
             )
             results = response.get("results", [])
             logger.info(f"Found {len(results)} results")

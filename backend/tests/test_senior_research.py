@@ -156,7 +156,7 @@ async def test_requesting_additional_research():
                 "Please provide more information about competitor analysis"
             ]
         }
-        result.context["research_loops"] = 1
+        result.context["research_iteration"] = 1
         return result
     
     agent.run = mocked_run
@@ -171,7 +171,7 @@ async def test_requesting_additional_research():
         assert "score" in result.context.get("research_feedback", {})
         assert "missing_information" in result.context.get("research_feedback", {})
         assert "research_questions" in result.context.get("research_feedback", {})
-        assert result.context.get("research_loops", 0) > 0
+        assert result.context.get("research_iteration", 0) > 0
     finally:
         # Restore original chain
         agent.chain = original_chain

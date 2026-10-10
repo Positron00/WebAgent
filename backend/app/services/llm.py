@@ -5,6 +5,7 @@ Provides access to different LLM providers including Together AI, Groq, OpenAI, 
 from typing import Dict, Optional, Any, List, Tuple, Callable, Type, TypeVar, cast
 import logging
 import os
+import re
 import time
 import traceback
 from functools import wraps
@@ -21,7 +22,7 @@ from langchain.chat_models.base import BaseChatModel
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain.schema.runnable import Runnable
 from app.core.config import settings
-from app.core.loadEnvYAML import get_llm_config
+from app.core.loadEnvYAML import get_llm_config, get_agents_config
 
 # Import observability tools
 from app.core.observability import (
@@ -93,7 +94,7 @@ class TogetherWrapper(Runnable[str, str]):
             self.llm.invoke = custom_invoke
         elif hasattr(self.llm, "generate"):
             # Older versions might use generate
-            def custom_invoke(prompt, **kwargs):
+            def custom_invoke(prompt, config=None, **kwargs):
                 result = self.llm.generate([prompt], **kwargs)
                 return result.generations[0][0].text
             self.llm.invoke = custom_invoke
@@ -107,7 +108,7 @@ class TogetherWrapper(Runnable[str, str]):
         """Invoke the LLM. This is the main method required by the Runnable interface."""
         _enforce_together_api_rate_limit()
         try:
-            return self.llm.invoke(input, **(config or {}))
+            return self.llm.invoke(input, config=config)
         except Exception as e:
             logger.error(f"Error invoking Together LLM: {str(e)}")
             raise
@@ -116,7 +117,7 @@ class TogetherWrapper(Runnable[str, str]):
         """Async invoke method required by the Runnable interface."""
         _enforce_together_api_rate_limit()
         if hasattr(self.llm, "ainvoke"):
-            return await self.llm.ainvoke(input, **(config or {}))
+            return await self.llm.ainvoke(input, config=config)
         else:
             # Fallback to sync version if async not available
             return self.invoke(input, config)
@@ -132,15 +133,14 @@ class TogetherWrapper(Runnable[str, str]):
     def stream(self, input: str, config: Optional[Dict[str, Any]] = None):
         """Stream processing method required by the Runnable interface."""
         if hasattr(self.llm, "stream"):
-            return self.llm.stream(input, **(config or {}))
+            yield from self.llm.stream(input, config=config)
         else:
-            # If streaming not supported, yield the entire result at once
             yield self.invoke(input, config)
     
     async def astream(self, input: str, config: Optional[Dict[str, Any]] = None):
         """Async stream processing method required by the Runnable interface."""
         if hasattr(self.llm, "astream"):
-            async for chunk in self.llm.astream(input, **(config or {})):
+            async for chunk in self.llm.astream(input, config=config):
                 yield chunk
         else:
             # If async streaming not supported, yield the entire result at once
@@ -537,6 +537,87 @@ def get_openai_llm(model_name: Optional[str] = None):
         logger.error(traceback.format_exc())
         raise
 
+def _model_for_provider(provider: str, model_name: Optional[str]) -> Optional[str]:
+    """Return model_name only if it belongs to this provider; otherwise None (use provider default)."""
+    if not model_name:
+        return None
+    lower = model_name.lower()
+    is_openai = bool(re.match(r"^(gpt-|o\d)", lower))
+    is_anthropic = lower.startswith("claude")
+    is_gemini = lower.startswith("gemini")
+    is_together = "/" in model_name  # Together names look like "org/model"
+    belongs = {
+        "openai": is_openai,
+        "anthropic": is_anthropic,
+        "gemini": is_gemini,
+        "together": is_together,
+        "groq": not (is_openai or is_anthropic or is_gemini or is_together),
+    }.get(provider, True)
+    return model_name if belongs else None
+
+
+def get_agent_llm(agent_name: str):
+    """Return an LLM configured for a named agent from YAML ``agents:`` config."""
+    agents_config = get_agents_config()
+    agent_cfg = getattr(agents_config, agent_name, None)
+    model = getattr(agent_cfg, "model", None) if agent_cfg else None
+    return get_llm(model)
+
+
+@log_llm_request(provider="groq")
+def get_groq_llm(model_name: Optional[str] = None):
+    if not settings.GROQ_API_KEY:
+        raise ValueError("GROQ_API_KEY not configured")
+    try:
+        from langchain_groq import ChatGroq
+    except ImportError:
+        raise ValueError("langchain-groq is not installed")
+    llm_config = get_llm_config()
+    model = _model_for_provider("groq", model_name) or settings.GROQ_MODEL
+    return ChatGroq(
+        model=model,
+        temperature=llm_config.temperature,
+        max_tokens=llm_config.max_tokens,
+        api_key=settings.GROQ_API_KEY,
+    )
+
+
+@log_llm_request(provider="anthropic")
+def get_anthropic_llm(model_name: Optional[str] = None):
+    if not settings.ANTHROPIC_API_KEY:
+        raise ValueError("ANTHROPIC_API_KEY not configured")
+    try:
+        from langchain_anthropic import ChatAnthropic
+    except ImportError:
+        raise ValueError("langchain-anthropic is not installed")
+    llm_config = get_llm_config()
+    model = _model_for_provider("anthropic", model_name) or settings.ANTHROPIC_MODEL
+    return ChatAnthropic(
+        model=model,
+        temperature=llm_config.temperature,
+        max_tokens=llm_config.max_tokens,
+        api_key=settings.ANTHROPIC_API_KEY,
+    )
+
+
+@log_llm_request(provider="gemini")
+def get_gemini_llm(model_name: Optional[str] = None):
+    if not settings.GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY not configured")
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+    except ImportError:
+        raise ValueError("langchain-google-genai is not installed")
+    llm_config = get_llm_config()
+    model = _model_for_provider("gemini", model_name) or settings.GEMINI_MODEL
+    return ChatGoogleGenerativeAI(
+        model=model,
+        temperature=llm_config.temperature,
+        max_output_tokens=llm_config.max_tokens,
+        google_api_key=settings.GEMINI_API_KEY,
+    )
+
+
 @log_llm_request(provider="together")
 def get_together_llm(model_name: Optional[str] = None):
     """
@@ -568,10 +649,7 @@ def get_together_llm(model_name: Optional[str] = None):
         raise ValueError(error_msg)
     
     try:
-        # Apply rate limiting to avoid hitting Together API rate limits
-        _enforce_together_api_rate_limit()
-        
-        # Use our custom wrapper to ensure invoke method is available
+        # Rate limiting is applied per request inside TogetherWrapper.invoke/ainvoke.
         wrapper = TogetherWrapper(
             model_name=model,
             temperature=llm_config.temperature,
@@ -579,16 +657,9 @@ def get_together_llm(model_name: Optional[str] = None):
             api_key=together_api_key
         )
         
-        # Test the LLM
-        try:
-            wrapper.invoke("test")
-            logger.info(f"Successfully initialized Together LLM ({model})")
-            return wrapper
-        except Exception as test_error:
-            error_msg = f"Test of Together LLM failed: {str(test_error)}"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-            
+        logger.info(f"Successfully initialized Together LLM ({model})")
+        return wrapper
+
     except Exception as e:
         error_msg = f"Failed to initialize Together LLM: {str(e)}"
         logger.error(error_msg)
@@ -685,9 +756,15 @@ def get_llm(model_name: Optional[str] = None):
             logger.info(f"Attempting to initialize LLM with provider: {current_provider}")
             
             if current_provider == "together":
-                return get_together_llm(model_name)
+                return get_together_llm(_model_for_provider("together", model_name))
             elif current_provider == "openai":
-                return get_openai_llm(model_name)
+                return get_openai_llm(_model_for_provider("openai", model_name))
+            elif current_provider == "groq":
+                return get_groq_llm(_model_for_provider("groq", model_name))
+            elif current_provider == "anthropic":
+                return get_anthropic_llm(_model_for_provider("anthropic", model_name))
+            elif current_provider == "gemini":
+                return get_gemini_llm(_model_for_provider("gemini", model_name))
             elif current_provider == "self":
                 return get_self_hosted_llm(model_name)
             
@@ -704,15 +781,20 @@ def get_llm(model_name: Optional[str] = None):
     error_message = f"All LLM providers failed. Details:\n{error_details}"
     logger.error(error_message)
     
-    # As a last resort, try to create a minimal mock LLM that won't crash the application
-    try:
-        logger.warning("Creating emergency fallback mock LLM")
-        from langchain.llms.fake import FakeListLLM
-        return FakeListLLM(responses=["I apologize, but all LLM providers are currently unavailable. Please try again later."])
-    except Exception as mock_error:
-        # If even this fails, we have no choice but to raise an exception
-        logger.critical(f"Failed to create mock LLM: {str(mock_error)}")
-        raise RuntimeError(f"Unable to initialize any LLM provider. {error_message}")
+    if os.getenv("WEBAGENT_ALLOW_FAKE_LLM", "false").lower() == "true":
+        try:
+            logger.warning("Creating fallback mock LLM (WEBAGENT_ALLOW_FAKE_LLM=true)")
+            from langchain_community.llms.fake import FakeListLLM
+
+            return FakeListLLM(
+                responses=[
+                    "I apologize, but all LLM providers are currently unavailable. Please try again later."
+                ]
+            )
+        except Exception as mock_error:
+            logger.critical(f"Failed to create mock LLM: {mock_error}")
+
+    raise RuntimeError(f"Unable to initialize any LLM provider. {error_message}")
 
 async def get_llm_status():
     """

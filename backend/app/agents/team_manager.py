@@ -13,7 +13,7 @@ from langchain.schema.output_parser import StrOutputParser
 from langchain.schema.output import Generation
 
 from app.models.task import WorkflowState
-from app.services.llm import get_llm
+from app.services.llm import get_agent_llm
 from app.agents.base_agent import BaseAgent
 from app.core.metrics import timing_decorator, track_task_completion
 
@@ -54,7 +54,7 @@ Based on the research synthesis, determine if additional analysis is needed:
 - If the query would benefit from code examples or visualizations, indicate "needs_coding": true
 
 Respond with a JSON object structured as follows:
-{
+{{
   "needs_analysis": true/false,
   "needs_coding": true/false,
   "summary": "brief executive summary",
@@ -62,9 +62,9 @@ Respond with a JSON object structured as follows:
   "analysis": "detailed analysis text",
   "next_steps": "suggested next steps",
   "sources": [
-    {"url": "source_url", "title": "source_title"}
+    {{"url": "source_url", "title": "source_title"}}
   ]
-}
+}}
 
 IMPORTANT: Your goal is to create a unified, cohesive report that reads as if it was written by a single expert rather than assembled from multiple sources. Ensure the report flows logically and maintains a consistent tone throughout.
 """
@@ -81,10 +81,53 @@ class TeamManagerAgent(BaseAgent):
         """Initialize the Team Manager Agent."""
         super().__init__(name="team_manager")
         self.prompt = ChatPromptTemplate.from_template(TEAM_MANAGER_PROMPT)
-        self.llm = get_llm()
+        self.llm = get_agent_llm("team_manager")
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)
+
+    @staticmethod
+    def _should_finalize(needs_analysis: bool, needs_coding: bool, state: WorkflowState) -> bool:
+        if needs_analysis and "data_analysis" not in state.reports:
+            return False
+        if needs_coding and "coding_review" not in state.reports:
+            return False
+        return True
+
+    @staticmethod
+    def _build_report_markdown(
+        query: str,
+        report_json: Dict[str, Any],
+        code_block: str,
+        review_explanation: str = "",
+    ) -> str:
+        recommendations = report_json.get("recommendations") or []
+        rec_lines = "\n".join(f"- {r}" for r in recommendations)
+        sources = report_json.get("sources") or []
+        source_lines = "\n".join(
+            f"- [{s.get('title', 'Source')}]({s.get('url', '')})" for s in sources if isinstance(s, dict)
+        )
+        sections = [
+            f"# Comprehensive Analysis: {query}",
+            "## Executive Summary",
+            report_json.get("summary", ""),
+            "## Analysis",
+            report_json.get("analysis", ""),
+            "## Recommendations",
+            rec_lines or "_None_",
+            "## Next Steps",
+            report_json.get("next_steps", ""),
+        ]
+        if code_block and code_block != "No visualization code available.":
+            code = code_block.strip()
+            if not code.startswith("```"):
+                code = f"```python\n{code}\n```"
+            sections.extend(["## Code / Visualizations", code])
+            if review_explanation:
+                sections.extend(["### Code Review Notes", review_explanation])
+        if source_lines:
+            sections.extend(["## References", source_lines])
+        return "\n\n".join(sections)
         
     @timing_decorator
     async def run(self, state: WorkflowState) -> WorkflowState:
@@ -107,7 +150,15 @@ class TeamManagerAgent(BaseAgent):
             senior_research_output = state.reports.get("senior_research", {})
             research_synthesis = senior_research_output.get("synthesis", "No research synthesis available.")
             data_analysis = state.reports.get("data_analysis", {}).get("analysis", "No data analysis available.")
-            visualization_code = state.reports.get("coding_assistant", {}).get("code", "No visualization code available.")
+            coding_review = state.reports.get("coding_review", {})
+            fixed_run = coding_review.get("fixed_execution") or {}
+            review_explanation = coding_review.get("improvement_explanation", "")
+            if coding_review.get("fixed_code") and fixed_run.get("success"):
+                visualization_code = coding_review["fixed_code"]
+            else:
+                visualization_code = state.reports.get("coding_assistant", {}).get(
+                    "code", "No visualization code available."
+                )
             
             # Log sources availability
             logger.debug(f"Research synthesis available: {len(research_synthesis) > 50}")
@@ -174,38 +225,35 @@ class TeamManagerAgent(BaseAgent):
             # Add the report to the state
             state.update_with_agent_output("team_manager", team_manager_report)
             
-            # If no additional analysis or coding is needed, finish the report
-            if not needs_analysis and not needs_coding:
-                # Prepare the final report with metadata
-                final_report = {
-                    "title": f"Comprehensive Analysis: {state.query}",
-                    "content": final_report_content,
-                    "type": "comprehensive_report",
-                    "contains_visualizations": visualization_code != "No visualization code available.",
-                    "sources": report_json.get("sources", []),
-                    "timestamp": datetime.now().isoformat()
-                }
-                
-                # Update the final report in the state
-                state.final_report = final_report
-                
-                # Mark the task as completed
-                state.completed = True
-                
-                # Log successful completion
+            if self._should_finalize(needs_analysis, needs_coding, state):
+                state.add_log("Team Manager: Compiling final report")
+                markdown = self._build_report_markdown(
+                    state.query, report_json, visualization_code, review_explanation
+                )
+                state.mark_completed(
+                    {
+                        "title": f"Comprehensive Analysis: {state.query}",
+                        "content": markdown,
+                        "type": "comprehensive_report",
+                        "contains_visualizations": visualization_code
+                        != "No visualization code available.",
+                        "sources": report_json.get("sources", []),
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
                 logger.info("Team Manager Agent completed final report successfully")
             else:
-                # Log that additional analysis or coding is needed
-                if needs_analysis:
+                if needs_analysis and "data_analysis" not in state.reports:
+                    state.add_log("Team Manager: Requesting data analysis")
                     logger.info("Team Manager Agent requesting data analysis")
-                if needs_coding:
+                elif needs_coding and "coding_review" not in state.reports:
+                    state.add_log("Team Manager: Requesting code and visualizations")
                     logger.info("Team Manager Agent requesting code/visualization assistance")
-            
-            # Execution time tracking for metrics
+
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
             track_task_completion(task_id, duration, "completed")
-            
+
             return state
             
         except Exception as e:

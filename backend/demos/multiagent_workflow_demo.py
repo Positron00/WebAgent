@@ -149,15 +149,15 @@ def format_agent_output(agent: str, output: Dict[str, Any]) -> None:
         if "research_plan" in output:
             research_plan = output.get("research_plan", {})
             logger.info("Research Plan:")
-            logger.info(f"  Web Research Needed: {research_plan.get('needs_web_research', False)}")
-            logger.info(f"  Internal Research Needed: {research_plan.get('needs_internal_research', False)}")
+            logger.info(f"  Web Research Needed: {research_plan.get('requires_web_search', False)}")
+            logger.info(f"  Internal Research Needed: {research_plan.get('requires_internal_knowledge', False)}")
             if "questions" in research_plan:
                 logger.info("  Research Questions:")
                 for i, q in enumerate(research_plan.get("questions", []), 1):
                     logger.info(f"    {i}. {q}")
     elif agent == "senior_research":
         logger.info(f"Research Status: {output.get('research_status', 'Not specified')}")
-        logger.info(f"Current Iteration: {output.get('current_iteration', 1)}")
+        logger.info(f"Current Iteration: {output.get('research_iteration', 1)}")
         
         if "requirements_met" in output:
             logger.info("Requirements Met:")
@@ -334,7 +334,7 @@ async def run_workflow_demo(query: str, agentic_toggle: bool = True) -> Dict[str
         # Print final execution statistics
         print_banner("WORKFLOW EXECUTION STATISTICS")
         logger.info(f"Total agents involved: {len(final_state.reports)}")
-        logger.info(f"Research loops executed: {final_state.context.get('research_loops', 0)}")
+        logger.info(f"Research loops executed: {final_state.context.get('research_iteration', 0)}")
         logger.info(f"Final step: {final_state.current_step}")
         
         return result

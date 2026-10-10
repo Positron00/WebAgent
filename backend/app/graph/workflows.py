@@ -16,6 +16,7 @@ from langgraph.graph import END, StateGraph
 from langchain.callbacks.tracers import LangChainTracer
 
 from app.models.task import WorkflowState
+from app.models.research_plan import normalize_research_plan
 from app.agents.supervisor import get_supervisor_agent
 from app.agents.web_research import get_web_research_agent
 from app.agents.internal_research import get_internal_research_agent
@@ -34,28 +35,8 @@ logger = logging.getLogger(__name__)
 # Singleton workflow instance
 _workflow_instance = None
 
-# Singleton router instance
-_research_router_instance = None
-
-def research_router(state: WorkflowState) -> str:
-    """
-    Determine the next step from the state after a research-related step.
-    This is needed to support security tests.
-    
-    Args:
-        state: The current workflow state
-        
-    Returns:
-        The name of the next node in the workflow
-    """
-    # Check for research plan
-    if state.context.get("research_plan", {}).get("requires_web_search", False):
-        return "web_research"
-    elif state.context.get("research_plan", {}).get("requires_internal_search", False):
-        return "internal_research"
-    else:
-        # Default to web research if not specified
-        return "web_research"
+# Routers must not modify state: LangGraph hands them a throwaway copy and keeps
+# only the returned branch name. Write logs and state changes inside nodes.
 
 def supervisor_router(state: WorkflowState) -> str:
     """
@@ -69,35 +50,23 @@ def supervisor_router(state: WorkflowState) -> str:
     """
     # Check if agentic toggle is off
     if not state.context.get("agentic_toggle", False):
-        state.add_log("Agentic toggle is off, ending workflow")
         logger.info("Agentic toggle is off, ending workflow")
         return END
-        
-    # Check if there's an error
+
     if state.error:
-        state.add_log(f"Error detected in workflow: {state.error}")
         logger.warning(f"Error detected in workflow: {state.error}")
         return END
-    
-    # Check for document extraction
-    research_plan = state.context.get("research_plan", {})
-    requires_document = research_plan.get("requires_document_extraction", False)
-    if requires_document:
-        state.add_log("Supervisor: Routing to document extraction")
+
+    plan = normalize_research_plan(state.context.get("research_plan", {}))
+
+    if plan.requires_document_extraction:
         logger.info("Routing to document extraction")
         return "document_extraction"
-    
-    # Check if any research is needed
-    requires_web = research_plan.get("requires_web_search", False)
-    requires_internal = research_plan.get("requires_internal_knowledge", False)
-    
-    if requires_web or requires_internal:
-        state.add_log("Supervisor: Routing to research phase")
+
+    if plan.requires_web_search or plan.requires_internal_knowledge:
         logger.info("Routing to research agents")
         return "research"
-    
-    # If no research needed, simply end
-    state.add_log("Supervisor: No additional processing needed, completing workflow")
+
     logger.info("No further processing needed, ending workflow")
     return END
 
@@ -113,30 +82,19 @@ def senior_research_router(state: WorkflowState) -> str:
     """
     # Check if there's an error
     if state.error:
-        state.add_log(f"Error detected in workflow: {state.error}")
         logger.warning(f"Error detected in workflow: {state.error}")
         return END
-    
-    senior_research_output = state.reports.get("senior_research", {})
-    needs_more_research = senior_research_output.get("needs_more_research", False)
-    ready_for_team_manager = senior_research_output.get("ready_for_team_manager", False)
-    
-    state.add_log(f"Senior Research assessment - needs more research: {needs_more_research}, ready for team manager: {ready_for_team_manager}")
-    logger.info(f"Senior Research assessment - needs more research: {needs_more_research}, ready for team manager: {ready_for_team_manager}")
-    logger.debug(f"Senior Research full output: {json.dumps(senior_research_output, default=str)}")
-    
-    if needs_more_research:
-        state.add_log("Senior Research: Requesting additional research")
+
+    if state.context.get("continue_research"):
         logger.info("Senior Research requesting more research")
         return "research"
-    elif ready_for_team_manager:
-        state.add_log("Senior Research: Passing findings to Team Manager")
+
+    if state.context.get("research_complete"):
         logger.info("Senior Research passing to Team Manager")
         return "team_manager"
-    else:
-        state.add_log("Senior Research: Finalizing research results")
-        logger.info("Senior Research finalized, ending workflow")
-        return END
+
+    logger.info("Senior Research finalized, ending workflow")
+    return END
 
 def team_manager_router(state: WorkflowState) -> str:
     """
@@ -150,32 +108,30 @@ def team_manager_router(state: WorkflowState) -> str:
     """
     # Check if there's an error
     if state.error:
-        state.add_log(f"Error detected in workflow: {state.error}")
         logger.warning(f"Error detected in workflow: {state.error}")
         return END
-    
+
     team_manager_output = state.reports.get("team_manager", {})
     needs_analysis = team_manager_output.get("needs_analysis", False)
     needs_coding = team_manager_output.get("needs_coding", False)
-    
-    state.add_log(f"Team Manager assessment - needs analysis: {needs_analysis}, needs coding: {needs_coding}")
-    logger.info(f"Team Manager assessment - needs analysis: {needs_analysis}, needs coding: {needs_coding}")
-    logger.debug(f"Team Manager full output: {json.dumps(team_manager_output, default=str)}")
-    
-    if needs_analysis:
-        state.add_log("Team Manager: Requesting data analysis")
+
+    logger.info(
+        f"Team Manager assessment - needs analysis: {needs_analysis}, needs coding: {needs_coding}"
+    )
+
+    if needs_analysis and "data_analysis" not in state.reports:
         logger.info("Team Manager requesting data analysis")
-        return "data_analysis" 
-    elif needs_coding:
-        state.add_log("Team Manager: Requesting coding assistance")
+        return "data_analysis"
+    if needs_coding and "coding_review" not in state.reports:
         logger.info("Team Manager requesting coding assistance")
         return "coding_assistant"
-    else:
-        state.add_log("Team Manager: Finished processing, ending workflow")
-        logger.info("Team Manager finished processing, ending workflow")
-        return END
 
-async def run_research_agents(state: WorkflowState, config: Optional[RunnableConfig] = None) -> Dict[str, Any]:
+    logger.info("Team Manager finished processing, ending workflow")
+    return END
+
+async def run_research_agents(
+    state: WorkflowState, config: Optional[RunnableConfig] = None
+) -> WorkflowState:
     """
     Run multiple research agents in parallel.
     
@@ -184,59 +140,51 @@ async def run_research_agents(state: WorkflowState, config: Optional[RunnableCon
         config: Optional configuration for the runnable
         
     Returns:
-        Dictionary containing the updated state
+        The updated workflow state
     """
-    # Get the research plan from the supervisor
-    research_plan = state.context.get("research_plan", {})
-    requires_web = research_plan.get("requires_web_search", False)
-    requires_internal = research_plan.get("requires_internal_knowledge", False)
-    
-    state.add_log("Starting research phase")
+    plan = normalize_research_plan(state.context.get("research_plan", {}))
+    requires_web = plan.requires_web_search
+    requires_internal = plan.requires_internal_knowledge
+
+    has_previous_pass = "senior_research" in state.reports
+    iteration = state.context.get("research_iteration", 0) + 1 if has_previous_pass else 1
+    state.context["research_iteration"] = iteration
+    state.context["continue_research"] = False
+
+    state.add_log(f"Starting research phase (iteration {iteration})")
     logger.info(f"Running research agents - web: {requires_web}, internal: {requires_internal}")
-    
-    # Get the agent instances
-    web_research = get_web_research_agent()
-    internal_research = get_internal_research_agent()
-    
-    # Create tasks for each agent type we need to run
-    tasks = []
-    
+
+    agents = []
     if requires_web:
-        state.add_log("Initiating web research")
         logger.info("Starting web research agent")
-        tasks.append(web_research.ainvoke(state, config=config))
-        
+        agents.append(get_web_research_agent())
     if requires_internal:
-        state.add_log("Initiating internal knowledge research")
         logger.info("Starting internal research agent")
-        tasks.append(internal_research.ainvoke(state, config=config))
-    
-    # If no research is required, return the state as is
-    if not tasks:
+        agents.append(get_internal_research_agent())
+
+    if not agents:
         state.add_log("No research agents triggered")
         logger.warning("No research agents were triggered, check the research plan")
-        return {"state": state}
-    
-    # Run the agents in parallel and collect results
-    results = await asyncio.gather(*tasks)
-    
-    # Merge the results back into the state
+        return state
+
+    results = await asyncio.gather(
+        *(agent(state.model_copy(deep=True)) for agent in agents)
+    )
+
+    agent_report_names = {"web_research", "internal_research"}
     for result in results:
-        result_state = result.get("state", None)
-        if result_state:
-            # Merge reports
-            for key, value in result_state.reports.items():
-                if key not in state.reports:
-                    state.reports[key] = value
-                    
-            # Merge history
-            for history_item in result_state.history:
-                if history_item not in state.history:
-                    state.history.append(history_item)
-    
+        for name, report in result.reports.items():
+            if name in agent_report_names:
+                state.reports[name] = report
+            else:
+                state.reports.setdefault(name, report)
+        for history_item in result.history:
+            if history_item not in state.history:
+                state.history.append(history_item)
+
     state.add_log("Research phase completed")
     logger.info("Research agents completed")
-    return {"state": state}
+    return state
 
 def _build_agent_workflow_impl(config=None, workflow=None) -> StateGraph:
     """
@@ -393,62 +341,4 @@ def get_agent_workflow() -> StateGraph:
         _workflow_instance = build_agent_workflow()
     else:
         logger.debug("Returning existing workflow instance")
-    return _workflow_instance 
-
-def get_research_router():
-    """
-    Get the research router function.
-    
-    This function determines which research agent(s) to call based on the research plan.
-    
-    Returns:
-        A callable function that takes a WorkflowState and returns the next node name.
-    """
-    global _research_router_instance
-    
-    # If we don't have an instance yet, create one
-    if _research_router_instance is None:
-        def research_router(state: WorkflowState) -> str:
-            """
-            Route to appropriate research agent(s) based on the research plan.
-            
-            Args:
-                state: The current workflow state
-                
-            Returns:
-                String indicating the next node
-            """
-            # Check if there's an error
-            if state.error:
-                logger.warning(f"Error detected in workflow: {state.error}")
-                return END
-                
-            # Get the research plan from the supervisor
-            research_plan = state.context.get("research_plan", {})
-            requires_web_search = research_plan.get("requires_web_search", True)
-            requires_internal_knowledge = research_plan.get("requires_internal_knowledge", True)
-            
-            logger.info(f"Research plan - web search: {requires_web_search}, internal knowledge: {requires_internal_knowledge}")
-            
-            # Route based on the research plan
-            if requires_web_search and requires_internal_knowledge:
-                # Need both research types, use the parallel research node
-                logger.info("Both web and internal research required, executing in parallel")
-                return "research"
-            elif requires_web_search:
-                # Only web research needed
-                logger.info("Only web research required")
-                return "web_research"
-            elif requires_internal_knowledge:
-                # Only internal research needed
-                logger.info("Only internal research required")
-                return "internal_research"
-            else:
-                # No research needed, move to senior research for synthesis
-                logger.info("No research required, proceeding to senior research for synthesis")
-                return "senior_research"
-        
-        # Store the instance
-        _research_router_instance = research_router
-    
-    return _research_router_instance 
+    return _workflow_instance

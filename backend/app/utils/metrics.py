@@ -14,39 +14,11 @@ import os
 import psutil
 import tracemalloc
 from typing import Callable, Any, Dict, Optional
-import inspect
+# Re-use the async-aware timing decorator from core metrics.
+from app.core.metrics import timing_decorator  # noqa: F401
 
 # Initialize logging
 logger = logging.getLogger(__name__)
-
-def timing_decorator(func: Callable) -> Callable:
-    """
-    Decorator to measure and log the execution time of a function.
-    
-    Args:
-        func: Function to time
-        
-    Returns:
-        Wrapped function with timing
-    """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        try:
-            result = func(*args, **kwargs)
-            return result
-        finally:
-            end_time = time.time()
-            execution_time = end_time - start_time
-            
-            # Get the name of the class if this is a method
-            if args and hasattr(args[0], '__class__'):
-                class_name = args[0].__class__.__name__
-                logger.debug(f"{class_name}.{func.__name__} executed in {execution_time:.4f} seconds")
-            else:
-                logger.debug(f"{func.__name__} executed in {execution_time:.4f} seconds")
-    
-    return wrapper
 
 def log_memory_usage(func: Callable) -> Callable:
     """
