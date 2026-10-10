@@ -41,23 +41,8 @@ const nextConfig = {
 
     return existingConfig;
   },
-  // Add rewrites for development environment to route API requests to the Python backend
-  async rewrites() {
-    const isProd = process.env.NODE_ENV === 'production';
-    
-    // In production, we'll use Vercel's routing in vercel.json
-    if (isProd) {
-      return [];
-    }
-
-    // In development, proxy to the Flask backend
-    return [
-      {
-        source: '/api/task/:path*',
-        destination: 'http://127.0.0.1:5000/api/task/:path*', // Flask server port
-      }
-    ];
-  },
+  // /api/task is proxied to the FastAPI backend by src/app/api/task (WEBAGENT_BACKEND_URL,
+  // default http://127.0.0.1:8000), in both development and production.
 }
 
 module.exports = nextConfig 

@@ -450,12 +450,13 @@ export class ApiClient {
       // Prepare the request payload
       const requestBody = {
         query,
-        image: image || undefined
+        image: image || undefined,
+        agentic: true,
       };
       
       // Use the multi-agent API endpoint
-      const response = await this.fetchWithRetry<ChatCompletionResponse>(
-        '/api/task', // Different endpoint for multi-agent requests
+      const response = await this.fetchWithRetry<{ task_id?: string; status?: string }>(
+        clientConfig.api.endpoints.task,
         {
           method: 'POST',
           headers: {
@@ -465,14 +466,12 @@ export class ApiClient {
           body: JSON.stringify(requestBody)
         }
       );
-      
-      // Check if we need to wait for an async task to complete
-      if (response.choices?.[0]?.message?.content?.includes('task_')) {
-        // This is a task ID, we need to poll for results
-        return this.pollTaskResult(response.choices[0].message.content);
+
+      if (response.task_id) {
+        return this.pollTaskResult(response.task_id);
       }
-      
-      return response;
+
+      throw new Error('Multi-agent API did not return a task_id');
     } catch (error) {
       logger.error('Multi-agent request failed, falling back to Together AI LLM', { 
         requestId, 
@@ -550,32 +549,33 @@ export class ApiClient {
    * Poll for task results when using the async multi-agent system
    */
   private async pollTaskResult(taskId: string): Promise<ChatCompletionResponse> {
-    const maxPolls = 30; // Maximum number of polling attempts
-    const pollInterval = 1000; // Start with 1 second intervals
-    const maxPollInterval = 5000; // Maximum 5 second intervals
-    const pollBackoffFactor = 1.5; // Increase interval by 50% each time
-    
+    const deadlineMs = 8 * 60 * 1000;
+    const pollInterval = 1000;
+    const maxPollInterval = 5000;
+    const pollBackoffFactor = 1.5;
+
+    const started = Date.now();
     let pollCount = 0;
     let currentInterval = pollInterval;
-    
-    while (pollCount < maxPolls) {
+    let failureMessage: string | null = null;
+
+    while (Date.now() - started < deadlineMs) {
       await this.delay(currentInterval);
       pollCount++;
       
       try {
         const result = await this.fetchWithRetry<any>(
-          `/api/task/${taskId}`,
+          `${clientConfig.api.endpoints.task}/${taskId}`,
           { method: 'GET' }
         );
-        
-        // Check if the task is complete
+
         if (result.status === 'completed' && result.result) {
-          // Convert task result to ChatCompletionResponse format
           return {
             choices: [{
               message: {
                 role: 'assistant',
-                content: result.result.content || result.result
+                content: result.result.content || JSON.stringify(result.result),
+                ...(result.result.logs && { logs: result.result.logs })
               },
               finish_reason: 'stop'
             }],
@@ -586,10 +586,10 @@ export class ApiClient {
             }
           };
         }
-        
-        // If failed, return an error message
+
         if (result.status === 'failed') {
-          throw new Error(`Task failed: ${result.error || 'Unknown error'}`);
+          failureMessage = result.error || 'Unknown error';
+          break;
         }
         
         // Increase polling interval with backoff
@@ -620,7 +620,10 @@ export class ApiClient {
     }
     
     // If we've reached the maximum polling attempts, return a timeout error
-    throw new Error(`Task timed out after ${maxPolls} polling attempts`);
+    if (failureMessage) {
+      throw new Error(`Task failed: ${failureMessage}`);
+    }
+    throw new Error('Task timed out while waiting for the workflow to complete');
   }
   
   /**

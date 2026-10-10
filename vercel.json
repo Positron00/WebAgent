@@ -4,44 +4,11 @@
     {
       "src": "package.json",
       "use": "@vercel/next"
-    },
-    {
-      "src": "backend/api/index.py",
-      "use": "@vercel/python"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/chat",
-      "dest": "backend/api/index.py"
-    },
-    {
-      "src": "/api/ping",
-      "dest": "backend/api/index.py"
-    },
-    {
-      "src": "/api/health",
-      "dest": "backend/api/index.py"
-    },
-    {
-      "src": "/api/task",
-      "dest": "backend/api/index.py"
-    },
-    {
-      "src": "/api/task/(.*)",
-      "dest": "backend/api/index.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
-  "env": {
-    "TOGETHER_API_KEY": "@together_api_key"
-  },
   "build": {
     "env": {
       "NODE_ENV": "production"
     }
   }
-} 
+}

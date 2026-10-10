@@ -10,37 +10,6 @@ import { ApiError } from '@/utils/errors';
 // Mark this route as dynamic to handle POST requests
 export const dynamic = 'force-dynamic';
 
-interface ChatRequestMessage {
-  role: string;
-  content: string;
-}
-
-interface ChatCompletionMessage {
-  role: string;
-  content: string;
-  logs?: string[];
-}
-
-interface ChatCompletionResponse {
-  choices: {
-    message: ChatCompletionMessage;
-    finish_reason: string;
-  }[];
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}
-
-// Custom error class for API errors
-class ApiError extends Error {
-  constructor(public statusCode: number, message: string) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
-
 // Validate request payload
 function validateRequest(messages: any[]): messages is ChatRequestMessage[] {
   return Array.isArray(messages) && 

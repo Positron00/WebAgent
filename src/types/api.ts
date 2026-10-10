@@ -30,6 +30,7 @@ export interface ChatCompletionResponse {
     message: {
       content: string;
       role: string;
+      logs?: string[];
     };
     finish_reason: string;
   }[];

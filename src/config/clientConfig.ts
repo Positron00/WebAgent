@@ -1,5 +1,6 @@
 // Client-safe configuration
 // This file DOES NOT include any sensitive information like API keys
+import packageJson from '../../package.json';
 
 /**
  * Client-safe configuration that can be safely imported in browser-rendered components.
@@ -9,7 +10,7 @@ export const clientConfig = {
   environment: typeof window !== 'undefined' 
     ? (process.env.NODE_ENV || 'development') 
     : 'server',
-  version: '2.9.10',
+  version: packageJson.version,
   isProduction: typeof window !== 'undefined' 
     ? process.env.NODE_ENV === 'production' 
     : false,
