@@ -247,7 +247,7 @@ Follow these steps to set up and run the WebAgent platform:
 
 4. Set up configuration:
    ```bash
-   cp backend/config/example.yaml backend/config/dev.yaml
+   # Use backend/config/dev.yaml (or copy from backend/config/uat.yaml / prod.yaml as a template)
    # Edit dev.yaml with your configuration
    ```
 
@@ -264,14 +264,14 @@ Follow these steps to set up and run the WebAgent platform:
    python -m backend.models.run_manager
    
    # Start a specific model service
-   python -m backend.models.run_service --model-id llm-model --model-type transformer --model-path /path/to/model
+   python -m backend.models.run_model_service --model-id mistral-7b   # any model ID in backend/models/config/models.yaml
    ```
 
 3. Access the application:
    - Web UI: http://localhost:3000
    - API: http://localhost:8000/api/v1
-   - Swagger UI: http://localhost:8000/docs
-   - Model API Gateway: http://localhost:8000/model-api
+   - Swagger UI: http://localhost:8000/api/v1/docs
+   - Model API Gateway: http://localhost:8100
 
 ## Testing and Diagnostics
 
@@ -310,7 +310,7 @@ WebAgent includes comprehensive testing and diagnostic tools.
 
 2. Check model services status:
    ```bash
-   curl http://localhost:8000/model-api/metrics
+   curl http://localhost:8100/metrics
    ```
 
 3. View logs:

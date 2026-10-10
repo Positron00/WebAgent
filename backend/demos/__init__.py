@@ -23,7 +23,6 @@ __description__ = "Demo modules for the WebAgent Platform"
 __url__ = "https://github.com/username/webagent"
 __license__ = "MIT"
 __copyright__ = "Copyright 2025"
-__version__ = "2.9.9"
 
 import os
 import sys
@@ -31,4 +30,6 @@ import sys
 # Add the parent directory to the path so that imports work correctly
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir) 
+    sys.path.insert(0, parent_dir)
+
+from app import __version__  # noqa: E402  (single source: package.json)

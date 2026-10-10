@@ -103,7 +103,7 @@ Once the self-hosted LLM service is running, you can start the WebAgent backend 
 
 ```bash
 cd backend
-python -m app.main
+python -m backend.main
 ```
 
 The WebAgent backend will automatically connect to your self-hosted LLM service.

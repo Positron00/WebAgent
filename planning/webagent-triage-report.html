@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Local copy of https://claude.ai/artifact/BZaY5wry3z8SZYpRhHxTJD (version 2), commit c24857c -->
+<style>body{margin:0}</style>
+<title>WebAgent Triage Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@87,500;87,700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column (~72ch) with a wide lane for the pipeline diagram and code; issues separated by rules, severity carried by chips */
+:root {
+  --paper: #F4F6F9;
+  --surface: #FFFFFF;
+  --ink: #18202B;
+  --muted: #586579;
+  --rule: #D9DFE8;
+  --accent: #2B57A6;
+  --code-bg: #EBEFF5;
+  --add-bg: #DDF3E4;
+  --add-ink: #14532D;
+  --del-bg: #FBE3E1;
+  --del-ink: #7F1D1D;
+  --crit: #B42318;
+  --high: #B54708;
+  --med: #7A6300;
+  --low: #5D6B7E;
+  --node: #FFFFFF;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.25rem;
+  --step-2: 1.625rem;
+  --step-3: 2.375rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #0F141B;
+    --surface: #161D27;
+    --ink: #E5EAF1;
+    --muted: #97A3B4;
+    --rule: #2A3443;
+    --accent: #84A9EE;
+    --code-bg: #0A0F15;
+    --add-bg: #12301F;
+    --add-ink: #A7E8BD;
+    --del-bg: #3A1614;
+    --del-ink: #F6B4AE;
+    --crit: #F97066;
+    --high: #F79F5A;
+    --med: #E3C84E;
+    --low: #9AA6B8;
+    --node: #1B2431;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0F141B;
+  --surface: #161D27;
+  --ink: #E5EAF1;
+  --muted: #97A3B4;
+  --rule: #2A3443;
+  --accent: #84A9EE;
+  --code-bg: #0A0F15;
+  --add-bg: #12301F;
+  --add-ink: #A7E8BD;
+  --del-bg: #3A1614;
+  --del-ink: #F6B4AE;
+  --crit: #F97066;
+  --high: #F79F5A;
+  --med: #E3C84E;
+  --low: #9AA6B8;
+  --node: #1B2431;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  padding: 0 20px;
+}
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 48px 96px; }
+.col { max-width: 72ch; }
+
+h1, h2, h3 { font-family: var(--font-display); font-stretch: 87%; text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: var(--step-3); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: var(--step-2); font-weight: 700; }
+h3 { font-size: var(--step-1); font-weight: 500; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+:not(pre) > code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; overflow-wrap: anywhere; }
+
+.label {
+  font-family: var(--font-mono); font-size: var(--step--1); text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted);
+}
+
+/* Header */
+.masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 2px solid var(--ink); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 24px; font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 500; }
+.lede { font-size: var(--step-1); line-height: 1.5; max-width: 62ch; }
+
+/* Tally */
+.tally { display: flex; flex-wrap: wrap; gap: 8px 28px; padding-block: 18px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+.tally div { display: flex; align-items: baseline; gap: 8px; }
+.tally strong { font-family: var(--font-display); font-size: var(--step-2); font-weight: 700; }
+
+section { display: grid; gap: 20px; padding-top: 56px; }
+.sec-head { display: grid; gap: 8px; }
+.sec-head p { color: var(--muted); max-width: 72ch; }
+
+/* Diagram */
+.diagram { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; overflow-x: auto; }
+.diagram svg { display: block; min-width: 760px; width: 100%; height: auto; }
+.n rect { fill: var(--node); stroke: var(--muted); stroke-width: 1.2; }
+.n text { fill: var(--ink); font-family: var(--font-mono); font-size: 13px; }
+.edge { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+.term { fill: var(--muted); }
+.term-t { fill: var(--paper); font-family: var(--font-mono); font-size: 10px; font-weight: 500; }
+.brk rect { fill: var(--crit); }
+.brk text { fill: var(--surface); font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+.brk.h rect { fill: var(--high); }
+.brk.m rect { fill: var(--med); }
+.arrow { fill: var(--muted); }
+.cap { fill: var(--muted); font-family: var(--font-body); font-size: 13px; }
+.diagram figcaption { color: var(--muted); font-size: var(--step--1); margin-top: 10px; max-width: 80ch; }
+
+/* Order */
+ol.order { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: s; }
+ol.order li { counter-increment: s; display: grid; grid-template-columns: 2.4rem 1fr; gap: 4px 12px; padding-block: 14px; border-top: 1px solid var(--rule); }
+ol.order li::before { content: counter(s); font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--accent); grid-row: span 2; line-height: 1.3; }
+ol.order li b { font-weight: 600; }
+ol.order li span { color: var(--muted); }
+
+/* Issues */
+.issues { display: grid; }
+.issue { display: grid; gap: 12px; padding-block: 28px; border-top: 1px solid var(--rule); }
+.issue:first-child { border-top: 0; padding-top: 4px; }
+.ihead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.ihead .id { font-family: var(--font-mono); font-weight: 500; color: var(--accent); font-size: var(--step-0); }
+.ihead h3 { flex: 1 1 26ch; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.sev-c { color: var(--crit); } .sev-h { color: var(--high); } .sev-m { color: var(--med); } .sev-l { color: var(--low); }
+.ev { color: var(--muted); border-style: dashed; }
+.ev.ok { color: var(--accent); border-style: solid; }
+.loc { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); overflow-wrap: anywhere; }
+.issue dl { margin: 0; display: grid; grid-template-columns: 5.5rem 1fr; gap: 10px 16px; max-width: 80ch; }
+.issue dt { font-family: var(--font-mono); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding-top: 0.25em; }
+.issue dd { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.issue ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+
+pre { margin: 0; background: var(--code-bg); border-radius: 5px; padding: 12px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.55; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.add { display: block; background: var(--add-bg); color: var(--add-ink); margin: 0 -14px; padding: 0 14px; }
+.del { display: block; background: var(--del-bg); color: var(--del-ink); margin: 0 -14px; padding: 0 14px; }
+.note { color: var(--muted); font-size: var(--step--1); }
+
+/* Table */
+.tbl { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 680px; font-size: 0.95rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+th { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-family: var(--font-mono); color: var(--accent); white-space: nowrap; }
+
+.toc { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: var(--step--1); font-family: var(--font-mono); }
+
+@media (max-width: 560px) {
+  .issue dl { grid-template-columns: 1fr; gap: 4px; }
+  .issue dd { margin-bottom: 10px; }
+  h1 { font-size: 2rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <span class="label">Engineering report · Repair plan</span>
+  <h1>WebAgent Triage Report</h1>
+  <div class="meta">
+    <span>Commit <b>c24857c</b> (main)</span>
+    <span>App version <b>2.9.10</b></span>
+    <span>Scanned <b>10 Oct 2026</b></span>
+    <span>Runtime <b>conda env “agents”</b></span>
+  </div>
+  <p class="lede">Each agent works when the demos call it on its own. The main LangGraph pipeline, the one the API and the web app use, cannot finish a single run. Five problems stop it before any agent does real work. One of them means the API never starts the workflow at all. Fixing those will expose ten more in how the agents pass results to each other and to the user.</p>
+</header>
+
+<div class="tally" aria-label="Issue count by severity">
+  <div><strong class="sev-c">5</strong><span>Critical</span></div>
+  <div><strong class="sev-h">9</strong><span>High</span></div>
+  <div><strong class="sev-m">9</strong><span>Medium</span></div>
+  <div><strong class="sev-l">11</strong><span>Low</span></div>
+  <div><strong>8</strong><span>confirmed (6 by running code, 2 in LangGraph’s source)</span></div>
+</div>
+
+<section aria-labelledby="where">
+  <div class="sec-head">
+    <h2 id="where">Where a request breaks</h2>
+    <p>The graph as built in <code>backend/app/graph/workflows.py</code>, with each problem placed where it stops or corrupts a run. Two problems act before the graph runs at all: B1 prevents LangGraph from importing, and B5 means an API request never starts the graph.</p>
+  </div>
+  <figure class="diagram" style="margin:0">
+    <svg viewBox="0 0 940 300" role="img" aria-label="Workflow graph from START through supervisor, research, senior research and team manager to END, with document extraction, data analysis, coding assistant and coding review branches. Break markers B4, W1, W2, W3, W4, W5, W6 and W7 sit on the nodes and edges they affect.">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <!-- edges -->
+      <line class="edge" x1="48" y1="102" x2="68" y2="102" marker-end="url(#ah)"/>
+      <line class="edge" x1="200" y1="102" x2="248" y2="102" marker-end="url(#ah)"/>
+      <line class="edge" x1="380" y1="102" x2="428" y2="102" marker-end="url(#ah)"/>
+      <line class="edge" x1="560" y1="102" x2="608" y2="102" marker-end="url(#ah)"/>
+      <line class="edge" x1="740" y1="102" x2="838" y2="102" marker-end="url(#ah)"/>
+      <path class="edge" d="M495,80 C470,30 340,30 315,78" marker-end="url(#ah)"/>
+      <line class="edge" x1="135" y1="124" x2="135" y2="208" marker-end="url(#ah)"/>
+      <line class="edge" x1="640" y1="124" x2="580" y2="208" marker-end="url(#ah)"/>
+      <line class="edge" x1="690" y1="124" x2="712" y2="208" marker-end="url(#ah)"/>
+      <line class="edge" x1="780" y1="232" x2="808" y2="232" marker-end="url(#ah)"/>
+      <path class="edge" d="M870,210 C870,160 760,150 728,126" marker-end="url(#ah)"/>
+      <path class="edge" d="M548,210 C560,170 610,150 622,126" marker-end="url(#ah)"/>
+      <line class="edge" x1="135" y1="254" x2="135" y2="280"/>
+      <text class="cap" x="146" y="284">→ END</text>
+      <text class="cap" x="405" y="28">loop up to 3×</text>
+
+      <!-- terminals -->
+      <circle class="term" cx="34" cy="102" r="14"/><text class="term-t" x="34" y="106" text-anchor="middle">START</text>
+      <circle class="term" cx="856" cy="102" r="16"/><text class="term-t" x="856" y="106" text-anchor="middle">END</text>
+
+      <!-- nodes -->
+      <g class="n"><rect x="70" y="80" width="130" height="44" rx="4"/><text x="135" y="107" text-anchor="middle">supervisor</text></g>
+      <g class="n"><rect x="250" y="80" width="130" height="44" rx="4"/><text x="315" y="107" text-anchor="middle">research</text></g>
+      <g class="n"><rect x="430" y="80" width="130" height="44" rx="4"/><text x="495" y="107" text-anchor="middle">senior_research</text></g>
+      <g class="n"><rect x="610" y="80" width="130" height="44" rx="4"/><text x="675" y="107" text-anchor="middle">team_manager</text></g>
+      <g class="n"><rect x="60" y="210" width="150" height="44" rx="4"/><text x="135" y="237" text-anchor="middle">doc_extraction</text></g>
+      <g class="n"><rect x="480" y="210" width="130" height="44" rx="4"/><text x="545" y="237" text-anchor="middle">data_analysis</text></g>
+      <g class="n"><rect x="640" y="210" width="140" height="44" rx="4"/><text x="710" y="237" text-anchor="middle">coding_assistant</text></g>
+      <g class="n"><rect x="810" y="210" width="120" height="44" rx="4"/><text x="870" y="237" text-anchor="middle">coding_review</text></g>
+
+      <!-- break markers -->
+      <g class="brk"><rect x="168" y="64" width="34" height="20" rx="10"/><text x="185" y="78" text-anchor="middle">B4</text></g>
+      <g class="brk h"><rect x="207" y="86" width="34" height="20" rx="10"/><text x="224" y="100" text-anchor="middle">W1</text></g>
+      <g class="brk h"><rect x="330" y="64" width="56" height="20" rx="10"/><text x="358" y="78" text-anchor="middle">W2 W3</text></g>
+      <g class="brk h"><rect x="567" y="86" width="34" height="20" rx="10"/><text x="584" y="100" text-anchor="middle">W4</text></g>
+      <g class="brk"><rect x="704" y="64" width="56" height="20" rx="10"/><text x="732" y="78" text-anchor="middle">B4 W5</text></g>
+      <g class="brk h"><rect x="784" y="74" width="34" height="20" rx="10"/><text x="801" y="88" text-anchor="middle">W6</text></g>
+      <g class="brk m"><rect x="178" y="194" width="34" height="20" rx="10"/><text x="195" y="208" text-anchor="middle">W7</text></g>
+      <g class="brk"><rect x="520" y="194" width="34" height="20" rx="10"/><text x="537" y="208" text-anchor="middle">B4</text></g>
+    </svg>
+    <figcaption>Red markers are critical, orange high, yellow medium. Once B1 and B5 are fixed, the supervisor (B4) fails first. With B4 fixed, the run ends at W1. With W1 fixed, it ends at W2, and so on down the chain. Not shown: W8 (logs written in routers are discarded on every edge) and W9 (the final report is raw JSON).</figcaption>
+  </figure>
+</section>
+
+<section aria-labelledby="order">
+  <div class="sec-head">
+    <h2 id="order">Recommended fix order</h2>
+    <p>Each step makes the next one testable. Re-run test collection after step 2. Add the end-to-end test in step 3 before changing the agents, so you can see each fix take effect.</p>
+  </div>
+  <ol class="order">
+    <li><b>Restore the Python environment</b><span>B1. Nothing that imports LangGraph runs until this is fixed.</span></li>
+    <li><b>Unblock imports, prompts and the API’s background tasks</b><span>B2–B5. Small edits. Expect zero collection errors from <code>pytest --collect-only</code> afterwards, and task IDs that resolve.</span></li>
+    <li><b>Fix how agents pass state to each other</b><span>W1–W10. Start with one typed research plan and a scripted-LLM end-to-end test (see “The underlying cause”).</span></li>
+    <li><b>Connect the web app to the backend</b><span>F1–F3. Gives agentic mode a real path, makes production builds pass type-checking, and makes production chat match development.</span></li>
+    <li><b>Harden before anyone else can reach it</b><span>X1, X2 first, then S1–S4 and X3–X4.</span></li>
+    <li><b>Clean the repository</b><span>H1–H8, at any convenient point.</span></li>
+  </ol>
+</section>
+
+<section aria-labelledby="crit">
+  <div class="sec-head">
+    <h2 id="crit">Critical: stops every run</h2>
+    <p>All five were reproduced in the <code>agents</code> environment. The proposed edits for B2, B3 and B4 were checked against the real code. The B1 and B5 fixes are proposals and still need a test run.</p>
+  </div>
+  <div class="issues">
+
+    <article class="issue" id="b1">
+      <div class="ihead"><span class="id">B1</span><h3>LangGraph won’t import in the “agents” environment</h3><div class="chips"><span class="chip sev-c">Critical</span><span class="chip ev ok">Confirmed</span></div></div>
+      <p class="loc">conda env “agents” · requirements.txt · backend/requirements.txt</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>from langgraph.graph import StateGraph</code> fails with <code>ImportError: cannot import name 'V' from 'langgraph.store.base'</code>. The environment has langgraph 0.2.28 and langgraph-checkpoint 1.0.9 installed next to packages that need newer versions. <code>pip check</code> lists the conflicts:</p>
+          <ul>
+            <li>langgraph-prebuilt 0.1.2 needs checkpoint ≥ 2.0.10</li>
+            <li>langgraph-api 0.0.27 needs langgraph ≥ 0.2.56 and checkpoint ≥ 2.0.15</li>
+            <li>copilotkit 0.1.39 needs langgraph ≥ 0.2.50</li>
+          </ul>
+          <p>Files from checkpoint 2.x (<code>store/batch.py</code>, <code>store/memory.py</code>) now sit next to a 1.x <code>store/base</code>. This causes 9 of the 11 test-collection errors and breaks every integrated demo. Both requirements files use open-ended <code>&gt;=</code> floors, so a fresh install can drift the same way.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Install one consistent set, then pin it:</p>
+<pre><code>conda run -n agents pip install "langgraph&gt;=0.2.56,&lt;0.3" "langgraph-checkpoint&gt;=2.0.15,&lt;3"
+conda run -n agents pip check
+conda run -n agents python -m pytest backend/tests --collect-only -q</code></pre>
+          <p>If this project doesn’t use langgraph-api, langgraph-cli or copilotkit, uninstalling them is simpler than satisfying them. Then merge the two requirements files into one and pin exact versions, for example by freezing the working environment into a constraints file.</p>
+          <p class="note">Not yet run. Watch for one behavior change: in LangGraph 0.2, invoking a graph returns a dict (see W6).</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="b2">
+      <div class="ihead"><span class="id">B2</span><h3>The new core-transformer service breaks the whole model-services package</h3><div class="chips"><span class="chip sev-c">Critical</span><span class="chip ev ok">Confirmed</span></div></div>
+      <p class="loc">backend/models/services/core_transformer_service.py:14 · backend/models/services/__init__.py:15</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>From the latest commit. <code>from ..core_transformer import Transformer</code> points one level up, at <code>backend/models/core_transformer/</code>. That is the folder holding <code>model.pt</code> and <code>tokenizer.json</code>, and Python treats it as an empty package. The <code>Transformer</code> class is in the sibling module <code>services/core_transformer.py</code> (confirmed by loading that file directly). Because <code>services/__init__.py</code> imports this module at load time, <code>import backend.models.services</code> fails. That also takes down the Hugging Face model service, <code>run_model_service.py</code>, and 4 test files.</p></dd>
+        <dt>Fix</dt>
+        <dd>
+<pre><code><span class="del">- from ..core_transformer import Transformer</span><span class="add">+ from .core_transformer import Transformer</span></code></pre>
+          <p>Optionally, have <code>services/__init__.py</code> catch an <code>ImportError</code> from this module and log a warning. That way an experimental service can’t disable the stable ones.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="b3">
+      <div class="ihead"><span class="id">B3</span><h3>An empty model.pt makes the core-transformer service fail at startup</h3><div class="chips"><span class="chip sev-c">Critical</span><span class="chip ev ok">Confirmed</span></div></div>
+      <p class="loc">backend/models/core_transformer/model.pt (0 bytes) · core_transformer_service.py:58–61 · models/config/models.yaml</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The loader only checks that <code>model.pt</code> exists. The committed file is empty, and <code>torch.load</code> on it raises <code>EOFError: Ran out of input</code>, so <code>load_model()</code> fails and the service never starts. Its <code>model_path</code> in models.yaml, <code>backend/models/core_transformer</code>, is relative to the current directory, so it only works when launched from the repo root. Without trained weights, the model would produce random tokens from its 21-word vocabulary.</p></dd>
+        <dt>Fix</dt>
+        <dd>
+<pre><code><span class="del">- if os.path.exists(model_path):</span><span class="add">+ if os.path.isfile(model_path) and os.path.getsize(model_path) &gt; 0:</span></code></pre>
+          <p>Remove the placeholder file or replace it with real weights. Resolve <code>model_path</code> against the repo root. Mark the service as experimental in models.yaml until it has trained weights.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="b4">
+      <div class="ihead"><span class="id">B4</span><h3>Three agent prompts fail on every call</h3><div class="chips"><span class="chip sev-c">Critical</span><span class="chip ev ok">Confirmed</span></div></div>
+      <p class="loc">agents/supervisor.py SUPERVISOR_PROMPT · agents/team_manager.py TEAM_MANAGER_PROMPT · agents/data_analysis.py DATA_ANALYSIS_PROMPT</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>These prompts are built with <code>ChatPromptTemplate.from_template</code>, which treats every <code>{</code> as the start of a variable. The JSON example in each prompt creates a required input with a nonsense name. For the supervisor it is <code>'\n  "task_type"'</code>, alongside <code>query</code>. Nothing ever supplies it, so each call fails with a missing-variable error. The supervisor runs first, so every agentic run ends at step one. This is likely the “template error” the 2.9.9 changelog works around in the demos. The senior research prompt has no braces and is unaffected.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Double the braces around each JSON example. Confirmed: with <code>{{ }}</code>, <code>query</code> is the only variable and the braces print as single braces.</p>
+<pre><code>Output your analysis in JSON format with these fields:
+<span class="del">- {</span><span class="add">+ {{</span>  "task_type": "document_extraction" or "complex_research",
+  ...
+<span class="del">- }</span><span class="add">+ }}</span></code></pre>
+          <p>Add a unit test asserting that each prompt’s <code>input_variables</code> match the keys its agent passes in.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="b5">
+      <div class="ihead"><span class="id">B5</span><h3>The API never runs the workflow, and the task and document endpoints fail</h3><div class="chips"><span class="chip sev-c">Critical</span><span class="chip ev ok">Confirmed</span></div></div>
+      <p class="loc">app/core/metrics.py:340–382 · app/utils/metrics.py (second copy) · services/task_manager.py:37 · api/endpoints/tasks.py · api/endpoints/documents.py</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>Both copies of <code>timing_decorator</code> wrap functions in a plain synchronous wrapper, and they are applied to async functions. The wrapper returns an un-awaited coroutine, and FastAPI and Starlette no longer recognise the function as async. Two failures follow, both reproduced with the repo’s own decorator:</p>
+          <ul>
+            <li><b>The workflow never starts.</b> <code>TaskManager.run_workflow</code> is decorated and launched with <code>BackgroundTasks</code>. Starlette treats it as synchronous, calls it in a thread, and drops the coroutine it gets back. The request returns a task ID, no task is ever recorded, and polling that ID returns 404 indefinitely.</li>
+            <li><b>Ten endpoints fail with an error.</b> Every endpoint in tasks.py and documents.py (list, get, result, error, create, delete, upload, search and so on) is decorated. FastAPI tries to serialise the coroutine and raises <code>ValueError: 'coroutine' object is not iterable</code>.</li>
+          </ul>
+          <p>Awaited agent methods such as <code>TeamManagerAgent.run</code> still work, but the timings recorded for them are about zero.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Make the decorator handle async functions, and keep a single copy of it (delete the one in <code>app/utils/metrics.py</code> and import from <code>app/core/metrics.py</code>).</p>
+<pre><code>def timing_decorator(func):
+    if inspect.iscoroutinefunction(func):
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            start = time.perf_counter()
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                _record_time(func.__name__, time.perf_counter() - start)
+        return async_wrapper
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            _record_time(func.__name__, time.perf_counter() - start)
+    return wrapper</code></pre>
+          <p>Add one API test that posts a chat request and polls until the task leaves “processing”. That test would have caught this.</p></dd>
+      </dl>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="wiring">
+  <div class="sec-head">
+    <h2 id="wiring">Workflow wiring: agents and routers disagree</h2>
+    <p>Found by reading the code. None of these could run while B1 and B4 were in place. Each one ends the run early or drops an agent’s output.</p>
+  </div>
+  <div class="issues">
+
+    <article class="issue" id="w1">
+      <div class="ihead"><span class="id">W1</span><h3>The supervisor and the routers use different names for the research plan</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">agents/supervisor.py (prompt) · graph/workflows.py:52–55, 91–92, 191–192, 428–429 · agents/web_research.py:138</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The supervisor prompt asks for <code>needs_web_research</code> and <code>needs_internal_research</code>. The router and the research node read <code>requires_web_search</code> and <code>requires_internal_knowledge</code>. A third function, <code>research_router</code>, reads <code>requires_internal_search</code>. With the keys the prompt asks for, the router concludes that no research is needed and ends the run.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Define the plan once and convert the model’s reply into it inside the supervisor:</p>
+<pre><code>class ResearchPlan(BaseModel):
+    requires_web_search: bool = True
+    requires_internal_knowledge: bool = False
+    questions: list[str] = []</code></pre>
+          <p>Ask for exactly these keys in the prompt, parse the reply with <code>ResearchPlan.model_validate(...)</code>, and have every router and agent read the plan through this model. Delete the unused <code>research_router</code> and <code>get_research_router</code> functions.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="w2">
+      <div class="ihead"><span class="id">W2</span><h3>The parallel research node calls the agents the wrong way</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">graph/workflows.py:178–239</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>run_research_agents</code> has three problems:</p>
+          <ul>
+            <li>It calls <code>web_research.ainvoke(state)</code>, but <code>get_web_research_agent()</code> returns a plain async function, which has no <code>ainvoke</code> method.</li>
+            <li>It reads <code>result.get("state")</code>, but the agents return a <code>WorkflowState</code>, not a dict.</li>
+            <li>It returns <code>{"state": state}</code>. LangGraph copies a node’s output into the state one field at a time, and <code>state</code> isn’t a field of <code>WorkflowState</code>. Even after the call is fixed, every result from this node would be silently dropped (confirmed in <code>langgraph/graph/state.py</code>, <code>_get_state_key</code>).</li>
+          </ul>
+          <p>Both agents also receive the same state object and would write to it at the same time.</p></dd>
+        <dt>Fix</dt>
+        <dd>
+<pre><code>results = await asyncio.gather(
+    *(agent(state.model_copy(deep=True)) for agent in selected_agents))
+for r in results:
+    for name, report in r.reports.items():
+        state.reports.setdefault(name, report)
+return state</code></pre></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="w3">
+      <div class="ihead"><span class="id">W3</span><h3>Web research findings never reach the senior research agent</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">agents/web_research.py:124, 248–249, 294–295 · agents/senior_research.py:228</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>Web research reads the query from <code>state.context["query"]</code>, which is never set; the query is in <code>state.query</code>. So it searches for an empty string, which the search service replaces with “general information”. It saves results to <code>state.context["web_research_results"]</code>, but senior research reads <code>state.reports["web_research"]</code>. It also calls the model synchronously and expects a string or a dict back. With OpenAI the reply is a message object without <code>.get</code>, so that path always drops to the fallback summary, which lists only page titles.</p></dd>
+        <dt>Fix</dt>
+        <dd>
+<pre><code><span class="del">- query = state.context.get("query", "")</span><span class="add">+ query = state.query</span>
+<span class="del">- response = self.llm.invoke(messages)</span><span class="del">- assistant_message = response if isinstance(response, str) else response.get("content", "")</span><span class="add">+ response = await self.llm.ainvoke(messages)</span><span class="add">+ assistant_message = response if isinstance(response, str) else response.content</span>
+<span class="add">+ state.update_with_agent_output("web_research", parsed_response)</span></code></pre></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="w4">
+      <div class="ihead"><span class="id">W4</span><h3>Senior research always ends the run, and its follow-up loop is never triggered</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">graph/workflows.py:104–139 · agents/senior_research.py:224–225, 258, 267 · agents/web_research.py:100, 134 · agents/internal_research.py:1054</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The router after senior research reads <code>needs_more_research</code> and <code>ready_for_team_manager</code>. The agent writes neither; it sets <code>research_status</code> and the context flags <code>continue_research</code> and <code>research_complete</code>. Both reads default to false, so the run always ends and the team manager never runs. The agent also sets <code>state.final_report</code> to a plain string, and the task manager then calls <code>.get()</code> on it. Iteration tracking is split as well:</p>
+          <ul>
+            <li>Senior research counts in <code>research_loops</code>; web and internal research read <code>research_iteration</code>.</li>
+            <li>The feedback carries <code>current_iteration</code>; web research reads <code>iteration</code>.</li>
+          </ul>
+          <p>As a result, the follow-up research prompts never switch on.</p></dd>
+        <dt>Fix</dt>
+        <dd>
+<pre><code>def senior_research_router(state):
+    if state.error:
+        return END
+    if state.context.get("continue_research"):
+        return "research"
+    return "team_manager"</code></pre>
+          <p>Delete <code>state.final_report = synthesis</code>, and use a single <code>research_iteration</code> key in every agent and in the feedback.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="w6">
+      <div class="ihead"><span class="id">W6</span><h3>The task manager reads the finished state wrong and reports empty answers as completed</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev ok">Confirmed in LangGraph source</span></div></div>
+      <p class="loc">services/task_manager.py:82–106 · api/endpoints/frontend.py:112–128</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The graph’s output is a list of state fields, so LangGraph’s <code>read_channels</code> returns a plain dict from <code>ainvoke</code>, not a <code>WorkflowState</code> (checked in the installed <code>langgraph/graph/state.py</code> and <code>pregel/io.py</code>). <code>final_state.final_report</code> then raises <code>AttributeError</code> and every task is recorded as an error.</p>
+          <p>A second problem appears once that’s fixed. The task manager sets the status to “completed” before checking whether a report exists. A run that ends without a report is stored as completed with the result <code>{"error": …}</code>. The web-app status endpoint then returns <code>result.get("content", "")</code>, which is an empty string, so the user sees a blank answer instead of an error.</p></dd>
+        <dt>Fix</dt>
+        <dd>
+<pre><code>result = await workflow.ainvoke(initial_state)
+final_state = (result if isinstance(result, WorkflowState)
+               else WorkflowState.model_validate(result))
+if not final_state.final_report:
+    task_info.status = "error"
+    task_info.error = final_state.error or "Workflow ended without a report"</code></pre>
+          <p>Set “completed” only after a report has been stored.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="w5">
+      <div class="ihead"><span class="id">W5</span><h3>The team manager can loop until the recursion limit</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">graph/workflows.py:141–176 · agents/team_manager.py:161–190</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>After data analysis or coding, control returns to the team manager, which asks the model again whether analysis or coding is needed. Nothing records that those steps already ran. A model that keeps answering “true” loops until LangGraph’s recursion limit; the 2.9.9 changelog describes this happening in a demo. In the opposite case the router ends the run, but the team manager only writes <code>final_report</code> when both flags are false, so the task finishes with no report.</p></dd>
+        <dt>Fix</dt>
+        <dd>
+<pre><code>if needs_analysis and "data_analysis" not in state.reports:
+    return "data_analysis"
+if needs_coding and "coding_review" not in state.reports:
+    return "coding_assistant"
+return END</code></pre>
+          <p>Put the same check in the team manager and have it write <code>final_report</code> whenever the router is about to end.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="w7">
+      <div class="ihead"><span class="id">W7</span><h3>Requests with agentic mode off, and document requests, end without a report</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">graph/workflows.py:71–74, 314–315 · agents/document_extraction_agent.py:646–704</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>With <code>agentic_toggle</code> off, the graph ends right after the supervisor without writing <code>final_report</code>, and the task manager records “Workflow did not complete successfully”. The document branch requires <code>state.inputs["document_id"]</code>, which no API endpoint sets. It also writes its result to <code>state.output</code> instead of <code>final_report</code>.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>When agentic mode is off, either answer in a single model call (a small node that writes <code>final_report</code>) or reject the request at the API with a clear message. Let the chat request carry <code>document_id</code> into <code>inputs</code>, and have the extraction node write <code>final_report</code> with a title and content.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="w8">
+      <div class="ihead"><span class="id">W8</span><h3>Workflow logs written by routers are discarded and never reach the report</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev ok">Confirmed in LangGraph source</span></div></div>
+      <p class="loc">graph/workflows.py:60–176 · models/task.py (add_log, mark_completed) · tests/test_workflow_logs.py</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>Most workflow logs, the feature added in 2.9.6, are written with <code>state.add_log(…)</code> inside the routers. LangGraph gives each router a fresh copy of the state, built with <code>fresh=True</code> in <code>_get_state_reader</code>, and keeps only the branch name the router returns. Every log line a router writes is thrown away. The only node that writes logs is the research node, and its output is dropped (W2). Separately, <code>WorkflowState.mark_completed</code>, the method that copies logs into the final report, is never called anywhere. The tests don’t catch this because their mocked agents write logs directly and don’t go through the real routers.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Write logs only inside nodes. Have the team manager, and any node that ends the run, call <code>state.mark_completed(final_report)</code> instead of setting <code>final_report</code> directly. If a log entry is needed for each routing decision, record it in the node that runs just before the router.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="w9">
+      <div class="ihead"><span class="id">W9</span><h3>The final report is the team manager’s raw JSON, and code review results are dropped</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">agents/team_manager.py:107–110, 178–190 · agents/coding_review.py:217</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The team manager prompt tells the model to reply with a JSON object. The code then puts that reply text, unchanged, into <code>final_report["content"]</code>, so the user would see a block of JSON instead of a written report. The team manager also never reads <code>reports["coding_review"]</code>. When the review agent fixes broken code, the report still shows the original code from the coding assistant.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Build the report text from the parsed fields (summary, analysis, recommendations, sources) as Markdown. Prefer <code>coding_review.fixed_code</code> when its fixed run succeeded, and include the review’s explanation.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="w10">
+      <div class="ihead"><span class="id">W10</span><h3>Earlier chat messages are ignored</h3><div class="chips"><span class="chip sev-l">Low</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">api/endpoints/frontend.py:59 · models/chat.py (session_id)</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The web-app endpoint saves earlier messages in <code>context["previous_messages"]</code>, but no agent reads them, and <code>ChatRequest.session_id</code> is never used. Each agentic request is treated as a new conversation, so follow-up questions such as “what about Europe?” lose their meaning.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Pass a short summary of the earlier messages to the supervisor prompt, so it can rewrite a follow-up question into a self-contained query before planning.</p></dd>
+      </dl>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="root">
+  <div class="sec-head">
+    <h2 id="root">The underlying cause</h2>
+  </div>
+  <div class="col" style="display:grid; gap:14px">
+    <p>W1 through W9 share one cause. Agents pass data through free-form dicts (<code>state.context</code> and <code>state.reports</code>), so a misspelled key reads as a silent default instead of raising an error. The demos never caught this because they wire their own small graphs around one or two agents. The existing workflow tests didn’t catch it either: they replace agents with mocks that write whatever the test expects, and those mocks return the same <code>{"state": state}</code> shape that LangGraph ignores.</p>
+    <p>Two changes would catch this whole class of bug:</p>
+    <ul style="margin:0; padding-left:1.2em; display:grid; gap:6px">
+      <li><b>Typed hand-offs.</b> Give each agent a Pydantic output model (ResearchPlan, ResearchFindings, SeniorReview, TeamReport). Routers then read typed fields, so a wrong name fails when the code runs instead of returning a silent default.</li>
+      <li><b>One end-to-end test with a scripted model.</b> Patch <code>app.services.llm.get_llm</code> to return LangChain’s <code>FakeListChatModel</code> with one prepared reply per agent. Run the full graph, and assert the order of visited nodes and that <code>final_report</code> has content. It needs no API keys and runs in seconds.</li>
+    </ul>
+  </div>
+</section>
+
+<section aria-labelledby="fe">
+  <div class="sec-head">
+    <h2 id="fe">Web app integration</h2>
+  </div>
+  <div class="issues">
+
+    <article class="issue" id="f1">
+      <div class="ihead"><span class="id">F1</span><h3>Agentic mode in the web app never reaches the LangGraph backend</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">next.config.js:45–58 · vercel.json · backend/api/index.py:48–104 · src/utils/apiClient.ts:440–600</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>In development, <code>/api/task</code> is forwarded to a Flask app on port 5000. Its task handlers return fixed placeholder text, and the FastAPI backend on port 8000 is never called. In production, vercel.json sends <code>/api/task</code> to the same placeholder. Even with the right target, the two sides don’t match:</p>
+          <ul>
+            <li>The client sends only <code>{query, image}</code>, so the backend would see agentic mode as off.</li>
+            <li>The client starts polling only if the reply text contains “task_”, then uses the entire reply text as the task ID.</li>
+            <li>The client checks for status “failed”, but the backend reports “error”.</li>
+            <li>The backend’s web-app routes are mounted at <code>/api/v1/v1/…</code> because a <code>/v1</code> prefix is applied twice.</li>
+            <li>Polling stops after 30 attempts, about two minutes, which a full research run can exceed.</li>
+          </ul></dd>
+        <dt>Fix</dt>
+        <dd><p>Add a small task endpoint to FastAPI that matches what the client expects, and point the dev proxy at <code>http://127.0.0.1:8000/api/task/:path*</code>.</p>
+<pre><code># backend/app/api/endpoints/task.py, mounted at /api/task
+@router.post("")
+async def create_task(req: TaskRequest, bg: BackgroundTasks):
+    task_id = str(uuid4())
+    bg.add_task(task_manager.run_workflow, task_id, req.query,
+                {"agentic_toggle": True})
+    return {"task_id": task_id, "status": "processing"}
+
+@router.get("/{task_id}")
+async def task_status(task_id: str):
+    status, result = task_manager.get_task_status(task_id)
+    return {"status": "failed" if status == "error" else status,
+            "result": result}</code></pre>
+          <p>In apiClient.ts, poll when <code>response.task_id</code> is present instead of matching on the reply text, and replace the 30-poll cap with a deadline of several minutes. Drop the extra <code>/v1</code> prefix in <code>api/router.py</code>.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="f2">
+      <div class="ihead"><span class="id">F2</span><h3>The chat API route fails type-checking</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev ok">Confirmed</span></div></div>
+      <p class="loc">src/app/api/chat/route.ts · src/types/api.ts</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>npx tsc --noEmit</code> reports 8 errors, 5 of them in this file:</p>
+          <ul>
+            <li>It imports <code>ApiError</code> from <code>@/utils/errors</code>, which doesn’t exist.</li>
+            <li>It redeclares <code>ChatRequestMessage</code>, <code>ChatCompletionResponse</code> and <code>ApiError</code>, which clash with its own imports.</li>
+            <li>It assigns the image content array to a field typed as a string.</li>
+          </ul>
+          <p><code>next build</code> runs the same type check, so this probably also blocks production builds.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Delete the local duplicate declarations, add <code>src/utils/errors.ts</code> exporting <code>ApiError</code>, and widen the message content type in <code>src/types/api.ts</code> to <code>string | ContentPart[]</code>. Then fix the other 3 errors that <code>tsc</code> reports.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="f3">
+      <div class="ihead"><span class="id">F3</span><h3>Production chat skips the system prompts that development uses</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">vercel.json routes · backend/api/chat.py · src/app/api/chat/route.ts</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>In development, <code>/api/chat</code> is served by the Next.js route, which adds the system prompt, prompt style, knowledge focus, citation setting and image content. On Vercel, vercel.json sends <code>/api/chat</code> to the Flask handler. That handler forwards the raw messages with its own defaults, such as <code>max_tokens</code> of 1000, and ignores all of those options. The same question gets different answers in development and in production. The <code>"@together_api_key"</code> secret reference in vercel.json is an older Vercel syntax and should be checked against current Vercel settings.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Remove the <code>/api/chat</code>, <code>/api/ping</code> and <code>/api/health</code> entries from vercel.json so the Next.js routes serve them in production too. Keep the Python function only for endpoints that need it.</p></dd>
+      </dl>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="sec">
+  <div class="sec-head">
+    <h2 id="sec">Security</h2>
+    <p>These matter as soon as the backend is reachable by anyone other than you. A scan of tracked files and the full git history found no committed API keys. The only matches were a test placeholder and a recorded HTTP file that holds public Hugging Face and NLTK requests. <code>backend/kubernetes/secrets.yaml</code> contains placeholders only.</p>
+  </div>
+  <div class="issues">
+
+    <article class="issue" id="x1">
+      <div class="ihead"><span class="id">X1</span><h3>Model-written code runs directly on the server</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">agents/coding_review.py:270–360</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>execute_python_code</code> writes the generated code to a temp file and runs it with the server’s own Python interpreter. The only limit is a 30-second timeout. That code comes from a chain that starts with web search results, so a hostile web page could steer it. That path runs from prompt injection to arbitrary code on the host.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Run generated code in a throwaway container with no network, a read-only filesystem, and memory and CPU caps, for example <code>docker run --rm --network none --memory 512m --cpus 1 …</code>. Until then, turn code execution off when running as an API server and keep it for local demos only.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="x2">
+      <div class="ihead"><span class="id">X2</span><h3>The API has no authentication</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">app/core/security.py · app/core/config.py · backend/main.py</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>setup_security</code> is never called. JWT and API-key checks are off by default, and no route requires credentials. <code>SECRET_KEY</code> falls back to <code>insecure_key_for_dev_only_change_in_production</code>. Anyone who can reach port 8000 can start paid model runs and upload documents.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Require an API key on the whole router with <code>APIRouter(dependencies=[Depends(require_api_key)])</code>. Make the server refuse to start in uat or prod while <code>SECRET_KEY</code> has its default value.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="x3">
+      <div class="ihead"><span class="id">X3</span><h3>Side services accept requests from any origin</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">backend/app/main.py · models/api/gateway.py · models/services/base_model_service.py</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>These services allow every origin and also allow credentials, so any website a user visits can call them from that user’s browser.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Use <code>settings.CORS_ORIGINS</code>, as the main backend already does.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="x4">
+      <div class="ihead"><span class="id">X4</span><h3>Error details are returned to clients</h3><div class="chips"><span class="chip sev-l">Low</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">backend/main.py:77–112 · api/endpoints/chat.py · api/endpoints/frontend.py</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>dev.yaml turns on debug mode, which makes the global error handler return exception messages. The chat endpoints return <code>detail=str(e)</code> in every environment.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Log the full error and return only its <code>error_id</code> to the client.</p></dd>
+      </dl>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="svc">
+  <div class="sec-head">
+    <h2 id="svc">Services</h2>
+  </div>
+  <div class="issues">
+
+    <article class="issue" id="s1">
+      <div class="ihead"><span class="id">S1</span><h3>Web search crashes when no Tavily key is set</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">services/web_search.py:29–40, 80, 105</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>_initialize</code> returns early without setting <code>self.initialized</code>, so the first search raises <code>AttributeError</code>. The Tavily client is synchronous and blocks the event loop inside the async <code>search</code>.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Set <code>self.initialized = False</code> and <code>self.tavily_client = None</code> at the top of <code>_initialize</code>. Call the client with <code>await asyncio.to_thread(self.tavily_client.search, …)</code>.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="s2">
+      <div class="ihead"><span class="id">S2</span><h3>Creating each agent makes a billed model call</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">services/llm.py:541–596</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>get_together_llm</code> sends a “test” prompt every time it creates a model. Building the graph creates nine agents, and seven to nine of them create a model; the two coding agents skip it when an OpenAI key is set. That’s up to nine billed calls, each slowed by the rate limiter, before the first query.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Remove the test call, or create each model client once per provider and model name with <code>functools.lru_cache</code>.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="s3">
+      <div class="ihead"><span class="id">S3</span><h3>Model fallbacks hide outages</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">services/llm.py:628–715 · agents/senior_research.py:85 · agents/data_analysis.py:63</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The fallback order lists Groq, Anthropic and Gemini, but <code>get_llm</code> has no code for them, so they are skipped without any error. If every provider fails, it returns a fake model whose only reply is an apology. Agents treat that reply as a real answer and build reports on it. Senior research and data analysis also hard-code a Together model name. If Together is down or OpenAI is configured as the provider, that name is sent to OpenAI and their calls fail.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Implement the listed providers or remove them from the list. Use the fake model only when a test turns it on, and raise an error otherwise. Read each agent’s model from the <code>agents:</code> block in the YAML config. That block already lists a model and temperature for every agent, but only the coding agents read it, and only for allowed libraries and the timeout. Pass a model name only to the provider it belongs to.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="s4">
+      <div class="ihead"><span class="id">S4</span><h3>Streaming from Together never produces output</h3><div class="chips"><span class="chip sev-l">Low</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">services/llm.py:132–138</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>TogetherWrapper.stream</code> contains a <code>yield</code>, which makes the whole method a generator. Its <code>return self.llm.stream(…)</code> line therefore produces nothing.</p></dd>
+        <dt>Fix</dt>
+        <dd><pre><code><span class="del">- return self.llm.stream(input, **(config or {}))</span><span class="add">+ yield from self.llm.stream(input, **(config or {}))</span></code></pre></dd>
+      </dl>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="hk">
+  <div class="sec-head">
+    <h2 id="hk">Housekeeping</h2>
+    <p>All low severity. Each one is small, but together they slow down setup and code review.</p>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>ID</th><th>Issue</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>H1</td><td><code>BASE_DIR</code> in core/config.py is hard-coded to your Dropbox path, and the module prints to stdout when imported.</td><td>Use <code>Path(__file__).resolve().parents[3]</code> and log instead of printing.</td></tr>
+        <tr><td>H2</td><td>Generated files are committed: <code>__pycache__</code> folders, mlflow.db, log files, about 530 files under backend/data/artifacts, sample .db files, and three test_langgraph.py.bak files.</td><td>Add them to .gitignore and untrack them with <code>git rm -r --cached</code>.</td></tr>
+        <tr><td>H3</td><td>backend/app/main.py is an unused second entry point. It imports <code>app.api.routes.docs</code> and <code>models</code>, which don’t exist.</td><td>Delete it, or move its observability routes into backend/main.py.</td></tr>
+        <tr><td>H4</td><td>Version numbers disagree: package.json says 2.9.10, config.py 2.9.9, app/__init__.py 2.9.3.</td><td>Keep the version in one file and read it everywhere else.</td></tr>
+        <tr><td>H5</td><td>The model gateway and the main backend both default to port 8000.</td><td>Move the gateway to 8100 in models.yaml.</td></tr>
+        <tr><td>H6</td><td><code>settings.DEFAULT_MODEL</code> exists only when the YAML config loads, so frontend.py fails to import if it doesn’t.</td><td>Add <code>DEFAULT_MODEL</code> to the base <code>Settings</code> class.</td></tr>
+        <tr><td>H7</td><td>The README setup steps refer to backend/config/example.yaml and <code>backend.models.run_service</code>, which don’t exist.</td><td>Point them to dev.yaml and <code>backend.models.run_model_service --model-id …</code>.</td></tr>
+        <tr><td>H8</td><td>The coding assistant and coding review agents each contain a copy of <code>get_openai_api_key</code>, which reads .env.local from the current directory.</td><td>Use <code>settings.OPENAI_API_KEY</code>, which config.py already loads.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="ev">
+  <div class="sec-head">
+    <h2 id="ev">How the confirmed findings were checked</h2>
+    <p>Each was run in the “agents” conda environment or read from the LangGraph package installed there. No repository files were changed. Line numbers were checked against commit c24857c.</p>
+  </div>
+<pre><code># B1  LangGraph import and dependency conflicts
+conda run -n agents python -c "from langgraph.graph import StateGraph"
+conda run -n agents pip check
+
+# B1, B2  Test collection: 41 tests collected, 11 files fail to load.
+#         Error lines: 9 LangGraph import, 4 Transformer import.
+conda run -n agents python -m pytest backend/tests --collect-only -q
+
+# B2  Package import fails; the sibling module defines Transformer
+conda run -n agents python -c "import backend.models.services"
+
+# B3  Empty checkpoint
+torch.load("backend/models/core_transformer/model.pt")   # EOFError: Ran out of input
+
+# B4  Spurious template variables, and confirmation that {{ }} fixes them
+ChatPromptTemplate.from_template(SUPERVISOR_PROMPT).input_variables
+# ['\n  "task_type"', 'query']
+
+# B5  Repo's timing_decorator on an async FastAPI endpoint and on a background task
+#     endpoint  -> ValueError: 'coroutine' object is not iterable
+#     background task -> request returns 200, task body never runs
+
+# W6, W8  Installed LangGraph source
+#     langgraph/pregel/io.py read_channels      -> returns a dict for a list of fields
+#     langgraph/graph/state.py _get_state_key   -> node output copied field by field
+#     langgraph/graph/state.py _get_state_reader -> routers get a fresh copy (fresh=True)
+
+# F2  Type errors
+npx tsc --noEmit
+
+# Secrets  Tracked files and full history for OpenAI, Tavily, LangSmith,
+#          Grafana and Together key patterns: no real keys found
+git grep -nE "sk-…|tvly-…|lsv2_…|glsa_…"
+git log --all -p | grep -E "^\+.*(sk-…|tvly-…|TOGETHER_API_KEY=…)"</code></pre>
+</section>
+
+<section aria-labelledby="res">
+  <div class="sec-head">
+    <h2 id="res">Resolution record</h2>
+    <p>All 34 issues are addressed in the working tree. Where the code differs from the fix proposed above, the table says how and why. Checks: <code>pytest backend/tests</code>, <code>npx tsc --noEmit</code>, <code>pip install --dry-run -r requirements.txt</code>.</p>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>ID</th><th>Differs from the proposal</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td>backend/requirements.txt is the single list (root file includes it); exact versions of the working env are in backend/constraints.txt. Unrelated <code>pip check</code> conflicts (langchain-cli, ipywidgets, mistral-common) were left in the shared env.</td><td>Those packages are not used by WebAgent; uninstalling them could affect other projects.</td></tr>
+        <tr><td>B3</td><td>Empty model.pt removed; relative <code>model_path</code> resolved against the repo root.</td><td>As proposed.</td></tr>
+        <tr><td>W4</td><td>The research node sets <code>research_iteration</code> (1, 2, 3) before each pass; senior research reads it.</td><td>One writer for the counter, so follow-up prompts switch on from pass 2.</td></tr>
+        <tr><td>W7</td><td>With agentic mode off, the supervisor answers in one direct model call and writes <code>final_report</code>.</td><td>The first option the report offers.</td></tr>
+        <tr><td>F1</td><td>Next.js route handlers in src/app/api/task proxy to FastAPI (<code>WEBAGENT_BACKEND_URL</code>) instead of a dev-only rewrite. The client also had a double <code>/api/api/task</code> URL, now fixed.</td><td>Works in production too and keeps <code>WEBAGENT_API_KEY</code> server-side.</td></tr>
+        <tr><td>F3</td><td>vercel.json now builds only the Next.js app; the Flask placeholder function and the <code>@together_api_key</code> secret reference were removed.</td><td>No endpoint needs the Python function any more; Vercel secrets are set in project settings.</td></tr>
+        <tr><td>X1</td><td>Code execution is off in the API server (<code>WEBAGENT_ENABLE_CODE_EXECUTION</code> to override) and on for local demos. No container sandbox yet.</td><td>The report's interim step; the Docker sandbox is still recommended before exposing the server.</td></tr>
+        <tr><td>X2</td><td>API key required on all routes except <code>/api/v1/health</code>. Dev keys are accepted only when <code>WEBAGENT_ENV=dev</code>; uat/prod refuse to start without <code>WEBAGENT_API_KEY</code>. Fixed two config bugs that kept this off: the YAML schema dropped <code>api_key_enabled</code>, and <code>WEBAGENT_ENV</code> always read as <code>dev</code>.</td><td>Health checks must work without credentials.</td></tr>
+        <tr><td>S3</td><td>Groq and Gemini providers are optional installs; <code>get_llm</code> skips them with a logged reason if missing.</td><td>Keeps the base install resolvable.</td></tr>
+        <tr><td>H3</td><td>backend/app/main.py is now a one-line alias for <code>main.app</code>.</td><td>Existing tests and docs import it; its broken observability routes were dropped.</td></tr>
+        <tr><td>H4</td><td>package.json is the only version; Python and the web client read it.</td><td>As proposed.</td></tr>
+        <tr><td>Extra</td><td><code>TogetherWrapper</code> passed the run config as keyword arguments, so every Together chain failed with “multiple values for keyword argument 'tags'”. Polling also swallowed its own “failed” result and kept polling for the full deadline.</td><td>Found while verifying; both would have stopped runs after the listed fixes.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div>
+
+</html>
