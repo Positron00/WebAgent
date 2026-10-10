@@ -40,6 +40,32 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Backend runtime artifacts
+logs/
+backend/logs/
+backend/**/*.log
+backend/mlruns/
+mlruns/
+mlflow.db
+backend/**/*.db
+*.db-journal
+
+# Generated demo / test data (keep sample_docs)
+backend/data/artifacts/
+backend/demos/logs/
+backend/demos/results/
+
+# Backup files
+*.bak
+
 # images
 *.png
 *.jpg
