@@ -370,55 +370,27 @@ export class ApiClient {
     // When Agentic toggle is ON - route ONLY to the backend LangGraph multi-agent
     if (agentic) {
       logger.info('Agentic mode ON - routing to LangGraph multi-agent system');
-      
+
+      const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+      const query =
+        typeof lastUserMessage?.content === 'string' ? lastUserMessage.content.trim() : '';
+
+      if (!query) {
+        throw new ApiError('No user message to send to the multi-agent system', 400);
+      }
+
       try {
-        // Call to the backend multi-agent system
-        const response = await this.fetchWithRetry<ChatCompletionResponse>(
-          clientConfig.api.endpoints.task,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: messages.map(msg => ({
-                role: msg.role,
-                content: msg.content
-              })),
-              image: image || null,
-              promptStyle,
-              knowledgeFocus,
-              citeSources,
-              agentic_toggle: true
-            }),
-          }
-        );
-        
-        // Add mock workflow logs for demonstration purposes
-        if (response.choices && response.choices.length > 0) {
-          const sampleLogs = [
-            "Planning agent: Analyzing query",
-            "Planning agent: Determining required steps",
-            "Team Manager: Assessing task requirements",
-            "Team Manager: Selecting specialized agents",
-            "Research agent: Searching for relevant information",
-            "Research agent: Evaluating source credibility",
-            "Analysis agent: Processing gathered information",
-            "Analysis agent: Synthesizing findings",
-            "Writing agent: Generating comprehensive response",
-            "Team Manager: Reviewing final output"
-          ];
-          
-          // Add logs to the response
-          response.choices[0].message.logs = sampleLogs;
-        }
-        
-        return response;
+        return await this.sendMultiAgentRequest(query, image);
       } catch (error) {
         logger.warn('Agentic mode failed, falling back to direct LLM', { error });
-        
-        // Fallback to direct LLM in case of error
-        return this.sendChatMessage(messages, image, promptStyle, knowledgeFocus, citeSources, false);
+        return this.sendChatMessage(
+          messages,
+          image,
+          promptStyle,
+          knowledgeFocus,
+          citeSources,
+          false
+        );
       }
     }
     

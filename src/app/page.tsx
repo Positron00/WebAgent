@@ -4,7 +4,10 @@ import Image from 'next/image';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#1C1C1C] text-white flex items-center justify-center">
+    <main
+      className="min-h-screen flex items-center justify-center font-sans antialiased"
+      style={{ backgroundColor: '#191919', color: '#e5e5e5' }}
+    >
       <div className="w-[75%] flex flex-col items-center gap-6">
         {/* Logo and Tagline */}
         <div className="flex flex-col items-center gap-4">

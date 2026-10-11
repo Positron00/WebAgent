@@ -1,4 +1,5 @@
 import { ChatMessage } from '@/types/chat';
+import { CHAT_ACCESSIBILITY_COLORS } from '@/config/chatTheme';
 
 const STORAGE_KEYS = {
   MESSAGES: 'chat_messages',
@@ -32,10 +33,7 @@ const DEFAULT_ACCESSIBILITY: AccessibilitySettings = {
   knowledgeFocus: 'general',
   citeSources: true,
   agentic: false,
-  responseTextColor: '#FFFFFF',
-  queryTextColor: '#FFFFFF',
-  responseBackgroundColor: '#111827',
-  queryBackgroundColor: '#1E3A8A'
+  ...CHAT_ACCESSIBILITY_COLORS,
 };
 
 export type ThemePreference = 'light' | 'dark' | 'system';
@@ -86,7 +84,16 @@ export const storage = {
     if (!isClient) return DEFAULT_ACCESSIBILITY;
     try {
       const settings = localStorage.getItem(STORAGE_KEYS.ACCESSIBILITY);
-      return settings ? JSON.parse(settings) : DEFAULT_ACCESSIBILITY;
+      if (!settings) return DEFAULT_ACCESSIBILITY;
+      const parsed = JSON.parse(settings) as AccessibilitySettings;
+      // Migrate legacy blue bubble theme to neutral chat colors
+      if (
+        parsed.queryBackgroundColor?.toUpperCase() === '#1E3A8A' &&
+        parsed.responseBackgroundColor === '#111827'
+      ) {
+        return { ...parsed, ...CHAT_ACCESSIBILITY_COLORS };
+      }
+      return parsed;
     } catch (error) {
       console.error('Error reading accessibility settings from storage:', error);
       return DEFAULT_ACCESSIBILITY;

@@ -215,24 +215,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           assistantMessage.logs = response.choices[0].message.logs;
         }
 
-        // Update messages and save
-        const updatedMessages = [
-          ...state.messages,
-          assistantMessage
-        ];
-
-        setState(prev => ({
-          ...prev,
-          messages: updatedMessages,
-          isLoading: false,
-        }));
-
-        storage.saveMessages(updatedMessages);
-
-        logger.info('Updated chat state with response', { 
-          responseLength: assistantMessage.content.length,
-          sourceCount: assistantMessage.sources?.length || 0,
-          messageCount: updatedMessages.length
+        setState((prev) => {
+          const updatedMessages = [...prev.messages, assistantMessage];
+          storage.saveMessages(updatedMessages);
+          logger.info('Updated chat state with response', {
+            responseLength: assistantMessage.content.length,
+            sourceCount: assistantMessage.sources?.length || 0,
+            messageCount: updatedMessages.length,
+          });
+          return {
+            ...prev,
+            messages: updatedMessages,
+            isLoading: false,
+          };
         });
       } catch (error) {
         logger.error('Error in sendMessage:', error);

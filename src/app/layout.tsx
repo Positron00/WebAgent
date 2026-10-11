@@ -35,7 +35,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AppProvider>
           <ChatProvider>
-            <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
+            <div className="min-h-screen bg-[#191919] transition-colors">
               <BrowserCompatibilityWarning />
               <div
                 id="offline-banner"

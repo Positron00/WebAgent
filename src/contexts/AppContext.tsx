@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { storage, AccessibilitySettings, ThemePreference } from '@/utils/storage';
+import { CHAT_ACCESSIBILITY_COLORS } from '@/config/chatTheme';
 
 // Define notification type
 export interface Notification {
@@ -37,10 +38,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     knowledgeFocus: 'general',
     citeSources: true,
     agentic: false,
-    responseTextColor: '#FFFFFF',
-    queryTextColor: '#FFFFFF',
-    responseBackgroundColor: '#111827',
-    queryBackgroundColor: '#1E3A8A'
+    ...CHAT_ACCESSIBILITY_COLORS,
   });
   const [isOffline, setIsOffline] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);

@@ -6,6 +6,7 @@ import { useApp } from '@/contexts/AppContext';
 import path from 'path';
 import { saveAs } from 'file-saver';
 import Image from 'next/image';
+import { CHAT_THEME } from '@/config/chatTheme';
 
 interface MessageInputProps {
   value: string;
@@ -376,10 +377,15 @@ export function MessageInput({
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Just ask..."
-          className={`w-full py-3 pr-48 bg-gray-950 border border-white/10 rounded-full outline-none text-white placeholder-gray-500 disabled:opacity-50 transition-all ${
-            imagePreviewUrl ? 'pl-14' : 'pl-3'
+          placeholder="Ask anything..."
+          className={`w-full py-3.5 pr-48 rounded-full border outline-none font-sans text-[15px] leading-normal antialiased disabled:opacity-50 transition-all placeholder:text-[#8e8e8e] ${
+            imagePreviewUrl ? 'pl-14' : 'pl-5'
           }`}
+          style={{
+            color: CHAT_THEME.textPrimary,
+            backgroundColor: CHAT_THEME.inputBackground,
+            borderColor: CHAT_THEME.borderSubtle,
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey && !disabled) {
               e.preventDefault();

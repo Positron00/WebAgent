@@ -4,7 +4,8 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from '@/types/chat';
 import { useApp } from '@/contexts/AppContext';
 import ReactMarkdown from 'react-markdown';
-import { InformationCircleIcon, NewspaperIcon, CodeBracketIcon, BeakerIcon } from '@heroicons/react/24/outline';
+import { InformationCircleIcon, BeakerIcon } from '@heroicons/react/24/outline';
+import { CHAT_THEME } from '@/config/chatTheme';
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -168,37 +169,61 @@ const formatArticleContent = (content: string): string => {
     .replace(/\n{3,}/g, '\n\n');
 };
 
+type ConversationTurn = {
+  user: ChatMessage;
+  assistant?: ChatMessage;
+};
+
+function groupMessagesIntoTurns(messages: ChatMessage[]): ConversationTurn[] {
+  const turns: ConversationTurn[] = [];
+  let pending: ConversationTurn | null = null;
+
+  for (const message of messages) {
+    if (message.role === 'user') {
+      if (pending) {
+        turns.push(pending);
+      }
+      pending = { user: message };
+      continue;
+    }
+    if (message.role === 'assistant') {
+      if (pending) {
+        pending.assistant = message;
+        turns.push(pending);
+        pending = null;
+      }
+    }
+  }
+
+  if (pending) {
+    turns.push(pending);
+  }
+
+  return turns;
+}
+
 export function MessageList({ messages, isLoading, error }: MessageListProps) {
   const { accessibility } = useApp();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const latestTurnRef = useRef<HTMLDivElement>(null);
+  const turns = groupMessagesIntoTurns(messages);
 
-  // Scroll to bottom of messages with respect to reduced motion preference
-  const scrollToBottom = useCallback(() => {
-    if (!messagesEndRef.current) return;
-    
-    if (accessibility.reducedMotion) {
-      messagesEndRef.current.scrollIntoView();
-    } else {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [accessibility.reducedMotion]);
-
+  // Keep the latest question visible at the top of the scroll area (Perplexity-style)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading, scrollToBottom]);
+    if (!latestTurnRef.current || turns.length === 0) return;
+    latestTurnRef.current.scrollIntoView({
+      block: 'start',
+      behavior: accessibility.reducedMotion ? 'auto' : 'smooth',
+    });
+  }, [turns.length, isLoading, accessibility.reducedMotion]);
 
   // Apply custom colors or high contrast theme if enabled
   const getMessageClassName = (role: string) => {
+    const sans =
+      'font-sans antialiased break-words max-w-3xl w-full mx-auto text-[15px] leading-[1.65]';
     if (role === 'user') {
-      const baseClass = 'py-2 px-4 rounded-lg break-words max-w-[95%] text-left mx-auto';
-      const colorClass = accessibility.highContrast
-        ? 'bg-blue-950 text-white'
-        : 'bg-blue-800 text-white';
-      return `${baseClass} ${colorClass}`;
-    } else {
-      // Special styling for assistant messages to make them look like articles
-      return 'py-6 px-8 rounded-lg break-words max-w-[95%] mx-auto font-serif text-left border-l-4 border-blue-500 article-content';
+      return `${sans} py-3.5 px-5 rounded-2xl text-center shrink-0`;
     }
+    return `font-sans antialiased break-words w-full max-w-none py-4 px-1 text-left chat-prose chat-answer text-[15px] leading-[1.65]`;
   };
 
   // Get styles for messages based on accessibility settings
@@ -206,16 +231,15 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
     // If high contrast is enabled, use those colors instead of custom colors
     if (accessibility.highContrast) {
       if (role === 'user') {
-        return { 
-          backgroundColor: '#0c1944', // Darker than bg-blue-950
-          color: '#FFFFFF'
-        };
-      } else {
-        return { 
-          backgroundColor: '#111827', // Darker than bg-gray-800
-          color: '#FFFFFF'
+        return {
+          backgroundColor: '#1a1a1a',
+          color: CHAT_THEME.textPrimary,
         };
       }
+      return {
+        backgroundColor: CHAT_THEME.pageBackground,
+        color: CHAT_THEME.textPrimary,
+      };
     }
     
     // Otherwise use custom colors
@@ -239,48 +263,49 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
     const articleContent = formatArticleContent(content);
     
     return (
-      <div className="article-container relative">
-        {/* Article header with icon */}
-        <div className="flex items-center mb-4 text-blue-400">
-          <NewspaperIcon className="w-5 h-5 mr-2" />
-        </div>
-        
-        {/* Article content with enhanced typography */}
-        <ReactMarkdown components={{
-          // Enhanced paragraph styling
-          p: ({node, ...props}: {node?: any; [key: string]: any}) => <p className="text-left mb-4 leading-relaxed text-base" {...props} />,
-          // Improved heading hierarchy with left-justification
-          h1: ({node, ...props}: {node?: any; [key: string]: any}) => <h1 className="text-left font-bold text-xl mb-6 mt-4 text-blue-300 border-b border-gray-700 pb-1" {...props} />,
-          h2: ({node, ...props}: {node?: any; [key: string]: any}) => <h2 className="text-left font-bold text-lg mb-5 mt-6 text-blue-400 border-b border-gray-700 pb-1" {...props} />,
-          h3: ({node, ...props}: {node?: any; [key: string]: any}) => <h3 className="text-left font-bold text-base mb-4 mt-5 text-blue-500" {...props} />,
-          h4: ({node, ...props}: {node?: any; [key: string]: any}) => <h4 className="text-left font-bold text-sm mb-3 mt-4 text-blue-600" {...props} />,
-          // Enhanced list styling
-          ul: ({node, ...props}: {node?: any; [key: string]: any}) => <ul className="text-left mb-4 ml-6 list-disc" {...props} />,
-          ol: ({node, ...props}: {node?: any; [key: string]: any}) => <ol className="text-left mb-4 ml-6 list-decimal" {...props} />,
-          li: ({node, ...props}: {node?: any; [key: string]: any}) => <li className="text-left mb-2 leading-relaxed text-base" {...props} />,
-          // Better blockquote styling
-          blockquote: ({node, ...props}: {node?: any; [key: string]: any}) => <blockquote className="text-left border-l-4 border-blue-500 pl-4 my-4 text-gray-300 bg-gray-700/30 py-2 pr-2 rounded-r" {...props} />,
-          // Enhanced emphasis
-          strong: ({node, ...props}: {node?: any; [key: string]: any}) => <strong className="text-left font-bold text-blue-200" {...props} />,
-          em: ({node, ...props}: {node?: any; [key: string]: any}) => <em className="text-left italic text-gray-300" {...props} />,
-          // Add proper table styling
-          table: ({node, ...props}: {node?: any; [key: string]: any}) => <table className="w-full mb-4 border-collapse border border-gray-700" {...props} />,
-          th: ({node, ...props}: {node?: any; [key: string]: any}) => <th className="text-left border border-gray-700 p-2 bg-gray-700" {...props} />,
-          td: ({node, ...props}: {node?: any; [key: string]: any}) => <td className="text-left border border-gray-700 p-2" {...props} />,
-          // Code formatting without inline prop
-          code: ({node, className, ...props}: {node?: any; className?: string; [key: string]: any}) => {
-            const isInline = !className || !className.includes('language-');
-            return isInline ? 
-              <code className="bg-gray-900 px-1 rounded text-blue-300 font-mono text-sm" {...props} /> : 
-              <code className="block bg-gray-900 p-3 rounded text-blue-300 font-mono text-sm my-4 overflow-x-auto" {...props} />;
-          }
-        }}>
+      <div className="relative">
+        <ReactMarkdown
+          components={{
+            p: ({ node, ...props }) => <p {...props} />,
+            h1: ({ node, ...props }) => <h1 {...props} />,
+            h2: ({ node, ...props }) => <h2 {...props} />,
+            h3: ({ node, ...props }) => <h3 {...props} />,
+            h4: ({ node, ...props }) => <h4 className="text-base font-semibold mb-3 mt-4" {...props} />,
+            ul: ({ node, ...props }) => <ul {...props} />,
+            ol: ({ node, ...props }) => <ol {...props} />,
+            li: ({ node, ...props }) => <li {...props} />,
+            blockquote: ({ node, ...props }) => (
+              <blockquote
+                className="border-l-2 border-white/20 pl-4 my-4 text-[#c9c9c9]"
+                {...props}
+              />
+            ),
+            strong: ({ node, ...props }) => <strong {...props} />,
+            em: ({ node, ...props }) => <em className="italic text-[#d4d4d4]" {...props} />,
+            table: ({ node, ...props }) => (
+              <table className="w-full mb-4 border-collapse border border-white/10" {...props} />
+            ),
+            th: ({ node, ...props }) => (
+              <th className="border border-white/10 p-2 bg-white/5 text-left" {...props} />
+            ),
+            td: ({ node, ...props }) => <td className="border border-white/10 p-2" {...props} />,
+            code: ({ node, className, ...props }) => {
+              const isInline = !className || !className.includes('language-');
+              return isInline ? (
+                <code {...props} />
+              ) : (
+                <code className={`block ${className}`} {...props} />
+              );
+            },
+          }}
+        >
           {articleContent}
         </ReactMarkdown>
-        
-        {/* Source badge - only show if hasSources AND citeSources is enabled */}
+
         {hasSources && accessibility.citeSources && (
-          <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center">
+          <div
+            className="absolute top-0 right-0 text-[#8e8e8e] text-xs px-2 py-1 rounded-full border border-white/10 flex items-center"
+          >
             <InformationCircleIcon className="w-3 h-3 mr-1" />
             <span>Cited Sources</span>
           </div>
@@ -312,89 +337,78 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
 
   return (
     <div className="w-full text-left mb-4">
-      <div 
-        className="w-full flex-1 min-h-[50vh] max-h-[70vh] bg-gray-900 text-white rounded-lg border border-gray-700 overflow-y-auto px-[2px] py-1 dark:bg-gray-900 dark:text-white dark:border-gray-700"
-        style={{ backgroundColor: '#111827', color: 'white', borderColor: 'rgba(55, 65, 81, 0.5)' }}
+      <div
+        className="w-full flex-1 min-h-[50vh] max-h-[70vh] rounded-xl border overflow-y-auto px-2 py-3 font-sans"
+        style={{
+          backgroundColor: CHAT_THEME.pageBackground,
+          color: CHAT_THEME.textPrimary,
+          borderColor: CHAT_THEME.borderSubtle,
+        }}
         role="log"
         aria-live="polite"
         aria-label="Chat Messages"
-        key={messages.length}
       >
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-start justify-center text-gray-300 p-8">
-            <span className="text-left">Start a conversation...</span>
-            <span className="text-left">Responses will appear here</span>
+          <div
+            className="h-full flex flex-col items-center justify-center p-8 text-[15px]"
+            style={{ color: CHAT_THEME.textMuted }}
+          >
+            <span>Start a conversation...</span>
+            <span>Responses will appear here</span>
           </div>
         ) : (
           <>
-            {/* Group messages into pairs */}
-            {Array.from({ length: Math.ceil(messages.length / 2) }, (_, index) => {
-              const userMessage = messages[index * 2];
-              const assistantMessage = messages[index * 2 + 1];
-              
-              // Add citation references to assistant messages that have sources
+            {turns.map((turn, index) => {
+              const { user: userMessage, assistant: assistantMessage } = turn;
+              const isLatestTurn = index === turns.length - 1;
+
               let processedContent = assistantMessage?.content;
-              const hasSources = !!(assistantMessage?.sources && assistantMessage.sources.length > 0);
-              if (hasSources && assistantMessage && assistantMessage.sources && accessibility.citeSources) {
+              const hasSources = !!(
+                assistantMessage?.sources && assistantMessage.sources.length > 0
+              );
+              if (
+                hasSources &&
+                assistantMessage &&
+                assistantMessage.sources &&
+                accessibility.citeSources
+              ) {
                 processedContent = addCitationReferences(
-                  assistantMessage.content, 
+                  assistantMessage.content,
                   assistantMessage.sources.length
                 );
               }
-              
+
               return (
-                <div key={index} className="mb-4 pb-4 border-b border-gray-700/50 last:border-b-0 last:mb-0 last:pb-0" 
-                  style={{ borderColor: 'rgba(55, 65, 81, 0.5)' }}>
-                  {/* User message */}
-                  <div className="mb-2">
+                <div
+                  key={userMessage.id}
+                  ref={isLatestTurn ? latestTurnRef : undefined}
+                  className="mb-8 pb-8 border-b last:border-b-0 last:mb-0 last:pb-0"
+                  style={{ borderColor: CHAT_THEME.borderSubtle }}
+                >
+                  <div className="mb-5 flex justify-center">
                     <div
                       className={getMessageClassName('user')}
                       role="note"
                       aria-label="user's message"
                       style={getMessageStyles('user')}
                     >
-                      <div className="text-left">
-                      <ReactMarkdown components={{
-                        // Left-justified paragraph styling
-                        p: ({node, ...props}: {node?: any; [key: string]: any}) => <p className="text-left mb-4 leading-relaxed text-base" {...props} />,
-                        // Left-justified heading hierarchy with clear separation
-                        h1: ({node, ...props}: {node?: any; [key: string]: any}) => <h1 className="text-left font-bold text-xl mb-6 mt-4 border-b border-gray-700 pb-1" {...props} />,
-                        h2: ({node, ...props}: {node?: any; [key: string]: any}) => <h2 className="text-left font-bold text-lg mb-5 mt-6 border-b border-gray-700 pb-1" {...props} />,
-                        h3: ({node, ...props}: {node?: any; [key: string]: any}) => <h3 className="text-left font-bold text-base mb-4 mt-5" {...props} />,
-                        h4: ({node, ...props}: {node?: any; [key: string]: any}) => <h4 className="text-left font-bold text-sm mb-3 mt-4" {...props} />,
-                        // Enhanced list styling
-                        ul: ({node, ...props}: {node?: any; [key: string]: any}) => <ul className="text-left mb-4 ml-6 list-disc" {...props} />,
-                        ol: ({node, ...props}: {node?: any; [key: string]: any}) => <ol className="text-left mb-4 ml-6 list-decimal" {...props} />,
-                        li: ({node, ...props}: {node?: any; [key: string]: any}) => <li className="text-left mb-2 text-base" {...props} />,
-                        // Better section separation with blockquotes
-                        blockquote: ({node, ...props}: {node?: any; [key: string]: any}) => <blockquote className="text-left border-l-4 border-gray-500 pl-4 my-4 py-1 pr-2 rounded-r" {...props} />,
-                        // Code formatting
-                        code: ({node, className, ...props}: {node?: any; className?: string; [key: string]: any}) => {
-                          const isInline = !className || !className.includes('language-');
-                          return isInline ? 
-                            <code className="bg-gray-800 px-1 rounded font-mono text-sm" {...props} /> : 
-                            <code className="block bg-gray-800 p-3 rounded font-mono text-sm my-4 overflow-x-auto" {...props} />;
-                        }
-                      }}>
-                        {userMessage.content}
-                      </ReactMarkdown>
+                      <div className="chat-prose chat-question text-center [&_p]:text-center [&_p]:mb-0">
+                        <ReactMarkdown>{userMessage.content}</ReactMarkdown>
                       </div>
                     </div>
                   </div>
-                  {/* Assistant message as article */}
+
                   {assistantMessage && (
-                    <div>
-                      <div className="relative">
-                        <div
-                          className={getMessageClassName('assistant')}
-                          role="article"
-                          aria-label="assistant's article response"
-                          style={getMessageStyles('assistant')}
-                        >
-                          {processedContent && renderArticleContent(processedContent, hasSources)}
-                          {/* Render workflow logs if available and agentic mode is on */}
-                          {renderWorkflowLogs(assistantMessage.logs)}
-                        </div>
+                    <div className="relative w-full text-left">
+                      <div
+                        className={getMessageClassName('assistant')}
+                        role="article"
+                        aria-label="assistant's response"
+                        style={getMessageStyles('assistant')}
+                      >
+                        {processedContent &&
+                          renderArticleContent(processedContent, hasSources)}
+                        {renderWorkflowLogs(assistantMessage.logs)}
                       </div>
                     </div>
                   )}
@@ -405,7 +419,7 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
         )}
         {isLoading && (
           <div 
-            className="flex items-center justify-start text-gray-300 space-x-2 ml-8 mt-4"
+            className="flex items-center justify-start space-x-2 ml-8 mt-4 text-[#8e8e8e] text-[15px]"
             role="status"
             aria-label="Loading response"
           >
@@ -483,7 +497,6 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
             </button>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
     </div>
   );
