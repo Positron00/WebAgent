@@ -298,7 +298,7 @@ Follow these steps to set up and run the WebAgent platform:
 
 ### Deploying
 
-- **Docker / Docker Compose**: see [backend/README.md](backend/README.md#running-with-docker) and [backend/LOCAL_DEVELOPMENT.md](backend/LOCAL_DEVELOPMENT.md). The image runs as `prod`; Compose needs `GRAFANA_ADMIN_PASSWORD` in `backend/.env`.
+- **Docker / Docker Compose**: see [backend/README.md](backend/README.md#running-with-docker) and [backend/LOCAL_DEVELOPMENT.md](backend/LOCAL_DEVELOPMENT.md). The image runs as `prod`. For the local stack (backend, Prometheus, Grafana), add `GRAFANA_ADMIN_PASSWORD` to `.env.local` and run `npm run stack:up`.
 - **Kubernetes**: see [backend/kubernetes/README.md](backend/kubernetes/README.md). `deploy.sh` requires `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD`.
 - **Vercel** (web app only): see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Agentic mode needs `WEBAGENT_BACKEND_URL` pointing at a running backend.
 

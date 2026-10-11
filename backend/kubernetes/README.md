@@ -26,6 +26,8 @@ export OPENAI_API_KEY="your-openai-api-key"
 export WEBAGENT_SECURITY_SECRET_KEY="$(openssl rand -hex 48)"
 export WEBAGENT_API_KEY="key-the-web-app-sends-as-X-API-Key"
 export GRAFANA_ADMIN_PASSWORD="choose-a-strong-password"
+# Or load them from the repo-root .env.local, where they already are:
+#   set -a; . ../../.env.local; set +a
 
 # Optional environment variables
 export TOGETHER_API_KEY="your-together-api-key"

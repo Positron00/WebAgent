@@ -13,7 +13,7 @@ Before exposing the backend:
 5. **Check health and metrics.** `GET /health` (no key) for probes; Prometheus scrapes `GET /metrics`.
 6. **Watch run times.** A typical agentic task takes 2.5–3.5 minutes, and the web app waits up to 8. If runs approach that, open the task's LangSmith trace: a model call whose completion tokens equal its `max_tokens` is running away, and the log will say "stopped at the max_tokens limit".
 7. **Rate limits.** 60 requests per minute per caller by default (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS`). If the backend sits behind a proxy other than the bundled Next.js app, list it in `WEBAGENT_TRUSTED_PROXIES` so limits apply per end user.
-8. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD`; no password is stored in the repo. Change any password that was used with the old committed default.
+8. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD` (in `.env.local` for Docker Compose, in the environment for `deploy.sh`); no password is stored in the repo. Change any password that was used with the old committed default.
 
 ## Version 2.4.0 Enhancements
 

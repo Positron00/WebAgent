@@ -1,6 +1,9 @@
 # Local stack: backend + Prometheus + Grafana.
-# Set secrets in backend/.env (read by docker compose, never committed):
-#   WEBAGENT_SECURITY_SECRET_KEY, WEBAGENT_API_KEY, GRAFANA_ADMIN_PASSWORD, provider API keys.
+# Secrets come from the repo-root .env.local (git-ignored), the same file the app reads.
+# Run from the repo root with:
+#   npm run stack:up        (docker compose -f backend/docker-compose.yml --env-file .env.local up --build)
+# Needed in .env.local: GRAFANA_ADMIN_PASSWORD and the provider API keys;
+# WEBAGENT_SECURITY_SECRET_KEY and WEBAGENT_API_KEY too if WEBAGENT_ENV is uat or prod.
 
 services:
   webagent-backend:
@@ -62,13 +65,14 @@ services:
     container_name: grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      # Host port 3001 by default: the Next.js dev server (and often a local Grafana) use 3000.
+      - "${GRAFANA_HOST_PORT:-3001}:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in backend/.env}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env.local and start with npm run stack:up}
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     networks:
       - webagent-network

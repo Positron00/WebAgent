@@ -64,32 +64,33 @@ python -m backend.main
 
 ### Option 2: Running with Docker Compose
 
-1. Create `backend/.env` (git-ignored; Docker Compose reads it) with at least:
+1. Add a Grafana admin password to `.env.local` in the repo root, next to your API keys. Compose reads all its secrets from that file:
 
 ```bash
-GRAFANA_ADMIN_PASSWORD=choose-a-password
-TOGETHER_API_KEY=your_together_api_key
-TAVILY_API_KEY=your_tavily_api_key
+GRAFANA_ADMIN_PASSWORD=choose-a-password   # e.g. from: openssl rand -base64 24
 ```
 
-Compose stops with "required variable GRAFANA_ADMIN_PASSWORD is missing" if the password isn't set. The backend runs as `dev` unless you also set `WEBAGENT_ENV=uat` or `prod` there (those need `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY` as well).
+Put it on its own line. If you append it from the shell, start with a newline (`printf '\nGRAFANA_ADMIN_PASSWORD=...\n' >> .env.local`), since the file may not end with one. Compose stops with "required variable GRAFANA_ADMIN_PASSWORD is missing" if the password isn't set. The backend uses the `WEBAGENT_ENV` from `.env.local` (normally `dev`); `uat` and `prod` also need `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY`.
 
-2. Start the application from the `backend/` folder:
+2. Start the stack from the repo root:
 
 ```bash
-docker compose up --build
+npm run stack:up     # docker compose -f backend/docker-compose.yml --env-file .env.local up --build
+npm run stack:down   # stop it
 ```
+
+`stack:up` also tags the backend image with the version from `package.json`.
 
 This will start:
 - WebAgent backend on port 8000
 - Prometheus on port 9090
-- Grafana on port 3000
+- Grafana on port 3001 (set `GRAFANA_HOST_PORT` in `.env.local` to change it)
 
 3. Access the services:
    - WebAgent API: http://localhost:8000 (health check: http://localhost:8000/health)
    - API Documentation: http://localhost:8000/api/v1/docs
    - Prometheus: http://localhost:9090
-   - Grafana: http://localhost:3000 (login with `admin` and the `GRAFANA_ADMIN_PASSWORD` from `backend/.env`)
+   - Grafana: http://localhost:3001 (login with `admin` and the `GRAFANA_ADMIN_PASSWORD` from `.env.local`)
 
 ## Development Workflow
 
@@ -147,20 +148,20 @@ Under `agents:` in each YAML file, every agent can set its `model` and an output
    - Check the logs for authentication errors
 
 2. **Docker Issues**:
-   - Run `docker compose down -v` to clean up volumes and containers
-   - Rebuild with `docker compose build --no-cache`
+   - Run `npm run stack:down` (add `-- -v` to also remove volumes) to clean up
+   - Rebuild with `docker compose -f backend/docker-compose.yml --env-file .env.local build --no-cache`
    - Container marked unhealthy: the health check calls `GET /health`; check `docker compose logs webagent-backend` for a startup error (in uat/prod, missing `WEBAGENT_SECURITY_SECRET_KEY` or `WEBAGENT_API_KEY` stops startup)
 
 3. **Port Conflicts**:
    - If ports are already in use, modify the port mappings in `docker-compose.yml`
-   - Grafana and the Next.js web app both default to port 3000. Change Grafana's mapping (for example `"3001:3000"`) if you run both
+   - The stack's Grafana uses host port 3001, so it doesn't clash with the Next.js dev server or a locally installed Grafana on 3000. Set `GRAFANA_HOST_PORT` in `.env.local` to use another port
 
 ### Logs
 
 - When running with Python, logs go to the console and to `backend/logs/webagent-dev.log`
 - Lines written during a task are tagged `[task <id>]`, so you can `grep` one task's lines
 - Finished task reports are saved in `backend/data/results/<task_id>.json`
-- When running with Docker, view logs with `docker compose logs -f webagent-backend`; log files are in `backend/logs/` (mounted at `/app/logs`) and task results in the `webagent-data` volume
+- When running with Docker, view logs with `docker compose -f backend/docker-compose.yml logs -f webagent-backend`; log files are in `backend/logs/` (mounted at `/app/logs`) and task results in the `webagent-data` volume
 
 ## Contributing
 

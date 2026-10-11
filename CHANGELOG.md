@@ -7,12 +7,16 @@ All notable changes to the WebAgent Platform will be documented in this file.
 ### Added
 - Per-agent output limit: `max_tokens` under an agent in `config/{env}.yaml` lowers that agent's limit; web research uses 4,096 in every environment
 - A warning in the logs whenever a Together reply stops at the `max_tokens` limit, since the text is then cut off
+- `npm run stack:up` / `npm run stack:down` start and stop the local Docker Compose stack (backend, Prometheus, Grafana) from the repo root, tagging the backend image with the `package.json` version
+- `GRAFANA_ADMIN_PASSWORD`, `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` in `.env.local.example`
 - Tests that fail if the web research prompt reaches the model with unfilled placeholders or without its `ANALYSIS:` cue, plus tests for the reasoning cleanup, per-agent limits, zip-only NLTK data, the cut-off warning and repeated MLflow logging
 
 ### Changed
 - Web research sends one filled-in prompt that tells the model to use only the search results and ends with `ANALYSIS:`; any reasoning a model writes before its answer is dropped
 - The Docker image sets `MLFLOW_TRACKING_URI=file:///app/data/mlruns` (the root filesystem is read-only) and `GIT_PYTHON_REFRESH=quiet` (the image has no `git`)
 - Each `log_to_mlflow` call gets its own run, nested under any active run
+- Docker Compose reads the Grafana admin password and the backend's API keys from the repo-root `.env.local` (`--env-file .env.local`) instead of a separate `backend/.env`, so all secrets live in one file
+- The Compose stack's Grafana listens on host port 3001 (`GRAFANA_HOST_PORT`), so it no longer collides with the Next.js dev server or a local Grafana on 3000
 - Docs updated: backend README troubleshooting, testing guide, triage report
 
 ### Fixed
