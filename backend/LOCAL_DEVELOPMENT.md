@@ -136,6 +136,8 @@ The application is configured using YAML files in the `config` directory:
 
 The configuration file is selected by the `WEBAGENT_ENV` environment variable (`dev`, `uat` or `prod`; default `dev`). `.env.local` sets it to `dev`, but a value set in your shell wins, so `WEBAGENT_ENV=prod python -m backend.main` runs with production settings. API keys and secrets go in `.env.local` in the repo root, never in the YAML files.
 
+Under `agents:` in each YAML file, every agent can set its `model` and an output limit, `max_tokens`. That limit lowers the shared `llm.max_tokens` for that agent only; web research uses 4,096. If the log says a Together reply "stopped at the max_tokens limit", raise that agent's limit.
+
 ## Troubleshooting
 
 ### Common Issues

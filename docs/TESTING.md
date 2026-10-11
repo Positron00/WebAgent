@@ -111,6 +111,9 @@ Layout (`backend/tests/`):
 | `test_deploy_config.py` | `WEBAGENT_ENV` from the shell wins over `.env.local`; paths and version inside the image |
 | `test_followup_query.py` | Follow-up questions are searched as the supervisor's standalone rewrite |
 | `test_web_search_async.py` | Every Tavily call, including the retry, runs off the event loop |
+| `test_web_research_prompt.py` | The web research prompt has no unfilled placeholders and ends with `ANALYSIS:`; reasoning before the answer is dropped; per-agent output limits |
+| `test_startup_checks.py` | uat/prod refuse to start with unsafe settings; the command-line check the Docker image runs exits with a message |
+| `test_mlflow_logging.py` | Repeated MLflow logging inside an active run doesn't fail |
 | `unit/`, `integration/`, `diagnostics/` | Routing, security, API and diagnostics tests |
 
 `backend/tests/conftest.py`:

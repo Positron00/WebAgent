@@ -2,7 +2,7 @@
 
 This document summarizes the improvements made to the WebAgent backend to make it production-ready.
 
-## Production checklist (3.0.2)
+## Production checklist (3.0.3)
 
 Before exposing the backend:
 
@@ -11,8 +11,9 @@ Before exposing the backend:
 3. **Leave code execution off**, or run it in the container sandbox: `WEBAGENT_ENABLE_CODE_EXECUTION=true` requires `WEBAGENT_CODE_SANDBOX=docker` and the `backend/sandbox` image in uat/prod, or the server won't start.
 4. **Keep `/app/data` on persistent storage.** Task status and results live there and are shared by the server's workers. Run one replica unless that folder is on a shared volume.
 5. **Check health and metrics.** `GET /health` (no key) for probes; Prometheus scrapes `GET /metrics`.
-6. **Rate limits.** 60 requests per minute per caller by default (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS`). If the backend sits behind a proxy other than the bundled Next.js app, list it in `WEBAGENT_TRUSTED_PROXIES` so limits apply per end user.
-7. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD`; no password is stored in the repo. Change any password that was used with the old committed default.
+6. **Watch run times.** A typical agentic task takes 2.5–3.5 minutes, and the web app waits up to 8. If runs approach that, open the task's LangSmith trace: a model call whose completion tokens equal its `max_tokens` is running away, and the log will say "stopped at the max_tokens limit".
+7. **Rate limits.** 60 requests per minute per caller by default (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS`). If the backend sits behind a proxy other than the bundled Next.js app, list it in `WEBAGENT_TRUSTED_PROXIES` so limits apply per end user.
+8. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD`; no password is stored in the repo. Change any password that was used with the old committed default.
 
 ## Version 2.4.0 Enhancements
 

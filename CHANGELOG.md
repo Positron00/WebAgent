@@ -2,6 +2,24 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.0.3 - 2026-10-10
+
+### Added
+- Per-agent output limit: `max_tokens` under an agent in `config/{env}.yaml` lowers that agent's limit; web research uses 4,096 in every environment
+- A warning in the logs whenever a Together reply stops at the `max_tokens` limit, since the text is then cut off
+- Tests that fail if the web research prompt reaches the model with unfilled placeholders or without its `ANALYSIS:` cue, plus tests for the reasoning cleanup, per-agent limits, zip-only NLTK data, the cut-off warning and repeated MLflow logging
+
+### Changed
+- Web research sends one filled-in prompt that tells the model to use only the search results and ends with `ANALYSIS:`; any reasoning a model writes before its answer is dropped
+- The Docker image sets `MLFLOW_TRACKING_URI=file:///app/data/mlruns` (the root filesystem is read-only) and `GIT_PYTHON_REFRESH=quiet` (the image has no `git`)
+- Each `log_to_mlflow` call gets its own run, nested under any active run
+- Docs updated: backend README troubleshooting, testing guide, triage report
+
+### Fixed
+- Web research took about 3 minutes per round and could invent sources: it sent its prompt with unfilled `{query}`/`{search_results}` placeholders and ended on raw search results, so the model kept writing until the 16,384-token prod limit. The prompt is now filled in and ends with `ANALYSIS:`, reasoning the model writes before its answer is dropped, and web research is capped at 4,096 output tokens. A real run of the same question went from 479 s to 153–208 s, with research calls taking 18–28 s instead of 175 s
+- MLflow logging failed in the container: it wrote to the read-only `/app/mlruns` (now `/app/data/mlruns`), and inside an active run a second call failed with "Changing param values is not allowed" (each call now gets a nested run)
+- The NLTK check reported `wordnet` as missing when it was installed as a zip
+
 ## 3.0.2 - 2026-10-10
 
 ### Added

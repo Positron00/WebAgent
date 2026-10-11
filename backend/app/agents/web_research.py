@@ -19,36 +19,33 @@ from app.agents.base_agent import BaseAgent
 from app.core.config import settings
 logger = logging.getLogger(__name__)
 
-# Prompt for the Web Research Agent
-WEB_RESEARCH_PROMPT = """You are a Web Research Agent specializing in finding information online.
+# Prompt for the Web Research Agent. Filled with str.format() and sent as one completion
+# prompt; it ends with "ANALYSIS:" so the model writes the answer there and stops.
+WEB_RESEARCH_PROMPT = """You are a Web Research Agent. Answer the research question using only the search results below.
 
-USER QUERY: {query}
-RESEARCH PLAN: {research_plan}
+RESEARCH QUESTION: {query}
 
-You have been provided with the following search results:
+RESEARCH PLAN:
+{research_plan}
+
+SEARCH RESULTS (numbered; cite them as [1], [2], ... using these numbers):
 {search_results}
-
 {feedback_section}
+Instructions:
+1. Write ONE comprehensive analysis in markdown that directly answers the research question.
+2. Use only facts found in the search results above. Do not invent sources, URLs, names, dates or numbers.
+3. Cite sources inline with their numbers in square brackets, e.g. [1] or [2][3].
+4. Use clear headings and bullet points. Do not repeat information.
+5. If additional research was requested, answer those questions first.
+6. Do not show your reasoning, plans or notes, and do not list the sources at the end; they are added automatically.
 
-Your task:
-1. Create a SINGLE, comprehensive analysis that directly answers the query
-2. Cite sources inline with numbers in square brackets [1], [2], etc.
-3. Only include information that is directly related to the query
-4. Use clear headings and bullet points where appropriate
-5. Format your findings as markdown
-6. If additional research was requested, address the specific questions and missing information
+Write the analysis now and stop when it is complete.
 
-IMPORTANT GUIDELINES:
-- DO NOT show your step-by-step thinking or planning process
-- DO NOT repeat the same information multiple times
-- DO NOT include phrases like "The final answer is:" or "Step X:"
-- Create a single, unified summary rather than separate sections
-- Be thorough, accurate, and objective
-- Cite all sources within your analysis with [1], [2] notation
-- Deduplicate information from multiple sources
-
-The sources will be automatically appended after your analysis with full details.
+ANALYSIS:
 """
+
+# Text some models put between their reasoning and the actual answer.
+REASONING_END_MARKERS = ("assistant to=user", "<|channel|>final<|message|>", "assistantfinal")
 
 # Prompt for follow-up research
 FOLLOWUP_RESEARCH_PROMPT = """
@@ -227,26 +224,18 @@ class WebResearchAgent(BaseAgent):
         formatted_results = self._format_search_results(search_results)
         
         # Prepare the prompt with the research plan and results
-        messages = [
-            {"role": "system", "content": self.prompt},
-            {"role": "user", "content": f"""
-# Research Question
-{query}
-
-# Research Plan
-{chr(10).join(f"- {q}" for q in research_plan.get("questions", [])) or "No specific research plan provided."}
-
-# Web Search Results
-{formatted_results}
-
-{self._format_feedback(state.context.get("research_feedback", {}), iteration)}
-"""}
-        ]
+        prompt_text = self.prompt.format(
+            query=query,
+            research_plan="\n".join(f"- {q}" for q in research_plan.get("questions", []))
+            or "No specific research plan provided.",
+            search_results=formatted_results,
+            feedback_section=self._format_feedback(state.context.get("research_feedback", {}), iteration),
+        )
         
         # Call the language model to analyze the results
         try:
             # Call the LLM directly
-            response = await self.llm.ainvoke(messages)
+            response = await self.llm.ainvoke(prompt_text)
             assistant_message = (
                 response if isinstance(response, str) else getattr(response, "content", "")
             )
@@ -339,6 +328,11 @@ class WebResearchAgent(BaseAgent):
 
     def _clean_analysis(self, analysis: str) -> str:
         """Clean up the analysis to remove thinking steps and repetitions."""
+        # Some models write their reasoning first and then the answer after a channel marker
+        # (seen with Together models: "...Let's craft final answer. assistant to=user**Title**").
+        for marker in REASONING_END_MARKERS:
+            if marker in analysis:
+                analysis = analysis.rsplit(marker, 1)[1]
         # Remove lines that indicate step-by-step thinking
         lines = analysis.split('\n')
         cleaned_lines = []

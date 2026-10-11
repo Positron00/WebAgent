@@ -17,6 +17,18 @@ NLTK_RESOURCES: Dict[str, str] = {
 }
 
 
+def _is_installed(resource_path: str) -> bool:
+    # The downloader leaves some corpora (e.g. wordnet) as a .zip only; NLTK loads those
+    # directly, but find("corpora/wordnet") doesn't see them.
+    for candidate in (resource_path, f"{resource_path}.zip"):
+        try:
+            nltk.data.find(candidate)
+            return True
+        except LookupError:
+            continue
+    return False
+
+
 def ensure_nltk_data(*names: str) -> bool:
     """Return True if every named resource is installed.
 
@@ -27,11 +39,8 @@ def ensure_nltk_data(*names: str) -> bool:
     auto_download = os.getenv("WEBAGENT_NLTK_AUTO_DOWNLOAD", "true").lower() == "true"
     all_present = True
     for name in names:
-        try:
-            nltk.data.find(NLTK_RESOURCES.get(name, name))
+        if _is_installed(NLTK_RESOURCES.get(name, name)):
             continue
-        except LookupError:
-            pass
         if auto_download:
             try:
                 logger.info(f"Downloading NLTK resource '{name}'")

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Local copy of https://claude.ai/artifact/BZaY5wry3z8SZYpRhHxTJD (version 6) -->
+<!-- Local copy of https://claude.ai/artifact/BZaY5wry3z8SZYpRhHxTJD (version 8) -->
 <style>body{margin:0}</style>
 <title>WebAgent Triage Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -195,7 +195,7 @@ td:first-child { font-family: var(--font-mono); color: var(--accent); white-spac
     <span>App version <b>2.9.10</b></span>
     <span>Scanned <b>10 Oct 2026</b></span>
     <span>Runtime <b>conda env “agents”</b></span>
-    <span>Re-checked at <b>3.0.1</b> (1622959) — <a href="#s301">status</a>, <a href="#fu">follow-up fixes (3.0.2)</a></span>
+    <span>Re-checked at <b>3.0.1</b> (1622959) — <a href="#s301">status</a>, <a href="#fu">follow-up fixes (3.0.2, 3.0.3)</a></span>
   </div>
   <p class="lede">Each agent works when the demos call it on its own. The main LangGraph pipeline, the one the API and the web app use, cannot finish a single run. Five problems stop it before any agent does real work. One of them means the API never starts the workflow at all. Fixing those will expose ten more in how the agents pass results to each other and to the user.</p>
 </header>
@@ -1020,7 +1020,14 @@ git log --all -p | grep -E "^\+.*(sk-…|tvly-…|TOGETHER_API_KEY=…)"</code><
       <li><code>/api/task</code> returns 401 with no key, a wrong key, or a dev key.</li>
       <li>All 20 polls of one task gave the same status across both workers, and the result file was saved.</li>
     </ul>
-    <p>The sandbox ran real generated code that drew a plot. It had no network access, saw no host API keys, couldn’t write to its code folder, and ran as a non-root user. Not yet done: a full agentic run inside the container with real LLM and Tavily keys.</p>
+    <p>The sandbox ran real generated code that drew a plot. It had no network access, saw no host API keys, couldn’t write to its code folder, and ran as a non-root user.</p>
+    <p><b>Real agentic runs in the container</b> (prod, real Together and Tavily keys, the same question each time):</p>
+    <ul style="margin:0; padding-left:1.2em; display:grid; gap:4px">
+      <li><b>First run: 479 s.</b> The web app gives up after 480 s. LangSmith showed both web-research calls stopping at exactly 16,384 tokens (about 175 s each). The prompt went out with unfilled <code>{query}</code> and <code>{search_results}</code> placeholders and ended on raw search results, so the model kept writing: it invented a “SOURCE 6”, reasoned aloud, then answered.</li>
+      <li><b>The fix (release 3.0.3):</b> the prompt is filled in and ends with <code>ANALYSIS:</code>, any reasoning before the answer is dropped, web research is capped at 4,096 tokens, and a reply cut off at the limit is now logged.</li>
+      <li><b>Final runs: 153–208 s</b> with two or three research rounds. Research calls take 18–28 s and produce 1,600–2,600 tokens. The reports contain no invented source text and no reasoning.</li>
+      <li><b>Also fixed in 3.0.3:</b> MLflow wrote to the read-only <code>/app/mlruns</code>, and repeated logging inside an active run failed. The NLTK check falsely reported <code>wordnet</code> missing.</li>
+    </ul>
   </div>
 </section>
 

@@ -353,6 +353,8 @@ Key environment variables used by the application:
 5. **Server runs as dev though you set prod**: check `echo $WEBAGENT_ENV`. A value in the shell or container wins over `.env.local`; with `docker run --env-file`, add `-e WEBAGENT_ENV=prod` after it
 6. **"Code execution in uat/prod requires the container sandbox"**: either leave `WEBAGENT_ENABLE_CODE_EXECUTION` off, or set `WEBAGENT_CODE_SANDBOX=docker` and build the sandbox image (see Generated code below)
 7. **A task shows "Task was interrupted before it finished"**: the worker running it stopped (restart or crash) and the task was still processing after `WEBAGENT_TASK_TIMEOUT_MINUTES` (30). Run it again
+8. **Log says "Together reply … stopped at the max_tokens limit"**: that agent's answer was cut off. Raise `max_tokens` for the agent in `config/{env}.yaml` (for example `agents.web_research.max_tokens`); without an agent setting, `llm.max_tokens` applies
+9. **Agentic runs are slow**: open the task's LangSmith trace and compare each model call's completion tokens with its limit. A call that always ends exactly at the limit is running away; check that agent's prompt
 
 ### Diagnostic Checks
 

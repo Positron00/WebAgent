@@ -602,12 +602,28 @@ def _model_for_provider(provider: str, model_name: Optional[str]) -> Optional[st
     return model_name if belongs else None
 
 
+def apply_max_tokens(llm, limit: Optional[int]):
+    """Lower the model's output limit to ``limit`` (never raises it). Returns the same object."""
+    if not limit:
+        return llm
+    # TogetherWrapper keeps the real client in .llm; chat models carry max_tokens themselves.
+    for target in (llm, getattr(llm, "llm", None)):
+        current = getattr(target, "max_tokens", None) if target is not None else None
+        if isinstance(current, int) and current > limit:
+            try:
+                setattr(target, "max_tokens", limit)
+            except (AttributeError, ValueError, TypeError):
+                logger.warning(f"Could not set max_tokens={limit} on {type(target).__name__}")
+    return llm
+
+
 def get_agent_llm(agent_name: str):
     """Return an LLM configured for a named agent from YAML ``agents:`` config."""
     agents_config = get_agents_config()
     agent_cfg = getattr(agents_config, agent_name, None)
     model = getattr(agent_cfg, "model", None) if agent_cfg else None
-    return get_llm(model)
+    limit = getattr(agent_cfg, "max_tokens", None) if agent_cfg else None
+    return apply_max_tokens(get_llm(model), limit)
 
 
 @log_llm_request(provider="groq")

@@ -30,6 +30,17 @@ def _check_status(status: int, body: str) -> None:
         raise Exception(f"Together returned an unexpected response with status {status}: {body}")
 
 
+def _warn_if_cut_off(data: Dict[str, Any], model: str, max_tokens: Any) -> None:
+    """A reply that stopped at the token limit is incomplete; say so instead of failing silently."""
+    for choice in data.get("choices") or []:
+        if choice.get("finish_reason") == "length":
+            logger.warning(
+                f"Together reply from {model} stopped at the max_tokens limit ({max_tokens}); "
+                "the text is cut off. Raise max_tokens for this agent if this happens often."
+            )
+            return
+
+
 def _add_usage(total: Dict[str, int], data: Dict[str, Any]) -> None:
     usage = data.get("usage") or {}
     for key in USAGE_KEYS:
@@ -72,6 +83,7 @@ class TogetherWithUsage(Together):
             )
             _check_status(response.status_code, response.text)
             data = response.json()
+            _warn_if_cut_off(data, self.model, self.max_tokens)
             texts.append(self._format_output(data))
             _add_usage(usage, data)
         return self._result(texts, usage)
@@ -90,6 +102,7 @@ class TogetherWithUsage(Together):
                 async with session.post(self.base_url, json=payload, headers=headers) as response:
                     _check_status(response.status, await response.text())
                     data = await response.json()
+                _warn_if_cut_off(data, self.model, self.max_tokens)
                 texts.append(self._format_output(data))
                 _add_usage(usage, data)
         return self._result(texts, usage)

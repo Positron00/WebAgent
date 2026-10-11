@@ -33,6 +33,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     WEBAGENT_NLTK_AUTO_DOWNLOAD=false \
     NLTK_DATA=/usr/local/share/nltk_data \
     HF_HOME=/app/data/hf-cache \
+    MLFLOW_TRACKING_URI=file:///app/data/mlruns \
+    GIT_PYTHON_REFRESH=quiet \
     WEB_CONCURRENCY=4
 
 # Create non-root user

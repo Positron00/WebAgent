@@ -10,7 +10,7 @@ WebAgent is a sophisticated AI system built as a microservice architecture that 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WebAgent Platform v3.0.2                          │
+│                           WebAgent Platform v3.0.3                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌────────────────┐                         ┌─────────────────────────────┐ │
@@ -280,6 +280,7 @@ The system includes comprehensive error handling and resilience features:
   - Provider switching on failure
   - Retry mechanisms with backoff
   - Model parameter adjustment
+  - Per-agent output limits (`agents.<name>.max_tokens`), with a logged warning when a reply is cut off at its limit
 
 - **Request Validation**:
   - Comprehensive input validation

@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.0.2-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.0.3-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2026--10--10-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent platform for web research and document processing.
@@ -61,6 +61,7 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   - Finished task reports saved to `backend/data/results/`
 
 - **Reliability**: Temporary Together AI errors (rate limits, 5xx) are retried, and the server keeps answering while tasks run
+  - Each agent's model output can be capped in its YAML settings, and a reply cut off at its limit is logged; a typical agentic run takes about 2.5–3.5 minutes
   - Task status is shared between server workers, so polls work with several workers
   - Follow-up questions ("what about Europe?") are researched as a complete question using the conversation so far
 
@@ -264,7 +265,7 @@ Follow these steps to set up and run the WebAgent platform:
    # Edit .env.local: set TOGETHER_API_KEY and TAVILY_API_KEY at minimum
    ```
    `.env.local` is git-ignored and is read by both the backend and the web app. The template lists every setting with its default.
-   Environment-specific settings (agents, models, limits) live in `backend/config/{dev,uat,prod}.yaml`, chosen by `WEBAGENT_ENV`.
+   Environment-specific settings (agents, models, limits) live in `backend/config/{dev,uat,prod}.yaml`, chosen by `WEBAGENT_ENV`. Each agent under `agents:` can set its own `model` and output limit (`max_tokens`).
 
 ### Running the Application
 
@@ -400,6 +401,10 @@ WebAgent includes comprehensive testing and diagnostic tools.
 
 8. **A backend test fails with "Test tried to open a network connection"**
    - The test reached a real service (LLM, Tavily, LangSmith, Hugging Face, NLTK). Fake it instead; see [docs/TESTING.md](docs/TESTING.md)
+
+9. **Agentic runs are slow, or the web app gives up after 8 minutes**
+   - A typical run takes 2.5–3.5 minutes. Open the task's LangSmith trace and compare each model call's completion tokens with its limit: a call that stops exactly at the limit is running away, and the backend log says "stopped at the max_tokens limit"
+   - Lower or raise that agent's `max_tokens` under `agents:` in `backend/config/{env}.yaml`, and check that agent's prompt
 
 ## License
 
