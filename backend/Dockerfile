@@ -70,4 +70,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)" || exit 1
 
 # Task status is shared between workers through /app/data/results, so several workers are safe.
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY}"]
+# The startup checks run once first, so bad uat/prod settings stop the container with a clear
+# message instead of uvicorn restarting failed workers forever.
+CMD ["sh", "-c", "python -m app.core.startup_checks && exec uvicorn main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY}"]

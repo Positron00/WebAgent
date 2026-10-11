@@ -60,6 +60,7 @@ def docker_command(script_path: str) -> List[str]:
         "--tmpfs", "/tmp",
         "--security-opt", "no-new-privileges",
         "-e", "MPLBACKEND=Agg",
+        "-e", "MPLCONFIGDIR=/tmp/matplotlib",  # the home folder is read-only
         "-v", f"{script.parent}:/code:ro",
         "-w", "/tmp",
         image,

@@ -154,7 +154,7 @@ docker run -p 8000:8000 --env-file ../.env.local -e WEBAGENT_ENV=prod \
   -v webagent-data:/app/data webagent/backend
 ```
 
-- The image sets `WEBAGENT_ENV=prod`. `.env.local` sets `WEBAGENT_ENV=dev`, and `--env-file` overrides the image, so pass `-e WEBAGENT_ENV=prod` after it. In prod the server refuses to start without `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY`.
+- The image sets `WEBAGENT_ENV=prod`. `.env.local` sets `WEBAGENT_ENV=dev`, and `--env-file` overrides the image, so pass `-e WEBAGENT_ENV=prod` after it. In prod the container stops at once with `Startup check failed: ...` if `WEBAGENT_SECURITY_SECRET_KEY` or `WEBAGENT_API_KEY` is missing (the check runs before uvicorn starts).
 - `GET /health` is the container health check; it needs no API key.
 - NLTK data is installed at build time. Task results, the model registry and the Hugging Face cache live in `/app/data`; mount a volume there to keep them.
 - `WEB_CONCURRENCY` sets the number of uvicorn workers (default 4).

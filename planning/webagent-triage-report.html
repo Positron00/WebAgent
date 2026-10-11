@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Local copy of https://claude.ai/artifact/BZaY5wry3z8SZYpRhHxTJD (version 5) -->
+<!-- Local copy of https://claude.ai/artifact/BZaY5wry3z8SZYpRhHxTJD (version 6) -->
 <style>body{margin:0}</style>
 <title>WebAgent Triage Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1008,7 +1008,19 @@ git log --all -p | grep -E "^\+.*(sk-…|tvly-…|TOGETHER_API_KEY=…)"</code><
   </div>
 
   <div class="col" style="display:grid; gap:10px">
-    <p><b>Not verified here.</b> Docker isn’t running on this machine, so neither image was built, and docker sandbox mode ran only as a unit test of its command line. The Dockerfile now uses Python 3.12 to match <code>backend/constraints.txt</code>, which was frozen from a macOS conda environment. Check the first Linux build for packages that can’t be installed at those exact versions.</p>
+    <p><b>Verified with Docker Desktop (Linux arm64).</b> Both images build, and every pin in <code>backend/constraints.txt</code> installs. Building surfaced three more fixes, now part of 3.0.2:</p>
+    <ul style="margin:0; padding-left:1.2em; display:grid; gap:4px">
+      <li>The backend image couldn’t start because <code>langchain-chroma</code> and <code>langchain-huggingface</code> were missing from <code>requirements.txt</code>.</li>
+      <li>With several workers, bad uat/prod settings made uvicorn restart its workers forever. The image now runs <code>python -m app.core.startup_checks</code> first and exits at once with a clear message.</li>
+      <li>Matplotlib’s config folder is now set to a writable location in the sandbox.</li>
+    </ul>
+    <p>Run as Kubernetes would (prod, 2 workers, read-only root filesystem):</p>
+    <ul style="margin:0; padding-left:1.2em; display:grid; gap:4px">
+      <li>The container reports healthy, and <code>/health</code>, <code>/api/v1/health/</code> and <code>/metrics</code> answer without a key.</li>
+      <li><code>/api/task</code> returns 401 with no key, a wrong key, or a dev key.</li>
+      <li>All 20 polls of one task gave the same status across both workers, and the result file was saved.</li>
+    </ul>
+    <p>The sandbox ran real generated code that drew a plot. It had no network access, saw no host API keys, couldn’t write to its code folder, and ran as a non-root user. Not yet done: a full agentic run inside the container with real LLM and Tavily keys.</p>
   </div>
 </section>
 

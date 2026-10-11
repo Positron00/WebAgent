@@ -38,6 +38,9 @@ All notable changes to the WebAgent Platform will be documented in this file.
 - A test run rewrote the tracked `models_registry.json`
 - `test_request_size_limiting` sent 1 MB against a 10 MB limit, so it was always skipped; it now sends one byte over the limit
 - A log line reported ".env.local exists: False" by checking the wrong folder
+- The Docker image couldn't start: `langchain-chroma` and `langchain-huggingface` are imported at load time but were missing from `requirements.txt` (they were only installed in the local conda environment)
+- With several workers, a container with bad uat/prod settings kept restarting its workers forever instead of stopping; the image now runs the startup checks (`python -m app.core.startup_checks`) once before uvicorn and exits with a clear message
+- Matplotlib warned on every run in the code sandbox because its config folder was read-only
 
 ### Security
 - Model-written code no longer sees API keys or other secrets, and in uat/prod the server refuses to start with code execution on unless it runs in the container sandbox

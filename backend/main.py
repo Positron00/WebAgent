@@ -26,10 +26,9 @@ from app.core.config import settings
 from app.core.middleware import setup_middlewares, LimitSizeMiddleware, SecurityHeadersMiddleware
 from app.core.logger import logger
 from app.core.metrics import setup_metrics, PrometheusMiddleware, ERROR_COUNT
-from app.utils.code_sandbox import sandbox_mode
+from app.core.startup_checks import check_production_settings, server_code_execution_enabled
 from app.core.security import (
     setup_security,
-    INSECURE_SECRET_DEFAULT,
     require_api_key,
     sanitize_error_message,
 )
@@ -81,25 +80,13 @@ setup_metrics(app)
 setup_security(app)
 
 # Model-written code must not run inside the API server unless explicitly enabled.
-settings.ENABLE_CODE_EXECUTION = (
-    os.getenv("WEBAGENT_ENABLE_CODE_EXECUTION", "false").lower() == "true"
-)
+settings.ENABLE_CODE_EXECUTION = server_code_execution_enabled()
 
 
 @app.on_event("startup")
 async def validate_production_settings() -> None:
-    if settings.WEBAGENT_ENV not in ("uat", "prod"):
-        return
-    if settings.SECRET_KEY == INSECURE_SECRET_DEFAULT:
-        raise RuntimeError(
-            "SECRET_KEY must be set to a non-default value in uat/prod (WEBAGENT_SECURITY_SECRET_KEY)"
-        )
-    if settings.API_KEY_ENABLED and not os.getenv("WEBAGENT_API_KEY"):
-        raise RuntimeError("WEBAGENT_API_KEY must be set when API key auth is enabled in uat/prod")
-    if settings.ENABLE_CODE_EXECUTION and sandbox_mode() != "docker":
-        raise RuntimeError(
-            "Code execution in uat/prod requires the container sandbox (WEBAGENT_CODE_SANDBOX=docker)"
-        )
+    # Also run before uvicorn starts in the Docker image (see app/core/startup_checks.py).
+    check_production_settings(settings.ENABLE_CODE_EXECUTION)
 
 
 # Include API router
