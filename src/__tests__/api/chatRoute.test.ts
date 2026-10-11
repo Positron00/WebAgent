@@ -61,6 +61,25 @@ describe('/api/chat', () => {
     expect((await response.json()).choices[0].message.content).toBe('Hi!');
   });
 
+  it('sends an attached image in the OpenAI-style format Together accepts', async () => {
+    // A bare string for image_url was rejected by Together with "did not match any variant
+    // of untagged enum MessageContent" (found in the 3.1.0 manual test).
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'Red' }, finish_reason: 'stop' }] }),
+        { status: 200 }
+      )
+    );
+
+    await postChat(chatRequest({ ...userMessage, image: 'data:image/png;base64,AAAA' }));
+
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent.messages[sent.messages.length - 1].content).toEqual([
+      { type: 'text', text: 'Hello' },
+      { type: 'image_url', image_url: { url: 'data:image/png;base64,AAAA' } },
+    ]);
+  });
+
   it("passes Together's error status and message through", async () => {
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ error: { message: 'Unable to access non-serverless model' } }), {

@@ -1,7 +1,8 @@
 export interface MessageContent {
   type: 'text' | 'image_url';
   text?: string;
-  image_url?: string;
+  // OpenAI-style chat format, which Together expects: {url: 'data:image/png;base64,...'}
+  image_url?: { url: string };
 }
 
 export interface ChatRequestMessage {

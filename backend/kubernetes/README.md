@@ -14,7 +14,7 @@ This directory contains Kubernetes manifests and scripts for deploying the WebAg
 
 - Kubernetes cluster with RBAC enabled
 - kubectl configured to access your cluster
-- Docker image for WebAgent backend (webagent/backend:3.1.0, built from `backend/` with `--build-arg APP_VERSION=3.1.0`)
+- Docker image for WebAgent backend (webagent/backend:3.1.1, built from `backend/` with `--build-arg APP_VERSION=3.1.1`)
 
 ### Using the Deployment Script
 
@@ -54,7 +54,7 @@ Usage: ./deploy.sh [OPTIONS]
 Options:
   -h, --help         Show this help message and exit
   -e, --environment  Environment to deploy (default: staging)
-  -v, --version      Version to deploy (default: 3.1.0)
+  -v, --version      Version to deploy (default: 3.1.1)
 ```
 
 ### Manual Deployment

@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 # Default values
 ENVIRONMENT="production"
 NAMESPACE="default"
-VERSION="3.1.0"
+VERSION="3.1.1"
 
 # Print usage information
 function print_usage {
@@ -19,7 +19,7 @@ function print_usage {
   echo "Options:"
   echo "  -e, --environment   Environment to deploy to (default: production)"
   echo "  -n, --namespace     Kubernetes namespace (default: default)"
-  echo "  -v, --version       Version to deploy (default: 3.1.0)"
+  echo "  -v, --version       Version to deploy (default: 3.1.1)"
   echo "  -h, --help          Show this help message"
   echo ""
   echo "Environment variables required:"
@@ -116,8 +116,8 @@ cat deployment.yaml | \
   sed "s/\${WEBAGENT_API_KEY}/$WEBAGENT_API_KEY/g" | \
   sed "s/\${TAVILY_API_KEY}/${TAVILY_API_KEY:-}/g" | \
   sed "s/\${LANGSMITH_API_KEY}/${LANGSMITH_API_KEY:-}/g" | \
-  sed "s/webagent\/backend:3.1.0/webagent\/backend:$VERSION/g" | \
-  sed "s/version: \"3.1.0\"/version: \"$VERSION\"/g" | \
+  sed "s/webagent\/backend:3.1.1/webagent\/backend:$VERSION/g" | \
+  sed "s/version: \"3.1.1\"/version: \"$VERSION\"/g" | \
   sed "s/namespace: default/namespace: $NAMESPACE/g" > deployment-$ENVIRONMENT.yaml
 
 # Apply the deployment

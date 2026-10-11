@@ -3,6 +3,7 @@
 import React, { useCallback, useRef } from 'react';
 import { BeakerIcon } from '@heroicons/react/24/outline';
 import { AgenticMode, AGENTIC_MODES } from '@/types/routing';
+import { Tooltip } from './Tooltip';
 
 const LABELS: Record<AgenticMode, string> = {
   off: 'Off',
@@ -29,7 +30,7 @@ export function AgenticModeToggle({ value, onChange, disabled = false }: Agentic
     (mode: AgenticMode) => {
       if (!disabled) onChange(mode);
     },
-    [disabled, onChange]
+    [disabled, onChange],
   );
 
   const handleKeyDown = (event: React.KeyboardEvent, index: number) => {
@@ -60,27 +61,27 @@ export function AgenticModeToggle({ value, onChange, disabled = false }: Agentic
       {AGENTIC_MODES.map((mode, index) => {
         const selected = displayValue === mode;
         return (
-          <button
-            key={mode}
-            ref={(el) => {
-              buttonRefs.current[index] = el;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            tabIndex={selected ? 0 : -1}
-            title={TITLES[mode]}
-            disabled={disabled}
-            onClick={() => selectMode(mode)}
-            onKeyDown={(e) => handleKeyDown(e, index)}
-            className={`px-1.5 py-0.5 rounded text-[10px] transition-colors ${
-              selected
-                ? 'bg-indigo-600 text-white'
-                : 'bg-indigo-600/10 text-white/40 hover:bg-indigo-600/40 hover:text-white/80'
-            } disabled:opacity-50`}
-          >
-            {LABELS[mode]}
-          </button>
+          <Tooltip key={mode} text={TITLES[mode]}>
+            <button
+              ref={(el) => {
+                buttonRefs.current[index] = el;
+              }}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              tabIndex={selected ? 0 : -1}
+              disabled={disabled}
+              onClick={() => selectMode(mode)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              className={`px-1.5 py-0.5 rounded text-[10px] transition-colors ${
+                selected
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-indigo-600/10 text-white/40 hover:bg-indigo-600/40 hover:text-white/80'
+              } disabled:opacity-50`}
+            >
+              {LABELS[mode]}
+            </button>
+          </Tooltip>
         );
       })}
     </div>

@@ -156,7 +156,7 @@ The rule behind these: when the backend is up but triage is unsure or broken, pr
 ## 6. Deployment
 
 - **Image:** the Dockerfile downloads `sentence-transformers/all-MiniLM-L6-v2` at build time into `/opt/models` and sets `SENTENCE_TRANSFORMERS_HOME=/opt/models`. It must not go under `/app/data` (`HF_HOME` today), because that path is a mounted volume and would hide baked files. The encoder loads with `local_files_only=True` in uat and prod, so startup never downloads.
-- **Workers:** each uvicorn worker loads its own encoder (~90 MB of weights, ~100–150 MB resident) and uses one torch thread. The backend runs **2 workers**: Kubernetes already sets `WEB_CONCURRENCY=2`, and the Dockerfile default (used by Compose) drops from 4 to 2. The Kubernetes memory limit stays at 1 GiB; task 2.9 measures that 2 workers fit with 20% headroom.
+- **Workers:** each uvicorn worker loads its own encoder (~90 MB of weights, ~100–150 MB resident) and uses one torch thread. The backend runs **2 workers**: Kubernetes already sets `WEB_CONCURRENCY=2`, and the Dockerfile default (used by Compose) drops from 4 to 2. The Kubernetes memory limit is 1.5 GiB (raised from 1 GiB in 3.1.0, after task 2.9 measured 1.08 GiB with triage on), with a 1 GiB request.
 - **The image doesn't ship the curated data.** `.dockerignore` excludes `data/*`, so `train.jsonl` and `test.jsonl` stay out of the image. `models/triage/` is copied by the existing `COPY . .`.
 - **Startup:** each worker loads the model and embeds one warm-up sentence before serving. `python -m app.core.startup_checks` checks that the files exist (it doesn't load the model, to keep it fast).
 - **Config:** a `triage:` section in `backend/config/{dev,uat,prod}.yaml`; `WEBAGENT_TRIAGE_*` environment variables override it, like the `security:` section.
@@ -174,7 +174,7 @@ The rule behind these: when the backend is up but triage is unsure or broken, pr
 | D7 | Override button, Auto only | Fixes one misrouted answer in one click; best training label | Toggle only: three steps per correction |
 | D8 | Phase 5: no mode and no flag means `off` on both endpoints | Matches "new users start on Off"; `/api/v1/chat/completions` already defaults to non-agentic; the web app always sends `agentic: true`, so it isn't affected | `always` (keeps `/api/task`'s old default, but `/api/v1/chat/completions` would change) |
 | D9 | Backend direct path is text only | The backend LLM wrapper is text only; adding a vision call is separate work | `ChatTogether` with image parts now |
-| D10 | 2 uvicorn workers, 1 GiB limit | Kubernetes already runs 2; keeps encoder memory at ~0.3 GB | 4 workers with a 2 GiB limit |
+| D10 | 2 uvicorn workers, 1.5 GiB limit | Kubernetes already runs 2; measured 1.08 GiB with triage on, so the old 1 GiB limit was raised | 4 workers with a 2 GiB limit |
 
 ## 8. Known limitations
 

@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     if (image) {
       formattedMessages[formattedMessages.length - 1].content = [
         { type: 'text', text: formattedMessages[formattedMessages.length - 1].content as string },
-        { type: 'image_url', image_url: image }
+        { type: 'image_url', image_url: { url: image } }
       ];
     }
 

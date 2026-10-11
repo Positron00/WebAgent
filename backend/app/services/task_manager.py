@@ -131,7 +131,9 @@ class TaskManager:
         track_task_start(task_id)
         try:
             supervisor = SupervisorAgent()
-            content = await supervisor.answer_directly(message, ctx.get("previous_messages", []))
+            content = await supervisor.answer_directly(
+                message, ctx.get("previous_messages", []), image_attached=bool(ctx.get("had_image"))
+            )
             report = {"title": "Response", "content": content, "type": "direct_response"}
             self.task_results[task_id] = report
             task_info.status = "completed"

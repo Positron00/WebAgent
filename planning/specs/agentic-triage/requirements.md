@@ -99,7 +99,7 @@ Terms used throughout:
 
 ## 6. Web app (phase 3)
 
-**REQ-050 Three-way toggle (must).** The Agentic button becomes a three-way control labelled Agentic: Off · Auto · Always, with these tooltips: "Answer directly, no research agents", "Use research agents when the question needs them", "Always use research agents (slower)". It is keyboard accessible (arrow keys move between options, `aria-checked` on the selected one).
+**REQ-050 Three-way toggle (must).** The Agentic button becomes a three-way control labelled Agentic: Off · Auto · Always, with these tooltips, shown on hover and keyboard focus: "Answer directly, no research agents", "Use research agents when the question needs them", "Always use research agents (slower)". It is keyboard accessible (arrow keys move between options, `aria-checked` on the selected one).
 - Verify: Jest + manual.
 
 **REQ-051 Stored mode (must).** The setting is `agenticMode: 'off' | 'auto' | 'always'`, saved in its own storage key (not inside the accessibility settings), and written only when the user picks a mode. "No saved mode" means "follow the server default".
@@ -158,7 +158,7 @@ Terms used throughout:
 | NFR-03 | In Auto, research questions are no slower than Always, except for the triage call | Container run, 10 research questions |
 | NFR-04 | Held-out test: research recall ≥ 95%, routine routed direct ≥ 80% | `eval_triage.py` |
 | NFR-05 | Override rate < 10% of direct answers after phase 4 | Grafana |
-| NFR-06 | Each worker's extra memory for triage ≤ 150 MB. The backend runs **2 uvicorn workers** (image default and Kubernetes) and fits the 1 GiB Kubernetes limit with 20% headroom | Measure with cgroup stats in the container |
+| NFR-06 | Each worker's extra memory for triage ≤ 150 MB. The backend runs **2 uvicorn workers** (image default and Kubernetes) and fits the Kubernetes memory limit (1.5 GiB) with 20% headroom | Measure with cgroup stats in the container |
 | NFR-07 | Classifier is deterministic: same input and version → same output | pytest |
 | NFR-08 | In uat and prod, the server refuses to start without the classifier and encoder, or with a classifier that hasn't passed the release gate, unless triage is disabled. In dev, it starts with a warning and triage falls back to agentic | pytest (`startup_checks`) |
 | NFR-09 | No new Python dependency before SetFit. The image grows by ≤ 100 MB | Diff of `requirements.txt`; `docker image ls` |

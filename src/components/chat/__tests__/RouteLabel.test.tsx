@@ -14,14 +14,17 @@ function renderLabel(info: RouteInfo, mode: AgenticMode, canOverride = true, onO
 const overrideButton = () => screen.queryByRole('button', { name: 'Research this in depth' });
 
 describe('RouteLabel', () => {
-  it('shows "Answered directly" with the reason as the title', () => {
+  it('shows "Answered directly" with the reason in a focusable tooltip', () => {
     renderLabel(direct, 'auto');
-    expect(screen.getByText('Answered directly')).toHaveAttribute('title', direct.reason);
+    const label = screen.getByText('Answered directly');
+    expect(label).toHaveAccessibleDescription(direct.reason);
+    expect(label).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('tooltip')).toHaveTextContent(direct.reason);
   });
 
-  it('shows "Deep research" with the reason as the title', () => {
+  it('shows "Deep research" with the reason in a tooltip', () => {
     renderLabel(agentic, 'auto');
-    expect(screen.getByText('Deep research')).toHaveAttribute('title', agentic.reason);
+    expect(screen.getByText('Deep research')).toHaveAccessibleDescription(agentic.reason);
   });
 
   it('shows the override button in auto mode for a direct answer, and clicking calls onOverride', () => {

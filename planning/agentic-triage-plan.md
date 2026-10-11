@@ -13,7 +13,7 @@ Decided:
 - The backend gets the same three modes (**phase 5, in scope**), so API clients and scheduled jobs can use them. The next feature, **recurring research tasks** (phase 6), builds on that.
 - On the backend, a request with **no mode and no old flag means `off`**, on every endpoint.
 - The backend's direct path is **text only** for now; images are ignored there.
-- The backend runs **2 uvicorn workers**, within the existing 1 GiB Kubernetes limit.
+- The backend runs **2 uvicorn workers**; the Kubernetes memory limit rises from 1 GiB to 1.5 GiB to fit them.
 
 ## Summary
 
@@ -53,7 +53,7 @@ Non-goals:
 | Direct | `src/app/api/chat/route.ts` | One Together AI chat call, with the prompt style, knowledge focus and citation settings, plus up to 50 earlier messages |
 | Fallback | `sendChatMessage` | If the agentic request fails, the client retries through `/api/chat` and shows the "fallback mode" notice |
 
-Measured on 3.0.3: agentic runs took 153–208 s, and the supervisor call alone took 6–10 s. The direct path hasn't been timed yet; measure it in phase 1.
+Measured on 3.0.3: agentic runs took 153–208 s, and the supervisor call alone took 6–10 s. Measured on 3.1.0: the direct path (`/api/chat`, 20 routine questions) has a median of 3.4 s and p95 of 5.1 s; research runs took 116–122 s.
 
 ## Problems to fix first
 
@@ -204,7 +204,7 @@ The curated data is stored as `backend/data/triage/train.jsonl` and `test.jsonl`
 - **Training:** `backend/scripts/train_triage.py` embeds the training set, fits the classifier, picks the **highest** threshold (capped at 0.5) that still reaches 95% research recall on a validation split, and writes `backend/models/triage/classifier.joblib` (the classifier plus one centroid per category for the hover reasons; under 100 KB) and `metadata.json`. The metadata holds the version, encoder name, threshold, data hash, category labels, and validation and test metrics. The scripts live in `backend/scripts/` so they use the same input-building function as the server.
 - **Evaluation gate:** `backend/scripts/eval_triage.py` reports recall, precision and a confusion matrix per category on `test.jsonl`, and exits non-zero if the targets are missed. `--check-data` validates both data files. A new classifier version ships only if it meets the targets.
 - **Serving:** `backend/app/services/triage.py` loads the encoder and classifier once at startup and exposes `classify(query, previous_user_question, has_image) -> TriageDecision`.
-  - Each uvicorn worker loads its own copy: about 100–150 MB of RAM per worker. The backend runs **2 workers**, about 0.3 GB in total: Kubernetes already sets `WEB_CONCURRENCY=2`, and the Dockerfile default (used by Compose) drops from 4 to 2. Measure that this fits the 1 GiB Kubernetes limit with 20% headroom.
+  - Each uvicorn worker loads its own copy: measured at about 90 MB of extra RAM per worker. The backend runs **2 workers**: Kubernetes already sets `WEB_CONCURRENCY=2`, and the Dockerfile default (used by Compose) drops from 4 to 2. Measured on 3.1.0, the container uses 1.08 GiB with triage on (955 MiB with it off), more than the old 1 GiB Kubernetes limit, so the limit is now 1.5 GiB.
   - Set `torch.set_num_threads(1)` in the service, so several workers don't compete for every CPU core.
   - Embed one warm-up sentence at startup, so the first user doesn't pay for model loading.
   - `sentence-transformers` 3.3.1, `torch` 2.5.1, `scikit-learn` 1.5.2 and `joblib` are already in `requirements.txt` and `constraints.txt`. No new dependency is needed until SetFit.
@@ -389,7 +389,7 @@ Total for phases 0–3 and 5: about 13 working days, plus the shadow-mode week. 
 | The classifier drifts as usage changes | Version every classifier, gate it on the held-out set, and watch the override and uncertain rates in Grafana |
 | The image grows by about 90 MB | Acceptable next to its 2.77 GB size today |
 | A research question gets a shallow direct answer | Low threshold, the override button on every direct answer in Auto, and the override metric |
-| Each worker loads its own encoder: more RAM and slower startup | About 100–150 MB per worker; 2 workers within the 1 GiB limit, measured; one torch thread per worker; warm up at startup |
+| Each worker loads its own encoder: more RAM and slower startup | About 100–150 MB per worker; 2 workers measured at 1.08 GiB, within the 1.5 GiB limit; one torch thread per worker; warm up at startup |
 | API callers that relied on `/api/task` being agentic by default get direct answers after phase 5 | Only the web app calls it today, and it sends `agentic: true`; documented in the backend README and CHANGELOG |
 | Collected questions contain personal data | Off by default outside dev, git-ignored, 30-day deletion, human review before anything joins the curated set |
 | A saved default stops users following later default changes | Save `agenticMode` only when the user picks it; migrate `false` to "no saved mode" |
@@ -404,7 +404,7 @@ Total for phases 0–3 and 5: about 13 working days, plus the shadow-mode week. 
 | 4 | Backend modes for API clients | **Yes, phase 5**, as the base for recurring research tasks (phase 6) |
 | 5 | Should the backend direct path send images to the model? | **No, text only for now.** Results set `image_ignored: true` |
 | 6 | What does an API request with neither `mode` nor the old flag mean? | **`off`**, on every endpoint |
-| 7 | Memory with an encoder in every worker | **2 uvicorn workers**, keeping the 1 GiB Kubernetes limit |
+| 7 | Memory with an encoder in every worker | **2 uvicorn workers**, with the Kubernetes memory limit raised to 1.5 GiB |
 
 Still open (for the phase 6 plan): schedule ownership without user accounts, where results are delivered, and limits on scheduled runs.
 

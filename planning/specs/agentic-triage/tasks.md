@@ -59,7 +59,7 @@ Total for phases 0–3 and 5: about 13 working days (8 h each), plus the shadow 
 | 2.6 | Next.js `/api/triage` route; `X-WebAgent-Proxy-Error` header in `backend.ts` | REQ-011 | 2.5 | `triageProxy.test.ts` passes; existing `taskProxy` test still passes | 1 h |
 | 2.7 | `triage_collect.py` (record, cleanup), startup + daily cleanup, `.gitignore` entry | REQ-030–032 | 2.1 | `test_triage_collect.py` passes | 3 h |
 | 2.8 | Startup: warm-up hook; `check_triage_files` in `startup_checks` | NFR-08 | 2.2 | pytest: prod without files fails, dev passes, disabled passes | 2 h |
-| 2.9 | Docker: bake the encoder into `/opt/models`, set `SENTENCE_TRANSFORMERS_HOME`, change the image default to `WEB_CONCURRENCY=2` (Kubernetes already sets 2; Compose uses the image default). Measure image size and memory of 2 workers | NFR-06, 09 | 2.8 | Container starts offline (no network) and classifies; image +≤ 100 MB; 2 workers fit the 1 GiB Kubernetes limit with 20% headroom (if not, stop and decide before shadow mode) | 3 h |
+| 2.9 | Docker: bake the encoder into `/opt/models`, set `SENTENCE_TRANSFORMERS_HOME`, change the image default to `WEB_CONCURRENCY=2` (Kubernetes already sets 2; Compose uses the image default). Measure image size and memory of 2 workers | NFR-06, 09 | 2.8 | Container starts offline (no network) and classifies; image +≤ 100 MB; 2 workers fit the Kubernetes limit with 20% headroom (if not, stop and decide before shadow mode). Done: 1.08 GiB measured, limit raised to 1.5 GiB | 3 h |
 | 2.10 | Shadow mode in `/api/task`: classify requests sent with `agentic: true` (not overrides), store `triage` on the result, collect; triage errors never fail the task | REQ-040 | 2.3, 2.4, 2.7, 0.2 | `test_task_shadow.py` passes | 3 h |
 | 2.11 | Grafana panel: route split, override rate, uncertain rate | REQ-081 | 2.4 | Panel added to `backend/grafana/dashboards/webagent-backend-dashboard.json`; screenshot in the PR | 2 h |
 | 2.12 | Turn on `mode: shadow` in dev, where collection is on (development is local-only for now). In uat, only if collection there is approved; without it, shadow mode records metrics but no questions. Document where collected files are (repo `backend/data/triage/collected/` when run locally; `docker cp` from `/app/data/triage/collected/` in a container) | REQ-040 | 2.10 | Config merged; backend README section | 1 h |
@@ -163,6 +163,6 @@ Total for phases 0–3 and 5: about 13 working days (8 h each), plus the shadow 
 |---|---|---|---|
 | O-1 | Should the backend direct path send images to the model? | **No, text only for now.** Results set `image_ignored: true` when a request had an image | REQ-071, task 5.3 |
 | O-2 | What does a request with neither `mode` nor the old flag mean? | **`off`**, on both `/api/task` and `/api/v1/chat/completions` | REQ-070, tasks 5.1, 5.4, 5.5 |
-| O-3 | Memory with the encoder in every worker | **2 workers** (image default and Kubernetes), keep the 1 GiB limit | NFR-06, task 2.9 |
+| O-3 | Memory with the encoder in every worker | **2 workers** (image default and Kubernetes); limit raised from 1 GiB to 1.5 GiB after measuring | NFR-06, task 2.9 |
 
 No open points remain for phases 0–5. Phase 6 questions (schedule ownership, delivery, limits) belong to its own spec.

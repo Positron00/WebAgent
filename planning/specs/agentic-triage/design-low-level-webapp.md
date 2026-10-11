@@ -13,13 +13,15 @@ Paths are relative to the repo root. Requirement IDs refer to [`requirements.md`
 | `src/utils/storage.ts` | changed | Drop `agentic` from `AccessibilitySettings` and its default; strip a stray saved `agentic` key |
 | `src/utils/routeQuestion.ts` | new | Triage call and status-code mapping (~90 lines) |
 | `src/utils/apiClient.ts` | changed | `sendChatMessage` takes a mode; `previous_messages`; route info on responses |
-| `src/app/api/settings/route.ts` | new | `GET` runtime default (~70 lines) |
+| `src/app/api/settings/route.ts` | new | `GET` runtime default (~25 lines) |
+| `src/utils/defaultAgenticMode.ts` | new | Server-only `.env.local` reader for `/api/settings` (~65 lines). Not in the route file: Next.js route files may export only handlers and config, or `next build` fails |
 | `src/app/api/triage/route.ts` | new | Proxy to FastAPI (~15 lines) |
 | `src/app/api/task/backend.ts` | changed | `X-WebAgent-Proxy-Error: unreachable` on 503 |
 | `src/contexts/AppContext.tsx` | changed | `agenticMode`, `setAgenticMode`, `modeReady` |
 | `src/contexts/ChatContext.tsx` | changed | Remove mock sources; store route; `researchInDepth()` |
 | `src/components/chat/AgenticModeToggle.tsx` | new | Three-way control (~90 lines) |
-| `src/components/chat/RouteLabel.tsx` | new | Label + hover reason + override button (~70 lines) |
+| `src/components/chat/RouteLabel.tsx` | new | Label + hover reason + override button (~45 lines) |
+| `src/components/chat/Tooltip.tsx` | new | Tooltip shown at once on hover and keyboard focus (~35 lines) |
 | `src/components/chat/MessageInput.tsx` | changed | Use the toggle; image note in Always |
 | `src/components/chat/MessageList.tsx` | changed | Render `RouteLabel`; logs by route |
 | `src/test-utils.tsx` | changed | Default mode in the test provider |
@@ -77,23 +79,27 @@ Runs synchronously in `AppContext`'s load effect, before `getAccessibilitySettin
 
 ## 4. Runtime default: `GET /api/settings`
 
+`src/utils/defaultAgenticMode.ts` (server-only; the route file may export only `GET` and config):
+
+```ts
+export const DEFAULT_MODE_KEY = 'WEBAGENT_DEFAULT_AGENTIC_MODE';
+let cache: { mtimeMs: number; value: string | undefined } | null = null;   // keyed by .env.local mtime
+export function readDefaultFromFile(): string | undefined | null { ... }  // null: no file
+export function clearSettingsCache(): void { ... }                        // for tests
+```
+
 `src/app/api/settings/route.ts`:
 
 ```ts
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';                 // needs fs
 
-const ENV_FILE = path.join(process.cwd(), '.env.local');
-const KEY = 'WEBAGENT_DEFAULT_AGENTIC_MODE';
-let cache: { mtimeMs: number; value: string | undefined } | null = null;
-
-export function readDefaultFromFile(): string | undefined | null { ... }  // null: no file
 export async function GET() {
-  const raw = readDefaultFromFile() ?? process.env[KEY];
+  const raw = readDefaultFromFile() ?? process.env[DEFAULT_MODE_KEY];
   const value = (raw ?? 'off').trim().toLowerCase();
   if (!isAgenticMode(value)) {
     logger.warn('Unknown WEBAGENT_DEFAULT_AGENTIC_MODE, using off', { value: raw });
-    return NextResponse.json({ defaultAgenticMode: 'off' });
+    return NextResponse.json({ defaultAgenticMode: 'off' }, { headers: { 'Cache-Control': 'no-store' } });
   }
   return NextResponse.json({ defaultAgenticMode: value }, { headers: { 'Cache-Control': 'no-store' } });
 }
@@ -241,13 +247,13 @@ export function buildPreviousMessages(history: ChatMessage[]): { role: 'user' | 
 ### `AgenticModeToggle.tsx`
 
 - A `role="radiogroup"` with `aria-label="Agentic mode"` and three `role="radio"` buttons: Off, Auto, Always. `aria-checked` on the selected one; roving `tabIndex`; Left/Right arrows move and select (REQ-050).
-- `title` tooltips: "Answer directly, no research agents", "Use research agents when the question needs them", "Always use research agents (slower)".
+- Tooltips (`Tooltip.tsx`, shown at once on hover and keyboard focus and linked by `aria-describedby`): "Answer directly, no research agents", "Use research agents when the question needs them", "Always use research agents (slower)". Not the native `title` attribute, which shows only after a delay, never on focus, and not at all in some embedded browsers.
 - Props: `value`, `onChange`, `disabled`. Styled to match the current pill buttons in `MessageInput`, with the BeakerIcon and a visible "Agentic:" label before the three options. While `disabled` (mode not known yet), it shows Off as selected.
 
 ### `RouteLabel.tsx`
 
 - Props: `info: RouteInfo`, `mode: AgenticMode`, `canOverride: boolean`, `onOverride: () => void`.
-- Renders "Answered directly" or "Deep research" in small muted text, with `title={info.reason}`.
+- Renders "Answered directly" or "Deep research" in small muted text with a dotted underline. It is focusable, and `Tooltip` shows `info.reason` on hover or focus.
 - Shows a "Research this in depth" text button when `mode === 'auto' && info.route === 'direct' && canOverride`. `canOverride` is false when the related user message has `imageAttached`, or a research request for it is already in progress.
 
 ### `MessageInput.tsx`
@@ -267,7 +273,7 @@ export function buildPreviousMessages(history: ChatMessage[]): { role: 'user' | 
 | File | Covers |
 |---|---|
 | `src/__tests__/utils/agenticMode.test.ts` | Migration: `true` → auto, `false` → none, missing → none, runs once; save only on choice; `storage` drops a stray `agentic` key and still applies its colour migration (REQ-051, 052) |
-| `src/__tests__/api/settingsRoute.test.ts` | File value, file edited (new mtime), file missing → `process.env`, bad value → off, quotes/comments (REQ-053) |
+| `src/__tests__/api/settingsRoute.test.ts` (route + `defaultAgenticMode.ts`) | File value, file edited (new mtime), file missing → `process.env`, bad value → off, quotes/comments (REQ-053) |
 | `src/__tests__/api/triageProxy.test.ts` | Forwards with key; 503 + header when unreachable (REQ-011) |
 | `src/__tests__/utils/routeQuestion.test.ts` | Off/Always make no request; every row of the table in section 7; query cut to 8,000 chars (REQ-056) |
 | `src/__tests__/utils/apiClient.agentic.test.ts` | Direct → `/api/chat`; agentic → `/api/task` with `previous_messages` and `agentic: true`; override sets `triage_override`; an image without text in Always goes to `/api/chat`; route attached (REQ-002, 003, 056, 058) |
@@ -275,5 +281,5 @@ export function buildPreviousMessages(history: ChatMessage[]): { role: 'user' | 
 | `src/__tests__/contexts/ChatContext.test.tsx` (extend) | No mock sources; route stored; logs by route; `researchInDepth` puts the reply under its own question (REQ-001, 057, 058) |
 | `src/components/chat/__tests__/MessageInput.mode.test.tsx` | Send disabled and Off shown until the mode is known; image note only in Always (REQ-003, 054) |
 | `src/components/chat/__tests__/MessageList.test.tsx` (extend) | A second answer to the same question is shown, with both route labels (REQ-058) |
-| `src/components/chat/__tests__/AgenticModeToggle.test.tsx` | Three options, keyboard, `aria-checked` (REQ-050) |
+| `src/components/chat/__tests__/AgenticModeToggle.test.tsx` | Three options, each described by its tooltip, keyboard, `aria-checked` (REQ-050) |
 | `src/components/chat/__tests__/RouteLabel.test.tsx` | Labels, hover reason, override shown only in Auto + direct + no image (REQ-057, 058) |

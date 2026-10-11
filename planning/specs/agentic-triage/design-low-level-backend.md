@@ -423,7 +423,7 @@ SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/opt
 
 - `models/triage/` is copied by the existing `COPY . .`; `.dockerignore` excludes `data/*`, so the curated data stays out of the image.
 
-`HF_HOME` stays on `/app/data/hf-cache` for anything else. `kubernetes/deployment.yaml` already sets `WEB_CONCURRENCY=2`; its 1 GiB limit stays, and task 2.9 confirms it fits. `docker-compose.yml` sets no worker count, so it picks up the new image default of 2.
+`HF_HOME` stays on `/app/data/hf-cache` for anything else. `kubernetes/deployment.yaml` already sets `WEB_CONCURRENCY=2`; its memory limit rose from 1 GiB to 1.5 GiB after task 2.9 measured 1.08 GiB with triage on. `docker-compose.yml` sets no worker count, so it picks up the new image default of 2.
 
 ## 12. Tests
 

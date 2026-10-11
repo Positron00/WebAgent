@@ -2,6 +2,22 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.1.1 - 2026-10-11
+
+Fixes found by running 3.1.0 for real (real model and search keys, the Docker image, and the web app by hand) before merging.
+
+### Fixed
+- Backend direct answers (`mode: off`, or `auto` routed direct) included the model's reasoning ("assistant to=self … We need …"): the prompt now ends where the answer starts, and the reply goes through the reasoning strip shared with web research (`app/utils/reasoning.py`)
+- The backend direct path described images it never received; the prompt now says an image was attached but can't be seen
+- A plain question that the supervisor planned as document extraction, with no document attached, failed in seconds ("Document ID is required for extraction"); it is now researched
+- Sending an image in the web app failed with "did not match any variant of untagged enum MessageContent": `/api/chat` now sends `image_url` as `{url}`, the format Together expects
+- `npm run build` failed: `/api/settings` exported helper functions, which Next.js doesn't allow in a route file; they moved to `src/utils/defaultAgenticMode.ts`
+- No tooltips on the Agentic mode toggle or the route label in some browsers: a `Tooltip` component replaces the native `title` attribute and shows at once on hover and keyboard focus; the route label is focusable
+
+### Changed
+- Kubernetes: memory limit 1.5 GiB (was 1 GiB) and request 1 GiB (was 512 MiB). Two workers measured at 955 MiB with triage off and 1.08 GiB with it on
+- Measured and recorded: triage p95 25 ms through the web app, direct answers median 3.4 s (p95 5.1 s), encoder layer 91.7 MB, offline start of the image with triage on
+
 ## 3.1.0 - 2026-10-11
 
 ### Added

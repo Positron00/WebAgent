@@ -36,7 +36,7 @@ Layout:
 src/
 ├── __tests__/
 │   ├── api/                 # Next.js API routes (Node environment)
-│   │   ├── chatRoute.test.ts      # /api/chat: validation, Together errors, fallback notice
+│   │   ├── chatRoute.test.ts      # /api/chat: validation, Together errors, fallback notice, image format
 │   │   ├── taskProxy.test.ts      # /api/task proxy: forwarding, X-API-Key, backend down
 │   │   ├── triageProxy.test.ts    # /api/triage proxy; "unreachable" header on 503
 │   │   └── settingsRoute.test.ts  # /api/settings: default mode from .env.local, re-read on change
@@ -50,7 +50,7 @@ src/
 │   │   └── agenticMode.test.ts    # saved mode and the one-time migration from the old on/off setting
 │   └── Chat.test.tsx
 └── components/chat/__tests__/     # MessageInput (+ .mode: send disabled, image note), MessageList,
-                                   # AgenticModeToggle, RouteLabel
+                                   # AgenticModeToggle, RouteLabel (tooltips via Tooltip.tsx)
 ```
 
 ### Testing API routes
@@ -115,11 +115,12 @@ Layout (`backend/tests/`):
 | `test_health_and_rate_limit.py` | `/health` needs no key and isn't throttled; rate limits are per user behind the proxy |
 | `test_code_sandbox.py` | Generated code can't see API keys; docker mode has no network and resource limits |
 | `test_deploy_config.py` | `WEBAGENT_ENV` from the shell wins over `.env.local`; paths and version inside the image |
-| `test_followup_query.py` | Follow-up questions are searched as the supervisor's standalone rewrite |
+| `test_followup_query.py` | Follow-up questions are searched as the supervisor's standalone rewrite; a document step planned without a document becomes research |
 | `test_web_search_async.py` | Every Tavily call, including the retry, runs off the event loop |
 | `test_web_research_prompt.py` | The web research prompt has no unfilled placeholders and ends with `ANALYSIS:`; reasoning before the answer is dropped; per-agent output limits |
 | `test_startup_checks.py` | uat/prod refuse to start with unsafe settings or without a triage classifier that passed the release gate (unless triage is off); the command-line check the Docker image runs exits with a message |
 | `test_mlflow_logging.py` | Repeated MLflow logging inside an active run doesn't fail |
+| `test_direct_answer.py` | The backend direct path: a prompt the text model answers, reasoning stripped from the reply, a note when an attached image can't be seen |
 | `test_triage_rules.py`, `test_triage_classify.py` | Triage rules and near-misses; threshold, follow-up joining, fallback, kill switch, reasons, metrics, logs, tie-breaker (fake model) |
 | `test_triage_endpoint.py`, `test_triage_config.py` | `POST /api/triage` contract, auth, size limits, rate limit; `WEBAGENT_TRIAGE_*` overrides |
 | `test_triage_collect.py` | Collected questions: off unless enabled, written only under `collected/`, 30-day cleanup |

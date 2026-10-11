@@ -18,9 +18,10 @@ describe('GET /api/settings', () => {
 
   beforeAll(async () => {
     const mod = await import('@/app/api/settings/route');
+    const helpers = await import('@/utils/defaultAgenticMode');
     getSettings = mod.GET;
-    readDefaultFromFile = mod.readDefaultFromFile;
-    clearSettingsCache = mod.clearSettingsCache;
+    readDefaultFromFile = helpers.readDefaultFromFile;
+    clearSettingsCache = helpers.clearSettingsCache;
   });
 
   beforeEach(() => {
