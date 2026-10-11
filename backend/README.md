@@ -91,50 +91,41 @@ The diagnostics can help identify issues with:
 
 ## Prerequisites
 
-- Python 3.10+
-- OpenAI API key or Anthropic API key
+- Python 3.12 (the `agents` conda environment)
+- Together AI API key (default LLM provider); OpenAI, Anthropic, Groq or Gemini keys are optional fallbacks
+- Tavily API key (web research)
 - LangSmith API key (optional, for tracing)
 
 ## Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/webagent.git
-   cd webagent/backend
+   git clone https://github.com/Positron00/WebAgent.git
+   cd WebAgent
    ```
 
-2. Install dependencies:
+2. Install dependencies (pinned by `backend/constraints.txt`):
    ```bash
-   pip install -r requirements.txt
+   pip install -r backend/requirements.txt -c backend/constraints.txt
    ```
 
-3. Create a `.env` file with your environment variables:
+3. Create `.env.local` in the repo root from the template and add your keys:
+   ```bash
+   cp .env.local.example .env.local
    ```
-   # Core settings
-   WEBAGENT_ENV=development
-   DEBUG_MODE=true
-   LOG_LEVEL=INFO
-   
-   # LLM Provider
-   LLM_PROVIDER=openai
-   OPENAI_API_KEY=your_openai_key_here
-   ANTHROPIC_API_KEY=your_anthropic_key_here
-   
-   # LangSmith (optional)
-   LANGSMITH_API_KEY=your_langsmith_key_here
-   LANGSMITH_PROJECT=webagent
-   LANGSMITH_ENABLED=false
-   ```
+   At minimum set `TOGETHER_API_KEY` and `TAVILY_API_KEY`. See [Environment Variables](#environment-variables) below.
 
 ## Running the Application
 
 ### Development Server
 
-Start the FastAPI server with hot reloading:
+From the repo root:
 
 ```bash
-uvicorn main:app --reload
+python -m backend.main
 ```
+
+Set `WEBAGENT_API_DEBUG_MODE=true` to auto-reload when files under `backend/` change. A reload drops tasks that are still running.
 
 Access the API documentation at http://localhost:8000/api/v1/docs
 
@@ -155,7 +146,7 @@ Build and run the Docker container:
 docker build -t webagent-backend .
 
 # Run the container
-docker run -p 8000:8000 --env-file .env webagent-backend
+docker run -p 8000:8000 --env-file ../.env.local webagent-backend
 ```
 
 ## Diagnostics and Monitoring
@@ -195,6 +186,9 @@ The WebAgent backend exposes several API endpoints:
 - **GET /api/v1/health/diagnostics**: System diagnostics endpoint
 - **POST /api/v1/tasks/create**: Create an asynchronous task
 - **GET /api/v1/tasks/{task_id}**: Get task status and results
+- **POST /api/task**: Start a multi-agent task from the web app (`{"query": "...", "agentic": true}`); returns a `task_id`. Requires `X-API-Key` when API-key auth is on
+- **GET /api/task/{task_id}**: Task status and report; finished reports are also read from `backend/data/results/` after a restart
+- **GET /api/v1/metrics**: Prometheus metrics
 
 See the OpenAPI documentation for complete details and request/response schemas.
 
@@ -202,31 +196,24 @@ See the OpenAPI documentation for complete details and request/response schemas.
 
 Run the test suite:
 
+From the repo root, in the `agents` conda environment:
+
 ```bash
 # Run all tests
-python -m pytest
+python -m pytest backend/tests          # or: npm run test:backend
 
-# Run specific test file
-python -m pytest tests/test_senior_research.py
+# Run one file
+python -m pytest backend/tests/test_senior_research.py
 
-# Run with coverage report
-python -m pytest --cov=app
+# Coverage report
+npm run coverage:backend
 ```
 
-### Testing Environment
-
-For testing, you can use a separate `.env.test` file:
-
-```bash
-cp .env .env.test
-# Edit .env.test with test configuration
-```
-
-Then run tests with:
-
-```bash
-WEBAGENT_ENV=test python -m pytest
-```
+Notes:
+- No test calls a real LLM or web service; model replies are faked.
+- `backend/tests/conftest.py` makes both `app.*` and `backend.*` imports work from any directory, and points saved task results at a temporary folder.
+- `backend/tests/test_workflow_state_flow.py` runs the real LangGraph workflow with stand-in agents, to check that each agent's report reaches the next step.
+- Set `LANGSMITH_TRACING_ENABLED=false` if you don't want test runs traced.
 
 ## Development
 
@@ -294,29 +281,46 @@ def get_my_new_agent():
     return MyNewAgent()
 ```
 
+Things to know when writing an agent:
+- Return the `WorkflowState` you were given. Editing it in place (for example `state.update_with_agent_output(...)` or `state.context[...] = ...`) is fine: `WorkflowState` reports every field to LangGraph, so changes carry to the next step.
+- Wrap LangChain chains with `self.trace_chain(chain)` so the step shows up under the agent's name in LangSmith.
+- Use `await chain.ainvoke(...)` inside `run()`. Blocking calls stall the whole server while they run.
+- Add a test in `backend/tests/` with the model reply faked (see `test_coding_agents.py`).
+
 ### Environment Variables
 
 Key environment variables used by the application:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| WEBAGENT_ENV | Environment (development, test, production) | development |
-| DEBUG_MODE | Enable debug mode | false |
-| LOG_LEVEL | Logging level | INFO |
-| LLM_PROVIDER | LLM provider (openai, anthropic) | openai |
-| OPENAI_API_KEY | OpenAI API key | |
-| ANTHROPIC_API_KEY | Anthropic API key | |
-| LANGSMITH_ENABLED | Enable LangSmith tracing | false |
-| LANGSMITH_API_KEY | LangSmith API key | |
-| LANGSMITH_PROJECT | LangSmith project name | webagent |
+| WEBAGENT_ENV | `dev`, `uat` or `prod`; picks `config/{env}.yaml` | dev |
+| WEBAGENT_API_DEBUG_MODE | Debug logging and auto-reload | false (dev.yaml turns it on) |
+| WEBAGENT_LLM_DEFAULT_PROVIDER | First LLM provider to try (`together`, `openai`, `anthropic`, `groq`, `gemini`, `self`) | together |
+| WEBAGENT_LLM_DEFAULT_MODEL | Default model | meta-models/Muse-Glimmer-30B |
+| TOGETHER_API_KEY | Together AI key (required) | |
+| TOGETHER_RATE_LIMIT_SECONDS | Minimum gap between Together calls | 2.0 |
+| OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, GEMINI_API_KEY | Fallback provider keys | |
+| TAVILY_API_KEY | Web search key | |
+| LANGSMITH_API_KEY | Turns on LangSmith tracing | |
+| LANGSMITH_PROJECT_NAME | LangSmith project | webagent-research |
+| LANGSMITH_TRACING_ENABLED | Set `false` to turn tracing off | true |
+| WEBAGENT_API_KEY | Key clients send as `X-API-Key` (required in uat/prod) | |
+| WEBAGENT_SECURITY_SECRET_KEY | JWT signing secret (required in uat/prod) | insecure dev default |
+| WEBAGENT_SECURITY_API_KEY_ENABLED | Require `X-API-Key` | false (true in uat/prod YAML) |
+| WEBAGENT_ENABLE_CODE_EXECUTION | Let agents run generated code in the API server | false |
+| WEBAGENT_ALLOW_FAKE_LLM | Placeholder reply when every provider fails | false |
+| WEBAGENT_DATA_DIR | Data folder (vector DB, artifacts, results) | backend/data |
+
+`.env.local.example` in the repo root lists every setting with comments.
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **API Keys**: Ensure your LLM provider API keys are correctly set in `.env`
-2. **Import Errors**: Make sure you're running from the correct directory or use `path_setup.py`
-3. **Workflow Errors**: Check the logs for details on agent errors
+1. **API Keys**: Ensure your LLM provider API keys are correctly set in `.env.local` in the repo root
+2. **Import Errors**: Run from the repo root (`python -m backend.main`) or use `path_setup.py`
+3. **Workflow Errors**: Check the logs for details on agent errors; filter by the task's `[task <id>]` tag
+4. **Together AI "Error 503" or "Error 429"**: Temporary; calls retry up to 3 times (2s, then 4s). If it persists, raise `TOGETHER_RATE_LIMIT_SECONDS`
 
 ### Diagnostic Checks
 
@@ -336,11 +340,19 @@ This will check:
 
 ### Logging
 
-Logs are stored in the `logs/` directory. For more detailed logs, set:
+Logs go to the console and to `backend/logs/webagent-<env>.log` (rotated at 10 MB; daily in prod). uat and prod write JSON lines.
 
-```
-LOG_LEVEL=DEBUG
-```
+- The level is DEBUG when debug mode is on (`debug_mode` in the YAML config, or `WEBAGENT_API_DEBUG_MODE=true`), otherwise INFO.
+- Every API request is logged with an ID and duration; the ID is also returned in the `X-Request-ID` header.
+- While a task runs, every log line (agents, parallel steps, libraries) starts with `[task <first 8 chars of task id>]`. This comes from `app/core/log_context.py`.
+
+### Saved results
+
+Each finished task is written to `backend/data/results/<task_id>.json` (question, status, timings and the full report or error). The folder is git-ignored.
+
+### Tracing
+
+With `LANGSMITH_API_KEY` set, each task is one LangSmith trace in the project `webagent-research` (`LANGSMITH_PROJECT_NAME`). It covers every agent step and model call, including Together token counts. `app/core/setup_langsmith.py` sets both `LANGSMITH_*` and `LANGCHAIN_*` variables, so settings exported in your shell can't split a trace across projects. Turn tracing off with `LANGSMITH_TRACING_ENABLED=false`.
 
 ## Contributing
 
@@ -385,26 +397,16 @@ The WebAgent backend uses several environment variables for configuration. These
 
 ### Environment Files
 
-The repository includes several template files:
+Two templates live in the repo root:
 
-- `.env.example` - Template for general configuration variables
-- `.env.example.local` - Template for sensitive API keys (never commit to version control)
-- `.env.demos.example` - Template for demo-specific variables
+- `.env.local.example` - Every setting, including API keys. Copy to `.env.local` (git-ignored) and fill in your keys.
+- `.env.example` - Non-secret defaults. Copy to `.env` only if you want to change them.
 
-To set up your environment:
+```bash
+cp .env.local.example .env.local
+```
 
-1. Copy `.env.example` to `.env` and customize as needed
-2. Copy `.env.example.local` to `.env.local` and add your API keys
-
-### Important Variables
-
-Key environment variables include:
-
-- `WEBAGENT_ENV`: Set to `dev`, `uat`, or `prod` to determine which YAML config to load
-- `WEBAGENT_LLM_DEFAULT_PROVIDER`: Which LLM provider to use (`together`, `openai`, etc.)
-- `TOGETHER_API_KEY`, `OPENAI_API_KEY`: API keys for LLM providers
-- `TAVILY_API_KEY`: API key for web search functionality
-- `LANGSMITH_API_KEY`: For tracing and debugging LLM chains
+See the [Environment Variables](#environment-variables) table above for the most important settings.
 
 ## Directory Structure
 

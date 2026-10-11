@@ -9,6 +9,9 @@ jest.mock('next/image', () => ({
   },
 }));
 
+// The rest of this file mocks browser APIs. API route tests run with
+// `@jest-environment node`, where `window` and `Element` don't exist.
+if (typeof window !== 'undefined') {
 // Mock URL.createObjectURL
 global.URL.createObjectURL = jest.fn(() => 'mock-url');
 
@@ -141,4 +144,5 @@ if (typeof window !== 'undefined') {
   if (!window.URL || !window.URL.revokeObjectURL) {
     Object.defineProperty(window.URL, 'revokeObjectURL', { value: jest.fn() });
   }
+}
 } 

@@ -19,6 +19,14 @@ _langsmith_client = None
 # Global LangChain tracer
 _langchain_tracer = None
 
+
+def _set_tracing_env(name: str, value: str) -> None:
+    # LangSmith reads LANGSMITH_* before LANGCHAIN_*. Set both, or a LANGSMITH_PROJECT
+    # exported in the user's shell sends part of each trace to a different project.
+    os.environ[f"LANGSMITH_{'TRACING' if name == 'TRACING_V2' else name}"] = value
+    os.environ[f"LANGCHAIN_{name}"] = value
+
+
 def setup_langsmith():
     """
     Configure LangSmith tracing based on environment settings.
@@ -28,15 +36,15 @@ def setup_langsmith():
     
     if not settings.LANGSMITH_API_KEY:
         logger.warning("LangSmith API key not set. Tracing will be disabled.")
-        os.environ["LANGCHAIN_TRACING_V2"] = "false"
+        _set_tracing_env("TRACING_V2", "false")
         return False
     
     try:
         # Set up environment variables for LangSmith
-        os.environ["LANGCHAIN_TRACING_V2"] = str(settings.LANGSMITH_TRACING_ENABLED).lower()
-        os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-        os.environ["LANGCHAIN_API_KEY"] = settings.LANGSMITH_API_KEY
-        os.environ["LANGCHAIN_PROJECT"] = settings.LANGSMITH_PROJECT_NAME
+        _set_tracing_env("TRACING_V2", str(settings.LANGSMITH_TRACING_ENABLED).lower())
+        _set_tracing_env("ENDPOINT", "https://api.smith.langchain.com")
+        _set_tracing_env("API_KEY", settings.LANGSMITH_API_KEY)
+        _set_tracing_env("PROJECT", settings.LANGSMITH_PROJECT_NAME)
         
         # Log the configuration
         logger.info(f"LangSmith environment variables configured:")
@@ -64,7 +72,7 @@ def setup_langsmith():
             
     except Exception as e:
         logger.error(f"Failed to initialize LangSmith: {str(e)}")
-        os.environ["LANGCHAIN_TRACING_V2"] = "false"
+        _set_tracing_env("TRACING_V2", "false")
         return False
 
 def get_langsmith_client() -> Optional[Client]:

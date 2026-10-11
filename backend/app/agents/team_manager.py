@@ -120,6 +120,7 @@ class TeamManagerAgent(BaseAgent):
         report_json: Dict[str, Any],
         code_block: str,
         review_explanation: str = "",
+        fallback_body: str = "",
     ) -> str:
         recommendations = report_json.get("recommendations") or []
         if isinstance(recommendations, str):
@@ -141,6 +142,9 @@ class TeamManagerAgent(BaseAgent):
                 sections.extend(["## Executive Summary", summary])
             if analysis:
                 sections.extend([analysis] if has_own_summary else ["## Analysis", analysis])
+            elif not summary and fallback_body.strip():
+                # The model replied without a summary or analysis; don't return a title-only report.
+                sections.append(fallback_body.strip())
         for heading, body in (
             ("## Recommendations", rec_lines),
             ("## Next Steps", report_json.get("next_steps")),
@@ -225,8 +229,18 @@ class TeamManagerAgent(BaseAgent):
             
             if self._should_finalize(needs_analysis, needs_coding, state):
                 state.add_log("Team Manager: Compiling final report")
+                if not report_json.get("summary") and not report_json.get("analysis"):
+                    logger.warning(
+                        "Team Manager reply had no summary or analysis; using the research synthesis. "
+                        f"Reply fields: {sorted(report_json)}"
+                    )
+                has_synthesis = research_synthesis != "No research synthesis available."
                 markdown = self._build_report_markdown(
-                    state.query, report_json, visualization_code, review_explanation
+                    state.query,
+                    report_json,
+                    visualization_code,
+                    review_explanation,
+                    fallback_body=research_synthesis if has_synthesis else "",
                 )
                 state.mark_completed(
                     {

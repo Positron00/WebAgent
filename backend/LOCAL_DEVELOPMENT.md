@@ -4,61 +4,63 @@ This guide provides instructions for setting up and running the WebAgent backend
 
 ## Prerequisites
 
-- Docker and Docker Compose
-- Python 3.11+
+- Python 3.12 (conda environment `agents`)
 - Git
+- Docker and Docker Compose (optional, for Option 2)
 
 ## Setup
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-org/webagent.git
-cd webagent/backend
+git clone https://github.com/Positron00/WebAgent.git
+cd WebAgent
 ```
 
-2. Create a virtual environment:
+2. Create and activate the conda environment:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+conda create -n agents python=3.12
+conda activate agents
 ```
 
 3. Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+pip install -r backend/requirements.txt -c backend/constraints.txt
 ```
 
-4. Set up environment variables:
+4. Set up environment variables in the repo root:
 
 ```bash
-# Create a .env file
-cp .env.example .env
+cp .env.local.example .env.local
 ```
 
-Edit the `.env` file to include your API keys:
+Edit `.env.local` and set at least:
 
 ```
-OPENAI_API_KEY=your-openai-api-key
 TOGETHER_API_KEY=your-together-api-key
-JWT_SECRET=your-jwt-secret
-LANGSMITH_API_KEY=your-langsmith-api-key
+TAVILY_API_KEY=your-tavily-api-key
+LANGSMITH_API_KEY=your-langsmith-api-key       # optional, for tracing
 ```
+
+For uat/prod you also need `WEBAGENT_API_KEY` and `WEBAGENT_SECURITY_SECRET_KEY`.
 
 ## Running Locally
 
 ### Option 1: Running with Python
 
-1. Start the application:
+1. Start the application from the repo root:
 
 ```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+python -m backend.main
 ```
 
 2. Access the API at http://localhost:8000
 
-3. Access the API documentation at http://localhost:8000/docs
+3. Access the API documentation at http://localhost:8000/api/v1/docs
+
+4. To use the web app as well, run `npm install && npm run dev` in the repo root. It runs on http://localhost:3000.
 
 ### Option 2: Running with Docker Compose
 
@@ -75,35 +77,28 @@ This will start:
 
 2. Access the services:
    - WebAgent API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
+   - API Documentation: http://localhost:8000/api/v1/docs
    - Prometheus: http://localhost:9090
    - Grafana: http://localhost:3000 (login with admin/WebAgent-Admin-2025!)
 
 ## Development Workflow
 
 1. Make changes to the code
-2. The server will automatically reload if you're using `uvicorn` with the `--reload` flag
+2. The server reloads automatically when debug mode is on (`debug_mode` in `config/dev.yaml`, or `WEBAGENT_API_DEBUG_MODE=true`). It only watches `backend/`, and a reload drops running tasks.
 3. Run tests to ensure your changes don't break existing functionality
 
 ## Running Tests
 
-### Unit Tests
+From the repo root:
 
 ```bash
-pytest tests/unit
+python -m pytest backend/tests              # all tests
+python -m pytest backend/tests/unit         # unit tests
+python -m pytest backend/tests/integration  # integration tests
+npm run coverage:backend                    # with a coverage report
 ```
 
-### Integration Tests
-
-```bash
-pytest tests/integration
-```
-
-### All Tests
-
-```bash
-pytest
-```
+No test calls a real LLM. See [docs/TESTING.md](../docs/TESTING.md).
 
 ## Monitoring
 
@@ -126,17 +121,17 @@ The WebAgent Backend Dashboard provides:
 The application is configured using YAML files in the `config` directory:
 
 - `dev.yaml`: Development configuration
-- `test.yaml`: Testing configuration
-- `production.yaml`: Production configuration
+- `uat.yaml`: Pre-production (user acceptance testing) configuration
+- `prod.yaml`: Production configuration
 
-The configuration file is selected based on the `ENVIRONMENT` environment variable.
+The configuration file is selected by the `WEBAGENT_ENV` environment variable (`dev`, `uat` or `prod`; default `dev`). API keys and secrets go in `.env.local` in the repo root, never in the YAML files.
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **API Key Issues**:
-   - Ensure your API keys are correctly set in the `.env` file
+   - Ensure your API keys are correctly set in `.env.local` in the repo root
    - Check the logs for authentication errors
 
 2. **Docker Issues**:
@@ -145,10 +140,13 @@ The configuration file is selected based on the `ENVIRONMENT` environment variab
 
 3. **Port Conflicts**:
    - If ports are already in use, modify the port mappings in `docker-compose.yml`
+   - Grafana and the Next.js web app both default to port 3000. Change Grafana's mapping (for example `"3001:3000"`) if you run both
 
 ### Logs
 
-- When running with Python, logs are output to the console and to the `logs` directory
+- When running with Python, logs go to the console and to `backend/logs/webagent-dev.log`
+- Lines written during a task are tagged `[task <id>]`, so you can `grep` one task's lines
+- Finished task reports are saved in `backend/data/results/<task_id>.json`
 - When running with Docker, view logs with `docker-compose logs -f webagent-backend`
 
 ## Contributing

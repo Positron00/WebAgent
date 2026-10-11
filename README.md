@@ -1,7 +1,7 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://semver.org)
-[![last-updated](https://img.shields.io/badge/last%20updated-2025--04--17-lightgrey.svg)](https://github.com/yourusername/webagent)
+[![version](https://img.shields.io/badge/version-3.0.1-blue.svg)](https://semver.org)
+[![last-updated](https://img.shields.io/badge/last%20updated-2026--10--10-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent platform for web research and document processing.
 
@@ -31,7 +31,7 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   - Graph database integration for document relationship tracking
   - Data-as-a-Service API for document operations
 
-- **LangGraph Integration**: Uses LangGraph for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow, compatible with LangGraph 0.0.25+
+- **LangGraph Integration**: Uses LangGraph (0.2.x) for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow
 
 - **Microservices Model Framework**: Decoupled model services that can be independently scaled and managed
   - Model Registry for discovery and status tracking
@@ -53,6 +53,11 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
 - **Comprehensive Security**: Advanced security module with authentication, authorization, rate limiting, input validation, error sanitization, request size limiting, and protection against common vulnerabilities
 
 - **Advanced Observability**: Detailed diagnostics and monitoring capabilities for tracking system health, performance metrics, and execution statistics
+  - Every log line written during a task is tagged `[task <id>]`
+  - Full LangSmith traces of each run, including token counts
+  - Finished task reports saved to `backend/data/results/`
+
+- **Reliability**: Temporary Together AI errors (rate limits, 5xx) are retried, and the server keeps answering while tasks run
 
 ## System Architecture
 
@@ -169,7 +174,7 @@ The WebAgent platform now includes a model microservices framework that allows e
    - Parallel execution of compatible agents
    - Feedback loops for iterative refinement
    - State management and persistence
-   - Compatibility with LangGraph 0.0.25 and higher
+   - Built on LangGraph 0.2.x
 
 3. **Agents**: Specialized autonomous agents each with a specific role
    - Supervisor Agent: Orchestrates the workflow and analyzes queries
@@ -196,7 +201,7 @@ The WebAgent platform now includes a model microservices framework that allows e
 6. **Integration Layer**: Connectors to external knowledge sources and APIs
    - Web search integration (via Tavily)
    - Internal knowledge base (via vector database)
-   - LLM provider integration (OpenAI, Anthropic)
+   - LLM providers: Together AI (default, `meta-models/Muse-Glimmer-30B`), with OpenAI, Anthropic, Groq and Gemini as fallbacks
    - LangSmith for tracing and debugging
 
 7. **Observability & Monitoring**: Tools for system monitoring and performance analysis
@@ -223,8 +228,10 @@ Follow these steps to set up and run the WebAgent platform:
 ### Prerequisites
 
 - Python 3.12 or higher
+- Node.js 18 or higher (for the web app)
 - Conda for environment management
 - Git for version control
+- A Together AI API key (required) and a Tavily API key (for web research)
 
 ### Setup Environment
 
@@ -242,23 +249,32 @@ Follow these steps to set up and run the WebAgent platform:
 
 3. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements.txt   # backend (uses backend/constraints.txt pins)
+   npm install                       # web app
    ```
 
-4. Set up configuration:
+4. Add your API keys:
    ```bash
-   # Use backend/config/dev.yaml (or copy from backend/config/uat.yaml / prod.yaml as a template)
-   # Edit dev.yaml with your configuration
+   cp .env.local.example .env.local
+   # Edit .env.local: set TOGETHER_API_KEY and TAVILY_API_KEY at minimum
    ```
+   `.env.local` is git-ignored and is read by both the backend and the web app. The template lists every setting with its default.
+   Environment-specific settings (agents, models, limits) live in `backend/config/{dev,uat,prod}.yaml`, chosen by `WEBAGENT_ENV`.
 
 ### Running the Application
 
-1. Start the main application:
+1. Start the backend (FastAPI on port 8000):
    ```bash
    python -m backend.main
    ```
 
-2. Run Model Services (optional):
+2. In a second terminal, start the web app (Next.js on port 3000):
+   ```bash
+   npm run dev
+   ```
+   Turn on **Agentic** in the chat toolbar to send questions to the multi-agent backend. A run usually takes 30–90 seconds. With Agentic off, the web app answers directly through Together AI and the backend isn't needed.
+
+3. Run Model Services (optional):
    ```bash
    # Start the model manager
    python -m backend.models.run_manager
@@ -267,7 +283,7 @@ Follow these steps to set up and run the WebAgent platform:
    python -m backend.models.run_model_service --model-id mistral-7b   # any model ID in backend/models/config/models.yaml
    ```
 
-3. Access the application:
+4. Access the application:
    - Web UI: http://localhost:3000
    - API: http://localhost:8000/api/v1
    - Swagger UI: http://localhost:8000/api/v1/docs
@@ -281,10 +297,19 @@ WebAgent includes comprehensive testing and diagnostic tools.
 
 1. Run all tests:
    ```bash
-   python -m unittest discover backend/tests
+   npm test                  # web app (Jest)
+   npm run test:backend      # backend (pytest, in the `agents` conda env)
    ```
+   No test calls a real LLM; model replies are faked.
 
-2. Run model service tests:
+2. Run tests with coverage:
+   ```bash
+   npm run test:coverage     # fails if web app coverage drops below the floor in jest.config.js
+   npm run coverage:backend
+   ```
+   See [docs/TESTING.md](docs/TESTING.md) for details.
+
+3. Run model service tests:
    ```bash
    # Run model registry and API gateway tests
    python -m backend.tests.test_models
@@ -296,7 +321,7 @@ WebAgent includes comprehensive testing and diagnostic tools.
    python -m backend.tests.test_model_manager_simplified
    ```
 
-3. Run diagnostics:
+4. Run diagnostics:
    ```bash
    python -m backend.diagnostics.runners.run_all
    ```
@@ -315,12 +340,21 @@ WebAgent includes comprehensive testing and diagnostic tools.
 
 3. View logs:
    ```bash
-   tail -f logs/webagent-dev.log
+   tail -f backend/logs/webagent-dev.log
+   ```
+   While a task runs, each line is tagged with the first 8 characters of its task ID, so you can follow one task:
+   ```bash
+   grep "\[task 9e6a4965\]" backend/logs/webagent-dev.log
    ```
 
-4. View LangSmith traces (if configured):
-   - Visit LangSmith at https://smith.langchain.com
-   - Filter by project "webagent-research"
+4. Read saved task reports:
+   Each finished task (successful or not) is saved to `backend/data/results/<task_id>.json` with the question, status, timings and full report. `GET /api/task/<task_id>` also reads from there after a restart.
+
+5. View LangSmith traces (if `LANGSMITH_API_KEY` is set):
+   - Visit LangSmith at https://smith.langchain.com and open the project `webagent-research` (change with `LANGSMITH_PROJECT_NAME`)
+   - Each task is one trace containing every agent step and model call, with token counts
+   - The app's settings override any `LANGSMITH_PROJECT` exported in your shell
+   - Set `LANGSMITH_TRACING_ENABLED=false` to turn tracing off
 
 ### Common Issues and Troubleshooting
 
@@ -338,6 +372,16 @@ WebAgent includes comprehensive testing and diagnostic tools.
    - Ensure rate limiting is properly configured
    - Check error message redaction in security module
    - Verify middleware ordering in FastAPI application
+
+4. **Agentic answer starts with "I'm currently operating in fallback mode"**
+   - The multi-agent task failed or the backend isn't reachable, so the web app answered with plain chat
+   - Check the backend is running on `WEBAGENT_BACKEND_URL` (default `http://127.0.0.1:8000`) and look for errors in `backend/logs/webagent-dev.log`
+
+5. **"Unable to access non-serverless model" (HTTP 400)**
+   - Together AI no longer serves that model on demand; set `WEBAGENT_LLM_DEFAULT_MODEL` to a serverless model (default `meta-models/Muse-Glimmer-30B`)
+
+6. **LangSmith shows steps stuck as "pending" or traces in another project**
+   - Usually a `LANGSMITH_PROJECT` exported in your shell; the backend now overrides it, so restart the backend
 
 ## License
 

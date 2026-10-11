@@ -2,6 +2,27 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.0.1 - 2026-10-10
+
+### Added
+- Every log line written during a task is tagged `[task <id>]`, including parallel agents and library logs
+- Token counts for Together AI calls now reach LangSmith (`TogetherWithUsage` keeps the `usage` data Together returns)
+- Tests for the agentic client, `ChatContext`, the `/api/chat` and `/api/task` routes, LLM provider selection, rate limiting, the coding agents, task-tagged logging, LangSmith setup and token usage
+- Coverage commands: `npm run test:coverage`, `npm run test:backend`, `npm run coverage:backend`
+- Complete `.env.local.example` template listing every setting, now tracked in git
+
+### Changed
+- LangSmith upgraded from 0.1.125 to 0.3.45
+- Agents rely on LangChain's built-in tracing instead of attaching a second tracer
+- Jest coverage minimum set just below current coverage (it was 70%, which was never met)
+- Docs updated: setup, environment variables, testing, logs, saved results and tracing
+
+### Fixed
+- Traces were split between two LangSmith projects when the shell exported `LANGSMITH_PROJECT`, leaving steps stuck as "pending"; the app now sets both `LANGSMITH_*` and `LANGCHAIN_*` variables
+- A failed agentic task fell back to plain chat silently instead of showing the fallback notice (missing `await`)
+- Reports could contain only a title when the model's reply had no summary or analysis; the research synthesis is used instead
+- `jest.setup.js` crashed in tests that use the Node environment
+
 ## 3.0.0 - 2026-10-10
 
 ### Added

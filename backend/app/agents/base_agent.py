@@ -89,12 +89,11 @@ class BaseAgent:
         Returns:
             The same chain with tracing configured if enabled
         """
-        if self.langsmith_config.tracing_enabled and self.tracer:
-            logger.debug(f"Adding LangSmith tracing to {self.name} chain")
-            
-            # Only add the tracer callback without tags to avoid duplicate tags
-            return chain.with_config({"callbacks": [self.tracer]})
-            
+        # With LANGCHAIN_TRACING_V2 on, LangChain already traces this chain inside the
+        # workflow's trace. Adding our shared tracer as well reports every step twice,
+        # and LangSmith then leaves those steps stuck as "pending".
+        if self.langsmith_config.tracing_enabled:
+            return chain.with_config({"run_name": self.name})
         return chain
     
     async def run(self, state: WorkflowState) -> WorkflowState:

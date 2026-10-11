@@ -463,7 +463,8 @@ export class ApiClient {
       );
 
       if (response.task_id) {
-        return this.pollTaskResult(response.task_id);
+        // `await` so a failed or timed-out task is handled by the fallback below
+        return await this.pollTaskResult(response.task_id);
       }
 
       throw new Error('Multi-agent API did not return a task_id');

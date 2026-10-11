@@ -1,156 +1,152 @@
 # Testing Guide
 
-This document provides an overview of the testing framework used in the WebAgent project, including setup, best practices, and troubleshooting tips.
-
-## Testing Setup
-
-The project uses Jest for testing React components and utilities, with the following key configurations:
-
-- **Jest**: Test runner and assertion library
-- **React Testing Library**: For testing React components
-- **babel-jest**: For transpiling modern JavaScript features during testing
-- **jest-environment-jsdom**: Provides a DOM-like environment for tests
+WebAgent has two test suites: Jest for the Next.js web app and pytest for the FastAPI backend. Neither calls a real LLM or web service; model replies and HTTP responses are faked, so the tests are fast, free and repeatable.
 
 ## Running Tests
 
 ```bash
-# Run all tests
-npm test
+# Web app (Jest)
+npm test                      # all tests
+npx jest src/__tests__/api    # one folder or file
+npm run test:coverage         # with coverage; fails if coverage drops below the floor
 
-# Run tests in watch mode
-npm run test:watch
+# Backend (pytest, in the `agents` conda environment)
+npm run test:backend          # all tests
+npm run coverage:backend      # with a coverage report
+python -m pytest backend/tests/test_report_parsing.py   # one file, from the repo root
 
-# Run tests with coverage report
-npm run test:coverage
-
-# Run a specific test file
-npm run test:single -- path/to/test.tsx
-
-# Run the ApiClient tests specifically
-npm run test:apiClient
+# Type check and lint
+npm run check-types
+npm run lint
 ```
 
-## Test Structure
+Set `LANGSMITH_TRACING_ENABLED=false` when running backend tests if you don't want them traced to LangSmith.
 
-### Unit Tests
+## Web App Tests
 
-Unit tests are located in the `src/__tests__` directory and follow this structure:
+Setup:
+
+- **Jest** with **babel-jest** (config: `jest.config.js`, Babel config: `babel-test.config.js`)
+- **React Testing Library** for components and contexts
+- **jest-environment-jsdom** by default; API route tests use the Node environment (see below)
+
+Layout:
 
 ```
 src/
 ├── __tests__/
-│   ├── utils/              # Tests for utility functions
+│   ├── api/                 # Next.js API routes (Node environment)
+│   │   ├── chatRoute.test.ts      # /api/chat: validation, Together errors, fallback notice
+│   │   └── taskProxy.test.ts      # /api/task proxy: forwarding, X-API-Key, backend down
+│   ├── contexts/
+│   │   └── ChatContext.test.tsx   # question stays visible after the answer or an error
+│   ├── utils/
 │   │   ├── apiClient.test.ts
-│   │   └── ...
-│   ├── components/         # Tests for React components
-│   │   ├── Button.test.tsx
-│   │   └── ...
-│   └── ...
+│   │   └── apiClient.agentic.test.ts  # agentic request, polling, fallback
+│   └── Chat.test.tsx
+└── components/chat/__tests__/     # MessageInput, MessageList
 ```
 
-### Component Tests
+### Testing API routes
 
-Component tests typically verify:
+Next.js route handlers need the web `Request`/`Response` objects, so their test files start with:
 
-1. Rendering
-2. User interactions
-3. State changes
-4. Prop handling
+```ts
+/**
+ * @jest-environment node
+ */
+```
 
-Example:
+`jest.setup.js` only installs browser mocks when `window` exists, so it works in both environments. Routes that read environment variables when they load (for example `WEBAGENT_BACKEND_URL` or `TOGETHER_API_KEY`) must set them first and then import the route inside `beforeAll`:
 
-```tsx
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Button } from '../components/Button';
-
-describe('Button Component', () => {
-  it('renders correctly', () => {
-    render(<Button>Click me</Button>);
-    expect(screen.getByText('Click me')).toBeInTheDocument();
-  });
-
-  it('handles click events', () => {
-    const handleClick = jest.fn();
-    render(<Button onClick={handleClick}>Click me</Button>);
-    fireEvent.click(screen.getByText('Click me'));
-    expect(handleClick).toHaveBeenCalledTimes(1);
-  });
+```ts
+beforeAll(async () => {
+  process.env.WEBAGENT_BACKEND_URL = 'http://backend.test:9000';
+  ({ POST } = await import('@/app/api/task/route'));
 });
 ```
 
-## Mocking
+### Browser API mocks
 
-### Browser APIs
+`jest.setup.js` mocks `localStorage`/`sessionStorage`, `matchMedia`, `SpeechRecognition`, `IntersectionObserver`, `ResizeObserver`, `URL.createObjectURL`, `scrollIntoView`, `next/image` and a default `fetch`. Tests that check requests replace `global.fetch` with their own `jest.fn()`.
 
-We mock various browser APIs to ensure tests run consistently:
+### React contexts
 
-- **localStorage/sessionStorage**: For testing persistent data
-- **matchMedia**: For testing responsive components
-- **SpeechRecognition**: For voice input features
-- **IntersectionObserver**: For lazy loading and scroll detection
-- **ResizeObserver**: For size change detection
-- **URL.createObjectURL**: For file upload previews
-
-### React Contexts
-
-Context providers are mocked in `src/__tests__/utils/test-utils.tsx` to provide consistent test environments:
+Render components inside the real providers:
 
 ```tsx
-import { render } from '@testing-library/react';
-import { AppProvider } from '@/contexts/AppContext';
-import { ChatProvider } from '@/contexts/ChatContext';
-
-const customRender = (ui, options) => 
-  render(ui, { wrapper: ({ children }) => (
-    <AppProvider>
-      <ChatProvider>
-        {children}
-      </ChatProvider>
-    </AppProvider>
-  ), ...options });
-
-export * from '@testing-library/react';
-export { customRender as render };
+render(
+  <AppProvider>
+    <ChatProvider>
+      <ComponentUnderTest />
+    </ChatProvider>
+  </AppProvider>
+);
 ```
 
-## Testing Best Practices
+Mock `@/utils/apiClient` to control what the "server" returns (see `ChatContext.test.tsx`).
 
-1. **Test functionality, not implementation**: Focus on user behavior rather than implementation details.
-2. **Keep tests simple**: Each test should verify one specific behavior.
-3. **Use meaningful assertions**: Make it clear what's being tested and why.
-4. **Mock external dependencies**: Isolate the code being tested from external systems.
-5. **Use data-testid attributes**: When there's no accessible text to select elements.
-6. **Test edge cases**: Including error states and boundary conditions.
-7. **Avoid testing library internals**: Focus on your own code.
+### Coverage floor
+
+`jest.config.js` sets `coverageThreshold` just below current coverage, so `npm run test:coverage` fails if coverage drops. Raise the numbers when you add tests.
+
+## Backend Tests
+
+Layout (`backend/tests/`):
+
+| File | What it checks |
+|------|----------------|
+| `test_workflow_state_flow.py` | Runs the real LangGraph workflow with stand-in agents: reports carry between steps, research rounds count 1→2→3 and stop |
+| `test_report_parsing.py` | Team Manager and Supervisor JSON parsing, report building, fallbacks |
+| `test_coding_agents.py` | Coding Assistant output parsing and Coding Review code execution, timeouts, fixes |
+| `test_llm_selection.py` | Provider choice and fallback, which model goes to which provider, rate-limit queueing |
+| `test_together_retry.py` | Retrying temporary Together errors (429, 5xx), not retrying permanent ones |
+| `test_together_usage.py` | Token counts from Together reach LangChain callbacks / LangSmith |
+| `test_result_store.py` | Saving and reloading task results; rejects unsafe task IDs |
+| `test_log_context.py` | `[task <id>]` log tagging, including parallel agents |
+| `test_setup_langsmith.py` | App LangSmith settings override ones exported in the shell |
+| `unit/`, `integration/`, `diagnostics/` | Routing, security, API and diagnostics tests |
+
+`backend/tests/conftest.py`:
+
+- makes both `app.*` and `backend.*` imports work wherever pytest runs from
+- points saved task results at a temporary folder, so tests never write to `backend/data/results/`
+
+### Faking the model
+
+Replace the agent's model call with a fixed reply instead of calling a provider:
+
+```python
+async def fake_generate(prompt):
+    return '{"code": "print(1)", "explanation": "demo"}'
+
+monkeypatch.setattr(agent, "_generate_with_retry", fake_generate)
+```
+
+For whole workflows, patch the agent factories in `app.graph.workflows` (see `test_workflow_state_flow.py`).
+
+## Best Practices
+
+1. **Test behavior, not implementation**: check what the user or the next agent sees.
+2. **One behavior per test**, with a name that says what should happen.
+3. **Fake external services**: LLMs, Tavily, the backend, Together. Never depend on the network.
+4. **Cover failure paths**: errors, timeouts, fallbacks and malformed model output.
+5. **For a bug fix, write a test that fails without the fix** before relying on it.
 
 ## Troubleshooting
 
-### Common Issues
-
-1. **Test times out**: Increase the timeout in Jest configuration or check for unresolved promises.
-2. **DOM-related errors**: Make sure you're using `jest-environment-jsdom` and mocking browser APIs.
-3. **Context errors**: Ensure components are wrapped with the necessary providers.
-4. **Module import errors**: Check transformIgnorePatterns and moduleNameMapper in Jest config.
-5. **Babel transpilation issues**: Verify babel.config.js includes the necessary plugins.
+1. **Test times out**: look for an unresolved promise, or stub delays (`(client as any).delay = jest.fn().mockResolvedValue(undefined)`).
+2. **`window is not defined` / `Request is not defined`**: wrong test environment; API route tests need `@jest-environment node`.
+3. **Context errors**: wrap components in `AppProvider` and `ChatProvider`.
+4. **Module import errors**: check `transformIgnorePatterns` and `moduleNameMapper` in `jest.config.js`.
+5. **Backend `ModuleNotFoundError: backend`**: run pytest from the repo root, or check that `backend/tests/conftest.py` exists.
 
 ### ESM Module Issues
 
-Some libraries like `react-markdown` use ESM modules which can cause issues with Jest. We handle this by:
-
-1. Using appropriate transformIgnorePatterns to process these modules
-2. Providing a custom Babel transformer for node_modules
-3. Using a custom test runner script to skip transformation for problematic modules
-
-## Continuous Integration
-
-The test suite runs in CI on every pull request and commit to main. The pipeline will fail if:
-
-1. Any tests fail
-2. Test coverage drops below the thresholds
-3. There are linting errors
+Some libraries like `react-markdown` ship ESM only. `jest.config.js` lists them in `transformIgnorePatterns` so Babel transforms them.
 
 ## Further Reading
 
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
 - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro)
-- [Testing React Applications](https://reactjs.org/docs/testing.html) 
+- [pytest Documentation](https://docs.pytest.org/)

@@ -1,6 +1,6 @@
 {
   "name": "webagent-platform",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "WebAgent Platform with custom transformer model and improved model-as-a-service architecture (2025-04-17)",
   "private": true,
   "scripts": {
@@ -9,6 +9,9 @@
     "start": "next start",
     "start:local": "next start -p 3001",
     "test": "jest",
+    "test:coverage": "jest --ci --coverage",
+    "test:backend": "conda run -n agents python -m pytest backend/tests -q",
+    "coverage:backend": "conda run -n agents python -m pytest backend/tests -q --cov=backend/app --cov-report=term-missing:skip-covered",
     "lint": "next lint",
     "check-types": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",

@@ -1,6 +1,6 @@
 # Deploying WebAgent to Vercel
 
-[![version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.0.1-blue.svg)](https://semver.org)
 
 This guide explains how to deploy the WebAgent application to Vercel, including both the Next.js frontend and the Python backend functions.
 
@@ -19,6 +19,7 @@ Before deployment, you need to set up the following environment variables in you
 - `TOGETHER_API_KEY`: Your Together AI API key (used by `/api/chat`)
 - `WEBAGENT_BACKEND_URL`: URL of the FastAPI backend that runs the multi-agent workflow (used by `/api/task`)
 - `WEBAGENT_API_KEY`: API key the FastAPI backend expects when API-key auth is on (sent server-side only)
+- `WEBAGENT_LLM_DEFAULT_MODEL` (optional): Together model for `/api/chat`; defaults to `meta-models/Muse-Glimmer-30B`
 
 You can add these in the Vercel dashboard under Project Settings > Environment Variables.
 `vercel.json` no longer references `@secret` names; set the variables directly in project settings.

@@ -12,6 +12,7 @@ from app.graph.workflows import get_agent_workflow
 from app.models.task import TaskInfo, WorkflowState
 from app.core.metrics import timing_decorator, track_task_start, track_task_completion
 from app.services import result_store
+from app.core.log_context import current_task_id
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ class TaskManager:
             message: The user's message/query
             context: Optional additional context
         """
+        task_id_token = current_task_id.set(task_id)
         start_time = datetime.now()
         
         # Create task info
@@ -178,6 +180,7 @@ class TaskManager:
                         "result": self.task_results.get(task_id),
                     },
                 )
+            current_task_id.reset(task_id_token)
     
     def get_task_status(self, task_id: str) -> Tuple[str, Optional[Dict[str, Any]]]:
         """

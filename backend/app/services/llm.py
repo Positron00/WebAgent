@@ -71,9 +71,9 @@ class TogetherWrapper(Runnable[str, str]):
     def _create_llm(self):
         """Create the underlying LLM instance."""
         try:
-            # Try the new package first
-            from langchain_together import Together
-            return Together(
+            # Same as langchain_together.Together, but also reports token usage
+            from app.services.together_llm import TogetherWithUsage
+            return TogetherWithUsage(
                 model=self.model_name,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,

@@ -75,6 +75,22 @@ def test_markdown_does_not_duplicate_a_complete_report():
     assert "- Use tuples" in markdown
 
 
+def test_markdown_uses_fallback_when_reply_has_no_summary_or_analysis():
+    report = {"executive_summary": "unexpected key", "needs_analysis": False}
+    markdown = TeamManagerAgent._build_report_markdown(
+        "q", report, "", fallback_body="## Findings\n\nTuples are immutable."
+    )
+    assert "Tuples are immutable." in markdown
+    assert markdown != "# Comprehensive Analysis: q"
+
+
+def test_markdown_ignores_fallback_when_analysis_exists():
+    report = {"analysis": "Real analysis."}
+    markdown = TeamManagerAgent._build_report_markdown("q", report, "", fallback_body="Synthesis.")
+    assert "Real analysis." in markdown
+    assert "Synthesis." not in markdown
+
+
 def test_markdown_accepts_string_recommendation():
     report = {"analysis": "x", "recommendations": "Use tuples"}
     markdown = TeamManagerAgent._build_report_markdown("q", report, "")
