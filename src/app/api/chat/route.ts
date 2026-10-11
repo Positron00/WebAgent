@@ -180,7 +180,7 @@ export async function POST(req: Request) {
 
     if (error instanceof ApiError) {
       return NextResponse.json(
-        { error: error.message },
+        { error: { message: error.message } },
         { status: error.statusCode }
       );
     }

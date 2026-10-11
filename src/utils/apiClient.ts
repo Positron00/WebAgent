@@ -28,6 +28,28 @@ interface ChatCompletionMessage {
   logs?: string[];
 }
 
+/** Next.js routes return `{ error: string }`; some APIs use `{ error: { message } }`. */
+function extractErrorMessage(errorData: unknown): string | undefined {
+  if (!errorData || typeof errorData !== 'object') {
+    return undefined;
+  }
+  const err = (errorData as { error?: unknown; message?: unknown }).error;
+  if (typeof err === 'string' && err.trim()) {
+    return err;
+  }
+  if (err && typeof err === 'object' && 'message' in err) {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
+  const topLevel = (errorData as { message?: unknown }).message;
+  if (typeof topLevel === 'string' && topLevel.trim()) {
+    return topLevel;
+  }
+  return undefined;
+}
+
 /**
  * Enhanced error class with additional context for better debugging
  */
@@ -234,9 +256,10 @@ export class ApiClient {
           } catch (e) {
             errorData = { error: response.statusText };
           }
-          
+
+          const apiMessage = extractErrorMessage(errorData);
           throw new ApiError(
-            errorData.error?.message || `HTTP Error: ${response.statusText}`,
+            apiMessage || `HTTP Error: ${response.statusText}`,
             response.status,
             errorData,
             requestId,

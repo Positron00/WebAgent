@@ -136,7 +136,7 @@ Handles chat completions in a format compatible with the frontend.
 
 ```json
 {
-  "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+  "model": "meta-models/Muse-Glimmer-30B",
   "messages": [
     {
       "role": "user",
@@ -220,9 +220,9 @@ Gets the status of the backend services.
   "llm": {
     "status": "ok",
     "provider": "together",
-    "default_model": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+    "default_model": "meta-models/Muse-Glimmer-30B",
     "available_models": [
-      "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+      "meta-models/Muse-Glimmer-30B",
       "meta-llama/Llama-3.3-8B-Instruct"
     ]
   },

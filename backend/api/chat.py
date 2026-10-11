@@ -21,7 +21,10 @@ def handle_chat():
         # Parse request data
         data = request.json
         messages = data.get('messages', [])
-        model = data.get('model', 'meta-llama/Llama-3.3-70b-instruct-turbo-free')
+        model = data.get(
+            'model',
+            os.environ.get('WEBAGENT_LLM_DEFAULT_MODEL', 'meta-models/Muse-Glimmer-30B'),
+        )
         max_tokens = data.get('max_tokens', 1000)
         temperature = data.get('temperature', 0.7)
         top_p = data.get('top_p', 0.9)

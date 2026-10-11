@@ -188,7 +188,7 @@ data:
           temperature: 0.7
           max_tokens: 2048
         together:
-          model: "llama-3.3-70b-instruct-turbo-free"
+          model: "meta-models/Muse-Glimmer-30B"
           temperature: 0.7
           max_tokens: 2048
           

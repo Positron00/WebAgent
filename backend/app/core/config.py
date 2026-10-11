@@ -88,9 +88,9 @@ class Settings(BaseSettings):
     
     # Default LLM services
     LLM_DEFAULT_PROVIDER: str = os.getenv("WEBAGENT_LLM_DEFAULT_PROVIDER", "together")
-    LLM_DEFAULT_MODEL: str = os.getenv("WEBAGENT_LLM_DEFAULT_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
+    LLM_DEFAULT_MODEL: str = os.getenv("WEBAGENT_LLM_DEFAULT_MODEL", "meta-models/Muse-Glimmer-30B")
     DEFAULT_MODEL: str = os.getenv(
-        "WEBAGENT_LLM_DEFAULT_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+        "WEBAGENT_LLM_DEFAULT_MODEL", "meta-models/Muse-Glimmer-30B"
     )
     
     # OpenAI
@@ -125,7 +125,7 @@ class Settings(BaseSettings):
     
     # Together AI for LLM services
     TOGETHER_API_KEY: Optional[str] = os.getenv("TOGETHER_API_KEY")
-    TOGETHER_MODEL: Optional[str] = os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
+    TOGETHER_MODEL: Optional[str] = os.getenv("TOGETHER_MODEL", "meta-models/Muse-Glimmer-30B")
     
     # Data directory settings
     DATA_DIR: str = Field(

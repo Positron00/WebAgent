@@ -10,11 +10,16 @@ const getEnvVar = (key: string): string => {
   return value;
 };
 
+const DEFAULT_LLM_MODEL = 'meta-models/Muse-Glimmer-30B';
+
 export const config = {
   together: {
     apiKey: getEnvVar('TOGETHER_API_KEY'),
     endpoint: 'https://api.together.xyz/v1/chat/completions',
-    model: 'meta-llama/Llama-3.3-70b-instruct-turbo-free',
+    model:
+      process.env.WEBAGENT_LLM_DEFAULT_MODEL ||
+      process.env.TOGETHER_MODEL ||
+      DEFAULT_LLM_MODEL,
   },
 } as const;
 

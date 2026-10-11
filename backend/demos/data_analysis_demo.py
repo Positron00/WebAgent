@@ -133,7 +133,7 @@ def create_sample_datasets():
         # Generate synthetic agent performance data
         agent_types = ["web_research", "document_extraction", "internal_research", 
                        "data_analysis", "coding_assistant", "team_manager"]
-        models = ["meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", "meta-llama/Llama-3.1-8B", "claude-3-opus", "custom-model-v2"]
+        models = ["meta-models/Muse-Glimmer-30B", "meta-llama/Llama-3.1-8B", "claude-3-opus", "custom-model-v2"]
         
         with open(agent_metrics_path, "w", newline="") as f:
             writer = csv.writer(f)
@@ -165,7 +165,7 @@ def create_sample_datasets():
                             base_tokens = 4800
                         
                         # Models also affect performance
-                        if model == "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free":
+                        if model == "meta-models/Muse-Glimmer-30B":
                             latency_factor = 1.0
                             success_factor = 1.0
                             token_factor = 1.0
@@ -220,7 +220,7 @@ async def run_data_analysis_demo():
     print("DATA ANALYSIS AGENT DEMO")
     print("=" * 80)
     print("This demo requires an LLM for analyzing data and generating insights.")
-    print("The default LLM provider is TogetherAI with the Llama-3.3-70B model.")
+    print("The default LLM provider is TogetherAI with the Muse-Glimmer-30B model.")
     
     # Confirm LLM provider and model
     provider, model = confirm_llm_selection()

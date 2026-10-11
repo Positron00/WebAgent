@@ -119,7 +119,7 @@ async def run_web_research_demo():
     print("WEB RESEARCH AGENT DEMO")
     print("=" * 80)
     print("This demo requires an LLM for processing web search results.")
-    print("The default LLM provider is TogetherAI with the Llama-3.3-70B model.")
+    print("The default LLM provider is TogetherAI with the Muse-Glimmer-30B model.")
     
     try:
         # Confirm LLM provider and model

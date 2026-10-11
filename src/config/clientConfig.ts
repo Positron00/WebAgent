@@ -33,8 +33,8 @@ export const clientConfig = {
   together: {
     // Note: API key is NOT included here for security reasons
     endpoint: '/api/chat', // Use our local API endpoint instead of direct access
-    model: 'meta-llama/Llama-3.3-70b-instruct-turbo-free',
-    fallbackModel: 'meta-llama/Llama-3.3-8b-instruct', // Smaller model as backup if needed
+    model: 'meta-models/Muse-Glimmer-30B',
+    fallbackModel: 'meta-models/Muse-Glimmer-30B',
   },
   features: {
     enableAgenticMode: true,

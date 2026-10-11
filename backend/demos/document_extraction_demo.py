@@ -101,7 +101,7 @@ async def run_document_extraction_demo():
     print("DOCUMENT EXTRACTION AGENT DEMO")
     print("=" * 80)
     print("This demo requires an LLM for extracting information from documents.")
-    print("The default LLM provider is TogetherAI with the Llama-3.3-70B model.")
+    print("The default LLM provider is TogetherAI with the Muse-Glimmer-30B model.")
     
     # Confirm LLM provider and model
     provider, model = confirm_llm_selection()

@@ -37,7 +37,10 @@ logger = logging.getLogger(__name__)
 
 # Define model constants - these should match config.py
 TOGETHER_API_BASE = os.getenv("TOGETHER_API_BASE", "https://api.together.xyz/v1")
-TOGETHER_DEFAULT_MODEL = os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
+TOGETHER_DEFAULT_MODEL = os.getenv(
+    "TOGETHER_MODEL",
+    os.getenv("WEBAGENT_LLM_DEFAULT_MODEL", "meta-models/Muse-Glimmer-30B"),
+)
 OPENAI_DEFAULT_MODEL = "gpt-4o-mini-2024-07-18"
 GROQ_DEFAULT_MODEL = "meta-llama/Llama-3.2-1B"
 ANTHROPIC_DEFAULT_MODEL = "claude-3-5-sonnet-20240620"
@@ -953,7 +956,7 @@ def confirm_llm_selection(required_provider=None):
     Returns:
         Tuple[str, str]: Selected provider and model name
     """
-    # Default to TogetherAI and Llama-3.3-70B
+    # Default to TogetherAI and Muse-Glimmer-30B
     default_provider = settings.LLM_DEFAULT_PROVIDER or "together"
     default_model = settings.LLM_DEFAULT_MODEL or TOGETHER_DEFAULT_MODEL
     

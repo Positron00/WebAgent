@@ -303,7 +303,7 @@ async def run_internal_research_demo(debug_mode=False):
         print("INTERNAL RESEARCH AGENT DEMO")
         print("=" * 80)
         print("This demo requires an LLM for processing research results.")
-        print("The default LLM provider is TogetherAI with the Llama-3.3-70B model.")
+        print("The default LLM provider is TogetherAI with the Muse-Glimmer-30B model.")
         
         # Use standardized LLM selection function
         try:

@@ -556,7 +556,7 @@ class CodingAssistantAgent(BaseAgent):
         }
         
         data = {
-            "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+            "model": "meta-models/Muse-Glimmer-30B",
             "prompt": prompt,
             "max_tokens": 2500,
             "temperature": 0.7,

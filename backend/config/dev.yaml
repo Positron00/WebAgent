@@ -35,7 +35,7 @@ database:
 llm:
   # Provider options: "openai", "together", "self"
   provider: "together"
-  default_model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+  default_model: "meta-models/Muse-Glimmer-30B"
   temperature: 0.7
   timeout_seconds: 60
   max_tokens: 4096
@@ -70,33 +70,33 @@ tasks:
 # Agents configuration
 agents:
   supervisor:
-    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.2
   web_research:
-    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.3
     max_searches_per_task: 5
   internal_research:
-    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.1
     max_documents: 20
   senior_research:
-    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.2
     max_follow_up_questions: 3
   data_analysis:
-    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.1
   coding:
-    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.0
     allowed_modules: ["matplotlib", "seaborn", "numpy", "pandas"]
     timeout_seconds: 30
   team_manager:
-    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.4
   document_extraction:
-    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
+    model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.2
     lda_num_topics: 10
     lda_passes: 15

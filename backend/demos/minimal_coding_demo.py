@@ -46,7 +46,7 @@ def run_demo():
     print("\n" + "=" * 80)
     print("MINIMAL CODING ASSISTANT DEMO")
     print("=" * 80)
-    print("This demo uses Together AI with the Llama-3.3-70B model")
+    print("This demo uses Together AI with the Muse-Glimmer-30B model")
     print("=" * 80)
     
     print("\nInitializing LLM...")
@@ -75,7 +75,7 @@ Provide the code implementation without any explanation before or after the code
         }
         
         data = {
-            "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+            "model": "meta-models/Muse-Glimmer-30B",
             "prompt": prompt,
             "max_tokens": 2000,
             "temperature": 0.7,
