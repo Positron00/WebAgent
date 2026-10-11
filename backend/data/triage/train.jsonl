@@ -1,0 +1,600 @@
+{"text": "What is a REST API?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "define photosynthesis", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What does idempotent mean in computer science?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "explain what a hash table is", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What is the difference between a virus and a bacterium?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "what's a Kubernetes pod", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "Can you explain what entropy means in thermodynamics?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What is a blockchain, in simple terms?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "meaning of the word ubiquitous", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What is a transformer neural network?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "whats gradient descent", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "Explain the concept of opportunity cost.", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What is a monad in functional programming?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "what is TCP vs UDP", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "Define inflation in economics.", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What is the Pythagorean theorem?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What does CRISPR stand for and what is it?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "explain dependency injection like I'm five", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What is a black hole?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What's the difference between weather and climate?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "what is an LLM embedding?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What is OAuth 2.0 and how does it work conceptually?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "Define the term 'cognitive dissonance'.", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "How do I reverse a list in Python?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Write a function in JavaScript that debounces another function.", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "why does my python code say IndexError: list index out of range", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Fix this SQL: SELECT name, COUNT(*) FROM users GROUP name;", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "how to read a csv file with pandas and drop empty rows", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Convert this for loop to a list comprehension: result = []\nfor x in nums:\n    if x > 0:\n        result.append(x * 2)", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "What's the best way to handle errors in async/await in TypeScript?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "write a bash one-liner to count lines in all .py files", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "How do I center a div with flexbox?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Explain what this regex does: ^[a-z0-9_-]{3,16}$", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "my React useEffect runs twice, why?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Write a Go struct and JSON tags for a user with id, name and email fields.", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "How can I make a git branch track a remote branch?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "implement binary search in C++", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Refactor this to use a dictionary instead of if/elif: if x == 'a': return 1 elif x == 'b': return 2 elif x == 'c': return 3", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "What's the time complexity of quicksort and why?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "how do i undo the last git commit but keep my changes", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Write a Python class for a simple LRU cache.", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "TypeError: Cannot read properties of undefined (reading 'map') — what does this mean?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "How do I write a unit test with pytest that checks an exception is raised?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Dockerfile for a basic Flask app please", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "what's the difference between let, const and var", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Write a SQL query to find the second highest salary in an employees table.", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "What is 17% of 2,340?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "solve 3x + 7 = 22", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "What is the derivative of x^3 * sin(x)?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "how many seconds are in a week", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "If I invest $5,000 at 6% compounded annually, how much will I have after 10 years?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "Integrate 1/(1+x^2) dx", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "what's 144 divided by 12 times 3", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "Convert 72 degrees Fahrenheit to Celsius.", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "What is the probability of rolling two sixes with two dice?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "Find the area of a circle with radius 7 cm.", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "simplify (x^2 - 9)/(x - 3)", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "What is the square root of 529?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "A train goes 300 km in 2.5 hours. What's its average speed?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "How many ways can I arrange 5 books on a shelf?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "Compute the determinant of [[2, 3], [1, 4]].", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "what is 2 to the power of 20", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "Calculate the monthly payment on a $250,000 loan at 5% over 30 years.", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "Is 221 a prime number?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "mean and median of 4, 8, 15, 16, 23, 42", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "Convert 5 miles to kilometers", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "What's the sum of the first 100 positive integers?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "Solve the system: x + y = 10, x - y = 4.", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "tip of 18% on a $64.50 bill?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "How do I boil an egg so the yolk stays soft?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "how to tie a bowline knot", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "What's the best way to remove a red wine stain from a carpet?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I change a flat tire?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "steps to make sourdough starter from scratch", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I write a good cover letter?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How can I improve my sleep habits?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "how do you calculate your BMI", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "What's the proper way to do a push-up?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I unclog a kitchen sink without chemicals?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How to fold a fitted sheet?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "how do I make a pivot table in Excel", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "What are the steps to repot a houseplant?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I prepare for a job interview?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "how to clean a cast iron pan", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How can I memorize a speech quickly?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I set up a basic monthly budget?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "how to sharpen a kitchen knife with a whetstone", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I jump-start a car battery safely?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "What's a good way to learn touch typing?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "how do you make a paper airplane that flies far", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I apologize sincerely to a friend?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I convert a Word document to PDF?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "What's your favorite book and why?", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "I'm bored, tell me a joke", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "do you think cats or dogs make better pets?", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "I had a rough day at work today.", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Can you recommend a fun name for my goldfish?", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "what would you do if you could fly for a day", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Tell me something interesting about octopuses.", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "I can't decide between pizza and tacos for dinner, help me choose", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Are you able to feel emotions?", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "lol that was a terrible pun", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Give me a fun fact about the Roman Empire.", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "What's a good hobby to pick up in winter?", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "is it weird to eat cereal for dinner", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Write me a short riddle.", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "I just finished a marathon!!", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "what's the meaning of life in your opinion", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Which is cooler: sharks or dinosaurs?", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Thanks, that was really helpful!", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "suggest a good icebreaker question for a team meeting", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Do you prefer mornings or nights?", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "I'm nervous about my driving test tomorrow", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Tell me a short bedtime story about a dragon.", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "What's the best pizza topping, honestly?", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Write a haiku about autumn leaves.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Draft a polite email asking my manager for Friday off.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "give me 5 catchy names for a coffee shop", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a two-sentence product description for a bamboo toothbrush.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Rephrase this more formally: hey, can't make it tmrw, sorry", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a birthday message for my coworker.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "come up with a tagline for a fitness app", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a short LinkedIn headline for a data analyst.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Make this sentence shorter: In light of the fact that we are running late, we should probably think about leaving now.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a limerick about a cat who loves cheese.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Draft a thank-you note to a teacher.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Fix the grammar: me and him goes to the store yesterday", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a tweet announcing our bakery's new opening hours.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "give me a funny out-of-office reply", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write an opening line for a mystery novel.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Translate 'Where is the train station?' into Spanish.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a short toast for my brother's wedding.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Suggest three subject lines for a newsletter about gardening tips.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "rewrite 'the meeting is cancelled' in a friendlier tone", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a 4-line poem about the ocean.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Compose a short apology text for being late to dinner.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a one-paragraph bio for a freelance graphic designer.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Turn this into a bullet list: buy milk, call mom, finish report, book dentist", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Please shorten this to two sentences: The city council met on Tuesday evening to discuss the proposed expansion of the downtown bike lane network. Several residents spoke in favor, citing safety concerns after a string of accidents last spring, while some business owners worried that removing parking spaces would hurt foot traffic. After nearly three hours of debate, the council voted five to two to approve a pilot program on two streets, with a review scheduled for next year to measure the impact on traffic and local shops.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Proofread this paragraph and fix any errors: Our company have been growing rapidly over the past few year, and we are now looking for talented individual to join our team. The ideal candidate will has strong communication skills, a passion for customer service, and the ability to work independantly. If you think you are a good fit, please send you're resume and a short cover letter explaining why you want to work with us. We look forward to here from you soon.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Translate this into French: Thank you for attending our annual conference this year. We hope you enjoyed the keynote speeches, the workshops, and the chance to meet colleagues from around the world. Your feedback is very important to us, so please take a few minutes to fill out the short survey we sent to your email. We will use your suggestions to make next year's event even better. Safe travels home, and we hope to see you again soon.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize this in one paragraph for a busy executive: The quarterly review showed that revenue grew eight percent compared with the same period last year, driven mainly by strong sales in the subscription segment. However, hardware sales fell for the third quarter in a row, and customer support costs rose sharply after the launch of the new product line. The team recommends investing in self-service help tools, renegotiating supplier contracts for hardware components, and shifting marketing spend toward subscription upgrades. Management will decide on these proposals at the next board meeting.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Can you rewrite this to sound more professional? So basically the project is kind of behind because the design team didn't finish the mockups on time and then the developers couldn't start, and now everyone is stressed. We think we can still make the deadline if we cut a couple of features, like the dark mode and the export button, but we need the client to agree. Can somebody talk to them this week? Also we probably need another tester because the current one is out sick.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Make this paragraph simpler for a 10-year-old to understand: Photosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy. Using sunlight, they combine carbon dioxide from the air with water absorbed through their roots to produce glucose, a type of sugar that fuels their growth. Oxygen is released as a byproduct of this reaction, which is why plants are essential for life on Earth. The process takes place mainly in the leaves, inside tiny structures called chloroplasts that contain the green pigment chlorophyll.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this news blurb in a neutral tone and keep it under 50 words: In a stunning and frankly outrageous move, the tech giant announced yesterday that it would be laying off thousands of hardworking employees just weeks before the holidays, even as its executives pocketed enormous bonuses. Critics slammed the decision as greedy and heartless, while the company claimed the cuts were necessary to stay competitive in a rapidly changing market. Employees say they were given almost no warning and only minimal severance packages.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Please summarize the following article excerpt in three bullet points: Electric vehicle adoption has accelerated in many countries, supported by government incentives, falling battery costs, and a growing network of charging stations. Still, challenges remain. Rural drivers often lack access to fast chargers, used EV prices remain uncertain, and grid operators warn that demand at peak hours could strain local infrastructure. Automakers are responding by offering more affordable models and partnering with utilities to manage charging times, while some cities are experimenting with curbside chargers on streetlights.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Fix the grammar and punctuation in this email: hi team, just wanted to let everyone know that the office will be closed on monday for the holiday, please make sure you finish any urgent tasks by friday afternoon. if you need access to the building over the weekend talk to facilities before thursday so they can arrange it. also dont forget the team lunch is moved to wednesday next week, same place as last time. thanks and have a good long weekend everyone", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Translate to German please: Our new store opens next Saturday at 10 a.m. on Main Street. To celebrate, the first fifty customers will receive a free tote bag and a coupon for twenty percent off their next purchase. We will have live music, snacks for kids, and a raffle with prizes donated by local businesses. Bring your friends and family, and come see our wide selection of books, games, and gifts. We can't wait to welcome you to the neighborhood.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Condense this into a single tweet: Researchers at the university have published a study suggesting that short walks after meals can help regulate blood sugar levels. Participants who walked for just ten to fifteen minutes after eating showed smaller spikes in glucose compared with those who sat or stood still. The researchers say the findings could be especially useful for people with type 2 diabetes, though they caution that larger studies are needed. They recommend light activity rather than intense exercise immediately after eating.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Please make this cover letter paragraph more concise: I am writing to express my strong interest in the marketing coordinator position at your esteemed organization, which I recently saw advertised on your company website. I believe that my background in social media management, content creation, and event planning, along with my excellent organizational and communication skills, would make me a very valuable addition to your marketing team. I have always admired your company's creative campaigns and its commitment to sustainability and community involvement.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize this meeting transcript in a few sentences: Anna opened by reviewing last week's action items. The landing page redesign is done, but the analytics dashboard is still waiting on data access. Raj said legal has approved the new privacy policy and it can go live Monday. Mei raised concerns about the onboarding flow, saying new users drop off at the second screen. The group agreed to run an A/B test with a shorter form. Next meeting will focus on the Q3 roadmap and hiring for two engineering roles.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this in plain English: Pursuant to the terms and conditions outlined herein, the lessee shall be responsible for all maintenance and repairs to the premises, excluding structural defects, which shall remain the obligation of the lessor. Any modifications to the premises require the prior written consent of the lessor, which shall not be unreasonably withheld. Failure to comply with these provisions may result in termination of the lease agreement and forfeiture of the security deposit.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Can you translate this paragraph into Spanish? The weather forecast says it will rain all weekend, so we are moving the picnic indoors to the community center. There will still be plenty of food, games for the children, and a short presentation about the new park project. Please bring a dish to share if you can, and let us know if you have any allergies. Doors open at noon and we will finish around four o'clock. Parking is free in the lot behind the building.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Shorten this product description to about 40 words: Introducing our all-new stainless steel water bottle, designed for people who are always on the go. With double-wall vacuum insulation, it keeps your drinks cold for up to 24 hours and hot for up to 12 hours. The leak-proof lid and durable powder-coated finish make it perfect for hiking, commuting, or the gym. It is free from BPA and other harmful chemicals, fits most car cup holders, and comes in eight vibrant colors to match your style.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Proofread and tidy up this paragraph from my essay: The industrial revolution was a period of major change, it started in Britain in the late 18th century and spreaded to other countries. New machines like the steam engine made it possible to produce goods faster then before. However it also lead to poor working conditions, child labor and pollution in the growing cities. Many historians argue that the effects of this period is still felt today in how we work and live.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize this press release in two sentences: The central bank announced today that it will keep its benchmark interest rate unchanged, citing a gradual slowdown in inflation and steady employment figures. Officials noted that consumer spending remains resilient but warned that global trade tensions pose risks to the outlook. The bank said future decisions will depend on incoming data and that it remains prepared to adjust policy if inflation does not continue to ease toward its target over the coming months.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this paragraph so it sounds friendlier for a customer newsletter: We are informing all customers that due to system upgrades, the online portal will be unavailable from 11 p.m. Friday until 6 a.m. Saturday. During this time, no orders can be placed or modified. Customers must ensure any pending transactions are completed before the maintenance window. Support staff will not be available by phone during the outage. We apologize for any inconvenience this may cause and appreciate your patience.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Turn this paragraph into a short bulleted summary: Our volunteer program had a great year. We recruited over two hundred new volunteers, mostly through social media and partnerships with local schools. Volunteers contributed more than six thousand hours, helping at food drives, park cleanups, and tutoring sessions. The biggest challenge was scheduling, since many people could only help on weekends. Next year we plan to introduce an online sign-up system and add more evening shifts to make it easier for working adults to join.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Translate this into Italian: Dear guests, breakfast is served every morning from seven to ten in the dining room on the ground floor. Please let reception know if you have any dietary requirements, and we will be happy to prepare something for you. The swimming pool is open from eight in the morning until eight in the evening, and towels are available at the pool entrance. If you need a taxi or would like recommendations for local restaurants, our staff is always glad to help.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Make this abstract shorter, about half the length: This study examines the relationship between remote work and employee productivity in mid-sized technology companies. Using survey data from over one thousand workers and performance metrics provided by employers, we find that productivity remained stable or increased slightly for most employees after the shift to remote work. However, we observe significant differences across roles, with collaborative and junior positions reporting more difficulties. We discuss implications for hybrid work policies and suggest directions for future research on long-term effects.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Please clean up this rambling paragraph and make it clear: So the thing about the new recycling rules is that, like, you can't put plastic bags in the blue bin anymore, which I didn't know, and also glass has to go in a separate container now, I think starting next month, and the pickup day is changing from Tuesday to Thursday for our street, but only every other week, and if you put the wrong stuff in they might leave a sticker and not take it. Anyway just wanted to tell the neighbors.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "What happened at the UN climate summit this week?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "latest news on the Israel-Gaza ceasefire talks", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Who won the most recent Formula 1 Grand Prix?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What are the results of the latest national election in Germany?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What's going on with the US government shutdown negotiations right now?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "any updates on the OpenAI board drama this month?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What did the Federal Reserve announce at its most recent meeting?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Summarize today's top headlines in technology.", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "what's the latest on the war in Ukraine", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Has the Supreme Court ruled on the recent tariff case yet?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What new AI models were released this week?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Who is currently leading the Premier League table?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Are there any major wildfires burning in California right now?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What's the status of the latest SpaceX Starship launch?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "what did apple announce at their event yesterday", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Is there a hurricane heading toward Florida this week?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What are the latest developments in the EU's Digital Markets Act enforcement?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Who are the current front-runners in the next US presidential primary polls?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "what's new with the TikTok ban situation", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Has there been any recent news about Nvidia export restrictions to China?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What are the biggest stories in global markets today?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Did the strike at the Boeing plant end?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "recent earthquakes in Japan — anything major in the last few days?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Compare the iPhone 17 Pro and the latest Samsung Galaxy S flagship on camera, battery and price.", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Which is the best budget laptop for students right now?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Compare current pricing of AWS, Azure and Google Cloud for GPU instances.", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "What's the best electric SUV on the market this year under $50k?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Claude vs GPT vs Gemini — which current model is best for coding according to recent benchmarks?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "best noise cancelling headphones 2026", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Compare the latest mortgage rates from the big US banks.", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Which streaming service has the best catalog right now, Netflix, Max or Disney+?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Compare Notion, Obsidian and Logseq based on recent reviews and pricing.", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "What's the best robot vacuum currently available for pet hair?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Which VPN providers are rated best this year for privacy and speed?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Compare the current versions of React, Vue and Svelte in terms of adoption and performance.", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Tesla Model 3 vs Hyundai Ioniq 6 — which is the better buy today?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Which credit cards currently offer the best travel rewards?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "What are the top-rated mirrorless cameras for beginners right now, and how do their prices compare?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "compare the newest gaming consoles and their exclusive games lineup", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Which project management tools are most popular with startups this year?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Compare current interest rates on high-yield savings accounts.", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Best e-readers available now — Kindle vs Kobo vs others?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Which vector databases are leading in 2026 and how do Pinecone, Weaviate and Qdrant compare on pricing?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "What are the pros and cons of the latest MacBook Air versus the newest Dell XPS?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Compare airline baggage fees for the major US carriers as of this year.", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "which meal kit delivery service is cheapest right now", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Put together a detailed report on the state of the global semiconductor industry in 2026.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I need a comprehensive overview of recent clinical trials for GLP-1 weight loss drugs, with citations.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Can you compile an in-depth analysis of the electric vehicle battery supply chain, including recent developments?", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Prepare a briefing document on the current regulatory landscape for AI in the US, EU and China.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Survey the recent academic literature on large language model hallucination and summarize the main findings.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Create a market analysis of the plant-based meat industry with up-to-date figures.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Give me a thorough, sourced write-up on the causes and current status of the housing affordability crisis in Canada.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I'd like a white paper summarizing the latest evidence on remote work and productivity.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Compile a competitive landscape report for the AI coding assistant market.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Produce a well-cited overview of recent advances in solid-state batteries.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Investigate the current state of quantum computing hardware and summarize key players and milestones.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Can you do a full analysis of how recent tariffs have affected US manufacturing, with data and sources?", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I need an in-depth report on microplastics in drinking water, covering recent studies.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Prepare a comprehensive summary of the latest research on long COVID treatments.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Analyze recent trends in venture capital funding for climate tech, with numbers from this year.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Put together a sourced background brief on the current South China Sea disputes.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Write up a detailed overview of the latest developments in nuclear fusion research, citing recent papers and announcements.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Assemble a report comparing national approaches to social media age restrictions, based on current laws.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Could you produce an evidence review of intermittent fasting studies published in the last few years?", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Draft an industry report on the state of the commercial space launch market this year.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I need a multi-source analysis of global food price trends and what's driving them right now.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Summarize the current scientific consensus and recent studies on the health effects of ultra-processed foods, with references.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Provide a detailed investigation into recent cybersecurity breaches at major companies and the lessons learned.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "What is the current unemployment rate in the US?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "How many people live in Tokyo as of 2026?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What's Nvidia's market cap today?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What was the inflation rate in the eurozone last month?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "Current price of gold per ounce?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "How many monthly active users does ChatGPT have now?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What is the average rent for a one-bedroom apartment in London this year?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "latest GDP growth figures for India", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "How much did Apple earn in its most recent quarter?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What's the current USD to JPY exchange rate?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What is the global smartphone market share by brand this year?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "How many EVs were sold in China last year?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What's the 10-year Treasury yield right now?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "current median home price in the US", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What is the size of the global AI market in 2026?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "How much is a barrel of Brent crude today?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What's the latest US CPI number?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "How many subscribers does Netflix have currently?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What's the population of Nigeria right now?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "Tesla stock price today", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What are average gas prices in California this week?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "How much venture funding did AI startups raise last quarter?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What is the current federal funds rate?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "bitcoin price now?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "weather in Paris today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "who won last night's game", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "latest iPhone release date", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "is the stock market up today?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "ETH price", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "score of the Lakers game", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "traffic on I-405 right now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Is it going to rain in Seattle tomorrow?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "who won the Oscar for best picture this year", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "current time in Sydney? also is daylight saving in effect now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "newest Pixel phone?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "what's trending on Twitter today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "flight status UA 837", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "latest Python version?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "did the Fed cut rates today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "who's the UK prime minister now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "euro to dollar rate today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Is Gmail down?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "latest Taylor Swift album", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "S&P 500 close today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "NBA standings", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "when's the next SpaceX launch", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "hey whats the deal with the new EU AI rules", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what are people saying about the latest Fed decision", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "so is it a good time to buy a house or nah", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "anything interesting happening in AI lately?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is the job market for software engineers still bad?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's up with egg prices these days", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "kinda curious what the latest thinking is on red meat and heart health", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is crypto doing ok rn", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what do reviewers think of the new Zelda game", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "heard something about a new covid variant, should i be worried?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "whats the vibe on the new macbooks, worth it?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "are electric cars actually cheaper to own now?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's going on with interest rates, are they coming down?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "I keep hearing about Ozempic shortages, what's that about", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "so did that big merger between those airlines go through?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is anyone still using the metaverse stuff or did that die", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "how bad is inflation right now honestly", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's the latest gossip around the next James Bond actor", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is remote work dying? seems like everyone's going back to the office", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what are folks saying about the new Nintendo console", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "wait did they change the rules on student loan forgiveness again?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is it true housing prices are dropping in Austin?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "whats the current word on whether we're heading into a recession", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "What is the population of Japan in 2026? → and South Korea?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What's the current price of bitcoin? → and ethereum?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Who won the 2026 World Cup? → who scored the final goal?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What's the weather in London today? → what about tomorrow?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What's Apple's stock price right now? → how about Microsoft?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What are the latest mortgage rates? → any change since last week?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Who is leading in the latest polls? → what about in swing states?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What did the Fed decide this week? → how did markets react?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Best budget phones right now? → which has the best camera?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What's the unemployment rate in Canada? → and in Australia?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Latest news on the Ukraine peace talks? → any updates today?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Explain Python decorators → show an example", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What is recursion? → simpler please", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Write a haiku about winter → make it funnier", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "How do I reverse a string in JavaScript? → now in Python", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Solve 2x + 5 = 15 → show the steps", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Draft an email declining a meeting → make it shorter", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What is a hash map? → give an analogy", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Translate 'good morning' to French → and Spanish?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Summarize this paragraph about photosynthesis → in one sentence", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "How do I boil pasta? → how much salt?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Write a SQL query to count users by country → sort descending", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Tell me a joke about cats → another one", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "wondering if intermittent fasting actually works according to newer research", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's the vibe on Rust for backend dev these days", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "kinda curious what experts think lately about seed oils", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is it still worth buying a PS5 in 2026", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "are people still recommending the Kindle Paperwhite", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "does creatine actually help your brain? saw something about new studies", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "so is nuclear power making a comeback or what", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what are economists saying about the housing market this fall", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "anyone know if the new Android update is buggy?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is it a bad idea to get into real estate investing right now", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "do standing desks really do anything, what does the recent evidence say", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's the consensus on vitamin D supplements nowadays", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is Python still the go-to for data science or has something replaced it", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what are critics saying about the latest Marvel movie", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is the new iPad Pro worth upgrading to or nah", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "how's the AI regulation stuff going in the US lately", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "curious whether cold plunges are legit or just hype, any newer studies?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's happening with remote work visas, are more countries offering them", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "should i still be using LastPass after all those breaches", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is the hype around solid state batteries real yet", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what do parents think about the new screen time guidelines", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "how are people feeling about the current state of the economy", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is it worth learning Kotlin in 2026", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "whats the latest thinking on how much coffee is too much", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "are folks happy with Starlink internet these days", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is the gig economy getting better or worse for workers lately", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's the general take on the new Apple Vision headset", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "did anything actually come out of the latest climate talks", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "have there been any breakthroughs on Alzheimer's drugs recently", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "so are self-driving taxis actually a thing in more cities now", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what are investors saying about tech stocks this month", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is it still smart to buy a used Tesla right now", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is microdosing actually backed by any recent research", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "hmm what's the current mood around the AI bubble talk", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "are people still using Threads or did everyone go back to X", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "wondering what dentists recommend these days for electric toothbrushes", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's the newest on the Mars sample return mission", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "any idea if mortgage rates are expected to fall soon", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's the scoop on the new Netflix password rules", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is Bali still a good place for digital nomads or is it overrun now", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "how's the semiconductor shortage, is it over?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what are teachers saying about AI in classrooms lately", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is the four-day work week catching on anywhere?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what are the reviews like for the new Dune game", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is ozempic actually safe long term, what do newer studies show", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "kinda wanna know which countries are easiest to move to right now", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "is it true that the honeybee population is recovering?", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's the deal with all these new streaming price hikes", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "are vinyl records still selling well these days", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "what's the latest buzz on Llama models, are they still competitive", "label": "agentic", "category": "casual_research", "source": "generated"}
+{"text": "Explain what inflation is → UK rate right now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is a stock index? → S&P today?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "How do interest rates work? → what's the current Fed rate?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is a hurricane? → any active ones right now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Explain how elections work in France → who's leading the polls now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Define GDP → what's China's latest figure?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "How does Bitcoin mining work? → what's the price today?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is a mortgage? → what are rates this week?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Explain the Electoral College → latest swing state polls?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Write a poem about Paris → is it raining there now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is an EV? → best ones on sale now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "How do vaccines work? → any new COVID boosters?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is the Premier League? → who's top right now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Explain supply and demand → why are eggs pricey lately?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What does a central bank do? → did the ECB cut rates?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is a GPU? → which to buy now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Translate 'hello' to Japanese → what's the yen rate today?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is unemployment? → US rate this month?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Explain what a recession is → are we in one now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What's a smartphone chipset? → which new phones use Snapdragon?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "How do airlines price tickets? → cheapest NYC-London fares now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is a hedge fund? → biggest ones in 2026?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Explain the stock market → why did Nvidia drop today?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is OPEC? → latest production decision?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "How do solar panels work? → current price per watt?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Who founded Microsoft? → who runs it now?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What is a cryptocurrency exchange? → which are safest today?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "Explain how housing markets work → are Denver prices falling?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What does the WHO do? → any current outbreaks?", "label": "agentic", "category": "followup", "source": "generated"}
+{"text": "What are the latest ETF inflows this quarter? → what does ETF mean?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Compare current mortgage rates across banks → explain that more simply", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What happened at the G20 summit this week? → thanks!", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Give me a sourced report on the EV market in 2026 → make it shorter", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Latest news on the Fed decision? → translate that to Spanish", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What are the newest studies on microplastics? → give me a one-line summary", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Current state of AI chip export rules? → what's a GPU exactly?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Who's leading the Premier League now? → what does goal difference mean?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What did the Supreme Court rule on tariffs? → define tariff", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Bitcoin price today? → what is a blockchain?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Compare the best laptops right now → put that in a table", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What's the latest US CPI number? → what does CPI stand for?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Recent research on long COVID? → summarize in bullet points", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Top AI news this week? → cool, thanks", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What are analysts saying about Apple earnings? → what's EPS?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Latest unemployment rate in Germany? → explain like I'm five", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Compile studies on remote work productivity → shorten to 100 words", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What's happening with the Ukraine talks? → translate to French", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Current 10-year Treasury yield? → what's a bond yield?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Best noise cancelling headphones now? → make it a short list", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What's new with the EU AI Act? → what does GDPR mean?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Latest SpaceX launch news? → what is low Earth orbit?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Compare cloud GPU prices today → rewrite more formally", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Who won last night's NBA game? → what's a triple-double?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Report on global food prices this year → one sentence version please", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "What's driving oil prices this week? → define a barrel", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Newest research on GLP-1 drugs → what does GLP-1 stand for?", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Current housing market in Austin? → great, thank you!", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Latest news on the TikTok ban → simplify that", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Market share of smartphone brands this year → turn that into a tweet", "label": "direct", "category": "followup", "source": "generated"}
+{"text": "Analyze recent studies on screen time and adolescent mental health, with citations.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I need a structured overview of the current state of carbon capture technology.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Compile what's known about the long-term effects of e-cigarettes from recent studies.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Analyze the latest evidence on four-day work week trials, citing sources.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Can you put together a sourced overview of how central banks are handling digital currencies?", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I need a well-referenced breakdown of the current AI chip market and its main suppliers.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Compile recent findings on the gut microbiome and depression, with references.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Provide a structured analysis of the global lithium market, including recent price movements.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Give me a detailed, cited summary of what's known about PFAS contamination in 2026.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Analyze how major economies are responding to aging populations, with recent data.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I want a thorough sourced review of the evidence on universal basic income pilots.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Compile the current knowledge on antibiotic resistance trends worldwide, citing recent reports.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Create a structured brief on the state of open-source LLMs this year, with sources.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Analyze recent peer-reviewed work on sleep and memory consolidation, with citations.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I need an evidence-based overview of the effectiveness of carbon taxes, using recent studies.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Summarize and synthesize recent papers on retrieval-augmented generation, with links.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Prepare a sourced analysis of the global shipping industry after the latest Red Sea disruptions.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Compile what researchers currently know about the health effects of artificial sweeteners.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I need a structured market overview of humanoid robotics companies in 2026.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Analyze the current evidence for and against rent control, citing recent research.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Produce a detailed brief on India's renewable energy expansion with up-to-date figures.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Give me a multi-source analysis of the current state of the global wine industry.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Compile recent research on the effectiveness of mindfulness apps, with references.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Build a structured overview of state-level AI laws passed in the US so far.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Analyze the latest data on global coral reef bleaching events with sources.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Prepare a sourced summary of where the Artemis program stands today.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "I need an organized review of recent findings on air pollution and dementia risk.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Synthesize recent analyst reports on the future of streaming media profitability.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Compile the current evidence on whether AI tools improve developer productivity, with citations.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Give me a comprehensive cited analysis of global water scarcity hotspots this year.", "label": "agentic", "category": "report", "source": "generated"}
+{"text": "Lakers score", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Is Slack down right now?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "gas prices near Chicago today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Dow Jones right now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "weather Tokyo tomorrow", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "is AWS having an outage", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Yankees game tonight score", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "SOL price today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "traffic Bay Bridge now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "is Discord down", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "snow in Denver today?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "gold price today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "who's winning the Masters", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Nasdaq futures now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "temperature in Phoenix now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "is ChatGPT down", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Champions League results tonight", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "air quality in Delhi today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Is the Golden Gate Bridge open?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "pound to euro now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Super Bowl odds this year", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Is Netflix down for anyone?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Real Madrid score", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "uv index Miami today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Apple stock right now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "is there a storm coming Houston", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "current Bitcoin dominance", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "world cup qualifier results", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Heathrow delays today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "latest Android version", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "who won Wimbledon this year", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Is X down right now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "mortgage rates today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Dogecoin price now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "is it sunny in Rome", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Steam servers down?", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "NFL scores today", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "oil price right now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "is I-95 jammed right now", "label": "agentic", "category": "time_sensitive_short", "source": "generated"}
+{"text": "Summarize these meeting notes in three bullets: Attendees: product, design, engineering. Discussed the March launch timeline. Engineering flagged that the payment integration is two weeks behind because the vendor changed their API. Design finished the checkout screens. Product wants to keep the date and cut the referral feature. Marketing asked for final screenshots by the 15th. Action items: Sam to contact the vendor, Lee to update the roadmap, Priya to share screenshots. Next sync on Thursday at 10.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this email so it's shorter and more polite: Hi Mark, I've asked three times now for the updated invoice and still haven't gotten it. This is holding up our payment run and my manager is asking me about it every day. I really need it by tomorrow or we'll have to push your payment to next month, which I'm sure you don't want. Please just send it over as soon as you can. Also please make sure the PO number is on it this time because last time it wasn't and accounting rejected it.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Turn this paragraph into bullet points: In 2007, Apple introduced the first iPhone, combining a phone, an iPod, and an internet communicator into one device. It had no app store at launch, and third-party apps were only added the following year. The touchscreen interface replaced physical keyboards, which was a big change from popular phones of the time. Sales started slowly but grew quickly, and within a few years smartphones became the dominant type of mobile phone worldwide.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Can you summarize this essay paragraph in one sentence? Social media has changed the way news spreads. Stories that once took hours to reach the public now travel in minutes, often before journalists have time to verify the facts. This speed has benefits, such as faster warnings during disasters, but it also makes it easier for false information to go viral. Platforms have experimented with fact-check labels and slower sharing features, but researchers disagree on how effective these measures really are.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Please proofread this bullet list and make it consistent: - Finalize budget for Q2 by friday\n- emailing the vendors about new pricing\n- Team offsite: book venue and catering\n- update the website banner with the new promo\n- Hiring - schedule 3 interviews for backend role\n- review the analytics report from Google analytics and share key insights with the team in slack\n- Renew the domain before it expire next month", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Translate this announcement into Portuguese: Starting next Monday, our customer service hours will change. We will be open from 8 a.m. to 6 p.m. on weekdays and from 9 a.m. to 1 p.m. on Saturdays. We will be closed on Sundays and public holidays. You can still reach us any time by email or through the chat on our website, and we will respond within one business day. Thank you for your understanding and for being a valued customer.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Make this paragraph sound more confident for my performance review: I think I maybe helped the team a bit this year with the migration project. I tried to keep things organized and I sort of led the weekly meetings when our lead was away. I also wrote some documentation that people seemed to find useful, I guess. I'm hoping to maybe take on more responsibility next year if that's possible, and possibly mentor one of the new hires if anyone thinks that would be a good idea.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize this news article for me in two lines: The European Commission on Wednesday proposed new rules requiring large online platforms to share more data with researchers studying disinformation. Under the proposal, companies would have to provide access to anonymized data within thirty days of a request from approved institutions. Industry groups said the plan raises privacy concerns, while academics welcomed it as overdue. The proposal will now be debated by member states and the European Parliament before it can become law.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite these notes as a short professional paragraph: talked to client today. they like the new logo but want the blue darker. also want to move launch from may 3 to may 10 because of their trade show. asked if we can add a spanish version of the landing page, said we'd quote it. they'll send updated copy by friday. overall happy, slight concern about budget.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Shorten this paragraph to under 50 words: Our neighborhood association has been working for several months to improve the small park at the end of Elm Street. With help from volunteers and a grant from the city, we have installed new benches, planted twenty trees, and repaired the old playground equipment. We are now planning a community picnic to celebrate the reopening, and we hope that everyone in the neighborhood will come along, bring their families, and enjoy the newly improved space together.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Please summarize this customer feedback into the main themes: The app is great but it crashes every time I try to upload a photo. Love the design, really clean. Wish there was a dark mode. Customer support took four days to answer my email. The new update made the app much slower on my older phone. I like the reminders feature a lot. Please add a way to export my data. It keeps logging me out randomly, very annoying. Overall I'd recommend it to friends.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this paragraph from my blog in a more casual voice: Remote work presents numerous advantages for employees, including increased flexibility, the elimination of commuting time, and the opportunity to create a personalized work environment. Nevertheless, it also introduces certain challenges, such as feelings of isolation, difficulty separating professional and personal life, and reduced opportunities for spontaneous collaboration. Organizations that wish to support remote staff effectively should invest in communication tools and establish clear expectations regarding availability.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Convert this into a numbered list of steps: First you need to preheat the oven to 180 degrees. While it heats, mix the flour, sugar and baking powder in a large bowl. In another bowl beat the eggs with the milk and melted butter. Then pour the wet ingredients into the dry ones and stir until just combined, don't overmix. Pour the batter into a greased tin and bake for about 35 minutes, until a skewer comes out clean. Let it cool before slicing.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Translate this into Japanese please: Dear customer, thank you for your order. We are pleased to let you know that your package has been shipped and should arrive within three to five business days. You can track your delivery using the link in this email. If you have any questions about your order or need to make changes, please contact our support team. We hope you enjoy your purchase and look forward to serving you again.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize this quarterly update from our CEO in a few sentences: Team, Q3 was a solid quarter. We closed 42 new enterprise deals, our highest ever, and churn dropped to 3 percent. The Berlin office opened on schedule. On the downside, our mobile app launch slipped to Q1 because of performance issues found in testing. We are also pausing hiring in non-engineering roles until we hit our cash targets. Thank you all for your hard work, and I'll share more at the all-hands next week.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Fix the spelling and grammar in this paragraph: Last weekend me and my family went to the coast for a short trip. The whether was suprisingly warm and we spended most of the day at the beach. My little brother builded a huge sand castle and we eated fish and chips for lunch. In the evening we walk along the pier and watched the sunset. It was one of the best weekend we had in a long time and we definately want to go back soon.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Can you turn this long text message into a short summary? Hey so about Saturday, the plan changed a bit. Instead of meeting at the cafe at 11 we're going straight to the museum at noon because Jess has to leave early. Tickets are already booked so no need to buy them. After the museum we might grab dinner near the river, probably that Thai place, but not sure yet. Bring a jacket because it's supposed to get cold. Let me know if you can still make it!", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this paragraph about a tech company in simpler words: The corporation announced a strategic realignment of its cloud infrastructure division, consolidating several regional data centers to optimize operational efficiency and reduce capital expenditure. Executives indicated that the restructuring would enable greater investment in artificial intelligence capabilities, while acknowledging that a limited number of positions would be eliminated. The company expects the transition to be completed within eighteen months and to yield substantial annual cost savings.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize these interview notes for the hiring committee: Candidate has six years of backend experience, mostly Java and some Go. Strong on system design, explained caching and queues clearly. Weaker on frontend, which is fine for this role. Asked thoughtful questions about on-call. Some hesitation when discussing conflict with teammates. Salary expectation is at the top of our band. Available to start in four weeks. Overall recommendation from me is a lean hire, would like a second opinion from the team lead.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Shorten this LinkedIn post to around 60 words: I'm excited to share that after five amazing years at my company, I'm starting a new chapter! It has been an incredible journey filled with challenges, growth, and wonderful colleagues who became friends. I learned so much about leadership, teamwork, and resilience. I'm grateful to everyone who supported me along the way. Next month I'll be joining a startup in the climate space as head of operations, and I can't wait to see what we build together. Stay tuned!", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this into a formal complaint letter: I bought a washing machine from your store three weeks ago and it already stopped working. It makes a loud banging noise and then just stops in the middle of the cycle. I called the helpline twice and both times they said someone would call me back but nobody did. I want either a repair this week or a full refund. I still have the receipt and the box. I'm really disappointed because I've been a customer for years.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize this history paragraph in two sentences: The Berlin Wall was built in 1961 by the government of East Germany to stop people from fleeing to the West. For nearly three decades it divided families and became a symbol of the Cold War. In November 1989, after weeks of protests and political changes across Eastern Europe, border crossings were suddenly opened. Crowds gathered to celebrate, and people began tearing down sections of the wall. Germany was officially reunified less than a year later, in October 1990.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Turn these rough notes into a clear status update email: website migration 80% done. blog posts moved, product pages still pending. found broken images on about 30 pages, fixing this week. SEO redirects mapped. go-live target still june 12 but risk if product pages slip. need sign off from legal on new privacy page. no budget changes. please also mention that the design team needs final copy for the homepage hero by next monday.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Translate this paragraph into Korean: Welcome to our language exchange group! We meet every Wednesday evening at the public library to practice speaking in a relaxed and friendly environment. Each session is split into two halves, so everyone gets time to practice their target language. No experience is required, and all levels are welcome. Please bring a notebook and a positive attitude. If you have any questions, feel free to message the organizers before the next meeting.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Simplify this paragraph from a science article: Neurons communicate through electrochemical signals. When a neuron is stimulated, ion channels in its membrane open, allowing charged particles to flow in and out of the cell. This creates an electrical impulse called an action potential, which travels along the axon to the synapse. There, neurotransmitters are released into the gap between cells and bind to receptors on the next neuron, either exciting or inhibiting it. This process repeats billions of times every second in the human brain.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Please make this paragraph more concise for a grant application: Our organization, which has been operating for over fifteen years in the local community, works to provide free after-school tutoring and mentoring programs to children from low-income families who might not otherwise have access to such opportunities. We are seeking funding in order to expand our programs to two additional schools in the district, which would allow us to serve approximately one hundred and fifty more students every year and hire three additional part-time tutors.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize this product review in one short paragraph: I've had these headphones for two months now. The sound quality is excellent, especially the bass, and the noise cancelling works well on flights. Battery life is about 25 hours, a bit less than advertised. The ear cushions get warm after an hour or so, which is uncomfortable in summer. The app is clunky and the EQ settings reset sometimes. For the price I think they're good value, but if comfort is your priority you might want to look elsewhere.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this paragraph in the passive voice: The committee reviewed the proposal last week. They identified several issues with the budget section and asked the team to provide more detail on staffing costs. The finance director will present a revised version at the next meeting. If the committee approves it, the organization will launch the program in September. The board expects the program to reach over five hundred families in its first year.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Make this email to my landlord sound calmer: The heating has been broken for TEN days now and nobody has come to fix it. I've called you four times and sent two emails. It's freezing in the apartment and my kid has been sick. This is completely unacceptable and honestly I'm thinking about withholding rent until it's sorted. I need someone here by Friday at the latest. Please confirm when the technician is coming.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize these bullet points from a conference talk into a short paragraph: - Speaker: data engineering lead at a retail company\n- Moved from nightly batch jobs to streaming pipelines\n- Reduced reporting delay from 24 hours to 5 minutes\n- Biggest challenge was data quality, not technology\n- Introduced data contracts between teams\n- Costs went up 20% at first, then dropped after tuning\n- Advice: start with one high-value use case, not everything at once", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Can you rephrase this paragraph so it doesn't sound plagiarized? Climate change refers to long-term shifts in temperatures and weather patterns. These shifts may be natural, but since the 1800s, human activities have been the main driver of climate change, primarily due to the burning of fossil fuels like coal, oil and gas. Burning fossil fuels generates greenhouse gas emissions that act like a blanket wrapped around the Earth, trapping the sun's heat and raising temperatures.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Translate this note into Arabic: Hi everyone, just a reminder that the parent-teacher meetings are next Tuesday and Wednesday after school. Each meeting will last about ten minutes. Please sign up for a time slot using the form sent home with your child last week. If none of the times work for you, contact the school office and we will arrange a phone call instead. We look forward to talking with you about your child's progress this term.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Turn this paragraph into a short FAQ with three questions: Our gym is open from 6 a.m. to 10 p.m. every day except public holidays, when we close at 6 p.m. Membership costs 40 dollars a month with no joining fee, and you can cancel at any time with thirty days' notice. Group classes such as yoga and spin are included in the membership, but personal training sessions cost extra. Guests can visit for 10 dollars per day when accompanied by a member.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize this paragraph about the 2008 financial crisis for a high school student: The 2008 financial crisis began when many American homeowners could no longer repay mortgages that had been given to them with little checking of their ability to pay. Banks had bundled these risky loans into complex investments and sold them around the world. When home prices fell, the value of these investments collapsed, causing major banks to fail or need government bailouts. The crisis led to a deep global recession and millions of lost jobs.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Edit this paragraph to remove repetition: The new library is a great addition to the town. The new library has a large children's section and the new library also has a cafe. Many people in the town have said the new library is the best thing to happen to the town in years. The library staff are friendly and the library is open late on weekdays. I think everyone should visit the new library at least once.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this job posting to be more inclusive and concise: We are looking for a young, energetic rockstar developer who can work long hours and thrive under pressure. The ideal guy will have a computer science degree from a top university and at least ten years of experience with every modern framework. You must be a culture fit and enjoy after-work drinks with the team. Native English speakers only. Apply today if you think you have what it takes to join our elite team.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Summarize this long Slack thread for someone who missed it: Alex said the staging deploy failed at 2pm. Jordan found that a migration was missing. Kim reverted the last merge and staging came back. Alex asked whether prod was affected, Jordan confirmed it wasn't because the deploy hadn't reached prod. Kim will add a check to the CI pipeline so migrations can't be skipped. Everyone agreed to hold further deploys until tomorrow morning. Jordan will write a short incident note.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this speech opening to make it more engaging: Good evening everyone. Thank you for coming tonight. My name is the vice president of the club and I will be talking about our plans for the next year. We have several new projects and initiatives that we will be introducing. I will go through them one by one and then there will be time for questions at the end. Please hold your questions until then. Let's begin with the first item on the agenda, which is the budget.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Please summarize this article about a company's earnings call in three bullet points: During Tuesday's earnings call, the retailer reported revenue of 12 billion dollars, up four percent from a year earlier, beating analyst expectations. Online sales grew fifteen percent, while foot traffic in physical stores was flat. The company raised its full-year guidance and announced plans to close forty underperforming stores. Executives also said they would expand same-day delivery to twenty more cities by spring.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "Rewrite this paragraph in British English spelling: The organization's color scheme was finalized after the program manager analyzed feedback from the center's customers. They realized that the gray theme wasn't favored, so the team emphasized brighter tones. The catalog was also reorganized to make it easier to find items, and the labor costs of the redesign were lower than anticipated. Everyone apologized for the delay and agreed to prioritize the launch.", "label": "direct", "category": "long_routine", "source": "generated"}
+{"text": "What came out of the NATO summit that just wrapped up?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "any news on the trade negotiations between the US and China this week?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What's the latest on the Boeing safety investigation?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Who won the Nobel Peace Prize this year?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What major court rulings happened this week?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What's the current situation in Sudan?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "Did Congress pass the budget bill yet?", "label": "agentic", "category": "current_events", "source": "generated"}
+{"text": "What's Microsoft's current P/E ratio?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "How many people are unemployed in Spain right now?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What is the average salary for a software engineer in Berlin in 2026?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "Latest figures on global EV market share?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What did US retail sales do last month?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "How much is the average new car in the US costing these days?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "What's the current yield on German bunds?", "label": "agentic", "category": "market_data", "source": "generated"}
+{"text": "Which phone carrier has the best 5G coverage in the US now?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Compare today's prices for the top three password managers.", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "What's the best value 4K TV currently on the market?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Which AI image generators are best right now, and what do they cost?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "How do current home insurance premiums compare between Florida and Texas?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "Which smartwatch has the best battery life among this year's models?", "label": "agentic", "category": "comparison_research", "source": "generated"}
+{"text": "What year did Apple release the first iPhone?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "explain how index funds work", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What is a P/E ratio?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What does ETF stand for?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What is quantitative easing?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "Who founded Google and when?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "What does a vector database do?", "label": "direct", "category": "definition", "source": "generated"}
+{"text": "How do I call the OpenAI API from Python with the requests library?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Write a function to parse ISO 8601 dates in JavaScript.", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "how to get the current date in Python formatted as YYYY-MM-DD", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Write a Python script that fetches a URL and prints the status code.", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "What does 'async def' do in Python?", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "how do I sort a list of dicts by a key in Python", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "Explain the difference between git merge and git rebase.", "label": "direct", "category": "coding_help", "source": "generated"}
+{"text": "If a stock goes from $120 to $150, what's the percent increase?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "How many days are between March 3 and July 19?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "What's 2026 minus 1969?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "If inflation is 3% a year, what does $100 become after 5 years?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "what is 15% off of $89.99", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "Convert 250 grams to ounces.", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "What's the average of 98, 87, 76 and 91?", "label": "direct", "category": "math_calc", "source": "generated"}
+{"text": "How do I file my taxes for the first time? General steps please.", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I set up two-factor authentication on my accounts?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "how do you make cold brew coffee at home", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I write a good README for a GitHub project?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "How do I negotiate a higher salary?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "how to back up my iPhone to a computer", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "What's a simple way to start meditating?", "label": "direct", "category": "how_to", "source": "generated"}
+{"text": "Do you think the original Star Wars trilogy holds up?", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "I just adopted a puppy!", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "would you rather explore space or the deep ocean", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Honestly I'm kind of tired of everyone talking about AI.", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Tell me something to cheer me up.", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "what's your take on pineapple on pizza", "label": "direct", "category": "casual_chat", "source": "generated"}
+{"text": "Write a short congratulations message for a colleague's promotion.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Give me three slogans for an eco-friendly cleaning brand.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a two-line poem about Mondays.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Draft a short text inviting friends to a barbecue on Saturday.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Write a catchy title for a blog post about saving money.", "label": "direct", "category": "writing_short", "source": "generated"}
+{"text": "Rephrase 'we regret to inform you' in a warmer way.", "label": "direct", "category": "writing_short", "source": "generated"}

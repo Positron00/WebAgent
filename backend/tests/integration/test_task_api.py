@@ -46,7 +46,7 @@ def test_task_completes_with_report():
 def test_task_without_report_is_reported_as_failed():
     with patch("app.services.task_manager.get_agent_workflow", return_value=EmptyWorkflow()):
         client = TestClient(app)
-        task_id = client.post("/api/task", json={"query": "q"}).json()["task_id"]
+        task_id = client.post("/api/task", json={"query": "q", "agentic": True}).json()["task_id"]
 
         body = _poll(client, task_id)
 

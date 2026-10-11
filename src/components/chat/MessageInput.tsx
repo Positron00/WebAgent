@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { MicrophoneIcon, PaperClipIcon, ComputerDesktopIcon, SparklesIcon, PaperAirplaneIcon, Cog6ToothIcon, XMarkIcon, PencilSquareIcon, BeakerIcon } from '@heroicons/react/24/outline';
+import { MicrophoneIcon, PaperClipIcon, ComputerDesktopIcon, SparklesIcon, PaperAirplaneIcon, Cog6ToothIcon, XMarkIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useApp } from '@/contexts/AppContext';
+import { AgenticModeToggle } from './AgenticModeToggle';
 import path from 'path';
 import { saveAs } from 'file-saver';
 import Image from 'next/image';
@@ -111,7 +112,8 @@ export function MessageInput({
   onClearScreenshot,
   imagePreviewUrl
 }: MessageInputProps) {
-  const { isOffline, accessibility, setAccessibility } = useApp();
+  const { isOffline, accessibility, setAccessibility, agenticMode, setAgenticMode, modeReady } =
+    useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showFocusDropdown, setShowFocusDropdown] = useState(false);
@@ -339,12 +341,7 @@ export function MessageInput({
     setAccessibility(newSettings);
   };
 
-  const toggleAgentic = () => {
-    setAccessibility({
-      ...accessibility,
-      agentic: !accessibility.agentic
-    });
-  };
+  const inputDisabled = disabled || !modeReady;
 
   return (
     <div className="w-full mb-4">
@@ -387,19 +384,19 @@ export function MessageInput({
             borderColor: CHAT_THEME.borderSubtle,
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !disabled) {
+            if (e.key === 'Enter' && !e.shiftKey && !inputDisabled) {
               e.preventDefault();
               onSubmit();
             }
           }}
           rows={1}
-          disabled={disabled || isRecording}
+          disabled={inputDisabled || isRecording}
         />
 
         <button
           type="submit"
           className="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 hover:bg-emerald-400 text-black font-medium rounded-full p-2 disabled:opacity-50 disabled:pointer-events-none"
-          disabled={!value.trim() && !imagePreviewUrl || isLoading || disabled}
+          disabled={!value.trim() && !imagePreviewUrl || isLoading || inputDisabled}
           onClick={onSubmit}
           aria-label="Submit message"
         >
@@ -466,23 +463,11 @@ export function MessageInput({
         
         {/* Right side buttons */}
         <div className="flex items-center gap-2">
-          {/* Agentic toggle button */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={toggleAgentic}
-              className={`p-1 rounded transition-colors flex items-center gap-0.5 text-[10px] ${
-                accessibility.agentic 
-                  ? 'bg-indigo-600 text-white' 
-                  : 'bg-indigo-600/10 text-white/20 hover:bg-indigo-600/40'
-              }`}
-              aria-pressed={accessibility.agentic}
-              aria-label={accessibility.agentic ? "Disable multi-agent mode" : "Enable multi-agent mode"}
-            >
-              <BeakerIcon className={`w-3 h-3 ${!accessibility.agentic ? 'opacity-50' : ''}`} />
-              <span className="text-xs">Agentic</span>
-            </button>
-          </div>
+          <AgenticModeToggle
+            value={agenticMode}
+            onChange={setAgenticMode}
+            disabled={!modeReady}
+          />
           
           {/* Style button and dropdown */}
           <div className="relative">
@@ -748,6 +733,12 @@ export function MessageInput({
           )}
         </div>
       </div>
+
+      {agenticMode === 'always' && imagePreviewUrl && (
+        <p className="mt-1 text-[10px] text-gray-500 px-1">
+          Images are only used by direct answers
+        </p>
+      )}
 
       {/* Hidden File Input */}
       <input

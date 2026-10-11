@@ -5,7 +5,7 @@ metadata:
   namespace: default
   labels:
     app: webagent-backend
-    version: "3.0.3"
+    version: "3.1.0"
 spec:
   # One replica: task status and results live in /app/data, which is per pod (emptyDir).
   # To run more replicas, mount /app/data from a shared ReadWriteMany volume.
@@ -22,7 +22,7 @@ spec:
     metadata:
       labels:
         app: webagent-backend
-        version: "3.0.3"
+        version: "3.1.0"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
@@ -35,7 +35,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: webagent-backend
-        image: webagent/backend:3.0.3
+        image: webagent/backend:3.1.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

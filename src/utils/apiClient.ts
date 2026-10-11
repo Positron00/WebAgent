@@ -1,8 +1,30 @@
 import { ChatCompletionRequest, ChatCompletionResponse } from '@/types/api';
 import { ChatMessage } from '@/types/chat';
+import { AgenticMode, RouteInfo } from '@/types/routing';
 import { CHAT_SETTINGS } from '@/config/chat';
 import { logger } from '@/utils/logger';
 import { clientConfig } from '@/config/clientConfig';
+import { routeQuestion } from '@/utils/routeQuestion';
+
+const TRIAGE_ROUTING_FALLBACK_NOTICE =
+  "I'm answering directly because research routing is temporarily unavailable.\n\n";
+
+export function buildPreviousMessages(
+  history: ChatMessage[]
+): { role: 'user' | 'assistant'; content: string }[] {
+  return history
+    .filter(
+      (m) =>
+        (m.role === 'user' || m.role === 'assistant') &&
+        typeof m.content === 'string' &&
+        m.content.trim()
+    )
+    .slice(-8)
+    .map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content.slice(0, 4000),
+    }));
+}
 
 interface RetryOptions {
   maxRetries: number;
@@ -360,51 +382,110 @@ export class ApiClient {
   }
 
   async sendChatMessage(
-    messages: ChatMessage[], 
-    image?: string | null, 
-    promptStyle?: string, 
-    knowledgeFocus?: string, 
+    messages: ChatMessage[],
+    image?: string | null,
+    promptStyle?: string,
+    knowledgeFocus?: string,
     citeSources?: boolean,
-    agentic: boolean = true
+    mode: AgenticMode = 'off',
+    options?: { forceAgentic?: boolean }
   ): Promise<ChatCompletionResponse> {
-    // When Agentic toggle is ON - route ONLY to the backend LangGraph multi-agent
-    if (agentic) {
-      logger.info('Agentic mode ON - routing to LangGraph multi-agent system');
+    const history = messages.slice(0, -1);
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+    const query =
+      typeof lastUserMessage?.content === 'string' ? lastUserMessage.content.trim() : '';
 
-      const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
-      const query =
-        typeof lastUserMessage?.content === 'string' ? lastUserMessage.content.trim() : '';
+    if (!query && !image) {
+      throw new ApiError('No user message to send', 400);
+    }
 
-      if (!query) {
-        throw new ApiError('No user message to send to the multi-agent system', 400);
+    const previousUserQuestion = (() => {
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].role === 'user' && typeof history[i].content === 'string') {
+          return history[i].content;
+        }
+      }
+      return null;
+    })();
+
+    let routeInfo: RouteInfo;
+    let fallbackNotice = false;
+
+    if (options?.forceAgentic) {
+      routeInfo = {
+        route: 'agentic',
+        decidedBy: 'override',
+        reason: 'You asked for research',
+      };
+    } else {
+      const outcome = await routeQuestion({
+        mode,
+        query,
+        previousUserQuestion,
+        hasImage: !!image,
+      });
+
+      if (outcome.kind === 'rate_limited') {
+        throw new ApiError('Rate limit exceeded. Please try again later.', 429);
       }
 
-      try {
-        return await this.sendMultiAgentRequest(query, image);
-      } catch (error) {
-        logger.warn('Agentic mode failed, falling back to direct LLM', { error });
-        return this.sendChatMessage(
-          messages,
-          image,
-          promptStyle,
-          knowledgeFocus,
-          citeSources,
-          false
-        );
+      routeInfo = outcome.info;
+      fallbackNotice = outcome.fallbackNotice ?? false;
+    }
+
+    // An image with no text (Always mode) gives the research agents nothing to work on,
+    // and they can't see images; the direct model can.
+    if (routeInfo.route === 'agentic' && !query) {
+      routeInfo = { route: 'direct', decidedBy: 'rule', reason: 'Image without a question' };
+    }
+
+    let response: ChatCompletionResponse;
+
+    if (routeInfo.route === 'direct') {
+      logger.info('Routing to direct LLM', { mode, decidedBy: routeInfo.decidedBy });
+      response = await this.sendDirectChatRequest(
+        messages,
+        image,
+        promptStyle,
+        knowledgeFocus,
+        citeSources,
+        fallbackNotice
+      );
+    } else {
+      logger.info('Routing to multi-agent system', { mode, decidedBy: routeInfo.decidedBy });
+      const agenticResult = await this.sendMultiAgentRequest(
+        query,
+        image,
+        buildPreviousMessages(history),
+        options?.forceAgentic
+      );
+      response = agenticResult.response;
+      if (agenticResult.usedFallback) {
+        routeInfo = {
+          route: 'direct',
+          decidedBy: 'fallback',
+          reason: 'Research agents unavailable',
+        };
       }
     }
-    
-    // When Agentic toggle is OFF - route ONLY to Together AI LLM
-    logger.info('Agentic mode OFF - routing directly to Together AI LLM');
-    
-    // Convert messages to the format expected by the API
-    const requestMessages = messages.map(msg => ({
+
+    return { ...response, route: routeInfo };
+  }
+
+  private async sendDirectChatRequest(
+    messages: ChatMessage[],
+    image?: string | null,
+    promptStyle?: string,
+    knowledgeFocus?: string,
+    citeSources?: boolean,
+    fallbackNotice?: boolean
+  ): Promise<ChatCompletionResponse> {
+    const requestMessages = messages.map((msg) => ({
       role: msg.role,
-      content: msg.content
+      content: msg.content,
     }));
-    
-    // Send to our Next.js API route which forwards to Together AI
-    return this.fetchWithRetry<ChatCompletionResponse>(
+
+    const response = await this.fetchWithRetry<ChatCompletionResponse>(
       clientConfig.api.endpoints.chat,
       {
         method: 'POST',
@@ -419,23 +500,30 @@ export class ApiClient {
           top_p: CHAT_SETTINGS.topP,
           frequency_penalty: CHAT_SETTINGS.frequencyPenalty,
           presence_penalty: CHAT_SETTINGS.presencePenalty,
-          // Include the settings needed by the API route
           promptStyle,
           knowledgeFocus,
           citeSources,
-          agentic: false, // Explicitly set agentic to false for direct LLM path
-          // Include image if provided
-          image: image || null
+          agentic: false,
+          image: image || null,
         }),
       }
     );
+
+    if (fallbackNotice && response.choices[0]?.message?.content) {
+      response.choices[0].message.content =
+        TRIAGE_ROUTING_FALLBACK_NOTICE + response.choices[0].message.content;
+    }
+
+    return response;
   }
 
   // Method to handle multi-agent API requests
   private async sendMultiAgentRequest(
     query: string,
-    image?: string | null
-  ): Promise<ChatCompletionResponse> {
+    image?: string | null,
+    previousMessages: { role: 'user' | 'assistant'; content: string }[] = [],
+    triageOverride?: boolean
+  ): Promise<{ response: ChatCompletionResponse; usedFallback: boolean }> {
     const requestId = this.generateRequestId();
     const startTime = Date.now();
     
@@ -447,6 +535,8 @@ export class ApiClient {
         query,
         image: image || undefined,
         agentic: true,
+        previous_messages: previousMessages,
+        ...(triageOverride ? { triage_override: true } : {}),
       };
       
       // Use the multi-agent API endpoint
@@ -463,8 +553,8 @@ export class ApiClient {
       );
 
       if (response.task_id) {
-        // `await` so a failed or timed-out task is handled by the fallback below
-        return await this.pollTaskResult(response.task_id);
+        const polled = await this.pollTaskResult(response.task_id);
+        return { response: polled, usedFallback: false };
       }
 
       throw new Error('Multi-agent API did not return a task_id');
@@ -514,7 +604,7 @@ export class ApiClient {
           }
         );
         
-        return fallbackResponse;
+        return { response: fallbackResponse, usedFallback: true };
       } catch (fallbackError) {
         logger.error('Fallback to Together AI also failed', {
           requestId,
@@ -524,18 +614,21 @@ export class ApiClient {
         
         // Create a generic error response for better user experience
         return {
-          choices: [{
-            message: {
-              role: 'assistant',
-              content: 'I apologize, but I encountered an error processing your request. Both the multi-agent system and the fallback service are currently unavailable. Please try again later.'
-            },
-            finish_reason: 'stop'
-          }],
-          usage: {
-            prompt_tokens: 0,
-            completion_tokens: 0,
-            total_tokens: 0
-          }
+          response: {
+            choices: [{
+              message: {
+                role: 'assistant',
+                content: 'I apologize, but I encountered an error processing your request. Both the multi-agent system and the fallback service are currently unavailable. Please try again later.'
+              },
+              finish_reason: 'stop'
+            }],
+            usage: {
+              prompt_tokens: 0,
+              completion_tokens: 0,
+              total_tokens: 0
+            }
+          },
+          usedFallback: true,
         };
       }
     }

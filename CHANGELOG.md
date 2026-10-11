@@ -2,6 +2,28 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.1.0 - 2026-10-11
+
+### Added
+- Agentic triage: the Agentic button becomes Off / Auto / Always. In Auto, `POST /api/triage` (rules plus a local MiniLM + logistic-regression classifier, ~9 ms) picks a direct answer or the research agents; every answer shows "Answered directly" or "Deep research", and direct answers in Auto offer "Research this in depth"
+- `mode` (`off` / `auto` / `always`) on `POST /api/task` and `POST /api/v1/chat/completions`; a backend direct path that answers without building the workflow (text only; `image_ignored: true` when a request had an image); `route`, `decided_by` and `p_agentic` on task results
+- Agentic requests carry the last 8 messages (`previous_messages`), so follow-ups are researched in context
+- Shadow mode, opt-in collection of questions for review (30-day retention), four `webagent_triage_*` metrics and two Grafana panels
+- Curated data (`backend/data/triage/`), training and release-gate scripts (`backend/scripts/train_triage.py`, `eval_triage.py`), and classifier `triage-2026-10-a`
+- `GET /api/settings` serves the default mode from `WEBAGENT_DEFAULT_AGENTIC_MODE` in `.env.local`, re-read without a restart
+
+### Changed
+- **`/api/task` with neither `mode` nor `agentic` now means `off`** (it used to run the workflow). The web app always sends `agentic: true`
+- `POST /api/v1/chat/` and `POST /api/v1/tasks/create` are marked deprecated in OpenAPI
+- Shell and container `WEBAGENT_*` variables win over `.env.local` and the YAML loader's exported values
+- Docs: API reference (task modes, `/api/triage`), architecture, Vercel and production checklist cover triage; version 3.1.0
+- Backend Docker image: `WEB_CONCURRENCY=2` (was 4) and the MiniLM encoder baked into `/opt/models`
+- uat and prod keep triage off for now: `triage-2026-10-a` misses the release gate (research recall 0.931, target 0.95), and the startup check refuses a classifier that hasn't passed
+
+### Fixed
+- Direct answers no longer show invented sources (`generateMockSources` removed)
+- `/api/v1/openapi.json` failed to build because `TaskInfo` put a Python type into its JSON schema
+
 ## 3.0.3 - 2026-10-10
 
 ### Added

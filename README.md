@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.0.3-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2026--10--10-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent platform for web research and document processing.
@@ -18,7 +18,8 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   - Document Extraction Agent: Processes documents and extracts structured data
   - Team Manager Agent: Synthesizes outputs from multiple agents
   - Specialized Agents: Data analysis and coding assistance
-- **Workflow Logs**: Detailed execution tracking during agent workflow processing when agentic mode is enabled
+- **Agentic triage**: Off / Auto / Always; in Auto a local classifier sends only research questions to the agents
+- **Workflow Logs**: Detailed execution tracking for answers produced by the agent workflow
   - Records important decision points in the workflow
   - Shows step-by-step processing of complex queries
   - Included in final reports for transparency
@@ -278,7 +279,12 @@ Follow these steps to set up and run the WebAgent platform:
    ```bash
    npm run dev
    ```
-   Turn on **Agentic** in the chat toolbar to send questions to the multi-agent backend. A run usually takes 30–90 seconds. With Agentic off, the web app answers directly through Together AI and the backend isn't needed.
+   The **Agentic** control in the chat toolbar has three modes:
+   - **Off**: answer directly through Together AI; the backend isn't needed.
+   - **Auto**: the backend's triage decides per question. Routine questions are answered directly in seconds; research questions go to the multi-agent backend.
+   - **Always**: every question goes to the multi-agent backend (a run takes a few minutes). Images are only used by direct answers.
+
+   Each answer is labelled "Answered directly" or "Deep research"; hover for the reason. In Auto, a direct answer offers **Research this in depth**, which sends the same question to the research agents and adds the new answer below. New users start on the default from `WEBAGENT_DEFAULT_AGENTIC_MODE` in `.env.local` (`off` if unset); a mode you pick is remembered in the browser. See [backend/README.md](backend/README.md#agentic-triage) for the triage service.
 
 3. Run Model Services (optional):
    ```bash

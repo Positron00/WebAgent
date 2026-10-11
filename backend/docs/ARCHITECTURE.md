@@ -10,7 +10,7 @@ WebAgent is a sophisticated AI system built as a microservice architecture that 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WebAgent Platform v3.0.3                          │
+│                           WebAgent Platform v3.1.0                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌────────────────┐                         ┌─────────────────────────────┐ │
@@ -133,6 +133,17 @@ The task management system handles the asynchronous processing of user requests:
   - Each task's status is saved to `backend/data/results/<task_id>.json` when it is created and when it finishes, so every server worker can answer polls and finished reports survive a restart
   - A task still "processing" after `WEBAGENT_TASK_TIMEOUT_MINUTES` (30) is reported as interrupted
   - UUID task IDs (only UUIDs are accepted, so an ID can't point outside the results folder)
+  - Each task runs one of two paths: the LangGraph workflow (`run_workflow`) or a direct path (`run_direct`) that makes one text-only model call without building the graph. Results record which one ran (`route`, `decided_by`)
+
+### Agentic triage
+
+The web app's Agentic control has three modes: Off, Auto and Always. In Auto, a question goes to the research workflow only when it needs it.
+
+- **Who decides:** the backend classifies (`POST /api/triage`, `app/services/triage.py`); the web app routes. A direct answer goes through the web app's `/api/chat`, which keeps the user's prompt settings and needs no polling; a research answer goes through `/api/task`.
+- **How:** rules first (an image or a greeting → direct; "research …", "write a report …" → research), then frozen `all-MiniLM-L6-v2` embeddings and a logistic regression (`models/triage/`, about 10 ms on CPU). If the classifier can't load, the answer is research.
+- **API clients:** `/api/task` and `/api/v1/chat/completions` take `mode: off | auto | always` and use the same classifier. No mode and no `agentic` flag means `off`.
+- **Learning:** shadow mode and "Research this in depth" clicks can save questions for review (`data/triage/collected/`, off outside dev, deleted after 30 days). A new classifier version ships only if it passes the release gate on a held-out test set; uat/prod keep triage off until one does.
+- Design: `planning/specs/agentic-triage/`.
 
 ### 4. LangGraph Orchestration
 

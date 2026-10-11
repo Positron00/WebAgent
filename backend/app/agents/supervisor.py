@@ -126,6 +126,15 @@ class SupervisorAgent(BaseAgent):
             state.status = "error"
             return state
     
+    async def answer_directly(self, query: str, previous_messages: Optional[list] = None) -> str:
+        """Text-only direct answer (no LangGraph), using conversation history when present."""
+        state = WorkflowState(
+            query=query,
+            context={"previous_messages": previous_messages or []},
+        )
+        direct = await self.llm.ainvoke(self._with_history(state))
+        return direct if isinstance(direct, str) else getattr(direct, "content", str(direct))
+
     @staticmethod
     def _with_history(state: WorkflowState) -> str:
         """Prefix the query with recent chat turns so follow-up questions keep their meaning."""
@@ -153,8 +162,9 @@ class SupervisorAgent(BaseAgent):
 
         if not state.context.get("agentic_toggle", False):
             try:
-                direct = await self.llm.ainvoke(self._with_history(state))
-                content = direct if isinstance(direct, str) else getattr(direct, "content", str(direct))
+                content = await self.answer_directly(
+                    state.query, state.context.get("previous_messages", [])
+                )
                 state.mark_completed(
                     {
                         "title": "Response",

@@ -1,4 +1,4 @@
-import { ApiClient } from '@/utils/apiClient';
+import { ApiClient, buildPreviousMessages } from '@/utils/apiClient';
 
 jest.mock('@/config/clientConfig', () => ({
   clientConfig: {
@@ -18,10 +18,11 @@ jest.mock('@/utils/logger', () => ({
   logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
-const jsonResponse = (body: unknown, status = 200) => ({
+const jsonResponse = (body: unknown, status = 200, headers?: Record<string, string>) => ({
   ok: status >= 200 && status < 300,
   status,
   statusText: status === 200 ? 'OK' : 'Error',
+  headers: new Headers(headers),
   json: jest.fn().mockResolvedValue(body),
 });
 
@@ -49,11 +50,10 @@ describe('ApiClient agentic mode', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
     client = ApiClient.getInstance();
     client.resetMetrics();
-    // Skip real waiting between polls and retries
     (client as any).delay = jest.fn().mockResolvedValue(undefined);
   });
 
-  it('sends only the latest question to /api/task and returns the polled report', async () => {
+  it('sends only the latest question to /api/task with previous_messages in always mode', async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ task_id: 'task-1', status: 'processing' }))
       .mockResolvedValueOnce(jsonResponse({ status: 'processing' }))
@@ -61,55 +61,158 @@ describe('ApiClient agentic mode', () => {
         jsonResponse({ status: 'completed', result: { content: '# Report', logs: ['Supervisor: planning'] } })
       );
 
-    const response = await client.sendChatMessage(conversation, null, 'balanced', 'general', true, true);
+    const response = await client.sendChatMessage(
+      conversation,
+      null,
+      'balanced',
+      'general',
+      true,
+      'always'
+    );
 
     expect(requestTo(0)).toEqual({
       url: '/api/task',
       method: 'POST',
-      body: { query: 'second question', agentic: true },
+      body: {
+        query: 'second question',
+        agentic: true,
+        previous_messages: [
+          { role: 'user', content: 'first question' },
+          { role: 'assistant', content: 'first answer' },
+        ],
+      },
     });
     expect(requestTo(1).url).toBe('/api/task/task-1');
-    expect(requestTo(2).url).toBe('/api/task/task-1');
     expect(response.choices[0].message.content).toBe('# Report');
-    expect(response.choices[0].message.logs).toEqual(['Supervisor: planning']);
+    expect(response.route?.route).toBe('agentic');
   });
 
-  it('falls back to plain chat, marked as a fallback, when the task fails', async () => {
+  it('includes triage_override when forceAgentic is set', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ task_id: 'task-ov', status: 'processing' }));
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ status: 'completed', result: { content: 'deep' } })
+    );
+
+    await client.sendChatMessage(conversation, null, 'balanced', 'general', true, 'auto', {
+      forceAgentic: true,
+    });
+
+    expect(requestTo(0).body.triage_override).toBe(true);
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/task');
+  });
+
+  it('falls back to plain chat when the task fails', async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ task_id: 'task-2', status: 'processing' }))
       .mockResolvedValueOnce(jsonResponse({ status: 'failed', error: 'Together Server: Error 503' }))
       .mockResolvedValueOnce(chatReply('fallback answer'));
 
-    const response = await client.sendChatMessage(conversation, null, 'balanced', 'general', true, true);
+    const response = await client.sendChatMessage(
+      conversation,
+      null,
+      'balanced',
+      'general',
+      true,
+      'always'
+    );
 
     const fallback = requestTo(2);
     expect(fallback.url).toBe('/api/chat');
     expect(fallback.body.requestType).toBe('multi-agent-fallback');
-    expect(fallback.body.messages[fallback.body.messages.length - 1]).toEqual({
-      role: 'user',
-      content: 'second question',
-    });
     expect(response.choices[0].message.content).toBe('fallback answer');
+    expect(response.route).toEqual({
+      route: 'direct',
+      decidedBy: 'fallback',
+      reason: 'Research agents unavailable',
+    });
   });
 
-  it('calls only /api/chat with the whole conversation when agentic mode is off', async () => {
+  it('calls only /api/chat when mode is off', async () => {
     fetchMock.mockResolvedValueOnce(chatReply('direct answer'));
 
-    const response = await client.sendChatMessage(conversation, null, 'balanced', 'general', true, false);
+    const response = await client.sendChatMessage(
+      conversation,
+      null,
+      'balanced',
+      'general',
+      true,
+      'off'
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const request = requestTo(0);
     expect(request.url).toBe('/api/chat');
     expect(request.body.agentic).toBe(false);
-    expect(request.body.messages).toHaveLength(3);
-    expect(response.choices[0].message.content).toBe('direct answer');
+    expect(response.route?.route).toBe('direct');
   });
 
-  it('rejects an agentic request with no user message', async () => {
+  it('always mode sends an image without text to /api/chat, not the research agents', async () => {
+    fetchMock.mockResolvedValueOnce(chatReply('I see a cat'));
+
+    const response = await client.sendChatMessage(
+      [{ id: '1', role: 'user' as const, content: '', timestamp: '' }],
+      'data:image/png;base64,AAAA',
+      'balanced',
+      'general',
+      true,
+      'always'
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requestTo(0).url).toBe('/api/chat');
+    expect(requestTo(0).body.image).toBe('data:image/png;base64,AAAA');
+    expect(response.route).toEqual({
+      route: 'direct',
+      decidedBy: 'rule',
+      reason: 'Image without a question',
+    });
+  });
+
+  it('auto mode calls triage then routes to chat when triage picks direct', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          route: 'direct',
+          p_agentic: 0.1,
+          decided_by: 'rule',
+          reason: 'simple',
+          classifier_version: 'v1',
+        })
+      )
+      .mockResolvedValueOnce(chatReply('direct from auto'));
+
+    const response = await client.sendChatMessage(
+      conversation,
+      null,
+      'balanced',
+      'general',
+      true,
+      'auto'
+    );
+
+    expect(requestTo(0).url).toBe('/api/triage');
+    expect(requestTo(1).url).toBe('/api/chat');
+    expect(response.route?.reason).toMatch(/^Auto ·/);
+  });
+
+  it('rejects a request with no user message and no image', async () => {
     const onlyAssistant = [{ id: '1', role: 'assistant' as const, content: 'hi', timestamp: '' }];
     await expect(
-      client.sendChatMessage(onlyAssistant, null, 'balanced', 'general', true, true)
+      client.sendChatMessage(onlyAssistant, null, 'balanced', 'general', true, 'always')
     ).rejects.toThrow('No user message');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('buildPreviousMessages', () => {
+  it('keeps up to eight trimmed user/assistant turns', () => {
+    const history = Array.from({ length: 10 }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `msg ${i}`,
+    })) as { role: 'user' | 'assistant'; content: string }[];
+
+    const built = buildPreviousMessages(history as any);
+    expect(built).toHaveLength(8);
+    expect(built[0].content).toBe('msg 2');
   });
 });

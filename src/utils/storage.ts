@@ -18,7 +18,6 @@ export interface AccessibilitySettings {
   promptStyle: 'balanced' | 'creative' | 'precise' | 'helpful' | 'verbose' | 'concise';
   knowledgeFocus: 'general' | 'medical' | 'legal' | 'science' | 'technology' | 'business' | 'history' | 'nature';
   citeSources: boolean;
-  agentic: boolean;
   responseTextColor: string;
   queryTextColor: string;
   responseBackgroundColor: string;
@@ -32,7 +31,6 @@ const DEFAULT_ACCESSIBILITY: AccessibilitySettings = {
   promptStyle: 'balanced',
   knowledgeFocus: 'general',
   citeSources: true,
-  agentic: false,
   ...CHAT_ACCESSIBILITY_COLORS,
 };
 
@@ -85,7 +83,10 @@ export const storage = {
     try {
       const settings = localStorage.getItem(STORAGE_KEYS.ACCESSIBILITY);
       if (!settings) return DEFAULT_ACCESSIBILITY;
-      const parsed = JSON.parse(settings) as AccessibilitySettings;
+      const stored = JSON.parse(settings) as AccessibilitySettings & { agentic?: boolean };
+      // The mode lives under its own key (utils/agenticMode.ts); drop a stray legacy flag.
+      const { agentic: _removed, ...rest } = stored;
+      const parsed: AccessibilitySettings = { ...DEFAULT_ACCESSIBILITY, ...rest };
       // Migrate legacy blue bubble theme to neutral chat colors
       if (
         parsed.queryBackgroundColor?.toUpperCase() === '#1E3A8A' &&

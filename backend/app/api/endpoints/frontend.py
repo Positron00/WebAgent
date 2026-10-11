@@ -2,14 +2,16 @@
 Frontend integration endpoints for the WebAgent backend.
 These endpoints provide compatibility with the frontend API expectations.
 """
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Literal, Optional, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from app.models.chat import ChatRequest, ChatResponse
 from app.graph.workflows import get_agent_workflow
+from app.services.routing import choose_route, resolve_mode
 from app.services.task_manager import TaskManager
 from app.services.llm import get_llm_status
 from app.core.config import settings
@@ -33,7 +35,8 @@ class FrontendChatRequest(BaseModel):
     top_p: float = Field(default=1.0)
     frequency_penalty: float = Field(default=0.0)
     presence_penalty: float = Field(default=0.0)
-    agentic_toggle: bool = Field(default=False, description="Whether to use the agentic workflow")
+    agentic_toggle: Optional[bool] = Field(default=None, description="Legacy agentic flag; omitted means off with no mode")
+    mode: Optional[Literal["off", "auto", "always"]] = Field(default=None, description="off, auto, or always")
     document_id: Optional[str] = Field(default=None, description="Document to extract from, if any")
 
 class FrontendChatResponse(BaseModel):
@@ -56,28 +59,38 @@ async def frontend_chat_completions(
         if not last_message:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        # Create a context with previous messages if needed
+        prev = [{"role": m.role, "content": m.content} for m in request.messages[:-1]]
+        resolved = resolve_mode(request.mode, request.agentic_toggle)
+        prev_user = next((m.content for m in reversed(request.messages[:-1]) if m.role == "user"), None)
+        decision = await run_in_threadpool(
+            choose_route, resolved, last_message.content, prev_user, False
+        )
+        use_direct = decision.route == "direct"
         context = {
-            "previous_messages": [
-                {"role": m.role, "content": m.content} 
-                for m in request.messages[:-1]  # Exclude the last message which we'll use as the query
-            ],
-            "agentic_toggle": request.agentic_toggle  # Pass the agentic toggle to the workflow
+            "previous_messages": prev,
+            "agentic_toggle": not use_direct,
+            "triage": decision.to_dict(),
         }
         if request.document_id:
             context["document_id"] = request.document_id
-        
-        # Generate a unique task ID
+
         task_id = str(uuid4())
         task_manager.register_pending(task_id, last_message.content)
 
-        # Start the workflow in the background
-        background_tasks.add_task(
-            task_manager.run_workflow,
-            task_id=task_id,
-            message=last_message.content,
-            context=context
-        )
+        if use_direct:
+            background_tasks.add_task(
+                task_manager.run_direct,
+                task_id=task_id,
+                message=last_message.content,
+                context=context,
+            )
+        else:
+            background_tasks.add_task(
+                task_manager.run_workflow,
+                task_id=task_id,
+                message=last_message.content,
+                context=context,
+            )
         
         # Return a response that mimics the expected format
         # Note: This is a placeholder response. The frontend should poll for the actual result.

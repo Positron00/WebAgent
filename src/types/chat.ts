@@ -9,6 +9,8 @@ export interface Source {
   domain?: string;
 }
 
+import type { RouteInfo } from '@/types/routing';
+
 export interface ChatMessage {
   id?: string;
   role: Role;
@@ -16,6 +18,8 @@ export interface ChatMessage {
   timestamp?: string;
   sources?: Source[]; // Sources used for this message
   logs?: string[]; // Workflow progress logs
+  route?: RouteInfo;
+  imageAttached?: boolean;
 }
 
 export interface ChatState {

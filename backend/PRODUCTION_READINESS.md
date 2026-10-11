@@ -2,7 +2,7 @@
 
 This document summarizes the improvements made to the WebAgent backend to make it production-ready.
 
-## Production checklist (3.0.3)
+## Production checklist (3.1.0)
 
 Before exposing the backend:
 
@@ -13,7 +13,8 @@ Before exposing the backend:
 5. **Check health and metrics.** `GET /health` (no key) for probes; Prometheus scrapes `GET /metrics`.
 6. **Watch run times.** A typical agentic task takes 2.5–3.5 minutes, and the web app waits up to 8. If runs approach that, open the task's LangSmith trace: a model call whose completion tokens equal its `max_tokens` is running away, and the log will say "stopped at the max_tokens limit".
 7. **Rate limits.** 60 requests per minute per caller by default (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS`). If the backend sits behind a proxy other than the bundled Next.js app, list it in `WEBAGENT_TRUSTED_PROXIES` so limits apply per end user.
-8. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD` (in `.env.local` for Docker Compose, in the environment for `deploy.sh`); no password is stored in the repo. Change any password that was used with the old committed default.
+8. **Agentic triage.** uat and prod ship with `triage.enabled: false` (Auto then acts like Always), because classifier `triage-2026-10-a` misses the release gate. To turn it on, ship a version whose `models/triage/metadata.json` records `test.passed: true`; with triage on, the server refuses to start without it or without the encoder (baked into the image under `/opt/models`). Keep `WEBAGENT_TRIAGE_COLLECT` off unless storing users' questions for review is approved. The image runs 2 workers (`WEB_CONCURRENCY=2`), each with its own encoder; check memory against the 1 GiB Kubernetes limit.
+9. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD` (in `.env.local` for Docker Compose, in the environment for `deploy.sh`); no password is stored in the repo. Change any password that was used with the old committed default.
 
 ## Version 2.4.0 Enhancements
 

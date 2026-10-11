@@ -3,6 +3,8 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from '@/types/chat';
 import { useApp } from '@/contexts/AppContext';
+import { useChat } from '@/contexts/ChatContext';
+import { RouteLabel } from './RouteLabel';
 import ReactMarkdown from 'react-markdown';
 import { InformationCircleIcon, BeakerIcon } from '@heroicons/react/24/outline';
 import { CHAT_THEME } from '@/config/chatTheme';
@@ -191,6 +193,9 @@ function groupMessagesIntoTurns(messages: ChatMessage[]): ConversationTurn[] {
         pending.assistant = message;
         turns.push(pending);
         pending = null;
+      } else if (turns.length > 0) {
+        // A second answer to the same question ("Research this in depth") gets its own turn.
+        turns.push({ user: turns[turns.length - 1].user, assistant: message });
       }
     }
   }
@@ -203,7 +208,8 @@ function groupMessagesIntoTurns(messages: ChatMessage[]): ConversationTurn[] {
 }
 
 export function MessageList({ messages, isLoading, error }: MessageListProps) {
-  const { accessibility } = useApp();
+  const { accessibility, agenticMode } = useApp();
+  const { researchInDepth } = useChat();
   const latestTurnRef = useRef<HTMLDivElement>(null);
   const turns = groupMessagesIntoTurns(messages);
 
@@ -315,8 +321,8 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
   };
 
   // Render workflow logs
-  const renderWorkflowLogs = (logs?: string[]) => {
-    if (!logs || logs.length === 0 || !accessibility.agentic) {
+  const renderWorkflowLogs = (logs?: string[], routeAgentic?: boolean) => {
+    if (!logs || logs.length === 0 || !routeAgentic) {
       return null;
     }
 
@@ -380,7 +386,7 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
 
               return (
                 <div
-                  key={userMessage.id}
+                  key={assistantMessage?.id ?? userMessage.id}
                   ref={isLatestTurn ? latestTurnRef : undefined}
                   className="mb-8 pb-8 border-b last:border-b-0 last:mb-0 last:pb-0"
                   style={{ borderColor: CHAT_THEME.borderSubtle }}
@@ -408,7 +414,24 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
                       >
                         {processedContent &&
                           renderArticleContent(processedContent, hasSources)}
-                        {renderWorkflowLogs(assistantMessage.logs)}
+                        {assistantMessage.route && (
+                          <RouteLabel
+                            info={assistantMessage.route}
+                            mode={agenticMode}
+                            canOverride={
+                              !userMessage.imageAttached && !isLoading
+                            }
+                            onOverride={() => {
+                              if (assistantMessage.id) {
+                                researchInDepth(assistantMessage.id);
+                              }
+                            }}
+                          />
+                        )}
+                        {renderWorkflowLogs(
+                          assistantMessage.logs,
+                          assistantMessage.route?.route === 'agentic'
+                        )}
                       </div>
                     </div>
                   )}

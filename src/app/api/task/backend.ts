@@ -35,6 +35,9 @@ export async function forwardToBackend(
       path,
       error: error instanceof Error ? error.message : String(error),
     });
-    return NextResponse.json({ error: 'Multi-agent backend unavailable' }, { status: 503 });
+    return NextResponse.json(
+      { error: 'Multi-agent backend unavailable' },
+      { status: 503, headers: { 'X-WebAgent-Proxy-Error': 'unreachable' } }
+    );
   }
 }
