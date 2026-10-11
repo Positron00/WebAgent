@@ -768,4 +768,4 @@ metadata:
 type: Opaque
 stringData:
   admin-user: admin
-  admin-password: WebAgent-Admin-2025! 
+  admin-password: "${GRAFANA_ADMIN_PASSWORD}" 

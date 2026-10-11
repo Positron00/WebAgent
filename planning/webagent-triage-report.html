@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Local copy of https://claude.ai/artifact/BZaY5wry3z8SZYpRhHxTJD (version 2), commit c24857c -->
+<!-- Local copy of https://claude.ai/artifact/BZaY5wry3z8SZYpRhHxTJD (version 5) -->
 <style>body{margin:0}</style>
 <title>WebAgent Triage Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -195,6 +195,7 @@ td:first-child { font-family: var(--font-mono); color: var(--accent); white-spac
     <span>App version <b>2.9.10</b></span>
     <span>Scanned <b>10 Oct 2026</b></span>
     <span>Runtime <b>conda env “agents”</b></span>
+    <span>Re-checked at <b>3.0.1</b> (1622959) — <a href="#s301">status</a>, <a href="#fu">follow-up fixes (3.0.2)</a></span>
   </div>
   <p class="lede">Each agent works when the demos call it on its own. The main LangGraph pipeline, the one the API and the web app use, cannot finish a single run. Five problems stop it before any agent does real work. One of them means the API never starts the workflow at all. Fixing those will expose ten more in how the agents pass results to each other and to the user.</p>
 </header>
@@ -827,6 +828,191 @@ git log --all -p | grep -E "^\+.*(sk-…|tvly-…|TOGETHER_API_KEY=…)"</code><
   </div>
 </section>
 
+<section aria-labelledby="s301">
+  <div class="sec-head">
+    <h2 id="s301">Status at 3.0.1</h2>
+    <p>An independent re-check of all 34 items against commit 1622959 (release 3.0.1), made after the resolution record above. Each fix was read in the code. Where possible, the original check was run again. The re-check also looked at deployment files and test isolation, which the original scan didn’t cover.</p>
+  </div>
+
+  <div class="tally" aria-label="Re-check results">
+    <div><strong class="sev-l">30</strong><span>fixed</span></div>
+    <div><strong class="sev-m">4</strong><span>partly fixed</span></div>
+    <div><strong class="sev-c">9</strong><span>new issues</span></div>
+  </div>
+
+  <div class="col" style="display:grid; gap:10px">
+    <p><b>Checks that now pass.</b></p>
+    <ul style="margin:0; padding-left:1.2em; display:grid; gap:4px">
+      <li>LangGraph imports, and all 538 pins in <code>backend/constraints.txt</code> match the <code>agents</code> environment.</li>
+      <li>The three prompts accept only their real inputs.</li>
+      <li><code>timing_decorator</code> keeps async functions async.</li>
+      <li><code>tests/integration/test_task_api.py</code> posts a task and waits for it to complete, which guards B5.</li>
+      <li>The full backend suite passes (2 skipped). Jest passes 9 suites and 43 tests. <code>npx tsc --noEmit</code> reports 0 errors.</li>
+    </ul>
+  </div>
+
+  <h3>Partly fixed</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>ID</th><th>What’s done</th><th>What remains</th></tr></thead>
+      <tbody>
+        <tr><td>X1</td><td>The API server turns code execution off. Local runs and demos keep it on, because <code>Settings</code> defaults to true.</td><td>When execution is on, generated code still runs on the host. It inherits every API key in the environment, and nothing limits its memory or CPU.</td></tr>
+        <tr><td>S1</td><td><code>search</code> runs Tavily in a worker thread, and a missing key no longer crashes.</td><td>The retry after a 400 error (<code>web_search.py:137</code>) still calls Tavily synchronously and blocks the event loop.</td></tr>
+        <tr><td>W10</td><td>The supervisor prompt now includes the last eight chat turns.</td><td>Web and internal research still search the raw follow-up text, such as “what about Europe?”.</td></tr>
+        <tr><td>H2</td><td>Caches, logs, databases, artifacts and vector stores are no longer tracked.</td><td><code>tests/test_langgraph.py.bak2</code>, <code>.bak3</code>, <code>backend/mlruns/0/meta.yaml</code> and 6 files under <code>mlartifacts/</code> are still tracked.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>New issues</h3>
+  <div class="issues">
+    <article class="issue" id="n1">
+      <div class="ihead"><span class="id">N1</span><h3>Containers start in dev mode</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">backend/Dockerfile:27 · backend/kubernetes/deployment.yaml:42–60 · backend/docker-compose.yml</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The Dockerfile and the Kubernetes deployment set <code>ENVIRONMENT=production</code>, but the app reads <code>WEBAGENT_ENV</code> and falls back to <code>dev</code>. Containers therefore don’t require API keys, accept the hard-coded dev keys, return debug error details, and skip the uat/prod startup checks. The deployment sets <code>JWT_SECRET</code>, which the app never reads. It sets neither <code>WEBAGENT_SECURITY_SECRET_KEY</code> nor <code>WEBAGENT_API_KEY</code>.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Set <code>WEBAGENT_ENV</code> in all three files. Pass the secret key and API key from the Kubernetes secret under the names the app reads.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="n2">
+      <div class="ihead"><span class="id">N2</span><h3>.env.local prevents choosing uat or prod</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev ok">Confirmed</span></div></div>
+      <p class="loc">backend/app/core/config.py:46–48 · .env.local (WEBAGENT_ENV=dev)</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>.env.local</code> is loaded with <code>override=True</code> and sets <code>WEBAGENT_ENV=dev</code>, so <code>WEBAGENT_ENV=prod</code> in the shell has no effect. When .env.local is ignored, uat and prod load correctly, with API keys required and debug off.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Keep .env.local’s override for API keys, but let an environment selected by the shell or the container take precedence.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="n3">
+      <div class="ihead"><span class="id">N3</span><h3>With several workers, polls can’t find tasks</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">backend/Dockerfile:60 (--workers 4) · services/task_manager.py · api/endpoints/task.py</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>Task status is stored in each worker process’s memory. Only finished results are saved to disk. A poll that reaches a different worker gets “Task not found”, and the web app treats that as a failure.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Save task status to the shared result store when a task is created and whenever its status changes. Read from the store when a worker doesn’t hold the task in memory. In Kubernetes, use one replica unless the results folder is on a shared volume.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="n4">
+      <div class="ihead"><span class="id">N4</span><h3>Health checks call a route that doesn’t exist</h3><div class="chips"><span class="chip sev-h">High</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">backend/Dockerfile:57 · backend/kubernetes/deployment.yaml:77, 85 · backend/main.py</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The Docker <code>HEALTHCHECK</code> and both Kubernetes probes call <code>/health</code>. The app only serves <code>/api/v1/health</code>, so containers are marked unhealthy and pods are restarted repeatedly.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Serve a root <code>/health</code> route without authentication.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="n5">
+      <div class="ihead"><span class="id">N5</span><h3>Paths and the version are wrong inside the image</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">backend/app/core/config.py:35, 131–160 · backend/app/__init__.py:75–87 · backend/docker-compose.yml (context: .)</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The image is built from <code>backend/</code>, so the code sits at <code>/app</code>, and <code>BASE_DIR</code> (three levels above config.py) becomes <code>/</code>. Data, vector-store and artifact paths then point to <code>/backend/data/…</code>, which the non-root user can’t write. <code>package.json</code> isn’t in the image either, so the version reads as 0.0.0.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Build data paths from the backend folder instead of the repo root. Allow the version to be passed in as a build argument.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="n6">
+      <div class="ihead"><span class="id">N6</span><h3>Tests reach real services</h3><div class="chips"><span class="chip sev-m">Medium</span><span class="chip ev ok">Confirmed</span></div></div>
+      <p class="loc">tests/integration/test_workflow_e2e_scripted.py · tests/conftest.py</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The scripted end-to-end test patches the agent lookups only while the graph is being built. The research node looks agents up again at run time, so the real web research agent and Tavily searches run during the test. It passes anyway, because its stub team manager writes the report. The suite also sends traces to LangSmith with the real key from .env.local. This contradicts docs/TESTING.md, which says tests never depend on the network.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Keep the patches active during the run. In <code>conftest.py</code>, turn tracing off and block network connections other than localhost.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="n7">
+      <div class="ihead"><span class="id">N7</span><h3>Tests overwrite a tracked file</h3><div class="chips"><span class="chip sev-l">Low</span><span class="chip ev ok">Confirmed</span></div></div>
+      <p class="loc">tests/test_models.py · models/registry/model_registry.py:85 · models/registry/models_registry.json</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The model registry saves its state into <code>models_registry.json</code>, a tracked file that contains only test entries. Running the tests rewrites its <code>last_check</code> time and leaves the working tree modified.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Store the registry under the ignored <code>backend/data/</code> folder, allow its path to be configured, and point the tests at a temporary file.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="n8">
+      <div class="ihead"><span class="id">N8</span><h3>All web users share one rate-limit budget</h3><div class="chips"><span class="chip sev-l">Low</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">app/core/security.py (setup_security, apply_rate_limit) · src/app/api/task/backend.ts</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p>The limit of 60 requests a minute is counted per client IP. Every request from the web app comes through the Next.js proxy, so all users share one budget. Each task’s polling uses up to about 12 requests a minute, so a handful of concurrent tasks can exhaust the budget and stall everyone’s polling. Health checks are counted too, and the per-IP table never shrinks.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Have the proxy forward the caller’s address, and trust that header only from configured proxy addresses. Don’t count health checks, and drop table entries once they’re older than the window.</p></dd>
+      </dl>
+    </article>
+
+    <article class="issue" id="n9">
+      <div class="ihead"><span class="id">N9</span><h3>A Grafana admin password is committed</h3><div class="chips"><span class="chip sev-l">Low</span><span class="chip ev">From code</span></div></div>
+      <p class="loc">backend/docker-compose.yml:63</p>
+      <dl>
+        <dt>Problem</dt>
+        <dd><p><code>GF_SECURITY_ADMIN_PASSWORD</code> is written directly in the compose file, so it’s in git history.</p></dd>
+        <dt>Fix</dt>
+        <dd><p>Read it from an environment variable, and fail to start if it isn’t set. Change the password anywhere it has been used, since it stays in history.</p></dd>
+      </dl>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="fu">
+  <div class="sec-head">
+    <h2 id="fu">Follow-up fixes after 3.0.1</h2>
+    <p>Every partly fixed item and every new issue above is now addressed. The changes form release 3.0.2 (see <code>CHANGELOG.md</code>) and were not yet committed when this was written. Each fix has a test that would fail without it.</p>
+  </div>
+
+  <div class="tally" aria-label="Checks after the follow-up fixes">
+    <div><strong class="sev-l">191</strong><span>backend tests pass, offline (3 skipped by design)</span></div>
+    <div><strong class="sev-l">44</strong><span>web app tests pass</span></div>
+    <div><strong class="sev-l">0</strong><span>type errors</span></div>
+  </div>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>ID</th><th>Change</th><th>Checked by</th></tr></thead>
+      <tbody>
+        <tr><td>X1</td><td>New <code>app/utils/code_sandbox.py</code>. Local mode strips API keys and other secrets from the child’s environment and caps CPU time, file size and (on Linux) memory. Docker mode runs <code>backend/sandbox</code>’s image with no network, a read-only filesystem, and memory, CPU and process limits. In uat/prod the server won’t start with execution on unless docker mode is set.</td><td><code>test_code_sandbox.py</code>: keys are invisible, timeouts work, the docker command is isolated. The plotting libraries still load in local mode.</td></tr>
+        <tr><td>S1</td><td>The retry after a 400 now also runs Tavily in a worker thread.</td><td><code>test_web_search_async.py</code></td></tr>
+        <tr><td>W10</td><td>The supervisor adds <code>standalone_query</code> to the research plan, the follow-up rewritten to stand on its own. Web and internal research search with it, falling back to the raw query.</td><td><code>test_followup_query.py</code></td></tr>
+        <tr><td>H2</td><td>The <code>.bak2</code>/<code>.bak3</code> test files are deleted. <code>backend/mlruns/0/meta.yaml</code> and <code>mlartifacts/</code> are untracked but kept on disk. <code>.gitignore</code> covers <code>*.bak[0-9]*</code>, <code>mlartifacts/</code>, <code>backend/data/registry/</code> and <code>backend/data/hf-cache/</code>.</td><td><code>git check-ignore</code></td></tr>
+        <tr><td>N1</td><td>Dockerfile, Kubernetes and compose now set <code>WEBAGENT_ENV</code>. Kubernetes passes <code>WEBAGENT_SECURITY_SECRET_KEY</code>, <code>WEBAGENT_API_KEY</code> and <code>TAVILY_API_KEY</code> from its secret; the unused <code>JWT_SECRET</code> is gone. <code>deploy.sh</code> requires the new values.</td><td>Manifest rendered with dummy values: every placeholder is filled</td></tr>
+        <tr><td>N2</td><td><code>WEBAGENT_ENV</code> set in the shell or container is kept after <code>.env.local</code> loads.</td><td><code>test_deploy_config.py</code> (fresh process with .env.local present)</td></tr>
+        <tr><td>N3</td><td>A new task’s “processing” record is saved to the shared result store, so every worker can answer polls. A record still processing after <code>WEBAGENT_TASK_TIMEOUT_MINUTES</code> (30) is reported as interrupted. Kubernetes runs one replica until <code>/app/data</code> is on a shared volume.</td><td><code>test_task_status_shared.py</code></td></tr>
+        <tr><td>N4</td><td>Root <code>/health</code> route with no key, rate limit or logging. The Docker and compose health checks use Python, since the slim image has no <code>curl</code>.</td><td><code>test_health_and_rate_limit.py</code></td></tr>
+        <tr><td>N5</td><td>Data paths are built from the backend folder. The version falls back to <code>WEBAGENT_VERSION</code> (Docker build argument <code>APP_VERSION</code>), and the core-transformer path resolves inside the image. A new <code>.dockerignore</code> keeps local data, logs and caches out of the image. Before this change the logger tried to create <code>/backend/logs</code> at import time, so the container couldn’t start as the non-root user.</td><td><code>test_deploy_config.py</code></td></tr>
+        <tr><td>N6</td><td><code>conftest.py</code> turns tracing off before the app loads, blocks all non-local network connections, and puts Hugging Face offline. The scripted end-to-end test keeps its patches active while the graph runs and checks that its stub ran. This surfaced a product bug: building the workflow downloaded NLTK data from GitHub on every fresh start, and the LDA extractor downloaded NLTK data on every entity extraction. Both now go through <code>ensure_nltk_data</code>, and the Docker image installs the data at build time.</td><td>The full suite passes with network access blocked</td></tr>
+        <tr><td>N7</td><td>The registry lives at <code>backend/data/registry/</code> (git-ignored, configurable). Tests use a temporary file, and the tracked file of test entries is deleted.</td><td>The working tree is unchanged after a full test run</td></tr>
+        <tr><td>N8</td><td>The proxy forwards the caller’s address. The backend trusts it only from <code>WEBAGENT_TRUSTED_PROXIES</code>, skips health and metrics paths, and drops idle callers from its table.</td><td><code>test_health_and_rate_limit.py</code>, <code>taskProxy.test.ts</code></td></tr>
+        <tr><td>N9</td><td>Compose and the Kubernetes Grafana secret read <code>GRAFANA_ADMIN_PASSWORD</code>, and compose stops with a message if it’s missing. The password is removed from all docs. It remains in git history, so change it anywhere it was used.</td><td><code>docker compose config</code> with and without the variable</td></tr>
+        <tr><td>Docs pass</td><td>Checking the docs against the code turned up three more problems:
+          <ul style="margin:6px 0 0; padding-left:1.2em">
+            <li>Prometheus and Kubernetes scrape <code>/metrics</code>, but the app served only <code>/api/v1/metrics</code>. It now serves both, and neither is rate-limited.</li>
+            <li>The YAML config overrode every <code>WEBAGENT_SECURITY_*</code> variable, so turning on API keys in dev or raising rate limits had no effect. The variables now win.</li>
+            <li>A rate-limited request now carries a <code>Retry-After</code> header, as the API reference describes.</li>
+          </ul></td><td><code>test_health_and_rate_limit.py</code>, <code>test_deploy_config.py</code></td></tr>
+        <tr><td>Extra</td><td><code>test_request_size_limiting</code> sent 1 MB against a 10 MB limit, so it could never pass and was always skipped. It now sends one byte over the limit and passes. A misleading “.env.local exists: False” log line is removed.</td><td><code>test_security.py</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col" style="display:grid; gap:10px">
+    <p><b>Not verified here.</b> Docker isn’t running on this machine, so neither image was built, and docker sandbox mode ran only as a unit test of its command line. The Dockerfile now uses Python 3.12 to match <code>backend/constraints.txt</code>, which was frozen from a macOS conda environment. Check the first Linux build for packages that can’t be installed at those exact versions.</p>
+  </div>
+</section>
+
 </div>
+
 
 </html>

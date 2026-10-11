@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.0.1-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.0.2-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2026--10--10-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent platform for web research and document processing.
@@ -51,6 +51,9 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   5. Final Synthesis: Comprehensive findings consolidated into a structured report
 
 - **Comprehensive Security**: Advanced security module with authentication, authorization, rate limiting, input validation, error sanitization, request size limiting, and protection against common vulnerabilities
+  - API keys required in uat/prod; the server won't start there without its secret key and API key
+  - Rate limits apply per end user, even behind the web app's proxy
+  - Model-written code runs without access to API keys, and in uat/prod only inside a locked-down container
 
 - **Advanced Observability**: Detailed diagnostics and monitoring capabilities for tracking system health, performance metrics, and execution statistics
   - Every log line written during a task is tagged `[task <id>]`
@@ -58,6 +61,8 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   - Finished task reports saved to `backend/data/results/`
 
 - **Reliability**: Temporary Together AI errors (rate limits, 5xx) are retried, and the server keeps answering while tasks run
+  - Task status is shared between server workers, so polls work with several workers
+  - Follow-up questions ("what about Europe?") are researched as a complete question using the conversation so far
 
 ## System Architecture
 
@@ -287,7 +292,14 @@ Follow these steps to set up and run the WebAgent platform:
    - Web UI: http://localhost:3000
    - API: http://localhost:8000/api/v1
    - Swagger UI: http://localhost:8000/api/v1/docs
+   - Health check: http://localhost:8000/health
    - Model API Gateway: http://localhost:8100
+
+### Deploying
+
+- **Docker / Docker Compose**: see [backend/README.md](backend/README.md#running-with-docker) and [backend/LOCAL_DEVELOPMENT.md](backend/LOCAL_DEVELOPMENT.md). The image runs as `prod`; Compose needs `GRAFANA_ADMIN_PASSWORD` in `backend/.env`.
+- **Kubernetes**: see [backend/kubernetes/README.md](backend/kubernetes/README.md). `deploy.sh` requires `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD`.
+- **Vercel** (web app only): see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Agentic mode needs `WEBAGENT_BACKEND_URL` pointing at a running backend.
 
 ## Testing and Diagnostics
 
@@ -300,7 +312,7 @@ WebAgent includes comprehensive testing and diagnostic tools.
    npm test                  # web app (Jest)
    npm run test:backend      # backend (pytest, in the `agents` conda env)
    ```
-   No test calls a real LLM; model replies are faked.
+   Backend tests run offline: they fail if any test opens a network connection, and they never trace to LangSmith or modify tracked files.
 
 2. Run tests with coverage:
    ```bash
@@ -348,13 +360,13 @@ WebAgent includes comprehensive testing and diagnostic tools.
    ```
 
 4. Read saved task reports:
-   Each finished task (successful or not) is saved to `backend/data/results/<task_id>.json` with the question, status, timings and full report. `GET /api/task/<task_id>` also reads from there after a restart.
+   Each task is saved to `backend/data/results/<task_id>.json` when it starts (status `processing`) and again when it finishes, with the question, status, timings and full report. `GET /api/task/<task_id>` reads from there, so any server worker can answer and reports survive a restart.
 
 5. View LangSmith traces (if `LANGSMITH_API_KEY` is set):
    - Visit LangSmith at https://smith.langchain.com and open the project `webagent-research` (change with `LANGSMITH_PROJECT_NAME`)
    - Each task is one trace containing every agent step and model call, with token counts
    - The app's settings override any `LANGSMITH_PROJECT` exported in your shell
-   - Set `LANGSMITH_TRACING_ENABLED=false` to turn tracing off
+   - Set `LANGSMITH_TRACING_ENABLED=false` to turn tracing off (backend tests always run with tracing off)
 
 ### Common Issues and Troubleshooting
 
@@ -382,6 +394,12 @@ WebAgent includes comprehensive testing and diagnostic tools.
 
 6. **LangSmith shows steps stuck as "pending" or traces in another project**
    - Usually a `LANGSMITH_PROJECT` exported in your shell; the backend now overrides it, so restart the backend
+
+7. **Backend runs as `dev` although you asked for `prod`**
+   - A `WEBAGENT_ENV` in your shell or container wins over `.env.local`. With `docker run --env-file .env.local`, add `-e WEBAGENT_ENV=prod` after it
+
+8. **A backend test fails with "Test tried to open a network connection"**
+   - The test reached a real service (LLM, Tavily, LangSmith, Hugging Face, NLTK). Fake it instead; see [docs/TESTING.md](docs/TESTING.md)
 
 ## License
 

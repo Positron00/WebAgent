@@ -23,6 +23,7 @@ from app.models.task import WorkflowState
 from app.services.llm import get_llm_without_tags
 from app.agents.base_agent import BaseAgent
 from app.core.loadEnvYAML import get_agents_config
+from app.utils.code_sandbox import run_python_file
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -301,12 +302,7 @@ except Exception as e:
             
             # Execute the code in a subprocess with timeout
             try:
-                result = subprocess.run(
-                    [sys.executable, temp_file_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=self.timeout_seconds
-                )
+                result = run_python_file(temp_file_path, self.timeout_seconds)
                 
                 # Clean up the temporary file
                 try:

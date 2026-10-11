@@ -2,10 +2,11 @@
 Task manager service for the WebAgent backend.
 Manages workflow task execution and results.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 import asyncio
 import logging
+import os
 import traceback
 
 from app.graph.workflows import get_agent_workflow
@@ -15,6 +16,9 @@ from app.services import result_store
 from app.core.log_context import current_task_id
 
 logger = logging.getLogger(__name__)
+
+# A saved "processing" record older than this is reported as interrupted.
+TASK_TIMEOUT_MINUTES = int(os.getenv("WEBAGENT_TASK_TIMEOUT_MINUTES", "30"))
 
 class TaskManager:
     """
@@ -37,15 +41,45 @@ class TaskManager:
         logger.info("Task Manager initialized")
         
     def register_pending(self, task_id: str, message: str) -> None:
-        """Record a task as processing before its background job starts, so early polls find it."""
+        """Record a task as processing before its background job starts, so early polls find it.
+
+        The record is also saved to the result store, so a poll that reaches another worker
+        process (uvicorn --workers N) sees "processing" instead of "not found".
+        """
+        created_at = datetime.now()
         self.active_tasks[task_id] = TaskInfo(
             task_id=task_id,
             status="processing",
-            created_at=datetime.now(),
+            created_at=created_at,
             message="Task queued",
             query=message,
             current_step="queued",
         )
+        result_store.save_result(
+            task_id,
+            {
+                "task_id": task_id,
+                "query": message,
+                "status": "processing",
+                "created_at": created_at,
+                "result": None,
+            },
+        )
+
+    @staticmethod
+    def _status_from_saved(saved: Dict[str, Any]) -> Tuple[str, Optional[Dict[str, Any]]]:
+        """Status of a task held by another worker, read from its saved record."""
+        status = saved.get("status", "completed")
+        if status == "processing":
+            # A worker that died mid-task leaves "processing" behind; don't let clients wait forever.
+            try:
+                age = datetime.now() - datetime.fromisoformat(str(saved.get("created_at")))
+            except ValueError:
+                age = timedelta(0)
+            if age > timedelta(minutes=TASK_TIMEOUT_MINUTES):
+                return "error", {"error": "Task was interrupted before it finished"}
+            return "processing", None
+        return status, saved.get("result")
 
     @timing_decorator
     async def run_workflow(self, task_id: str, message: str, context: Optional[Dict[str, Any]] = None):
@@ -196,7 +230,7 @@ class TaskManager:
             saved = result_store.load_result(task_id)
             if saved is None:
                 return "not_found", None
-            return saved.get("status", "completed"), saved.get("result")
+            return self._status_from_saved(saved)
         
         if task_id in self.active_tasks:
             task_info = self.active_tasks[task_id]
@@ -205,8 +239,12 @@ class TaskManager:
         return "completed", self.task_results.get(task_id)
     
     def task_exists(self, task_id: str) -> bool:
-        """Check if a task exists."""
-        return task_id in self.active_tasks or task_id in self.task_results
+        """Check if a task exists in this worker or in the shared result store."""
+        return (
+            task_id in self.active_tasks
+            or task_id in self.task_results
+            or result_store.load_result(task_id) is not None
+        )
     
     def list_tasks(self) -> List[TaskInfo]:
         """List all tasks."""

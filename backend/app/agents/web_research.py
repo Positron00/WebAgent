@@ -12,6 +12,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 
 from app.models.task import WorkflowState
+from app.models.research_plan import research_query
 from app.services.llm import get_agent_llm
 from app.services.web_search import perform_web_search
 from app.agents.base_agent import BaseAgent
@@ -116,7 +117,8 @@ class WebResearchAgent(BaseAgent):
         
     async def run(self, state: WorkflowState) -> WorkflowState:
         """Execute the Web Research Agent to search and analyze information."""
-        query = state.query or state.context.get("query", "")
+        # A follow-up like "what about Europe?" is searched as the supervisor's standalone rewrite.
+        query = research_query(state)
         logger.info(f"Processing query: {query}")
 
         # Update workflow state with current step

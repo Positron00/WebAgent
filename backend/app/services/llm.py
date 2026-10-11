@@ -685,9 +685,7 @@ def get_together_llm(model_name: Optional[str] = None):
     together_api_key = settings.TOGETHER_API_KEY
     
     # Debug logging for API key
-    logger.info(f"TOGETHER_API_KEY exists: {bool(together_api_key)}")
-    logger.info(f"Current directory: {os.getcwd()}")
-    logger.info(f".env.local exists in project root: {os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '.env.local'))}")
+    logger.debug(f"TOGETHER_API_KEY exists: {bool(together_api_key)}")
     
     if not together_api_key:
         error_msg = "TOGETHER_API_KEY not configured in settings (.env.local)"

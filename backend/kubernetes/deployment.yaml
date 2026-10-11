@@ -5,9 +5,11 @@ metadata:
   namespace: default
   labels:
     app: webagent-backend
-    version: "2.4.0"
+    version: "3.0.2"
 spec:
-  replicas: 2
+  # One replica: task status and results live in /app/data, which is per pod (emptyDir).
+  # To run more replicas, mount /app/data from a shared ReadWriteMany volume.
+  replicas: 1
   selector:
     matchLabels:
       app: webagent-backend
@@ -20,7 +22,7 @@ spec:
     metadata:
       labels:
         app: webagent-backend
-        version: "2.4.0"
+        version: "3.0.2"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
@@ -33,16 +35,35 @@ spec:
         fsGroup: 1000
       containers:
       - name: webagent-backend
-        image: webagent/backend:2.4.0
+        image: webagent/backend:3.0.2
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
           name: http
         env:
-        - name: ENVIRONMENT
-          value: "production"
+        # Selects config/prod.yaml: API keys required, debug off, startup checks on.
+        - name: WEBAGENT_ENV
+          value: "prod"
         - name: LOG_LEVEL
           value: "INFO"
+        - name: WEB_CONCURRENCY
+          value: "2"
+        - name: WEBAGENT_SECURITY_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: security-secret-key
+        - name: WEBAGENT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: api-key
+        - name: TAVILY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: tavily-api-key
+              optional: true
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
@@ -54,11 +75,6 @@ spec:
               name: webagent-secrets
               key: together-api-key
               optional: true
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: webagent-secrets
-              key: jwt-secret
         - name: LANGSMITH_API_KEY
           valueFrom:
             secretKeyRef:
@@ -94,17 +110,22 @@ spec:
             drop:
             - ALL
           readOnlyRootFilesystem: true
+        # The root filesystem is read-only; these are the folders the app writes to.
+        # Config comes from the image (config/prod.yaml) plus the env vars above.
         volumeMounts:
         - name: tmp
           mountPath: /tmp
-        - name: config
-          mountPath: /app/config
+        - name: data
+          mountPath: /app/data
+        - name: logs
+          mountPath: /app/logs
       volumes:
       - name: tmp
         emptyDir: {}
-      - name: config
-        configMap:
-          name: webagent-config
+      - name: data
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -152,51 +173,6 @@ spec:
               name: http
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: webagent-config
-  namespace: default
-data:
-  production.yaml: |
-    app:
-      name: "WebAgent Backend"
-      version: "2.4.0"
-      environment: "production"
-      debug: false
-      
-    server:
-      host: "0.0.0.0"
-      port: 8000
-      workers: 4
-      
-    security:
-      rate_limit:
-        enabled: true
-        requests_per_minute: 60
-        burst: 100
-      request_size_limit: 10485760  # 10MB
-      
-    logging:
-      level: "INFO"
-      json_format: true
-      
-    llm:
-      default_provider: "openai"
-      providers:
-        openai:
-          model: "gpt-4o"
-          temperature: 0.7
-          max_tokens: 2048
-        together:
-          model: "meta-models/Muse-Glimmer-30B"
-          temperature: 0.7
-          max_tokens: 2048
-          
-    metrics:
-      enabled: true
-      path: "/metrics"
----
-apiVersion: v1
 kind: Secret
 metadata:
   name: webagent-secrets
@@ -205,5 +181,7 @@ type: Opaque
 stringData:
   openai-api-key: "${OPENAI_API_KEY}"
   together-api-key: "${TOGETHER_API_KEY}"
-  jwt-secret: "${JWT_SECRET}"
+  security-secret-key: "${WEBAGENT_SECURITY_SECRET_KEY}"
+  api-key: "${WEBAGENT_API_KEY}"
+  tavily-api-key: "${TAVILY_API_KEY}"
   langsmith-api-key: "${LANGSMITH_API_KEY}" 

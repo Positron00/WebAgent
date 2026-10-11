@@ -419,22 +419,17 @@ class TestAPISecuritySuite:
             
     def test_request_size_limiting(self, client):
         """Test that request size limiting is properly applied."""
-        try:
-            # Create a large payload
-            large_payload = {
-                "query": "a" * 1000000  # 1MB of text
-            }
-            
-            # Try to submit a large request
-            response = client.post("/api/v1/chat/completions", json=large_payload)
-            
-            # Should be rejected with 413 Payload Too Large if size limiting is enabled
-            if hasattr(settings, "REQUEST_SIZE_LIMIT") and settings.REQUEST_SIZE_LIMIT > 0:
-                assert response.status_code == 413, "Large request was not rejected"
-        except Exception as e:
-            # Log the error but don't fail the test
-            logger.warning(f"Error in test_request_size_limiting: {str(e)}")
-            pytest.skip(f"Skipping test_request_size_limiting due to error: {str(e)}")
+        # One byte over the configured limit (the old 1 MB payload was under the 10 MB limit,
+        # so this test could never pass and was always skipped).
+        oversized = b"a" * (settings.REQUEST_SIZE_LIMIT + 1)
+
+        response = client.post(
+            "/api/v1/chat/completions",
+            content=oversized,
+            headers={"Content-Type": "application/json"},
+        )
+
+        assert response.status_code == 413, "Large request was not rejected"
             
     def test_authentication(self, client, mock_api_key):
         """Test that authentication is properly required and validated."""

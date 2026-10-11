@@ -20,7 +20,7 @@ npm run check-types
 npm run lint
 ```
 
-Set `LANGSMITH_TRACING_ENABLED=false` when running backend tests if you don't want them traced to LangSmith.
+Backend tests never trace to LangSmith and never reach the network; `conftest.py` enforces both (see below).
 
 ## Web App Tests
 
@@ -105,12 +105,24 @@ Layout (`backend/tests/`):
 | `test_result_store.py` | Saving and reloading task results; rejects unsafe task IDs |
 | `test_log_context.py` | `[task <id>]` log tagging, including parallel agents |
 | `test_setup_langsmith.py` | App LangSmith settings override ones exported in the shell |
+| `test_task_status_shared.py` | Task status is visible to every uvicorn worker; stale "processing" records time out |
+| `test_health_and_rate_limit.py` | `/health` needs no key and isn't throttled; rate limits are per user behind the proxy |
+| `test_code_sandbox.py` | Generated code can't see API keys; docker mode has no network and resource limits |
+| `test_deploy_config.py` | `WEBAGENT_ENV` from the shell wins over `.env.local`; paths and version inside the image |
+| `test_followup_query.py` | Follow-up questions are searched as the supervisor's standalone rewrite |
+| `test_web_search_async.py` | Every Tavily call, including the retry, runs off the event loop |
 | `unit/`, `integration/`, `diagnostics/` | Routing, security, API and diagnostics tests |
 
 `backend/tests/conftest.py`:
 
 - makes both `app.*` and `backend.*` imports work wherever pytest runs from
 - points saved task results at a temporary folder, so tests never write to `backend/data/results/`
+- points the model registry at a temporary file, so tests never modify tracked files
+- turns LangSmith tracing off before the app loads (`.env.local` holds a real key)
+- blocks every network connection except localhost; a test that tries one fails with
+  "Test tried to open a network connection". Fake the service instead. To debug with the
+  network on, set `WEBAGENT_TESTS_ALLOW_NETWORK=true`
+- sets Hugging Face to offline mode and turns off NLTK auto-download
 
 ### Faking the model
 

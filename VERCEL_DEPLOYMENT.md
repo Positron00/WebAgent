@@ -1,8 +1,8 @@
 # Deploying WebAgent to Vercel
 
-[![version](https://img.shields.io/badge/version-3.0.1-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.0.2-blue.svg)](https://semver.org)
 
-This guide explains how to deploy the WebAgent application to Vercel, including both the Next.js frontend and the Python backend functions.
+This guide explains how to deploy the WebAgent web app (Next.js) to Vercel. Vercel runs only the web app; the multi-agent FastAPI backend runs on a server you control, and the web app reaches it through `/api/task`.
 
 ## Prerequisites
 
@@ -66,14 +66,18 @@ After deployment:
 
 For production deployments requiring the full backend capabilities:
 
-1. Run the FastAPI backend (`python -m backend.main`) on a server you control
-2. Set `WEBAGENT_BACKEND_URL` (and `WEBAGENT_API_KEY` if auth is on) in Vercel
+1. Run the FastAPI backend on a server you control (`python -m backend.main`, or the Docker image described in [backend/README.md](backend/README.md#running-with-docker)) with `WEBAGENT_ENV=prod`
+2. Set `WEBAGENT_BACKEND_URL` and `WEBAGENT_API_KEY` in Vercel (the backend requires the key in prod)
+3. Rate limits: the `/api/task` proxy forwards each user's address in `X-Forwarded-For`, but the backend trusts that header only from addresses in `WEBAGENT_TRUSTED_PROXIES` (default: localhost). Vercel's outgoing addresses change, so by default every Vercel user shares one budget of `WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS` (60) per minute. Raise that limit, or put the backend behind a proxy with fixed addresses and list them in `WEBAGENT_TRUSTED_PROXIES`
+4. Check the backend from outside with `curl https://<backend-host>/health`
 
 ## Troubleshooting
 
 - **API Errors**: Check Vercel Function logs for details
 - **Environment Variables**: Ensure all required variables are properly set
 - **Cold Start**: The first request may take longer due to serverless cold start
+- **Agentic answers start with "operating in fallback mode"**: the web app couldn't reach the backend at `WEBAGENT_BACKEND_URL`, or the backend rejected the API key. Check the backend's `/health` and its logs
+- **Agentic requests return 429**: all Vercel users share the backend's rate limit; see step 3 above
 
 ## Local Development
 

@@ -246,10 +246,9 @@ def split_document(text: str, chunk_size: int = 5000, overlap: int = 500) -> Lis
     
     # Use sentence boundaries for cleaner splits
     import nltk
-    try:
-        nltk.data.find('tokenizers/punkt')
-    except LookupError:
-        nltk.download('punkt')
+    from app.utils.nltk_data import ensure_nltk_data
+
+    ensure_nltk_data('punkt')
     
     sentences = nltk.sent_tokenize(text)
     

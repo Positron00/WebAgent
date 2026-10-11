@@ -134,7 +134,8 @@ class WebSearchService:
                     simplified_query = " ".join(sanitized_query.split()[:5])
                     if simplified_query != sanitized_query:
                         logger.info(f"Retrying with simplified query: {simplified_query}")
-                        response = self.tavily_client.search(
+                        response = await asyncio.to_thread(
+                            self.tavily_client.search,
                             query=simplified_query,
                             search_depth="basic",  # Always use basic for retry
                             max_results=max(1, max_results - 2)  # Reduce result count

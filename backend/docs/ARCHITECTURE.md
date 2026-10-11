@@ -10,7 +10,7 @@ WebAgent is a sophisticated AI system built as a microservice architecture that 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WebAgent Platform v2.4.2                          │
+│                           WebAgent Platform v3.0.2                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌────────────────┐                         ┌─────────────────────────────┐ │
@@ -129,10 +129,10 @@ The task management system handles the asynchronous processing of user requests:
   - Error recovery
 
 - **Implementation**:
-  - Async task queue
-  - In-memory task storage with Redis backup
-  - UUID-based task identification
-  - Task TTL and cleanup
+  - FastAPI background tasks run each workflow in the server process
+  - Each task's status is saved to `backend/data/results/<task_id>.json` when it is created and when it finishes, so every server worker can answer polls and finished reports survive a restart
+  - A task still "processing" after `WEBAGENT_TASK_TIMEOUT_MINUTES` (30) is reported as interrupted
+  - UUID task IDs (only UUIDs are accepted, so an ID can't point outside the results folder)
 
 ### 4. LangGraph Orchestration
 
@@ -267,10 +267,9 @@ The typical flow of a user request through the system:
 The system includes comprehensive error handling and resilience features:
 
 - **Rate Limiting**:
-  - Per-client rate limits
-  - Configurable limits by endpoint
-  - Redis-backed distributed rate limiting
-  - Burst allowances
+  - Per-caller limit (60 requests per minute by default), counted in memory per server worker
+  - Behind the web app's proxy, the caller is the end user (`X-Forwarded-For` from `WEBAGENT_TRUSTED_PROXIES`)
+  - Health checks and `/metrics` are never limited; a limited request gets `429` with `Retry-After`
 
 - **Circuit Breakers**:
   - Automatic detection of service failures
@@ -298,9 +297,10 @@ The system includes comprehensive error handling and resilience features:
 The system supports multiple deployment options:
 
 - **Docker-based Deployment**:
-  - Multi-stage Docker builds
-  - Optimized container images
-  - Docker Compose for local deployment
+  - Multi-stage build on Python 3.12, pinned by `backend/constraints.txt`; runs as `WEBAGENT_ENV=prod` as a non-root user
+  - NLTK data installed at build time; `GET /health` as the health check
+  - Docker Compose for local deployment (backend, Prometheus, Grafana)
+  - A separate sandbox image (`backend/sandbox`) for running model-written code with no network
 
 - **Kubernetes Deployment**:
   - Namespace isolation
@@ -308,6 +308,8 @@ The system supports multiple deployment options:
   - Service definitions
   - Ingress rules
   - Resource requests and limits
+  - Read-only root filesystem with `emptyDir` volumes for `/app/data` and `/app/logs`
+  - One replica until `/app/data` is on a shared ReadWriteMany volume
 
 - **Scaling Strategy**:
   - Horizontal scaling for API layer
@@ -325,8 +327,8 @@ The system uses a hierarchical configuration system:
   - Production (prod)
 
 - **Configuration Sources** (in priority order):
-  - `.env.local` for sensitive information
-  - Environment variables with `WEBAGENT_` prefix
+  - `.env.local` for sensitive information (but `WEBAGENT_ENV` set in the shell or container wins)
+  - Environment variables with `WEBAGENT_` prefix (`WEBAGENT_SECURITY_*` override the YAML security block)
   - YAML files by environment
   - Default values in code
 

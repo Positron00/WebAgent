@@ -7,5 +7,5 @@ export async function POST(req: Request) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: await req.text(),
-  });
+  }, req);
 }

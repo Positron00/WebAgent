@@ -64,10 +64,20 @@ python -m backend.main
 
 ### Option 2: Running with Docker Compose
 
-1. Start the application with Docker Compose:
+1. Create `backend/.env` (git-ignored; Docker Compose reads it) with at least:
 
 ```bash
-docker-compose up
+GRAFANA_ADMIN_PASSWORD=choose-a-password
+TOGETHER_API_KEY=your_together_api_key
+TAVILY_API_KEY=your_tavily_api_key
+```
+
+Compose stops with "required variable GRAFANA_ADMIN_PASSWORD is missing" if the password isn't set. The backend runs as `dev` unless you also set `WEBAGENT_ENV=uat` or `prod` there (those need `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY` as well).
+
+2. Start the application from the `backend/` folder:
+
+```bash
+docker compose up --build
 ```
 
 This will start:
@@ -75,11 +85,11 @@ This will start:
 - Prometheus on port 9090
 - Grafana on port 3000
 
-2. Access the services:
-   - WebAgent API: http://localhost:8000
+3. Access the services:
+   - WebAgent API: http://localhost:8000 (health check: http://localhost:8000/health)
    - API Documentation: http://localhost:8000/api/v1/docs
    - Prometheus: http://localhost:9090
-   - Grafana: http://localhost:3000 (login with admin/WebAgent-Admin-2025!)
+   - Grafana: http://localhost:3000 (login with `admin` and the `GRAFANA_ADMIN_PASSWORD` from `backend/.env`)
 
 ## Development Workflow
 
@@ -98,7 +108,7 @@ python -m pytest backend/tests/integration  # integration tests
 npm run coverage:backend                    # with a coverage report
 ```
 
-No test calls a real LLM. See [docs/TESTING.md](../docs/TESTING.md).
+Tests run offline: `backend/tests/conftest.py` blocks network connections, turns LangSmith tracing off, and sends saved results and the model registry to temporary files. See [docs/TESTING.md](../docs/TESTING.md).
 
 ## Monitoring
 
@@ -124,7 +134,7 @@ The application is configured using YAML files in the `config` directory:
 - `uat.yaml`: Pre-production (user acceptance testing) configuration
 - `prod.yaml`: Production configuration
 
-The configuration file is selected by the `WEBAGENT_ENV` environment variable (`dev`, `uat` or `prod`; default `dev`). API keys and secrets go in `.env.local` in the repo root, never in the YAML files.
+The configuration file is selected by the `WEBAGENT_ENV` environment variable (`dev`, `uat` or `prod`; default `dev`). `.env.local` sets it to `dev`, but a value set in your shell wins, so `WEBAGENT_ENV=prod python -m backend.main` runs with production settings. API keys and secrets go in `.env.local` in the repo root, never in the YAML files.
 
 ## Troubleshooting
 
@@ -135,8 +145,9 @@ The configuration file is selected by the `WEBAGENT_ENV` environment variable (`
    - Check the logs for authentication errors
 
 2. **Docker Issues**:
-   - Run `docker-compose down -v` to clean up volumes and containers
-   - Rebuild with `docker-compose build --no-cache`
+   - Run `docker compose down -v` to clean up volumes and containers
+   - Rebuild with `docker compose build --no-cache`
+   - Container marked unhealthy: the health check calls `GET /health`; check `docker compose logs webagent-backend` for a startup error (in uat/prod, missing `WEBAGENT_SECURITY_SECRET_KEY` or `WEBAGENT_API_KEY` stops startup)
 
 3. **Port Conflicts**:
    - If ports are already in use, modify the port mappings in `docker-compose.yml`
@@ -147,7 +158,7 @@ The configuration file is selected by the `WEBAGENT_ENV` environment variable (`
 - When running with Python, logs go to the console and to `backend/logs/webagent-dev.log`
 - Lines written during a task are tagged `[task <id>]`, so you can `grep` one task's lines
 - Finished task reports are saved in `backend/data/results/<task_id>.json`
-- When running with Docker, view logs with `docker-compose logs -f webagent-backend`
+- When running with Docker, view logs with `docker compose logs -f webagent-backend`; log files are in `backend/logs/` (mounted at `/app/logs`) and task results in the `webagent-data` volume
 
 ## Contributing
 

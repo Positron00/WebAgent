@@ -137,17 +137,27 @@ For production deployments, use Gunicorn with Uvicorn workers:
 gunicorn main:app -k uvicorn.workers.UvicornWorker -w 4 --bind 0.0.0.0:8000
 ```
 
+Several workers are fine: a task's status is saved in `backend/data/results/` as soon as it is created, so any worker can answer a poll. Running on several machines needs that folder on shared storage.
+
 ### Running with Docker
 
 Build and run the Docker container:
 
-```bash
-# Build the image
-docker build -t webagent-backend .
+From the `backend/` folder:
 
-# Run the container
-docker run -p 8000:8000 --env-file ../.env.local webagent-backend
+```bash
+# Build the image (the version comes from the repo-root package.json)
+docker build --build-arg APP_VERSION=$(node -p "require('../package.json').version") -t webagent/backend .
+
+# Run it as prod: API keys required, debug off
+docker run -p 8000:8000 --env-file ../.env.local -e WEBAGENT_ENV=prod \
+  -v webagent-data:/app/data webagent/backend
 ```
+
+- The image sets `WEBAGENT_ENV=prod`. `.env.local` sets `WEBAGENT_ENV=dev`, and `--env-file` overrides the image, so pass `-e WEBAGENT_ENV=prod` after it. In prod the server refuses to start without `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY`.
+- `GET /health` is the container health check; it needs no API key.
+- NLTK data is installed at build time. Task results, the model registry and the Hugging Face cache live in `/app/data`; mount a volume there to keep them.
+- `WEB_CONCURRENCY` sets the number of uvicorn workers (default 4).
 
 ## Diagnostics and Monitoring
 
@@ -157,8 +167,8 @@ WebAgent includes built-in diagnostics for monitoring system health and performa
 # Run diagnostics from the command line
 python -m app.utils.diagnostics
 
-# Or use the diagnostic API endpoint
-curl http://localhost:8000/api/v1/health/diagnostics
+# Or use the detailed health endpoint
+curl http://localhost:8000/api/v1/health/detailed
 ```
 
 ### Using the Example Script
@@ -180,15 +190,23 @@ python ../scripts/run_webagent.py --mode direct --type document_extraction --doc
 
 The WebAgent backend exposes several API endpoints:
 
-- **POST /api/v1/chat/completions**: Main endpoint for chat interactions
-- **POST /api/v1/documents/extract**: Document extraction endpoint
-- **GET /api/v1/health**: Health check endpoint
-- **GET /api/v1/health/diagnostics**: System diagnostics endpoint
-- **POST /api/v1/tasks/create**: Create an asynchronous task
-- **GET /api/v1/tasks/{task_id}**: Get task status and results
-- **POST /api/task**: Start a multi-agent task from the web app (`{"query": "...", "agentic": true}`); returns a `task_id`. Requires `X-API-Key` when API-key auth is on
-- **GET /api/task/{task_id}**: Task status and report; finished reports are also read from `backend/data/results/` after a restart
-- **GET /api/v1/metrics**: Prometheus metrics
+No API key needed:
+
+- **GET /health**: Liveness/readiness probe (not rate-limited)
+- **GET /api/v1/health/**, **GET /api/v1/health/detailed**: Health and detailed diagnostics
+- **GET /metrics** (also **/api/v1/metrics**): Prometheus metrics (not rate-limited)
+
+Require `X-API-Key` when API-key auth is on (always in uat/prod):
+
+- **POST /api/task**: Start a multi-agent task from the web app (`{"query": "...", "agentic": true}`); returns a `task_id`
+- **GET /api/task/{task_id}**: Task status (`processing`, `completed`, `failed`) and report. Any worker can answer, and finished reports survive a restart
+- **POST /api/v1/chat/completions**, **GET /api/v1/chat/status/{task_id}**: OpenAI-style chat request and its status
+- **POST /api/v1/chat/**, **GET /api/v1/chat/{task_id}**: Start a chat workflow and read its result
+- **POST /api/v1/tasks/create**, **GET /api/v1/tasks/**, **GET /api/v1/tasks/{task_id}** (plus `/result`, `/error`), **DELETE /api/v1/tasks/{task_id}**: Task management
+- **POST /api/v1/documents/upload**, **POST /api/v1/documents/search**, **GET /api/v1/documents/document/{document_id}**, **GET /api/v1/documents/related/{document_id}**: Documents
+- **GET /api/v1/status**: LLM and service status
+
+Requests are rate-limited per caller (60 per minute by default). Behind the Next.js proxy the caller is the end user, taken from `X-Forwarded-For`, which is trusted only from `WEBAGENT_TRUSTED_PROXIES`.
 
 See the OpenAPI documentation for complete details and request/response schemas.
 
@@ -210,10 +228,9 @@ npm run coverage:backend
 ```
 
 Notes:
-- No test calls a real LLM or web service; model replies are faked.
-- `backend/tests/conftest.py` makes both `app.*` and `backend.*` imports work from any directory, and points saved task results at a temporary folder.
+- Tests run offline. `backend/tests/conftest.py` blocks every network connection except localhost, so a test that reaches a real LLM, Tavily or LangSmith fails with "Test tried to open a network connection". Fake the service instead.
+- `conftest.py` also turns LangSmith tracing off, makes both `app.*` and `backend.*` imports work from any directory, and points saved task results and the model registry at temporary files, so a test run leaves the working tree unchanged.
 - `backend/tests/test_workflow_state_flow.py` runs the real LangGraph workflow with stand-in agents, to check that each agent's report reaches the next step.
-- Set `LANGSMITH_TRACING_ENABLED=false` if you don't want test runs traced.
 
 ## Development
 
@@ -242,11 +259,17 @@ backend/
 │   │   └── workflows.py            # Agent workflow definitions
 │   ├── models/           # Data models
 │   │   ├── task.py                 # Task models and workflow state
+│   │   ├── research_plan.py        # Research plan shared by supervisor, routers and research agents
 │   │   └── chat.py                 # Chat models
 │   ├── services/         # External service integrations
-│   │   └── llm.py                  # LLM service client
+│   │   ├── llm.py                  # LLM service client
+│   │   ├── task_manager.py         # Runs workflows; task status
+│   │   └── result_store.py         # Task status and results on disk (shared by workers)
 │   └── utils/            # Utility functions
+│       ├── code_sandbox.py         # Runs generated code (local or docker)
+│       ├── nltk_data.py            # NLTK data without startup downloads
 │       └── diagnostics.py          # System diagnostics
+├── sandbox/              # Docker image for generated code
 ├── tests/                # Test suite
 ├── main.py               # Application entry point
 ├── path_setup.py         # Path configuration utility
@@ -293,7 +316,7 @@ Key environment variables used by the application:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| WEBAGENT_ENV | `dev`, `uat` or `prod`; picks `config/{env}.yaml` | dev |
+| WEBAGENT_ENV | `dev`, `uat` or `prod`; picks `config/{env}.yaml`. A value set in the shell or container wins over `.env.local` | dev |
 | WEBAGENT_API_DEBUG_MODE | Debug logging and auto-reload | false (dev.yaml turns it on) |
 | WEBAGENT_LLM_DEFAULT_PROVIDER | First LLM provider to try (`together`, `openai`, `anthropic`, `groq`, `gemini`, `self`) | together |
 | WEBAGENT_LLM_DEFAULT_MODEL | Default model | meta-models/Muse-Glimmer-30B |
@@ -308,6 +331,12 @@ Key environment variables used by the application:
 | WEBAGENT_SECURITY_SECRET_KEY | JWT signing secret (required in uat/prod) | insecure dev default |
 | WEBAGENT_SECURITY_API_KEY_ENABLED | Require `X-API-Key` | false (true in uat/prod YAML) |
 | WEBAGENT_ENABLE_CODE_EXECUTION | Let agents run generated code in the API server | false |
+| WEBAGENT_CODE_SANDBOX | `local` (no secrets, CPU/memory limits) or `docker` (isolated; required in uat/prod) | local |
+| WEBAGENT_TRUSTED_PROXIES | Proxies whose `X-Forwarded-For` is used for per-user rate limits | 127.0.0.1,::1 |
+| WEBAGENT_TASK_TIMEOUT_MINUTES | A task still processing after this long is reported as interrupted | 30 |
+| WEBAGENT_NLTK_AUTO_DOWNLOAD | Download missing NLTK data on first use | true (false in the Docker image) |
+| WEBAGENT_MODEL_REGISTRY_PATH | Model registry state file | backend/data/registry/models_registry.json |
+| WEB_CONCURRENCY | Uvicorn workers in the Docker image (task status is shared through `data/results`) | 4 |
 | WEBAGENT_ALLOW_FAKE_LLM | Placeholder reply when every provider fails | false |
 | WEBAGENT_DATA_DIR | Data folder (vector DB, artifacts, results) | backend/data |
 
@@ -321,6 +350,9 @@ Key environment variables used by the application:
 2. **Import Errors**: Run from the repo root (`python -m backend.main`) or use `path_setup.py`
 3. **Workflow Errors**: Check the logs for details on agent errors; filter by the task's `[task <id>]` tag
 4. **Together AI "Error 503" or "Error 429"**: Temporary; calls retry up to 3 times (2s, then 4s). If it persists, raise `TOGETHER_RATE_LIMIT_SECONDS`
+5. **Server runs as dev though you set prod**: check `echo $WEBAGENT_ENV`. A value in the shell or container wins over `.env.local`; with `docker run --env-file`, add `-e WEBAGENT_ENV=prod` after it
+6. **"Code execution in uat/prod requires the container sandbox"**: either leave `WEBAGENT_ENABLE_CODE_EXECUTION` off, or set `WEBAGENT_CODE_SANDBOX=docker` and build the sandbox image (see Generated code below)
+7. **A task shows "Task was interrupted before it finished"**: the worker running it stopped (restart or crash) and the task was still processing after `WEBAGENT_TASK_TIMEOUT_MINUTES` (30). Run it again
 
 ### Diagnostic Checks
 
@@ -348,7 +380,18 @@ Logs go to the console and to `backend/logs/webagent-<env>.log` (rotated at 10 M
 
 ### Saved results
 
-Each finished task is written to `backend/data/results/<task_id>.json` (question, status, timings and the full report or error). The folder is git-ignored.
+Each task is written to `backend/data/results/<task_id>.json` when it is created (status `processing`) and again when it finishes (question, status, timings and the full report or error). Every worker reads this folder, so polls work with several workers. The folder is git-ignored.
+
+The model registry (model services and their status) is kept in `backend/data/registry/models_registry.json`, also git-ignored; set `WEBAGENT_MODEL_REGISTRY_PATH` to move it.
+
+### Generated code
+
+The coding agents can run the Python they write. Where it runs depends on two settings:
+
+- `WEBAGENT_ENABLE_CODE_EXECUTION`: off in the API server unless set to `true`; on for demos and scripts.
+- `WEBAGENT_CODE_SANDBOX`:
+  - `local` (default): a child process with no API keys or other secrets in its environment, and CPU, file-size and (on Linux) memory limits. Fine on your own machine; it is not isolation.
+  - `docker`: a throwaway container with no network, a read-only filesystem, and memory, CPU and process limits. Build the image once with `docker build -t webagent/code-sandbox:latest backend/sandbox`. Required whenever code execution is on in uat/prod; the server won't start otherwise.
 
 ### Tracing
 
@@ -391,7 +434,7 @@ WEBAGENT_ARTIFACTS_PATH=/path/to/backend/data/artifacts  # Document artifacts lo
 
 The WebAgent backend uses several environment variables for configuration. These are loaded in the following order of priority:
 
-1. `.env.local` - For API keys and sensitive information (highest priority)
+1. `.env.local` - For API keys and sensitive information (highest priority). Exception: `WEBAGENT_ENV` set in the shell or container wins, so `WEBAGENT_ENV=prod` always selects prod
 2. YAML configuration in `config/{env}.yaml` - For environment-specific settings
 3. `.env` - For default fallback values (lowest priority)
 
@@ -440,7 +483,9 @@ The backend is organized into the following key directories:
 
 ### Configuration and Data
 - `config/`: Configuration files
-- `data/`: Data storage and processing
+- `data/`: Data storage and processing (`results/`, `registry/`, `vectordb/` are generated and git-ignored; `sample_docs/` is tracked)
+- `sandbox/`: Docker image for running generated code (`WEBAGENT_CODE_SANDBOX=docker`)
+- `kubernetes/`: Deployment manifests and `deploy.sh`
 
 ### Documentation
 - `docs/`: Documentation files 

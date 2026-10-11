@@ -2,6 +2,52 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.0.2 - 2026-10-10
+
+### Added
+- `GET /health` at the server root for Docker and Kubernetes health checks: no API key, not rate-limited, not logged
+- Prometheus metrics are also served at `/metrics`, the path Prometheus and the Kubernetes annotations scrape (`/api/v1/metrics` still works)
+- `WEBAGENT_CODE_SANDBOX` chooses where model-written code runs: `local` (default; no API keys or other secrets in its environment, plus CPU, file-size and memory limits) or `docker` (a throwaway container with no network and a read-only filesystem, built from `backend/sandbox/`)
+- Follow-up questions such as "what about Europe?" are researched as a complete question: the supervisor adds `standalone_query` to the research plan, and web and internal research search with it
+- Task status is saved to `backend/data/results/` when a task is created, so any server worker can answer a poll; a task still processing after `WEBAGENT_TASK_TIMEOUT_MINUTES` (30) is reported as interrupted
+- Per-user rate limits behind the web app: `/api/task` forwards the caller's address, which the backend trusts only from `WEBAGENT_TRUSTED_PROXIES`; a limited request now gets a `Retry-After` header
+- `backend/.dockerignore`, so local data, logs and caches stay out of the image
+- Tests for shared task status, health and metrics, rate limiting, the code sandbox, deployment settings, follow-up questions and the Tavily retry
+
+### Changed
+- Backend tests run offline: `conftest.py` blocks network connections other than localhost, turns LangSmith tracing off, and points the model registry at a temporary file (`WEBAGENT_TESTS_ALLOW_NETWORK=true` lifts the network block for debugging)
+- Docker image: Python 3.12, installed with `backend/constraints.txt`, runs with `WEBAGENT_ENV=prod`, ships NLTK data, takes the version as `--build-arg APP_VERSION`, sets the worker count with `WEB_CONCURRENCY`, and checks health with Python (the slim image has no `curl`)
+- Kubernetes: the pod runs with `WEBAGENT_ENV=prod` and gets `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `TAVILY_API_KEY` from its secret; `/app/data` and `/app/logs` are writable volumes on the read-only filesystem; one replica until `/app/data` is shared; `deploy.sh` requires the new secrets and defaults to version 3.0.2
+- Docker Compose reads secrets from `backend/.env`, keeps task data in a volume, and sets `WEBAGENT_ENV`
+- The model registry's state file moved from `backend/models/registry/` to the git-ignored `backend/data/registry/` (`WEBAGENT_MODEL_REGISTRY_PATH`)
+- NLTK data is checked once through `ensure_nltk_data`; missing data is downloaded only if `WEBAGENT_NLTK_AUTO_DOWNLOAD` is true (the default; false in the Docker image)
+- Docs updated: README, backend README, local development, Kubernetes, Vercel, API reference, architecture, production checklist, testing and `.env.local.example`
+
+### Fixed
+- Containers started in dev mode (API keys not required, debug errors shown) because the Dockerfile and Kubernetes set `ENVIRONMENT` while the app reads `WEBAGENT_ENV`
+- `WEBAGENT_ENV` set in the shell was ignored whenever `.env.local` existed; the shell or container value now wins
+- `WEBAGENT_SECURITY_*` variables (API keys on/off, rate limits, request size) had no effect because the YAML config overrode them
+- With several workers, a poll that reached another worker returned "Task not found" and the web app reported the task as failed
+- Health checks called `/health`, which didn't exist, so containers were marked unhealthy and pods restarted
+- The container couldn't start as its non-root user: data and log paths resolved to `/backend/...` inside the image, and the version read as 0.0.0
+- Prometheus scraped `/metrics`, which didn't exist, so dashboards stayed empty
+- Building the workflow downloaded NLTK data on every fresh start, and the document extractor downloaded NLTK data on every entity extraction
+- The Tavily retry after a 400 error blocked the server
+- All web app users shared one rate-limit budget, and the per-caller table never shrank
+- Tests reached real services: the scripted end-to-end test ran the real web research agent, and test runs sent traces to LangSmith
+- A test run rewrote the tracked `models_registry.json`
+- `test_request_size_limiting` sent 1 MB against a 10 MB limit, so it was always skipped; it now sends one byte over the limit
+- A log line reported ".env.local exists: False" by checking the wrong folder
+
+### Security
+- Model-written code no longer sees API keys or other secrets, and in uat/prod the server refuses to start with code execution on unless it runs in the container sandbox
+- The Grafana admin password was removed from Docker Compose, the Kubernetes manifests and the docs; set `GRAFANA_ADMIN_PASSWORD`. The old password remains in git history, so change it wherever it was used
+
+### Removed
+- The Kubernetes ConfigMap that was mounted over `/app/config`: its format didn't match the app's YAML, and it hid `config/prod.yaml`
+- Tracked generated files: `test_langgraph.py.bak2`/`.bak3`, the test-only `models_registry.json`, `backend/mlruns/0/meta.yaml` and `mlartifacts/` (the MLflow files stay on disk)
+- The unused Flask app in `backend/api/` (the old Vercel placeholder for `/api/chat` and `/api/task`; Next.js routes serve both)
+
 ## 3.0.1 - 2026-10-10
 
 ### Added

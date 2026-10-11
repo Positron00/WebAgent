@@ -2,6 +2,18 @@
 
 This document summarizes the improvements made to the WebAgent backend to make it production-ready.
 
+## Production checklist (3.0.2)
+
+Before exposing the backend:
+
+1. **Select prod.** Set `WEBAGENT_ENV=prod` (the Docker image and Kubernetes manifest already do). A value set in the shell or container wins over `.env.local`.
+2. **Set the secrets.** `WEBAGENT_SECURITY_SECRET_KEY` (for example `openssl rand -hex 48`) and `WEBAGENT_API_KEY`. The server refuses to start in uat/prod without them. Clients send the key as `X-API-Key`; the web app's `/api/task` route adds it on the server side.
+3. **Leave code execution off**, or run it in the container sandbox: `WEBAGENT_ENABLE_CODE_EXECUTION=true` requires `WEBAGENT_CODE_SANDBOX=docker` and the `backend/sandbox` image in uat/prod, or the server won't start.
+4. **Keep `/app/data` on persistent storage.** Task status and results live there and are shared by the server's workers. Run one replica unless that folder is on a shared volume.
+5. **Check health and metrics.** `GET /health` (no key) for probes; Prometheus scrapes `GET /metrics`.
+6. **Rate limits.** 60 requests per minute per caller by default (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS`). If the backend sits behind a proxy other than the bundled Next.js app, list it in `WEBAGENT_TRUSTED_PROXIES` so limits apply per end user.
+7. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD`; no password is stored in the repo. Change any password that was used with the old committed default.
+
 ## Version 2.4.0 Enhancements
 
 ### Security Hardening

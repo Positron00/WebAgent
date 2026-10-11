@@ -6,6 +6,8 @@ Configuration Priority:
 1. .env.local file (highest priority) - For API keys and sensitive information
    - Should contain: TOGETHER_API_KEY, OPENAI_API_KEY, LANGSMITH_API_KEY, etc.
    - Never commit this file to version control
+   - Exception: WEBAGENT_ENV set in the shell or container wins over .env.local,
+     so `WEBAGENT_ENV=prod` always selects prod.
 
 2. YAML configuration (middle priority) - For environment-specific settings
    - Located in config/{env}.yaml where env is dev, uat, or prod
@@ -31,13 +33,19 @@ from pydantic_settings import BaseSettings
 from app import __version__
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
 
-# Define the base directory for the project (repo root)
-BASE_DIR = str(Path(__file__).resolve().parents[3])
+# The backend folder holds app/, config/ and data/. In the Docker image it is /app,
+# so data paths are built from BACKEND_DIR rather than from the repo root.
+BACKEND_DIR = str(Path(__file__).resolve().parents[2])
+# Repo root (where .env.local lives in a local checkout)
+BASE_DIR = str(Path(BACKEND_DIR).parent)
 
 # Priority order for configuration:
 # 1. .env.local file (highest priority for API keys)
 # 2. YAML configuration (high priority for non-API key settings)
 # 3. .env file (lowest priority, fallback)
+
+# An environment selected by the shell or container must not be replaced by a file.
+_selected_env = os.environ.get("WEBAGENT_ENV")
 
 # Load environment variables from .env file first (lowest priority)
 load_dotenv(".env")
@@ -46,6 +54,9 @@ load_dotenv(".env")
 env_local_path = os.path.join(BASE_DIR, ".env.local")
 if os.path.exists(env_local_path):
     load_dotenv(env_local_path, override=True)
+
+if _selected_env:
+    os.environ["WEBAGENT_ENV"] = _selected_env
 
 # Then load from YAML configuration (middle priority)
 try:
@@ -129,19 +140,19 @@ class Settings(BaseSettings):
     
     # Data directory settings
     DATA_DIR: str = Field(
-        default=os.getenv("WEBAGENT_DATA_DIR", os.path.join(BASE_DIR, "backend", "data")),
+        default=os.getenv("WEBAGENT_DATA_DIR", os.path.join(BACKEND_DIR, "data")),
         description="Base directory for all data storage",
     )
     
     # Sample documents directory
     SAMPLE_DOCS_DIR: str = Field(
-        default=os.getenv("WEBAGENT_SAMPLE_DOCS_DIR", os.path.join(BASE_DIR, "backend", "demos", "demo_docs")),
+        default=os.getenv("WEBAGENT_SAMPLE_DOCS_DIR", os.path.join(BACKEND_DIR, "demos", "demo_docs")),
         description="Directory for sample documents used in demonstrations",
     )
     
     # Vector database settings
     VECTOR_DB_PATH: str = Field(
-        default=os.getenv("WEBAGENT_VECTOR_DB_PATH", os.path.join(BASE_DIR, "backend", "data", "vectordb")),
+        default=os.getenv("WEBAGENT_VECTOR_DB_PATH", os.path.join(BACKEND_DIR, "data", "vectordb")),
         description="Path to the vector database",
     )
     
@@ -157,19 +168,19 @@ class Settings(BaseSettings):
     
     # Artifacts storage settings
     ARTIFACTS_PATH: str = Field(
-        default=os.getenv("WEBAGENT_ARTIFACTS_PATH", os.path.join(BASE_DIR, "backend", "data", "artifacts")),
+        default=os.getenv("WEBAGENT_ARTIFACTS_PATH", os.path.join(BACKEND_DIR, "data", "artifacts")),
         description="Path to store document artifacts"
     )
     
     # MLflow artifacts storage settings
     MLRUNS_PATH: str = Field(
-        default=os.path.join(BASE_DIR, "backend", "mlruns"),
+        default=os.path.join(BACKEND_DIR, "mlruns"),
         description="Path to store MLflow runs and artifacts"
     )
     
     # MLflow artifact location (file URI format)
     MLFLOW_ARTIFACT_LOCATION: str = Field(
-        default=f"file://{os.path.join(BASE_DIR, 'backend', 'mlruns')}",
+        default=f"file://{os.path.join(BACKEND_DIR, 'mlruns')}",
         description="File URI path for MLflow artifacts"
     )
     
@@ -212,7 +223,7 @@ class Settings(BaseSettings):
     MLFLOW_TRACKING_URI: Optional[str] = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:8080")
     MLFLOW_DEFAULT_ARTIFACT_ROOT: str = os.getenv(
         "MLFLOW_DEFAULT_ARTIFACT_ROOT", 
-        f"file://{os.path.join(BASE_DIR, 'backend', 'mlruns')}"
+        f"file://{os.path.join(BACKEND_DIR, 'mlruns')}"
     )
 
     # Grafana settings
@@ -225,6 +236,15 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8"
     )
+
+
+def _security_setting(yaml_name: str, env_name: str, default):
+    """Value of a security setting: the environment variable if set, else YAML, else the default."""
+    raw = os.getenv(env_name)
+    if raw not in (None, ""):
+        return raw.lower() == "true" if isinstance(default, bool) else int(raw)
+    security = getattr(app_config, "security", None)
+    return getattr(security, yaml_name, default) if security is not None else default
 
 
 # Override the settings from YAML if available
@@ -248,20 +268,21 @@ if app_config:
         DEFAULT_MODEL: str = llm_config.default_model
         
         # Database
-        VECTOR_DB_PATH: str = db_config.vector_db.path if hasattr(db_config.vector_db, 'path') and db_config.vector_db.path else os.path.join(BASE_DIR, "backend", "data", "vectordb")
+        VECTOR_DB_PATH: str = db_config.vector_db.path if hasattr(db_config.vector_db, 'path') and db_config.vector_db.path else os.path.join(BACKEND_DIR, "data", "vectordb")
         REDIS_HOST: str = db_config.redis.host
         REDIS_PORT: int = db_config.redis.port
         REDIS_DB: int = db_config.redis.db
         REDIS_PASSWORD: Optional[str] = db_config.redis.password
         
-        # Security settings from YAML if available
-        RATE_LIMIT_ENABLED: bool = getattr(app_config.security, 'rate_limit_enabled', True) if hasattr(app_config, 'security') else True
-        RATE_LIMIT_MAX_REQUESTS: int = getattr(app_config.security, 'rate_limit_max_requests', 60) if hasattr(app_config, 'security') else 60
-        RATE_LIMIT_WINDOW_SIZE: int = getattr(app_config.security, 'rate_limit_window_size', 60) if hasattr(app_config, 'security') else 60
-        RATE_LIMIT_BURST_LIMIT: int = getattr(app_config.security, 'rate_limit_burst_limit', 120) if hasattr(app_config, 'security') else 120
-        REQUEST_SIZE_LIMIT: int = getattr(app_config.security, 'request_size_limit', 10485760) if hasattr(app_config, 'security') else 10485760
-        JWT_ENABLED: bool = getattr(app_config.security, 'jwt_enabled', False) if hasattr(app_config, 'security') else False
-        API_KEY_ENABLED: bool = getattr(app_config.security, 'api_key_enabled', False) if hasattr(app_config, 'security') else False
+        # Security settings: a WEBAGENT_SECURITY_* environment variable wins over the YAML value.
+        # (Their names differ from the field names, so pydantic doesn't apply them on its own.)
+        RATE_LIMIT_ENABLED: bool = _security_setting("rate_limit_enabled", "WEBAGENT_SECURITY_RATE_LIMIT_ENABLED", True)
+        RATE_LIMIT_MAX_REQUESTS: int = _security_setting("rate_limit_max_requests", "WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS", 60)
+        RATE_LIMIT_WINDOW_SIZE: int = _security_setting("rate_limit_window_size", "WEBAGENT_SECURITY_RATE_LIMIT_WINDOW_SIZE", 60)
+        RATE_LIMIT_BURST_LIMIT: int = _security_setting("rate_limit_burst_limit", "WEBAGENT_SECURITY_RATE_LIMIT_BURST_LIMIT", 120)
+        REQUEST_SIZE_LIMIT: int = _security_setting("request_size_limit", "WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT", 10485760)
+        JWT_ENABLED: bool = _security_setting("jwt_enabled", "WEBAGENT_SECURITY_JWT_ENABLED", False)
+        API_KEY_ENABLED: bool = _security_setting("api_key_enabled", "WEBAGENT_SECURITY_API_KEY_ENABLED", False)
         
         # Anthropic API
         ANTHROPIC_API_KEY: Optional[str] = getattr(app_config.security, 'anthropic_api_key', None) if hasattr(app_config, 'security') else None

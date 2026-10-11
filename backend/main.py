@@ -26,6 +26,7 @@ from app.core.config import settings
 from app.core.middleware import setup_middlewares, LimitSizeMiddleware, SecurityHeadersMiddleware
 from app.core.logger import logger
 from app.core.metrics import setup_metrics, PrometheusMiddleware, ERROR_COUNT
+from app.utils.code_sandbox import sandbox_mode
 from app.core.security import (
     setup_security,
     INSECURE_SECRET_DEFAULT,
@@ -95,6 +96,10 @@ async def validate_production_settings() -> None:
         )
     if settings.API_KEY_ENABLED and not os.getenv("WEBAGENT_API_KEY"):
         raise RuntimeError("WEBAGENT_API_KEY must be set when API key auth is enabled in uat/prod")
+    if settings.ENABLE_CODE_EXECUTION and sandbox_mode() != "docker":
+        raise RuntimeError(
+            "Code execution in uat/prod requires the container sandbox (WEBAGENT_CODE_SANDBOX=docker)"
+        )
 
 
 # Include API router
@@ -162,6 +167,13 @@ async def health_check():
         "version": settings.VERSION,
         "environment": settings.WEBAGENT_ENV,
     }
+
+
+# Liveness/readiness probe for Docker HEALTHCHECK and Kubernetes. No auth, no rate limit,
+# and not logged, since probes call it every few seconds.
+@app.get("/health", include_in_schema=False)
+async def liveness_probe():
+    return {"status": "ok", "version": settings.VERSION}
 
 # Log startup information
 logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")

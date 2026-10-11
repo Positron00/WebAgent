@@ -1,6 +1,9 @@
 # Multi-stage build for WebAgent Backend
+# Build from the backend/ folder and pass the app version from the repo-root package.json:
+#   docker build --build-arg APP_VERSION=$(node -p "require('../package.json').version") -t webagent/backend .
+
 # Stage 1: Build dependencies
-FROM python:3.11-slim AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -10,26 +13,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
-COPY requirements.txt .
-
-# Install dependencies
-RUN pip install --no-cache-dir --user -r requirements.txt
+# Install dependencies at the known-good versions in constraints.txt
+COPY requirements.txt constraints.txt ./
+RUN pip install --no-cache-dir --user -r requirements.txt -c constraints.txt
 
 # Stage 2: Runtime
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-# Set environment variables
+ARG APP_VERSION=0.0.0
+
+# WEBAGENT_ENV selects config/prod.yaml (API keys required, debug off).
+# NLTK data is installed at build time, so startup never downloads it.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
     PATH="/app:${PATH}" \
-    ENVIRONMENT=production
+    WEBAGENT_ENV=prod \
+    WEBAGENT_VERSION=${APP_VERSION} \
+    WEBAGENT_NLTK_AUTO_DOWNLOAD=false \
+    NLTK_DATA=/usr/local/share/nltk_data \
+    HF_HOME=/app/data/hf-cache \
+    WEB_CONCURRENCY=4
 
 # Create non-root user
 RUN groupadd -g 1000 webagent && \
     useradd -u 1000 -g webagent -s /bin/bash -m webagent && \
-    mkdir -p /app /app/logs /app/config && \
+    mkdir -p /app /app/logs /app/config /app/data && \
     chown -R webagent:webagent /app
 
 WORKDIR /app
@@ -38,11 +47,15 @@ WORKDIR /app
 COPY --from=builder /root/.local /home/webagent/.local
 ENV PATH=/home/webagent/.local/bin:$PATH
 
+# NLTK corpora used by document extraction
+RUN PYTHONUSERBASE=/home/webagent/.local python -m nltk.downloader -d /usr/local/share/nltk_data \
+    punkt stopwords wordnet maxent_ne_chunker words
+
 # Copy application code
 COPY --chown=webagent:webagent . .
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /app/logs /app/config && \
+RUN mkdir -p /app/logs /app/config /app/data && \
     chown -R webagent:webagent /app && \
     chmod -R 755 /app
 
@@ -52,9 +65,9 @@ USER webagent
 # Expose port
 EXPOSE 8000
 
-# Health check
+# Health check (python, because the slim image has no curl)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)" || exit 1
 
-# Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"] 
+# Task status is shared between workers through /app/data/results, so several workers are safe.
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY}"]

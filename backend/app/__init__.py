@@ -73,7 +73,8 @@ backend_dir = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if backend_dir.name == 'backend' and str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-# Version is defined once, in the repo-root package.json.
+# Version is defined once, in the repo-root package.json. The Docker image is built from
+# backend/ and has no package.json, so the build passes it in as WEBAGENT_VERSION.
 def _read_version() -> str:
     import json
 
@@ -81,7 +82,7 @@ def _read_version() -> str:
         package_json = Path(__file__).resolve().parents[2] / "package.json"
         return json.loads(package_json.read_text())["version"]
     except (OSError, KeyError, ValueError):
-        return "0.0.0"
+        return os.getenv("WEBAGENT_VERSION", "0.0.0")
 
 
 __version__ = _read_version()
