@@ -72,6 +72,9 @@ agents:
     model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.3
     max_searches_per_task: 5
+    # One analysis of the search results (plus any reasoning the model writes first);
+    # the cap keeps a runaway generation short. Real replies use about 1,900-3,000 tokens.
+    max_tokens: 4096
   internal_research:
     model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.1

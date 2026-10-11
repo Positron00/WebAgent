@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 # Default values
 ENVIRONMENT="production"
 NAMESPACE="default"
-VERSION="2.4.0"
+VERSION="3.0.3"
 
 # Print usage information
 function print_usage {
@@ -19,15 +19,18 @@ function print_usage {
   echo "Options:"
   echo "  -e, --environment   Environment to deploy to (default: production)"
   echo "  -n, --namespace     Kubernetes namespace (default: default)"
-  echo "  -v, --version       Version to deploy (default: 2.4.0)"
+  echo "  -v, --version       Version to deploy (default: 3.0.3)"
   echo "  -h, --help          Show this help message"
   echo ""
   echo "Environment variables required:"
   echo "  OPENAI_API_KEY      OpenAI API key"
-  echo "  JWT_SECRET          Secret for JWT token generation"
+  echo "  WEBAGENT_SECURITY_SECRET_KEY  Random secret, at least 32 characters"
+  echo "  WEBAGENT_API_KEY              Key clients send in the X-API-Key header"
+  echo "  GRAFANA_ADMIN_PASSWORD        Grafana admin password"
   echo ""
   echo "Optional environment variables:"
   echo "  TOGETHER_API_KEY    Together AI API key"
+  echo "  TAVILY_API_KEY      Tavily web search API key"
   echo "  LANGSMITH_API_KEY   LangSmith API key for tracing"
 }
 
@@ -69,11 +72,14 @@ if [ -z "$OPENAI_API_KEY" ]; then
   exit 1
 fi
 
-if [ -z "$JWT_SECRET" ]; then
-  echo -e "${RED}Error: JWT_SECRET environment variable is required${NC}"
-  print_usage
-  exit 1
-fi
+# The app refuses to start in prod without these
+for required in WEBAGENT_SECURITY_SECRET_KEY WEBAGENT_API_KEY GRAFANA_ADMIN_PASSWORD; do
+  if [ -z "${!required}" ]; then
+    echo -e "${RED}Error: $required environment variable is required${NC}"
+    print_usage
+    exit 1
+  fi
+done
 
 # Create namespace if it doesn't exist
 echo -e "${YELLOW}Checking if namespace $NAMESPACE exists...${NC}"
@@ -92,7 +98,8 @@ if ! kubectl get namespace monitoring &> /dev/null; then
   kubectl apply -f monitoring/prometheus.yaml
   
   echo -e "${YELLOW}Deploying Grafana...${NC}"
-  kubectl apply -f monitoring/grafana.yaml
+  # The admin password comes from the environment; it is never stored in the repo.
+  sed "s/\${GRAFANA_ADMIN_PASSWORD}/$GRAFANA_ADMIN_PASSWORD/g" monitoring/grafana.yaml | kubectl apply -f -
   
   echo -e "${YELLOW}Configuring Grafana datasource...${NC}"
   kubectl apply -f monitoring/grafana-datasource.yaml
@@ -105,9 +112,12 @@ echo -e "${YELLOW}Generating deployment manifest...${NC}"
 cat deployment.yaml | \
   sed "s/\${OPENAI_API_KEY}/$OPENAI_API_KEY/g" | \
   sed "s/\${TOGETHER_API_KEY}/${TOGETHER_API_KEY:-}/g" | \
-  sed "s/\${JWT_SECRET}/$JWT_SECRET/g" | \
+  sed "s/\${WEBAGENT_SECURITY_SECRET_KEY}/$WEBAGENT_SECURITY_SECRET_KEY/g" | \
+  sed "s/\${WEBAGENT_API_KEY}/$WEBAGENT_API_KEY/g" | \
+  sed "s/\${TAVILY_API_KEY}/${TAVILY_API_KEY:-}/g" | \
   sed "s/\${LANGSMITH_API_KEY}/${LANGSMITH_API_KEY:-}/g" | \
-  sed "s/webagent\/backend:2.4.0/webagent\/backend:$VERSION/g" | \
+  sed "s/webagent\/backend:3.0.3/webagent\/backend:$VERSION/g" | \
+  sed "s/version: \"3.0.3\"/version: \"$VERSION\"/g" | \
   sed "s/namespace: default/namespace: $NAMESPACE/g" > deployment-$ENVIRONMENT.yaml
 
 # Apply the deployment

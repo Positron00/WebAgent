@@ -59,6 +59,37 @@ async def require_api_key(api_key: Optional[str] = Security(api_key_header)) -> 
 
 # Rate limiting implementation
 rate_limit_data: Dict[str, Dict[str, Any]] = {}
+_last_rate_limit_sweep = 0.0
+
+# Requests from these addresses are proxies (the Next.js server by default); the caller's
+# own address is taken from their X-Forwarded-For header instead.
+TRUSTED_PROXIES = {
+    host.strip()
+    for host in os.getenv("WEBAGENT_TRUSTED_PROXIES", "127.0.0.1,::1").split(",")
+    if host.strip()
+}
+
+# Probes and metrics scrapes are frequent and must never be throttled.
+RATE_LIMIT_EXEMPT_PATHS = {"/", "/health", "/metrics"}
+
+
+def client_identifier(request) -> str:
+    """Address to rate-limit by: the real caller when the request came through a trusted proxy."""
+    client_host = request.client.host if request.client else "unknown"
+    if client_host in TRUSTED_PROXIES:
+        forwarded = request.headers.get("x-forwarded-for", "")
+        first_hop = forwarded.split(",")[0].strip()
+        if first_hop:
+            return first_hop
+    return client_host
+
+
+def _is_rate_limit_exempt(path: str) -> bool:
+    return (
+        path in RATE_LIMIT_EXEMPT_PATHS
+        or path == f"{settings.API_V1_STR}/metrics"
+        or path.startswith(f"{settings.API_V1_STR}/health")
+    )
 
 
 def get_authorization_header(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
@@ -129,6 +160,19 @@ def decode_jwt(token: str) -> Dict[str, Any]:
         )
 
 
+def _sweep_idle_identifiers(current_time: float) -> None:
+    """Drop callers with no requests inside the window, so the table doesn't grow forever."""
+    global _last_rate_limit_sweep
+    if current_time - _last_rate_limit_sweep < settings.RATE_LIMIT_WINDOW_SIZE:
+        return
+    _last_rate_limit_sweep = current_time
+    window_start = current_time - settings.RATE_LIMIT_WINDOW_SIZE
+    for identifier in list(rate_limit_data):
+        requests = rate_limit_data[identifier]["requests"]
+        if not requests or requests[-1] <= window_start:
+            del rate_limit_data[identifier]
+
+
 def apply_rate_limit(identifier: str) -> bool:
     """
     Apply rate limiting logic.
@@ -143,7 +187,8 @@ def apply_rate_limit(identifier: str) -> bool:
         return True
     
     current_time = time.time()
-    
+    _sweep_idle_identifiers(current_time)
+
     # Initialize rate limiting data for this identifier if it doesn't exist
     if identifier not in rate_limit_data:
         rate_limit_data[identifier] = {
@@ -218,14 +263,14 @@ def setup_security(app: FastAPI) -> None:
         """
         Middleware for handling security concerns like rate limiting and request size.
         """
-        # Get client identifier (IP address or user ID if authenticated)
-        client_host = request.client.host if request.client else "unknown"
-        
-        # Apply rate limiting
-        if not apply_rate_limit(client_host):
+        # Apply rate limiting per caller (behind the web app's proxy, per end user)
+        if not _is_rate_limit_exempt(request.url.path) and not apply_rate_limit(
+            client_identifier(request)
+        ):
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={"error": "Too many requests"},
+                headers={"Retry-After": str(settings.RATE_LIMIT_WINDOW_SIZE)},
             )
 
         content_length = request.headers.get("content-length")

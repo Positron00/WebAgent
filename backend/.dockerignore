@@ -1,0 +1,18 @@
+# Keep local state, caches and secrets out of the image (build context is backend/)
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.env
+.env.*
+data/*
+!data/sample_docs/
+logs/
+mlruns/
+mlflow.db
+*.db
+demos/logs/
+demos/results/
+demos/demo_outputs/
+tests/
+kubernetes/
+grafana/

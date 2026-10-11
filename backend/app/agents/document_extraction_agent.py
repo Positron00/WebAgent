@@ -20,6 +20,8 @@ from pathlib import Path
 
 # Import NLP libraries
 import nltk
+
+from app.utils.nltk_data import ensure_nltk_data
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -68,15 +70,7 @@ class DocumentExtractionAgent(BaseAgent):
         }
         
         # Download NLTK resources if not already present
-        try:
-            nltk.data.find('tokenizers/punkt')
-            nltk.data.find('corpora/stopwords')
-            nltk.data.find('corpora/wordnet')
-        except LookupError:
-            logger.info("Downloading required NLTK resources...")
-            nltk.download('punkt')
-            nltk.download('stopwords')
-            nltk.download('wordnet')
+        ensure_nltk_data('punkt', 'stopwords', 'wordnet')
         
         # Initialize lemmatizer
         self.lemmatizer = WordNetLemmatizer()

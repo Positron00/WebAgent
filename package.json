@@ -1,7 +1,7 @@
 {
   "name": "webagent-platform",
-  "version": "3.0.1",
-  "description": "WebAgent Platform with custom transformer model and improved model-as-a-service architecture (2025-04-17)",
+  "version": "3.0.3",
+  "description": "WebAgent multi-agent research platform: Next.js web app and FastAPI/LangGraph backend",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,6 +12,8 @@
     "test:coverage": "jest --ci --coverage",
     "test:backend": "conda run -n agents python -m pytest backend/tests -q",
     "coverage:backend": "conda run -n agents python -m pytest backend/tests -q --cov=backend/app --cov-report=term-missing:skip-covered",
+    "stack:up": "APP_VERSION=$npm_package_version docker compose -f backend/docker-compose.yml --env-file .env.local up --build",
+    "stack:down": "docker compose -f backend/docker-compose.yml --env-file .env.local down",
     "lint": "next lint",
     "check-types": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",

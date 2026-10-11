@@ -324,6 +324,8 @@ def update_memory_usage():
 def setup_metrics(app: FastAPI):
     """Setup metrics endpoint for FastAPI application."""
     
+    # /metrics is the path Prometheus, docker-compose and the Kubernetes annotations scrape.
+    @app.get("/metrics", include_in_schema=False)
     @app.get("/api/v1/metrics")
     async def metrics():
         """Prometheus metrics endpoint."""

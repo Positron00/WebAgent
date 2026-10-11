@@ -64,7 +64,8 @@ Output your analysis in JSON format with these fields:
     "requires_web_search": true/false,
     "requires_internal_knowledge": true/false,
     "requires_document_extraction": true/false,
-    "questions": [list of specific questions to research]
+    "questions": [list of specific questions to research],
+    "standalone_query": "the current query rewritten so it makes sense without the conversation (copy it unchanged if it already does)"
   }}
 }}
 """

@@ -76,13 +76,14 @@ async def test_agentic_workflow_produces_final_report():
         "app.graph.workflows.get_coding_assistant_agent", return_value=noop
     ), patch("app.graph.workflows.get_coding_review_agent", return_value=noop
     ):
+        # Keep the patches active while the graph runs: the research node looks up
+        # the research agents at run time, not only when the graph is built.
         workflow = build_agent_workflow()
-
-    state = WorkflowState(
-        query="What is an example?",
-        context={"agentic_toggle": True},
-    )
-    result = await workflow.ainvoke(state)
+        state = WorkflowState(
+            query="What is an example?",
+            context={"agentic_toggle": True},
+        )
+        result = await workflow.ainvoke(state)
     final = (
         result
         if isinstance(result, WorkflowState)
@@ -91,3 +92,5 @@ async def test_agentic_workflow_produces_final_report():
 
     assert final.final_report is not None
     assert final.final_report.get("content")
+    # The stubbed research agent ran, not the real one (which would call Tavily and the LLM).
+    assert final.reports["web_research"]["analysis"] == "Web findings about the example topic."

@@ -118,3 +118,23 @@ async def test_bad_requests_are_not_retried(monkeypatch):
     with pytest.raises(ValueError, match="invalid payload: error body") as error:
         await make_llm().ainvoke("q")
     assert not _is_transient_error(error.value)
+
+
+def test_reply_cut_off_at_the_token_limit_is_logged(monkeypatch, caplog):
+    cut_off = {"choices": [{"text": "partial", "finish_reason": "length"}], "usage": {}}
+    monkeypatch.setattr(together_llm.requests, "post", lambda *a, **k: FakeResponse(data=cut_off))
+
+    with caplog.at_level("WARNING", logger=together_llm.logger.name):
+        make_llm().invoke("Long question")
+
+    assert "stopped at the max_tokens limit (50)" in caplog.text
+
+
+def test_complete_reply_is_not_flagged(monkeypatch, caplog):
+    done = {"choices": [{"text": "full", "finish_reason": "stop"}], "usage": {}}
+    monkeypatch.setattr(together_llm.requests, "post", lambda *a, **k: FakeResponse(data=done))
+
+    with caplog.at_level("WARNING", logger=together_llm.logger.name):
+        make_llm().invoke("Short question")
+
+    assert "max_tokens limit" not in caplog.text

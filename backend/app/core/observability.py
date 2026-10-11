@@ -353,42 +353,27 @@ def log_to_mlflow(metrics: Optional[Dict[str, float]] = None,
             
             mlflow.set_experiment(experiment_name)
         
-        # Check if a run is already active
-        if mlflow.active_run():
-            # Use existing run
+        # Each call gets its own run. Inside an active run it is a nested child run: MLflow
+        # forbids changing a param once logged, so writing per-call params (query_length, ...)
+        # into a shared active run failed from the second call on.
+        with mlflow.start_run(nested=mlflow.active_run() is not None):
+            # Log metrics
             if metrics:
                 mlflow.log_metrics(metrics)
             
+            # Log params
             if params:
                 mlflow.log_params(params)
             
+            # Log tags
             if tags:
                 for key, value in tags.items():
                     mlflow.set_tag(key, value)
             
+            # Log artifacts
             if artifacts:
                 for path, name in artifacts.items():
                     mlflow.log_artifact(path, name)
-        else:
-            # Start a new run
-            with mlflow.start_run():
-                # Log metrics
-                if metrics:
-                    mlflow.log_metrics(metrics)
-                
-                # Log params
-                if params:
-                    mlflow.log_params(params)
-                
-                # Log tags
-                if tags:
-                    for key, value in tags.items():
-                        mlflow.set_tag(key, value)
-                
-                # Log artifacts
-                if artifacts:
-                    for path, name in artifacts.items():
-                        mlflow.log_artifact(path, name)
     except Exception as e:
         logger.warning(f"Failed to log to MLflow: {str(e)}", exc_info=True)
 

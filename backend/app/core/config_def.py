@@ -102,6 +102,8 @@ class AgentConfig(BaseModel):
     """Base agent configuration."""
     model: str = Field(default="meta-models/Muse-Glimmer-30B")
     temperature: float = Field(default=0.2, ge=0.0, le=1.0)
+    # Output limit for this agent's model calls; lower than llm.max_tokens wins. None = use llm.max_tokens.
+    max_tokens: Optional[int] = Field(default=None, gt=0)
 
 
 class WebResearchAgentConfig(AgentConfig):

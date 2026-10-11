@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v2.4.0).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.0.3).
 
 ## Base URL
 
@@ -12,13 +12,18 @@ https://api.webagent.example.com/api/v1
 
 ## Authentication
 
-API authentication is handled using JWT (JSON Web Token) bearer tokens. Include the token in your request's `Authorization` header:
+Send the API key in the `X-API-Key` header:
 
 ```
-Authorization: Bearer <your_access_token>
+X-API-Key: <WEBAGENT_API_KEY>
 ```
 
-To obtain a token, use the authentication endpoint with valid credentials.
+- Keys are required in uat and prod (`api_key_enabled: true` in their YAML config); the server refuses to start there without `WEBAGENT_API_KEY`.
+- In dev, keys are off by default (`WEBAGENT_SECURITY_API_KEY_ENABLED=true` turns them on); when on, the built-in dev keys are also accepted.
+- The web app never sends the key from the browser: its `/api/task` route adds it on the server.
+- `GET /health`, `GET /api/v1/health/…` and `GET /metrics` never need a key.
+
+A missing or wrong key returns `401` with `{"detail": "API key required"}` or `{"detail": "Invalid API key"}`.
 
 ## Common Response Codes
 
@@ -27,7 +32,7 @@ To obtain a token, use the authentication endpoint with valid credentials.
 | 200  | Success |
 | 201  | Created (resource created successfully) |
 | 400  | Bad Request (invalid input) |
-| 401  | Unauthorized (missing or invalid token) |
+| 401  | Unauthorized (missing or invalid API key) |
 | 403  | Forbidden (insufficient permissions) |
 | 404  | Not Found (resource not found) |
 | 429  | Too Many Requests (rate limit exceeded) |
@@ -35,12 +40,13 @@ To obtain a token, use the authentication endpoint with valid credentials.
 
 ## Rate Limiting
 
-The API implements rate limiting to protect against abuse. Limits are as follows:
+Each caller may make 60 requests per minute (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS` per `WEBAGENT_SECURITY_RATE_LIMIT_WINDOW_SIZE` seconds; uat/prod YAML can change them).
 
-- 100 requests per minute per client IP address
-- 10 concurrent requests per client IP address
+- The caller is the client's IP address. When the request comes from a trusted proxy (`WEBAGENT_TRUSTED_PROXIES`, default localhost, which covers the web app's `/api/task` route), the first address in `X-Forwarded-For` is used instead, so each end user has their own budget.
+- Health checks and `/metrics` are never limited.
+- Limits are counted per server worker, so with N workers a caller can make up to N × the limit.
 
-When rate limited, you'll receive a `429 Too Many Requests` response with a `Retry-After` header indicating the number of seconds to wait before retrying.
+When rate limited, you receive `429 Too Many Requests` with `{"error": "Too many requests"}` and a `Retry-After` header giving the window length in seconds.
 
 ## Chat API
 
@@ -216,7 +222,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "2.4.0",
+  "version": "3.0.3",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -311,19 +317,32 @@ Deletes a task and its results.
 
 ## Health API
 
-### Basic Health Check
+### Liveness Probe
 
-Performs a basic health check.
+Used by the Docker health check and Kubernetes probes. Served at the server root, not under `/api/v1`. No API key, not rate-limited, not logged.
 
-**Endpoint:** `GET /health`
+**Endpoint:** `GET /health` (full path, e.g. `http://localhost:8000/health`)
 
 **Response:**
 
 ```json
 {
   "status": "ok",
-  "version": "2.4.0",
-  "environment": "production"
+  "version": "3.0.3"
+}
+```
+
+### Basic Health Check
+
+**Endpoint:** `GET /health/` (under the base URL, i.e. `/api/v1/health/`). No API key needed.
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "version": "3.0.3",
+  "environment": "prod"
 }
 ```
 
@@ -339,7 +358,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "2.4.0"
+    "version": "3.0.3"
   },
   "llm_service": {
     "status": "ok",
@@ -356,9 +375,9 @@ Performs a detailed health check with information about connected services.
 
 ### Metrics
 
-Prometheus metrics endpoint.
+Prometheus metrics endpoint. No API key needed, not rate-limited.
 
-**Endpoint:** `GET /metrics`
+**Endpoint:** `GET /metrics` at the server root (what Prometheus and the Kubernetes annotations scrape); also available as `/api/v1/metrics`.
 
 **Response:**
 Plain text Prometheus metrics format

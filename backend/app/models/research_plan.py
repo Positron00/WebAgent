@@ -9,6 +9,9 @@ class ResearchPlan(BaseModel):
     requires_internal_knowledge: bool = False
     requires_document_extraction: bool = False
     questions: List[str] = Field(default_factory=list)
+    # The user's query rewritten to make sense without the chat history
+    # (e.g. "what about Europe?" -> "EV adoption rates in Europe"). Empty if not provided.
+    standalone_query: str = ""
 
 
 def normalize_research_plan(raw: Dict[str, Any]) -> ResearchPlan:
@@ -30,4 +33,11 @@ def normalize_research_plan(raw: Dict[str, Any]) -> ResearchPlan:
             raw.get("needs_document_extraction", False),
         ),
         questions=raw.get("questions") or [],
+        standalone_query=str(raw.get("standalone_query") or "").strip(),
     )
+
+
+def research_query(state: Any) -> str:
+    """Text to search with: the supervisor's standalone rewrite of a follow-up, else the raw query."""
+    plan = normalize_research_plan(state.context.get("research_plan", {}))
+    return plan.standalone_query or state.query or state.context.get("query", "")

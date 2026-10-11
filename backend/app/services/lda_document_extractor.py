@@ -17,6 +17,8 @@ from pathlib import Path
 
 # Import ML & NLP libraries
 import nltk
+
+from app.utils.nltk_data import ensure_nltk_data
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -78,15 +80,7 @@ class LDADocumentExtractor:
         }
         
         # Download NLTK resources if not already present
-        try:
-            nltk.data.find('tokenizers/punkt')
-            nltk.data.find('corpora/stopwords')
-            nltk.data.find('corpora/wordnet')
-        except LookupError:
-            logger.info("Downloading required NLTK resources...")
-            nltk.download('punkt')
-            nltk.download('stopwords')
-            nltk.download('wordnet')
+        ensure_nltk_data('punkt', 'stopwords', 'wordnet')
         
         # Initialize utilities
         self.lemmatizer = WordNetLemmatizer()
@@ -419,8 +413,7 @@ class LDADocumentExtractor:
             # Try to load the NER module and apply it
             try:
                 from nltk import ne_chunk
-                nltk.download('maxent_ne_chunker')
-                nltk.download('words')
+                ensure_nltk_data('maxent_ne_chunker', 'words')
                 
                 # Perform simple NER
                 chunks = ne_chunk(nltk.pos_tag(word_tokenize(text)))

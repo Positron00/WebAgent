@@ -54,7 +54,7 @@ kubectl port-forward -n monitoring svc/grafana 3000:3000
 
 3. Log in with the credentials:
    - Username: admin
-   - Password: WebAgent-Admin-2025!
+   - Password: the `GRAFANA_ADMIN_PASSWORD` you set before running `deploy.sh`
 
 4. The WebAgent Backend Dashboard should be available in the dashboards list
 

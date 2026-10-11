@@ -2,6 +2,77 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.0.3 - 2026-10-10
+
+### Added
+- Per-agent output limit: `max_tokens` under an agent in `config/{env}.yaml` lowers that agent's limit; web research uses 4,096 in every environment
+- A warning in the logs whenever a Together reply stops at the `max_tokens` limit, since the text is then cut off
+- `npm run stack:up` / `npm run stack:down` start and stop the local Docker Compose stack (backend, Prometheus, Grafana) from the repo root, tagging the backend image with the `package.json` version
+- `GRAFANA_ADMIN_PASSWORD`, `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` in `.env.local.example`
+- Tests that fail if the web research prompt reaches the model with unfilled placeholders or without its `ANALYSIS:` cue, plus tests for the reasoning cleanup, per-agent limits, zip-only NLTK data, the cut-off warning and repeated MLflow logging
+
+### Changed
+- Web research sends one filled-in prompt that tells the model to use only the search results and ends with `ANALYSIS:`; any reasoning a model writes before its answer is dropped
+- The Docker image sets `MLFLOW_TRACKING_URI=file:///app/data/mlruns` (the root filesystem is read-only) and `GIT_PYTHON_REFRESH=quiet` (the image has no `git`)
+- Each `log_to_mlflow` call gets its own run, nested under any active run
+- Docker Compose reads the Grafana admin password and the backend's API keys from the repo-root `.env.local` (`--env-file .env.local`) instead of a separate `backend/.env`, so all secrets live in one file
+- The Compose stack's Grafana listens on host port 3001 (`GRAFANA_HOST_PORT`), so it no longer collides with the Next.js dev server or a local Grafana on 3000
+- Docs updated: backend README troubleshooting, testing guide, triage report
+
+### Fixed
+- Web research took about 3 minutes per round and could invent sources: it sent its prompt with unfilled `{query}`/`{search_results}` placeholders and ended on raw search results, so the model kept writing until the 16,384-token prod limit. The prompt is now filled in and ends with `ANALYSIS:`, reasoning the model writes before its answer is dropped, and web research is capped at 4,096 output tokens. A real run of the same question went from 479 s to 153–208 s, with research calls taking 18–28 s instead of 175 s
+- MLflow logging failed in the container: it wrote to the read-only `/app/mlruns` (now `/app/data/mlruns`), and inside an active run a second call failed with "Changing param values is not allowed" (each call now gets a nested run)
+- The NLTK check reported `wordnet` as missing when it was installed as a zip
+
+## 3.0.2 - 2026-10-10
+
+### Added
+- `GET /health` at the server root for Docker and Kubernetes health checks: no API key, not rate-limited, not logged
+- Prometheus metrics are also served at `/metrics`, the path Prometheus and the Kubernetes annotations scrape (`/api/v1/metrics` still works)
+- `WEBAGENT_CODE_SANDBOX` chooses where model-written code runs: `local` (default; no API keys or other secrets in its environment, plus CPU, file-size and memory limits) or `docker` (a throwaway container with no network and a read-only filesystem, built from `backend/sandbox/`)
+- Follow-up questions such as "what about Europe?" are researched as a complete question: the supervisor adds `standalone_query` to the research plan, and web and internal research search with it
+- Task status is saved to `backend/data/results/` when a task is created, so any server worker can answer a poll; a task still processing after `WEBAGENT_TASK_TIMEOUT_MINUTES` (30) is reported as interrupted
+- Per-user rate limits behind the web app: `/api/task` forwards the caller's address, which the backend trusts only from `WEBAGENT_TRUSTED_PROXIES`; a limited request now gets a `Retry-After` header
+- `backend/.dockerignore`, so local data, logs and caches stay out of the image
+- Tests for shared task status, health and metrics, rate limiting, the code sandbox, deployment settings, follow-up questions and the Tavily retry
+
+### Changed
+- Backend tests run offline: `conftest.py` blocks network connections other than localhost, turns LangSmith tracing off, and points the model registry at a temporary file (`WEBAGENT_TESTS_ALLOW_NETWORK=true` lifts the network block for debugging)
+- Docker image: Python 3.12, installed with `backend/constraints.txt`, runs with `WEBAGENT_ENV=prod`, ships NLTK data, takes the version as `--build-arg APP_VERSION`, sets the worker count with `WEB_CONCURRENCY`, and checks health with Python (the slim image has no `curl`)
+- Kubernetes: the pod runs with `WEBAGENT_ENV=prod` and gets `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `TAVILY_API_KEY` from its secret; `/app/data` and `/app/logs` are writable volumes on the read-only filesystem; one replica until `/app/data` is shared; `deploy.sh` requires the new secrets and defaults to version 3.0.2
+- Docker Compose reads secrets from `backend/.env`, keeps task data in a volume, and sets `WEBAGENT_ENV`
+- The model registry's state file moved from `backend/models/registry/` to the git-ignored `backend/data/registry/` (`WEBAGENT_MODEL_REGISTRY_PATH`)
+- NLTK data is checked once through `ensure_nltk_data`; missing data is downloaded only if `WEBAGENT_NLTK_AUTO_DOWNLOAD` is true (the default; false in the Docker image)
+- Docs updated: README, backend README, local development, Kubernetes, Vercel, API reference, architecture, production checklist, testing and `.env.local.example`
+
+### Fixed
+- Containers started in dev mode (API keys not required, debug errors shown) because the Dockerfile and Kubernetes set `ENVIRONMENT` while the app reads `WEBAGENT_ENV`
+- `WEBAGENT_ENV` set in the shell was ignored whenever `.env.local` existed; the shell or container value now wins
+- `WEBAGENT_SECURITY_*` variables (API keys on/off, rate limits, request size) had no effect because the YAML config overrode them
+- With several workers, a poll that reached another worker returned "Task not found" and the web app reported the task as failed
+- Health checks called `/health`, which didn't exist, so containers were marked unhealthy and pods restarted
+- The container couldn't start as its non-root user: data and log paths resolved to `/backend/...` inside the image, and the version read as 0.0.0
+- Prometheus scraped `/metrics`, which didn't exist, so dashboards stayed empty
+- Building the workflow downloaded NLTK data on every fresh start, and the document extractor downloaded NLTK data on every entity extraction
+- The Tavily retry after a 400 error blocked the server
+- All web app users shared one rate-limit budget, and the per-caller table never shrank
+- Tests reached real services: the scripted end-to-end test ran the real web research agent, and test runs sent traces to LangSmith
+- A test run rewrote the tracked `models_registry.json`
+- `test_request_size_limiting` sent 1 MB against a 10 MB limit, so it was always skipped; it now sends one byte over the limit
+- A log line reported ".env.local exists: False" by checking the wrong folder
+- The Docker image couldn't start: `langchain-chroma` and `langchain-huggingface` are imported at load time but were missing from `requirements.txt` (they were only installed in the local conda environment)
+- With several workers, a container with bad uat/prod settings kept restarting its workers forever instead of stopping; the image now runs the startup checks (`python -m app.core.startup_checks`) once before uvicorn and exits with a clear message
+- Matplotlib warned on every run in the code sandbox because its config folder was read-only
+
+### Security
+- Model-written code no longer sees API keys or other secrets, and in uat/prod the server refuses to start with code execution on unless it runs in the container sandbox
+- The Grafana admin password was removed from Docker Compose, the Kubernetes manifests and the docs; set `GRAFANA_ADMIN_PASSWORD`. The old password remains in git history, so change it wherever it was used
+
+### Removed
+- The Kubernetes ConfigMap that was mounted over `/app/config`: its format didn't match the app's YAML, and it hid `config/prod.yaml`
+- Tracked generated files: `test_langgraph.py.bak2`/`.bak3`, the test-only `models_registry.json`, `backend/mlruns/0/meta.yaml` and `mlartifacts/` (the MLflow files stay on disk)
+- The unused Flask app in `backend/api/` (the old Vercel placeholder for `/api/chat` and `/api/task`; Next.js routes serve both)
+
 ## 3.0.1 - 2026-10-10
 
 ### Added

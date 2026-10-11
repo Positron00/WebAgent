@@ -16,16 +16,25 @@ from .core_transformer import Transformer
 
 logger = logging.getLogger(__name__)
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+REPO_ROOT = BACKEND_DIR.parent
 
 class CoreTransformerModelService(BaseModelService):
     """Service implementation for the custom core Transformer model"""
 
     def _resolve_model_dir(self) -> str:
-        """Resolve a relative model_path (from models.yaml) against the repository root."""
-        if os.path.isabs(self.config.model_path):
-            return self.config.model_path
-        return str(REPO_ROOT / self.config.model_path)
+        """Resolve a relative model_path (from models.yaml, e.g. "backend/models/...").
+
+        Paths are written relative to the repo root. In the Docker image the backend
+        folder is the root, so a leading "backend/" is resolved against it instead.
+        """
+        model_path = self.config.model_path
+        if os.path.isabs(model_path):
+            return model_path
+        from_repo_root = REPO_ROOT / model_path
+        if from_repo_root.exists() or not model_path.startswith("backend/"):
+            return str(from_repo_root)
+        return str(BACKEND_DIR / model_path[len("backend/"):])
     
     async def load_model(self) -> None:
         """Load the Transformer model into memory"""

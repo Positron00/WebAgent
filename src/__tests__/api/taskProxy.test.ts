@@ -69,6 +69,17 @@ describe('/api/task proxy', () => {
     expect(forwarded().url).toBe('http://backend.test:9000/api/task/..%2Fadmin%3Fx%3D1');
   });
 
+  it("forwards the caller's address so the backend rate-limits per user", async () => {
+    fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+
+    await getTask(
+      new Request('http://localhost/api/task/t1', { headers: { 'x-forwarded-for': '203.0.113.7' } }),
+      { params: { taskId: 't1' } }
+    );
+
+    expect(forwarded().headers.get('X-Forwarded-For')).toBe('203.0.113.7');
+  });
+
   it('returns 503 when the backend cannot be reached', async () => {
     fetchMock.mockRejectedValue(new TypeError('fetch failed'));
 

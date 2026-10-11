@@ -64,22 +64,33 @@ python -m backend.main
 
 ### Option 2: Running with Docker Compose
 
-1. Start the application with Docker Compose:
+1. Add a Grafana admin password to `.env.local` in the repo root, next to your API keys. Compose reads all its secrets from that file:
 
 ```bash
-docker-compose up
+GRAFANA_ADMIN_PASSWORD=choose-a-password   # e.g. from: openssl rand -base64 24
 ```
+
+Put it on its own line. If you append it from the shell, start with a newline (`printf '\nGRAFANA_ADMIN_PASSWORD=...\n' >> .env.local`), since the file may not end with one. Compose stops with "required variable GRAFANA_ADMIN_PASSWORD is missing" if the password isn't set. The backend uses the `WEBAGENT_ENV` from `.env.local` (normally `dev`); `uat` and `prod` also need `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY`.
+
+2. Start the stack from the repo root:
+
+```bash
+npm run stack:up     # docker compose -f backend/docker-compose.yml --env-file .env.local up --build
+npm run stack:down   # stop it
+```
+
+`stack:up` also tags the backend image with the version from `package.json`.
 
 This will start:
 - WebAgent backend on port 8000
 - Prometheus on port 9090
-- Grafana on port 3000
+- Grafana on port 3001 (set `GRAFANA_HOST_PORT` in `.env.local` to change it)
 
-2. Access the services:
-   - WebAgent API: http://localhost:8000
+3. Access the services:
+   - WebAgent API: http://localhost:8000 (health check: http://localhost:8000/health)
    - API Documentation: http://localhost:8000/api/v1/docs
    - Prometheus: http://localhost:9090
-   - Grafana: http://localhost:3000 (login with admin/WebAgent-Admin-2025!)
+   - Grafana: http://localhost:3001 (login with `admin` and the `GRAFANA_ADMIN_PASSWORD` from `.env.local`)
 
 ## Development Workflow
 
@@ -98,7 +109,7 @@ python -m pytest backend/tests/integration  # integration tests
 npm run coverage:backend                    # with a coverage report
 ```
 
-No test calls a real LLM. See [docs/TESTING.md](../docs/TESTING.md).
+Tests run offline: `backend/tests/conftest.py` blocks network connections, turns LangSmith tracing off, and sends saved results and the model registry to temporary files. See [docs/TESTING.md](../docs/TESTING.md).
 
 ## Monitoring
 
@@ -124,7 +135,9 @@ The application is configured using YAML files in the `config` directory:
 - `uat.yaml`: Pre-production (user acceptance testing) configuration
 - `prod.yaml`: Production configuration
 
-The configuration file is selected by the `WEBAGENT_ENV` environment variable (`dev`, `uat` or `prod`; default `dev`). API keys and secrets go in `.env.local` in the repo root, never in the YAML files.
+The configuration file is selected by the `WEBAGENT_ENV` environment variable (`dev`, `uat` or `prod`; default `dev`). `.env.local` sets it to `dev`, but a value set in your shell wins, so `WEBAGENT_ENV=prod python -m backend.main` runs with production settings. API keys and secrets go in `.env.local` in the repo root, never in the YAML files.
+
+Under `agents:` in each YAML file, every agent can set its `model` and an output limit, `max_tokens`. That limit lowers the shared `llm.max_tokens` for that agent only; web research uses 4,096. If the log says a Together reply "stopped at the max_tokens limit", raise that agent's limit.
 
 ## Troubleshooting
 
@@ -135,19 +148,20 @@ The configuration file is selected by the `WEBAGENT_ENV` environment variable (`
    - Check the logs for authentication errors
 
 2. **Docker Issues**:
-   - Run `docker-compose down -v` to clean up volumes and containers
-   - Rebuild with `docker-compose build --no-cache`
+   - Run `npm run stack:down` (add `-- -v` to also remove volumes) to clean up
+   - Rebuild with `docker compose -f backend/docker-compose.yml --env-file .env.local build --no-cache`
+   - Container marked unhealthy: the health check calls `GET /health`; check `docker compose logs webagent-backend` for a startup error (in uat/prod, missing `WEBAGENT_SECURITY_SECRET_KEY` or `WEBAGENT_API_KEY` stops startup)
 
 3. **Port Conflicts**:
    - If ports are already in use, modify the port mappings in `docker-compose.yml`
-   - Grafana and the Next.js web app both default to port 3000. Change Grafana's mapping (for example `"3001:3000"`) if you run both
+   - The stack's Grafana uses host port 3001, so it doesn't clash with the Next.js dev server or a locally installed Grafana on 3000. Set `GRAFANA_HOST_PORT` in `.env.local` to use another port
 
 ### Logs
 
 - When running with Python, logs go to the console and to `backend/logs/webagent-dev.log`
 - Lines written during a task are tagged `[task <id>]`, so you can `grep` one task's lines
 - Finished task reports are saved in `backend/data/results/<task_id>.json`
-- When running with Docker, view logs with `docker-compose logs -f webagent-backend`
+- When running with Docker, view logs with `docker compose -f backend/docker-compose.yml logs -f webagent-backend`; log files are in `backend/logs/` (mounted at `/app/logs`) and task results in the `webagent-data` volume
 
 ## Contributing
 

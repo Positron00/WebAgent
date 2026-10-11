@@ -32,6 +32,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from sentence_transformers import CrossEncoder
 
 from app.models.task import WorkflowState
+from app.models.research_plan import research_query
 from app.services.llm import get_llm
 from app.services.vectordb import retrieve_documents, get_vectordb_service
 from app.agents.base_agent import BaseAgent
@@ -1064,14 +1065,14 @@ class InternalResearchAgent(BaseAgent):
                 return state
             
             # Modify search query if this is a follow-up research request
-            search_query = state.query
+            search_query = research_query(state)
             if is_followup:
                 feedback = state.context.get("research_feedback", {})
                 questions = feedback.get("research_questions", [])
                 
                 # If there are specific questions, use them to enhance the query
                 if questions:
-                    search_query = f"{state.query} {questions[0]}"
+                    search_query = f"{research_query(state)} {questions[0]}"
                     logger.info(f"Using enhanced query for search: {search_query}")
             
             # 1. Retrieve documents using the RAG Retriever

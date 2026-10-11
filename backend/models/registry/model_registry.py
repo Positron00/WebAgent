@@ -15,6 +15,16 @@ import threading
 
 logger = logging.getLogger(__name__)
 
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def default_registry_path() -> str:
+    """Runtime registry state lives in the git-ignored data folder, not next to the code."""
+    return os.getenv(
+        "WEBAGENT_MODEL_REGISTRY_PATH",
+        os.path.join(BACKEND_DIR, "data", "registry", "models_registry.json"),
+    )
+
 class ModelEndpoint(BaseModel):
     """Information about a model endpoint"""
     service_name: str = Field(..., description="Service name for the model")
@@ -82,10 +92,7 @@ class ModelRegistry:
         """Initialize the registry"""
         self.models: Dict[str, ModelInfo] = {}
         self._lock = threading.RLock()
-        self.registry_path = registry_path or os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 
-            "models_registry.json"
-        )
+        self.registry_path = registry_path or default_registry_path()
         self._load_registry()
     
     def register_model(self, model_info: ModelInfo) -> bool:
@@ -192,6 +199,7 @@ class ModelRegistry:
     def _save_registry(self) -> None:
         """Save the registry to disk"""
         try:
+            os.makedirs(os.path.dirname(self.registry_path) or ".", exist_ok=True)
             with open(self.registry_path, 'w') as f:
                 registry_data = {
                     model_id: model.to_dict() 
