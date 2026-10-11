@@ -11,6 +11,7 @@ import traceback
 from app.graph.workflows import get_agent_workflow
 from app.models.task import TaskInfo, WorkflowState
 from app.core.metrics import timing_decorator, track_task_start, track_task_completion
+from app.services import result_store
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +165,19 @@ class TaskManager:
             # Always update the active tasks
             if task_id in self.active_tasks:
                 self.active_tasks[task_id] = task_info
+            if task_info.status in ("completed", "error"):
+                result_store.save_result(
+                    task_id,
+                    {
+                        "task_id": task_id,
+                        "query": message,
+                        "status": task_info.status,
+                        "created_at": task_info.created_at,
+                        "completed_at": task_info.completed_at or datetime.now(),
+                        "duration_seconds": round((datetime.now() - start_time).total_seconds(), 2),
+                        "result": self.task_results.get(task_id),
+                    },
+                )
     
     def get_task_status(self, task_id: str) -> Tuple[str, Optional[Dict[str, Any]]]:
         """
@@ -176,7 +190,10 @@ class TaskManager:
             Tuple of (status, result)
         """
         if task_id not in self.active_tasks and task_id not in self.task_results:
-            return "not_found", None
+            saved = result_store.load_result(task_id)
+            if saved is None:
+                return "not_found", None
+            return saved.get("status", "completed"), saved.get("result")
         
         if task_id in self.active_tasks:
             task_info = self.active_tasks[task_id]

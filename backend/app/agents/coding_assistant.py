@@ -585,8 +585,8 @@ class CodingAssistantAgent(BaseAgent):
     
     async def _try_langchain_invoke(self, prompt):
         """Try using LangChain invoke."""
-        result = await self.llm.invoke(prompt)
-        return result
+        result = await self.llm.ainvoke(prompt)
+        return getattr(result, "content", result)
     
     async def _try_fallback(self, prompt):
         """Try using OpenAI API as fallback."""

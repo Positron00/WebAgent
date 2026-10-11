@@ -175,5 +175,6 @@ if __name__ == "__main__":
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG_MODE,
+        reload_dirs=[str(current_dir)],
         log_level="info",
     ) 

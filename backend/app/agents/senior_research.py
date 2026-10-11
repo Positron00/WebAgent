@@ -134,6 +134,13 @@ class SeniorResearchAgent(BaseAgent):
                         else:
                             eval_dict[key] = value
                 
+                # Models sometimes write `research_status: [complete]`; keep it a plain string
+                status = eval_dict.get("research_status")
+                if isinstance(status, list):
+                    eval_dict["research_status"] = str(status[0]) if status else ""
+                elif isinstance(status, bool):
+                    eval_dict["research_status"] = "complete" if status else "needs_more_research"
+
                 # Add requires_additional_research key based on score or research_status
                 if "requires_additional_research" not in eval_dict:
                     if "score" in eval_dict and isinstance(eval_dict["score"], int):

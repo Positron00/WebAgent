@@ -20,8 +20,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "AI Chatbot with Llama 3.3",
-  description: "A modern chatbot powered by Together AI's Llama 3.3 model",
+  title: "WebAgent",
+  description: "A multi-agent research assistant powered by Together AI",
   manifest: "/manifest.json",
 };
 

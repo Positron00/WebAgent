@@ -7,7 +7,9 @@ from typing import Dict, List, Any
 import logging
 from datetime import datetime
 import json
+import re
 
+from app.utils.json_utils import extract_json_object
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain.schema.output import Generation
@@ -45,15 +47,15 @@ Your task:
    - Conclusions & Recommendations
 3. Ensure the report addresses the original user query comprehensively
 4. Maintain all citations and sources from the original research
-5. Format the report as clean, professional markdown with appropriate headings
-6. Add a "References" section at the end with all cited sources
+5. Write the "analysis" field as clean, professional markdown with appropriate headings
+6. List every cited source in the "sources" field
 
 ANALYZE REQUIREMENTS:
 Based on the research synthesis, determine if additional analysis is needed:
 - If the query involves data that needs statistical analysis, indicate "needs_analysis": true
 - If the query would benefit from code examples or visualizations, indicate "needs_coding": true
 
-Respond with a JSON object structured as follows:
+Respond with ONLY a JSON object (no text before or after it), structured as follows:
 {{
   "needs_analysis": true/false,
   "needs_coding": true/false,
@@ -87,6 +89,24 @@ class TeamManagerAgent(BaseAgent):
         self.chain = self.trace_chain(self.chain)
 
     @staticmethod
+    def _parse_report_json(text: str) -> Dict[str, Any]:
+        """Parse the LLM's JSON reply, tolerating code fences and surrounding prose."""
+        parsed = extract_json_object(text)
+        if parsed is not None:
+            return parsed
+
+        logger.warning("Team Manager output was not valid JSON; using the raw text as the report")
+        return {
+            "needs_analysis": False,
+            "needs_coding": False,
+            "summary": "",
+            "recommendations": [],
+            "analysis": text.strip(),
+            "next_steps": "",
+            "sources": [],
+        }
+
+    @staticmethod
     def _should_finalize(needs_analysis: bool, needs_coding: bool, state: WorkflowState) -> bool:
         if needs_analysis and "data_analysis" not in state.reports:
             return False
@@ -102,22 +122,31 @@ class TeamManagerAgent(BaseAgent):
         review_explanation: str = "",
     ) -> str:
         recommendations = report_json.get("recommendations") or []
+        if isinstance(recommendations, str):
+            recommendations = [recommendations]
         rec_lines = "\n".join(f"- {r}" for r in recommendations)
         sources = report_json.get("sources") or []
         source_lines = "\n".join(
             f"- [{s.get('title', 'Source')}]({s.get('url', '')})" for s in sources if isinstance(s, dict)
         )
-        sections = [
-            f"# Comprehensive Analysis: {query}",
-            "## Executive Summary",
-            report_json.get("summary", ""),
-            "## Analysis",
-            report_json.get("analysis", ""),
-            "## Recommendations",
-            rec_lines or "_None_",
-            "## Next Steps",
-            report_json.get("next_steps", ""),
-        ]
+        analysis = str(report_json.get("analysis") or "").strip()
+        summary = str(report_json.get("summary") or "").strip()
+        # The model often writes a complete report (own title and/or summary) inside "analysis".
+        if analysis.startswith("# "):
+            sections = [analysis]
+        else:
+            sections = [f"# Comprehensive Analysis: {query}"]
+            has_own_summary = re.search(r"^#+\s*Executive Summary", analysis, re.MULTILINE)
+            if summary and not has_own_summary:
+                sections.extend(["## Executive Summary", summary])
+            if analysis:
+                sections.extend([analysis] if has_own_summary else ["## Analysis", analysis])
+        for heading, body in (
+            ("## Recommendations", rec_lines),
+            ("## Next Steps", report_json.get("next_steps")),
+        ):
+            if body and str(body).strip():
+                sections.extend([heading, str(body).strip()])
         if code_block and code_block != "No visualization code available.":
             code = code_block.strip()
             if not code.startswith("```"):
@@ -175,38 +204,7 @@ class TeamManagerAgent(BaseAgent):
                 "visualization_code": visualization_code
             })
             
-            # Parse the report content as JSON
-            try:
-                report_json = json.loads(final_report_content)
-            except json.JSONDecodeError:
-                # If JSON parsing fails, create a fallback structure
-                logger.warning("Failed to parse LLM output as JSON. Using fallback structure.")
-                # Look for JSON structure in the output
-                import re
-                json_match = re.search(r'(\{.*\})', final_report_content, re.DOTALL)
-                if json_match:
-                    try:
-                        report_json = json.loads(json_match.group(1))
-                    except:
-                        report_json = {
-                            "needs_analysis": False,
-                            "needs_coding": False,
-                            "summary": "Error formatting report",
-                            "recommendations": ["Check system output"],
-                            "analysis": final_report_content[:500] + "...",
-                            "next_steps": "Contact support",
-                            "sources": []
-                        }
-                else:
-                    report_json = {
-                        "needs_analysis": False,
-                        "needs_coding": False,
-                        "summary": "Error formatting report",
-                        "recommendations": ["Check system output"],
-                        "analysis": final_report_content[:500] + "...",
-                        "next_steps": "Contact support",
-                        "sources": []
-                    }
+            report_json = self._parse_report_json(final_report_content)
             
             # Check if additional analysis or coding is needed
             needs_analysis = report_json.get("needs_analysis", False)

@@ -145,9 +145,12 @@ else:
 console_handler.setFormatter(console_format)
 file_handler.setFormatter(file_format)
 
-# Add handlers to logger
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
+# Add handlers once (this module can be imported as both app.* and backend.app.*),
+# and don't also pass records to the root logger, which has its own console handler.
+if not logger.handlers:
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+logger.propagate = False
 
 # Add request_id context
 class RequestIdFilter(logging.Filter):

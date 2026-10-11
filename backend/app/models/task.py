@@ -47,7 +47,14 @@ class WorkflowState(BaseModel):
     completed: bool = False
     error: Optional[str] = None
     logs: List[str] = Field(default_factory=list)  # Store workflow logs
-    
+
+    @property
+    def model_fields_set(self) -> set:
+        # LangGraph only keeps fields listed here when a node returns this model.
+        # Nodes edit dicts/lists in place (e.g. state.reports[name] = ...), which
+        # Pydantic doesn't count as "set", so report every field.
+        return set(type(self).model_fields)
+
     @property
     def agent_outputs(self) -> Dict[str, Any]:
         """Get agent outputs from reports for compatibility with tests."""

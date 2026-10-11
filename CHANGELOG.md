@@ -2,6 +2,30 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.0.0 - 2026-10-10
+
+### Added
+- `/api/task` endpoint on the FastAPI backend, proxied by Next.js, so the web app's Agentic mode runs the multi-agent workflow
+- API key authentication (`X-API-Key` / `WEBAGENT_API_KEY`), with startup checks that block insecure secrets in uat/prod
+- Finished task results saved to `backend/data/results/<task_id>.json` and served after a restart
+- Automatic retry (up to 3 attempts) for temporary Together AI errors such as 429 and 503
+- Regression tests that run the real LangGraph workflow, plus tests for report parsing, saved results and retries
+
+### Changed
+- Default model is now `meta-models/Muse-Glimmer-30B` (set with `WEBAGENT_LLM_DEFAULT_MODEL`)
+- Together AI rate limit reduced from 12s to 2s between calls and made configurable (`TOGETHER_RATE_LIMIT_SECONDS`)
+- Chat UI restyled: sans-serif type, neutral dark colors, centered questions and left-aligned answers
+- Generated files (caches, logs, artifacts, vector databases) are no longer tracked in git
+
+### Fixed
+- Agent reports were dropped between workflow steps, so research never reached the senior agent and could loop until the recursion limit
+- The backend stopped responding while a task ran, because the rate limiter used a blocking sleep
+- Workflow routing, prompt template errors and report building so a run finishes with a full report
+- Team Manager and Supervisor now read JSON wrapped in code fences or followed by extra text, and no longer repeat the report summary
+- Agentic mode sent the wrong request shape and silently fell back to plain chat
+- The user's question disappeared from the chat when the answer arrived
+- Frontend tests could not run from a clean install (missing Babel and Jest packages)
+
 ## 2.9.10 - 2025-04-17
 
 ### Added

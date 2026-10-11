@@ -3,6 +3,7 @@ LLM service for the WebAgent backend.
 Provides access to different LLM providers including Together AI, Groq, OpenAI, Anthropic, Gemini, and self-hosted models.
 """
 from typing import Dict, Optional, Any, List, Tuple, Callable, Type, TypeVar, cast
+import asyncio
 import logging
 import os
 import re
@@ -109,21 +110,30 @@ class TogetherWrapper(Runnable[str, str]):
     
     def invoke(self, input: str, config: Optional[Dict[str, Any]] = None) -> str:
         """Invoke the LLM. This is the main method required by the Runnable interface."""
-        _enforce_together_api_rate_limit()
-        try:
-            return self.llm.invoke(input, config=config)
-        except Exception as e:
-            logger.error(f"Error invoking Together LLM: {str(e)}")
-            raise
-    
+        for attempt in range(1, TOGETHER_MAX_ATTEMPTS + 1):
+            _enforce_together_api_rate_limit()
+            try:
+                return self.llm.invoke(input, config=config)
+            except Exception as e:
+                if attempt == TOGETHER_MAX_ATTEMPTS or not _is_transient_error(e):
+                    logger.error(f"Error invoking Together LLM: {str(e)}")
+                    raise
+                delay = _retry_delay(attempt, e)
+                time.sleep(delay)
+
     async def ainvoke(self, input: str, config: Optional[Dict[str, Any]] = None) -> str:
         """Async invoke method required by the Runnable interface."""
-        _enforce_together_api_rate_limit()
-        if hasattr(self.llm, "ainvoke"):
-            return await self.llm.ainvoke(input, config=config)
-        else:
-            # Fallback to sync version if async not available
-            return self.invoke(input, config)
+        for attempt in range(1, TOGETHER_MAX_ATTEMPTS + 1):
+            await _aenforce_together_api_rate_limit()
+            try:
+                if hasattr(self.llm, "ainvoke"):
+                    return await self.llm.ainvoke(input, config=config)
+                return await asyncio.to_thread(self.llm.invoke, input, config=config)
+            except Exception as e:
+                if attempt == TOGETHER_MAX_ATTEMPTS or not _is_transient_error(e):
+                    logger.error(f"Error invoking Together LLM: {str(e)}")
+                    raise
+                await asyncio.sleep(_retry_delay(attempt, e))
     
     def batch(self, inputs: List[str], config: Optional[Dict[str, Any]] = None) -> List[str]:
         """Batch processing method required by the Runnable interface."""
@@ -237,24 +247,57 @@ class LLMMetrics:
 # Create global metrics instance
 metrics = LLMMetrics()
 
-# Rate limiting for Together AI API
-_last_together_api_call = 0
-TOGETHER_RATE_LIMIT_BUFFER = 12.0  # Buffer time in seconds (higher than the 10 req/min limit)
+# Rate limiting for Together AI API: minimum seconds between calls
+_last_together_api_call = 0.0
+TOGETHER_RATE_LIMIT_BUFFER = float(os.getenv("TOGETHER_RATE_LIMIT_SECONDS", "2.0"))
 
-def _enforce_together_api_rate_limit():
-    """
-    Enforce rate limiting for Together AI API calls to avoid hitting the rate limit.
+
+def _reserve_together_slot() -> float:
+    """Reserve the next call slot and return how long the caller must wait.
+
+    Reserving up front lets concurrent callers queue one after another.
     """
     global _last_together_api_call
-    current_time = time.time()
-    elapsed = current_time - _last_together_api_call
-    
-    if _last_together_api_call > 0 and elapsed < TOGETHER_RATE_LIMIT_BUFFER:
-        sleep_time = TOGETHER_RATE_LIMIT_BUFFER - elapsed
-        logger.info(f"Rate limiting: Sleeping for {sleep_time:.2f} seconds to avoid Together AI rate limit")
-        time.sleep(sleep_time)
-    
-    _last_together_api_call = time.time()
+    now = time.time()
+    next_slot = max(now, _last_together_api_call + TOGETHER_RATE_LIMIT_BUFFER)
+    _last_together_api_call = next_slot
+    wait = next_slot - now
+    if wait > 0:
+        logger.info(f"Rate limiting: waiting {wait:.2f}s before the next Together AI call")
+    return wait
+
+
+def _enforce_together_api_rate_limit() -> None:
+    """Blocking wait; only for synchronous callers."""
+    time.sleep(_reserve_together_slot())
+
+
+async def _aenforce_together_api_rate_limit() -> None:
+    """Non-blocking wait for async callers, so the server keeps answering requests."""
+    await asyncio.sleep(_reserve_together_slot())
+
+
+# Retry temporary Together AI failures (overload, rate limit, network) a few times.
+TOGETHER_MAX_ATTEMPTS = 3
+# The Together client raises plain exceptions, e.g. "Together Server: Error 503".
+_TRANSIENT_ERROR_MARKERS = (
+    "Error 429", "Error 500", "Error 502", "Error 503", "Error 504",
+    "timed out", "Timeout", "Connection",
+)
+
+
+def _is_transient_error(error: Exception) -> bool:
+    message = f"{type(error).__name__}: {error}"
+    return any(marker in message for marker in _TRANSIENT_ERROR_MARKERS)
+
+
+def _retry_delay(attempt: int, error: Exception) -> float:
+    delay = 2.0 ** attempt  # 2s, then 4s
+    logger.warning(
+        f"Together AI call failed ({error}); retrying in {delay:.0f}s "
+        f"(attempt {attempt}/{TOGETHER_MAX_ATTEMPTS})"
+    )
+    return delay
 
 def log_llm_request(provider: str = "unknown"):
     """Decorator to log LLM requests and record metrics."""

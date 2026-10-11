@@ -36,6 +36,7 @@ from app.services.llm import get_agent_llm
 from app.utils.metrics import timing_decorator, log_memory_usage
 from app.models.task import WorkflowState
 from app.models.research_plan import normalize_research_plan
+from app.utils.json_utils import extract_json_object
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -170,48 +171,19 @@ class SupervisorAgent(BaseAgent):
             state.add_log("Supervisor: Analyzing query and planning research")
             result = await self.chain.ainvoke({"query": self._with_history(state)})
             
-            # Parse the JSON output
-            try:
-                # Try parsing the JSON output
-                if isinstance(result, str):
-                    # If the result is a string, it might be a JSON string or have a JSON section
-                    if result.strip().startswith("{") and result.strip().endswith("}"):
-                        # Looks like JSON - try to parse it
-                        plan_data = json.loads(result)
-                    else:
-                        # Try to extract JSON from text
-                        import re
-                        json_match = re.search(r'(\{.*\})', result, re.DOTALL)
-                        if json_match:
-                            plan_data = json.loads(json_match.group(1))
-                        else:
-                            # No JSON structure found, create a basic structure
-                            logger.warning("Could not parse JSON from LLM output, creating basic structure")
-                            plan_data = {
-                                "task_type": "document_extraction" if "document" in result.lower() else "complex_research",
-                                "requirements": ["Extract relevant information from the query"],
-                                "research_plan": {
-                                    "needs_web_research": "web" in result.lower() or "online" in result.lower(),
-                                    "needs_internal_research": "internal" in result.lower() or "existing" in result.lower(),
-                                    "questions": ["What information is needed to answer the query?"]
-                                }
-                            }
-                else:
-                    # Result is already structured data
-                    plan_data = result
-                    
-            except Exception as json_error:
-                logger.error(f"Error parsing supervisor output as JSON: {str(json_error)}")
+            plan_data = result if isinstance(result, dict) else extract_json_object(str(result))
+            if plan_data is None:
+                logger.warning("Could not parse supervisor output as JSON; inferring the plan from keywords")
                 logger.debug(f"Raw supervisor output: {result}")
-                # Create a basic plan structure
+                text = str(result).lower()
                 plan_data = {
-                    "task_type": "document_extraction" if "document" in result.lower() else "complex_research",
+                    "task_type": "document_extraction" if "document" in text else "complex_research",
                     "requirements": ["Extract relevant information from the query"],
                     "research_plan": {
-                        "needs_web_research": "web" in result.lower() or "online" in result.lower(),
-                        "needs_internal_research": "internal" in result.lower() or "existing" in result.lower(),
-                        "questions": ["What information is needed to answer the query?"]
-                    }
+                        "needs_web_research": "web" in text or "online" in text,
+                        "needs_internal_research": "internal" in text or "existing" in text,
+                        "questions": ["What information is needed to answer the query?"],
+                    },
                 }
             
             # Update the state with the supervisor's analysis

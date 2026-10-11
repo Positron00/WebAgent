@@ -1,6 +1,6 @@
 # Deploying WebAgent to Vercel
 
-[![version](https://img.shields.io/badge/version-2.9.5-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://semver.org)
 
 This guide explains how to deploy the WebAgent application to Vercel, including both the Next.js frontend and the Python backend functions.
 
