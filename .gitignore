@@ -58,6 +58,9 @@ mlflow.db
 backend/**/*.db
 *.db-journal
 
+# Generated Chroma / vector DB stores
+backend/**/vectordb/
+
 # Generated demo / test data (keep sample_docs)
 backend/data/artifacts/
 backend/demos/logs/
