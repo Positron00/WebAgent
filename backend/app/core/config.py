@@ -32,6 +32,7 @@ from pydantic import Field, ConfigDict
 from pydantic_settings import BaseSettings
 from app import __version__
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
+from app.core.config_def import TriageConfig
 
 # The backend folder holds app/, config/ and data/. In the Docker image it is /app,
 # so data paths are built from BACKEND_DIR rather than from the repo root.
@@ -44,8 +45,11 @@ BASE_DIR = str(Path(BACKEND_DIR).parent)
 # 2. YAML configuration (high priority for non-API key settings)
 # 3. .env file (lowest priority, fallback)
 
-# An environment selected by the shell or container must not be replaced by a file.
-_selected_env = os.environ.get("WEBAGENT_ENV")
+# Shell/container WEBAGENT_* values must win over .env / .env.local (same as WEBAGENT_ENV).
+_preserved_webagent_env = {
+    key: value for key, value in os.environ.items() if key.startswith("WEBAGENT_")
+}
+_selected_env = _preserved_webagent_env.get("WEBAGENT_ENV")
 
 # Load environment variables from .env file first (lowest priority)
 load_dotenv(".env")
@@ -55,8 +59,8 @@ env_local_path = os.path.join(BASE_DIR, ".env.local")
 if os.path.exists(env_local_path):
     load_dotenv(env_local_path, override=True)
 
-if _selected_env:
-    os.environ["WEBAGENT_ENV"] = _selected_env
+for key, value in _preserved_webagent_env.items():
+    os.environ[key] = value
 
 # Then load from YAML configuration (middle priority)
 try:
@@ -71,6 +75,10 @@ except Exception as e:
         "Failed to load YAML configuration (%s); falling back to .env and defaults", e
     )
     app_config = None
+
+# YAML export writes WEBAGENT_* into os.environ; shell/container values still win.
+for key, value in _preserved_webagent_env.items():
+    os.environ[key] = value
 
 
 class Settings(BaseSettings):
@@ -234,8 +242,64 @@ class Settings(BaseSettings):
     model_config = ConfigDict(
         case_sensitive=True,
         env_file=".env",
-        env_file_encoding="utf-8"
+        env_file_encoding="utf-8",
+        extra="allow",
     )
+
+
+def _triage_bool(env_name: str, default: bool) -> bool:
+    """`true`/`false` (any case); anything else logs a warning and keeps the YAML value."""
+    raw = os.getenv(env_name)
+    if raw in (None, ""):
+        return default
+    value = raw.strip().lower()
+    if value in ("true", "false"):
+        return value == "true"
+    logging.getLogger(__name__).warning("Invalid %s=%s; using YAML", env_name, raw)
+    return default
+
+
+def _build_triage_settings() -> TriageConfig:
+    base = getattr(app_config, "triage", None) if app_config else None
+    if base is None:
+        base = TriageConfig()
+    log = logging.getLogger(__name__)
+    threshold = base.threshold
+    raw_thr = os.getenv("WEBAGENT_TRIAGE_THRESHOLD")
+    if raw_thr not in (None, ""):
+        try:
+            value = float(raw_thr)
+            if not 0.0 <= value <= 1.0:
+                raise ValueError("outside 0-1")
+            threshold = value
+        except ValueError:
+            log.warning("Invalid WEBAGENT_TRIAGE_THRESHOLD=%s; ignoring", raw_thr)
+    yaml_mode = (base.mode or "").strip().lower()
+    if yaml_mode not in ("shadow", "act"):
+        log.warning("Invalid triage.mode=%s in YAML; using act", base.mode)
+        yaml_mode = "act"
+    mode = (os.getenv("WEBAGENT_TRIAGE_MODE") or yaml_mode).strip().lower()
+    if mode not in ("shadow", "act"):
+        log.warning("Invalid WEBAGENT_TRIAGE_MODE=%s; using YAML", mode)
+        mode = yaml_mode
+    return TriageConfig(
+        enabled=_triage_bool("WEBAGENT_TRIAGE_ENABLED", base.enabled),
+        mode=mode,
+        threshold=threshold,
+        uncertain_band=base.uncertain_band,
+        llm_tiebreak=_triage_bool("WEBAGENT_TRIAGE_LLM_TIEBREAK", base.llm_tiebreak),
+        tiebreak_upper=base.tiebreak_upper,
+        collect=_triage_bool("WEBAGENT_TRIAGE_COLLECT", base.collect),
+        collect_retention_days=base.collect_retention_days,
+        model_dir=base.model_dir,
+        encoder_name=base.encoder_name,
+        short_query_words=base.short_query_words,
+    )
+
+
+def _attach_triage(settings_obj):
+    settings_obj.TRIAGE = _build_triage_settings()
+    return settings_obj
 
 
 def _security_setting(yaml_name: str, env_name: str, default):
@@ -251,6 +315,8 @@ def _security_setting(yaml_name: str, env_name: str, default):
 if app_config:
     class YAMLConfigSettings(Settings):
         """Settings loaded from YAML configuration"""
+
+        model_config = ConfigDict(case_sensitive=True, extra="allow")
         
         # API settings
         API_V1_STR: str = api_config.prefix
@@ -291,7 +357,7 @@ if app_config:
         MLFLOW_TRACKING_URI: Optional[str] = getattr(app_config.security, 'mlflow_tracking_uri', None) if hasattr(app_config, 'security') else None
     
     # Create settings instance with YAML values
-    settings = YAMLConfigSettings()
+    settings = _attach_triage(YAMLConfigSettings())
 else:
     # Create settings instance from .env and default values
-    settings = Settings() 
+    settings = _attach_triage(Settings())

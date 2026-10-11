@@ -35,8 +35,9 @@ from app.agents.document_extraction_agent import DocumentExtractionAgent
 from app.services.llm import get_agent_llm
 from app.utils.metrics import timing_decorator, log_memory_usage
 from app.models.task import WorkflowState
-from app.models.research_plan import normalize_research_plan
+from app.models.research_plan import normalize_research_plan, without_missing_document
 from app.utils.json_utils import extract_json_object
+from app.utils.reasoning import strip_reasoning
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -69,6 +70,21 @@ Output your analysis in JSON format with these fields:
   }}
 }}
 """
+
+# Direct answers (no research). The model is a text-completion model, so the prompt ends
+# where the answer should start; without that it continues the question instead.
+DIRECT_ANSWER_PROMPT = """You are a helpful assistant. Answer the user's question directly and concisely.
+Use the conversation for context. Do not show your reasoning or notes.
+
+{conversation}
+
+Answer:"""
+
+IMAGE_NOT_AVAILABLE_NOTE = (
+    "Note: the user attached an image, but you cannot see it. Do not describe or guess its "
+    "content; if the question depends on the image, say you can't view images here."
+)
+
 
 class SupervisorAgent(BaseAgent):
     """
@@ -126,6 +142,24 @@ class SupervisorAgent(BaseAgent):
             state.status = "error"
             return state
     
+    async def answer_directly(
+        self, query: str, previous_messages: Optional[list] = None, image_attached: bool = False
+    ) -> str:
+        """Text-only direct answer (no LangGraph), using conversation history when present."""
+        state = WorkflowState(
+            query=query,
+            context={"previous_messages": previous_messages or []},
+        )
+        conversation = self._with_history(state)
+        if image_attached:
+            # The model never receives the image; without this note it describes one anyway.
+            conversation += f"\n\n{IMAGE_NOT_AVAILABLE_NOTE}"
+        prompt = DIRECT_ANSWER_PROMPT.format(conversation=conversation)
+        direct = await self.llm.ainvoke(prompt)
+        text = direct if isinstance(direct, str) else getattr(direct, "content", str(direct))
+        # The text model continues the prompt and may think out loud before answering.
+        return strip_reasoning(text)
+
     @staticmethod
     def _with_history(state: WorkflowState) -> str:
         """Prefix the query with recent chat turns so follow-up questions keep their meaning."""
@@ -153,8 +187,9 @@ class SupervisorAgent(BaseAgent):
 
         if not state.context.get("agentic_toggle", False):
             try:
-                direct = await self.llm.ainvoke(self._with_history(state))
-                content = direct if isinstance(direct, str) else getattr(direct, "content", str(direct))
+                content = await self.answer_directly(
+                    state.query, state.context.get("previous_messages", [])
+                )
                 state.mark_completed(
                     {
                         "title": "Response",
@@ -191,6 +226,10 @@ class SupervisorAgent(BaseAgent):
             state.update_with_agent_output("supervisor", plan_data)
             
             plan = normalize_research_plan(plan_data.get("research_plan", {}))
+            has_document = bool(state.context.get("document_id"))
+            if plan.requires_document_extraction and not has_document:
+                logger.info("Plan asked for document extraction, but no document was attached; researching instead")
+            plan = without_missing_document(plan, has_document)
             state.context["research_plan"] = plan.model_dump()
             state.add_log(
                 "Supervisor: Plan ready - "

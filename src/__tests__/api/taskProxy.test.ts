@@ -86,6 +86,7 @@ describe('/api/task proxy', () => {
     const response = await getTask(new Request('http://localhost/api/task/t1'), { params: { taskId: 't1' } });
 
     expect(response.status).toBe(503);
+    expect(response.headers.get('X-WebAgent-Proxy-Error')).toBe('unreachable');
     expect(await response.json()).toEqual({ error: 'Multi-agent backend unavailable' });
   });
 });

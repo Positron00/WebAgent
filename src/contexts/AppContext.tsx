@@ -3,6 +3,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { storage, AccessibilitySettings, ThemePreference } from '@/utils/storage';
 import { CHAT_ACCESSIBILITY_COLORS } from '@/config/chatTheme';
+import { AgenticMode, isAgenticMode } from '@/types/routing';
+import {
+  getSavedAgenticMode,
+  migrateLegacyAgenticSetting,
+  saveAgenticMode,
+} from '@/utils/agenticMode';
 
 // Define notification type
 export interface Notification {
@@ -16,6 +22,9 @@ export interface AppContextType {
   setTheme: (theme: ThemePreference) => void;
   accessibility: AccessibilitySettings;
   setAccessibility: (settings: AccessibilitySettings) => void;
+  agenticMode: AgenticMode;
+  setAgenticMode: (mode: AgenticMode) => void;
+  modeReady: boolean;
   isOffline: boolean;
   showNotification: (notification: Notification) => void;
   hideNotification: (id?: string) => void;
@@ -27,8 +36,9 @@ export interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const SETTINGS_TIMEOUT_MS = 3000;
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  // Initialize with default values that match server-side rendering
   const [theme, setTheme] = useState<ThemePreference>('system');
   const [accessibility, setAccessibility] = useState<AccessibilitySettings>({
     reducedMotion: false,
@@ -37,26 +47,63 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     promptStyle: 'balanced',
     knowledgeFocus: 'general',
     citeSources: true,
-    agentic: false,
     ...CHAT_ACCESSIBILITY_COLORS,
   });
+  const [agenticMode, setAgenticModeState] = useState<AgenticMode>('off');
+  const [modeReady, setModeReady] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [modalContent, setModalContent] = useState<React.ReactNode | null>(null);
 
-  // Load settings from storage on client-side only
   useEffect(() => {
+    migrateLegacyAgenticSetting();
+
+    const saved = getSavedAgenticMode();
+    if (saved) {
+      setAgenticModeState(saved);
+      setModeReady(true);
+      setTheme(storage.getTheme());
+      setAccessibility(storage.getAccessibilitySettings());
+      setIsOffline(!navigator.onLine);
+      return;
+    }
+
     setTheme(storage.getTheme());
     setAccessibility(storage.getAccessibilitySettings());
     setIsOffline(!navigator.onLine);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), SETTINGS_TIMEOUT_MS);
+
+    fetch('/api/settings', { cache: 'no-store', signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`settings ${res.status}`);
+        const data = (await res.json()) as { defaultAgenticMode?: string };
+        const value = data.defaultAgenticMode?.trim().toLowerCase();
+        if (isAgenticMode(value)) {
+          setAgenticModeState(value);
+        } else {
+          setAgenticModeState('off');
+        }
+      })
+      .catch(() => {
+        setAgenticModeState('off');
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setModeReady(true);
+      });
   }, []);
 
-  // Save theme changes to storage and apply them
+  const setAgenticMode = (mode: AgenticMode) => {
+    setAgenticModeState(mode);
+    saveAgenticMode(mode);
+  };
+
   useEffect(() => {
     storage.saveTheme(theme);
-    
-    // Apply theme
+
     document.documentElement.setAttribute('data-theme', theme);
     if (theme === 'system') {
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -66,27 +113,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [theme]);
 
-  // Save and apply accessibility settings
   useEffect(() => {
     storage.saveAccessibilitySettings(accessibility);
-    
-    document.documentElement.style.fontSize = 
-      accessibility.fontSize === 'small' ? '90%' : 
-      accessibility.fontSize === 'large' ? '110%' : 
-      '100%';
-    
-    document.documentElement.classList.toggle(
-      'reduce-motion',
-      accessibility.reducedMotion
-    );
-    
-    document.documentElement.classList.toggle(
-      'high-contrast',
-      accessibility.highContrast
-    );
+
+    document.documentElement.style.fontSize =
+      accessibility.fontSize === 'small'
+        ? '90%'
+        : accessibility.fontSize === 'large'
+          ? '110%'
+          : '100%';
+
+    document.documentElement.classList.toggle('reduce-motion', accessibility.reducedMotion);
+
+    document.documentElement.classList.toggle('high-contrast', accessibility.highContrast);
   }, [accessibility]);
 
-  // Handle online/offline status
   useEffect(() => {
     function handleOnline() {
       setIsOffline(false);
@@ -96,87 +137,76 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIsOffline(true);
     }
 
-    // Initial active check
     const checkConnection = () => {
-      // Use a tiny fetch request to verify actual connectivity
-      fetch('/api/ping', { 
+      fetch('/api/ping', {
         method: 'HEAD',
         cache: 'no-cache',
-        headers: { 'Cache-Control': 'no-cache' } 
+        headers: { 'Cache-Control': 'no-cache' },
       })
-      .then(() => setIsOffline(false))
-      .catch(() => {
-        // If we can't reach our own API but browser says we're online,
-        // do another check against a public endpoint
-        if (navigator.onLine) {
-          fetch('https://www.google.com/favicon.ico', { 
-            method: 'HEAD',
-            mode: 'no-cors',
-            cache: 'no-cache',
-            headers: { 'Cache-Control': 'no-cache' }
-          })
-          .then(() => setIsOffline(false))
-          .catch(() => setIsOffline(true));
-        } else {
-          setIsOffline(true);
-        }
-      });
+        .then(() => setIsOffline(false))
+        .catch(() => {
+          if (navigator.onLine) {
+            fetch('https://www.google.com/favicon.ico', {
+              method: 'HEAD',
+              mode: 'no-cors',
+              cache: 'no-cache',
+              headers: { 'Cache-Control': 'no-cache' },
+            })
+              .then(() => setIsOffline(false))
+              .catch(() => setIsOffline(true));
+          } else {
+            setIsOffline(true);
+          }
+        });
     };
 
-    // Run initial check
     checkConnection();
-    
-    // Set up periodic checking
-    const connectionInterval = setInterval(checkConnection, 30000); // Check every 30 seconds
-    
+
+    const connectionInterval = setInterval(checkConnection, 30000);
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
-    // Also check when visibility changes (tab becomes active)
-    document.addEventListener('visibilitychange', () => {
+
+    const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         checkConnection();
       }
-    });
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      document.removeEventListener('visibilitychange', checkConnection);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(connectionInterval);
     };
   }, []);
 
-  // Show a notification with auto-hide for non-error notifications
   const showNotification = (notification: Notification) => {
     const id = notification.id || Date.now().toString();
     const newNotification = { ...notification, id };
-    
-    setNotifications(prev => [...prev, newNotification]);
-    
-    // Auto-hide non-error notifications after 5 seconds
+
+    setNotifications((prev) => [...prev, newNotification]);
+
     if (notification.type !== 'error') {
       setTimeout(() => {
         hideNotification(id);
       }, 5000);
     }
   };
-  
-  // Hide a notification by ID or clear all if no ID provided
+
   const hideNotification = (id?: string) => {
     if (id) {
-      setNotifications(prev => prev.filter(notification => notification.id !== id));
+      setNotifications((prev) => prev.filter((notification) => notification.id !== id));
     } else {
       setNotifications([]);
     }
   };
 
-  // Show a modal with the provided content
   const showModal = (content: React.ReactNode) => {
     setModalContent(content);
   };
 
-  // Hide the modal
   const hideModal = () => {
     setModalContent(null);
   };
@@ -186,13 +216,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTheme,
     accessibility,
     setAccessibility,
+    agenticMode,
+    setAgenticMode,
+    modeReady,
     isOffline,
     showNotification,
     hideNotification,
     isMenuOpen,
     setMenuOpen,
     showModal,
-    hideModal
+    hideModal,
   };
 
   return (
@@ -215,4 +248,4 @@ export function useApp() {
     throw new Error('useApp must be used within an AppProvider');
   }
   return context;
-} 
+}

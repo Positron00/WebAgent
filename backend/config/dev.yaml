@@ -107,6 +107,13 @@ agents:
     lda_chunksize: 100
     lda_random_state: 42
 
+# Agentic triage (shadow in dev collects decisions for training)
+triage:
+  enabled: true
+  mode: shadow
+  collect: true
+  llm_tiebreak: false
+
 # Logging configuration
 logging:
   level: "DEBUG"  # DEBUG, INFO, WARNING, ERROR, CRITICAL

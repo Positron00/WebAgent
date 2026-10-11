@@ -3,7 +3,7 @@ Task-related data models for the WebAgent backend.
 """
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 
 class TaskInfo(BaseModel):
     """
@@ -17,14 +17,7 @@ class TaskInfo(BaseModel):
     query: str
     current_step: Optional[str] = None
     error: Optional[str] = None
-    
-    model_config = ConfigDict(
-        json_schema_extra={
-            "json_encoders": {
-                datetime: lambda v: v.isoformat()
-            }
-        }
-    )
+
 
 class TaskList(BaseModel):
     """

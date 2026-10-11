@@ -65,6 +65,26 @@ def _isolate_saved_results(tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _isolate_triage(request, tmp_path, monkeypatch):
+    """Tests never write collected questions into the real data folder or load the real classifier.
+
+    Triage runs in `act` mode with collection off and no model (so model decisions fall back to
+    agentic). Tests that want shadow mode, collection or a fake model set them explicitly; tests
+    marked `real_triage_model` load the committed classifier.
+    """
+    from app.core.config import settings
+    from app.services import triage_model
+
+    monkeypatch.setattr(settings, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "TRIAGE", settings.TRIAGE.model_copy(update={"mode": "act", "collect": False}))
+    if request.node.get_closest_marker("real_triage_model") is None:
+        monkeypatch.setattr(triage_model, "load_model", lambda *a, **k: None)
+    triage_model.set_model_for_tests(None)
+    yield
+    triage_model.set_model_for_tests(None)
+
+
+@pytest.fixture(autouse=True)
 def _isolate_model_registry(tmp_path, monkeypatch):
     """Keep tests from writing the model registry into the real data folder."""
     monkeypatch.setenv("WEBAGENT_MODEL_REGISTRY_PATH", str(tmp_path / "models_registry.json"))

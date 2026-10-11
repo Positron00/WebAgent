@@ -3,6 +3,7 @@ import { render, RenderOptions } from '@testing-library/react';
 import { AppContextType } from '@/contexts/AppContext';
 import { ChatContextType } from '@/contexts/ChatContext';
 import { AccessibilitySettings } from '@/utils/storage';
+import { AgenticMode } from '@/types/routing';
 
 // Create mock contexts with proper typing
 const MockAppContext = createContext<AppContextType | undefined>(undefined);
@@ -39,6 +40,8 @@ jest.mock('@heroicons/react/24/outline', () => {
   };
 });
 
+const mockAgenticMode: AgenticMode = 'off';
+
 // Define the mock accessibility object that will be used consistently
 const mockAccessibility: AccessibilitySettings = {
   reducedMotion: false,
@@ -47,7 +50,6 @@ const mockAccessibility: AccessibilitySettings = {
   promptStyle: 'balanced',
   knowledgeFocus: 'general',
   citeSources: true,
-  agentic: false,
   responseTextColor: '#FFFFFF',
   queryTextColor: '#FFFFFF',
   responseBackgroundColor: '#111827',
@@ -71,6 +73,9 @@ jest.mock('@/contexts/AppContext', () => {
             hideModal: jest.fn(),
             accessibility: mockAccessibility,
             setAccessibility: jest.fn(),
+            agenticMode: mockAgenticMode,
+            setAgenticMode: jest.fn(),
+            modeReady: true,
             isOffline: false
           }}
         >
@@ -89,6 +94,9 @@ jest.mock('@/contexts/AppContext', () => {
       hideModal: jest.fn(),
       accessibility: mockAccessibility,
       setAccessibility: jest.fn(),
+      agenticMode: mockAgenticMode,
+      setAgenticMode: jest.fn(),
+      modeReady: true,
       isOffline: false
     })
   };
@@ -107,7 +115,8 @@ jest.mock('@/contexts/ChatContext', () => {
             },
             sendMessage: jest.fn().mockResolvedValue(undefined),
             clearMessages: jest.fn(),
-            getMessageHistory: jest.fn().mockReturnValue([])
+            getMessageHistory: jest.fn().mockReturnValue([]),
+            researchInDepth: jest.fn().mockResolvedValue(undefined)
           }}
         >
           {children}
@@ -121,7 +130,8 @@ jest.mock('@/contexts/ChatContext', () => {
       },
       sendMessage: jest.fn().mockResolvedValue(undefined),
       clearMessages: jest.fn(),
-      getMessageHistory: jest.fn().mockReturnValue([])
+      getMessageHistory: jest.fn().mockReturnValue([]),
+      researchInDepth: jest.fn().mockResolvedValue(undefined)
     })
   };
 });
@@ -145,6 +155,9 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
         hideModal: jest.fn(),
         accessibility: mockAccessibility,
         setAccessibility: jest.fn(),
+        agenticMode: mockAgenticMode,
+        setAgenticMode: jest.fn(),
+        modeReady: true,
         isOffline: false
       }}
     >
@@ -156,7 +169,8 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
           },
           sendMessage: jest.fn().mockResolvedValue(undefined),
           clearMessages: jest.fn(),
-          getMessageHistory: jest.fn().mockReturnValue([])
+          getMessageHistory: jest.fn().mockReturnValue([]),
+          researchInDepth: jest.fn().mockResolvedValue(undefined)
         }}
       >
         {children}
@@ -191,6 +205,9 @@ export const useApp = () => ({
   hideModal: jest.fn(),
   accessibility: mockAccessibility,
   setAccessibility: jest.fn(),
+  agenticMode: mockAgenticMode,
+  setAgenticMode: jest.fn(),
+  modeReady: true,
   isOffline: false
 });
 
@@ -201,7 +218,8 @@ export const useChat = () => ({
   },
   sendMessage: jest.fn().mockResolvedValue(undefined),
   clearMessages: jest.fn(),
-  getMessageHistory: jest.fn().mockReturnValue([])
+  getMessageHistory: jest.fn().mockReturnValue([]),
+  researchInDepth: jest.fn().mockResolvedValue(undefined)
 });
 
 // Override render method

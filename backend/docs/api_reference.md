@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.0.3).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.1.1).
 
 ## Base URL
 
@@ -153,9 +153,12 @@ Handles chat completions in a format compatible with the frontend.
   "temperature": 0.7,
   "top_p": 1.0,
   "frequency_penalty": 0.0,
-  "presence_penalty": 0.0
+  "presence_penalty": 0.0,
+  "mode": "auto"
 }
 ```
+
+`mode` (`off`, `auto` or `always`) works as on `POST /api/task`; the older `agentic_toggle` flag still works, and with neither the request runs as `off`. Earlier messages in `messages` are passed to the model as history.
 
 **Response:**
 
@@ -222,7 +225,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.0.3",
+  "version": "3.1.1",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -238,6 +241,53 @@ Gets the status of the backend services.
   }
 }
 ```
+
+## Task and Triage API
+
+These are the endpoints the web app uses. Both need `X-API-Key` when API-key auth is on.
+
+### Start a Task
+
+**Endpoint:** `POST /api/task`
+
+```json
+{
+  "query": "What changed in EU AI rules this year?",
+  "mode": "auto",
+  "previous_messages": [
+    {"role": "user", "content": "Tell me about AI regulation"},
+    {"role": "assistant", "content": "AI regulation covers..."}
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `query` | The question |
+| `mode` | `off`: one direct model call. `always`: the research workflow. `auto`: the triage classifier picks one |
+| `agentic` | Older flag: `true` means `always`, `false` means `off`. `mode` wins if both are sent. **With neither, the task runs as `off`** |
+| `previous_messages` | Up to 8 earlier turns, oldest first, roles `user` or `assistant`. More than 8 is rejected with 422 |
+| `triage_override` | `true` runs the workflow and counts it as a "Research this in depth" click |
+| `image` | Accepted but not sent to the model on either path; the result then has `image_ignored: true` |
+| `document_id` | Document to extract from, if any |
+
+**Response:** `{"task_id": "...", "status": "processing"}`. Poll `GET /api/task/{task_id}`; the finished `result` includes `route` (`direct` or `agentic`), `decided_by` (`mode`, `rule`, `model`, `fallback`, `config` or `override`) and, when the classifier ran, `p_agentic`.
+
+### Triage a Question
+
+**Endpoint:** `POST /api/triage`
+
+```json
+{"query": "explain list comprehensions", "previous_user_question": null, "has_image": false}
+```
+
+**Response:**
+
+```json
+{"route": "direct", "p_agentic": 0.104, "decided_by": "model", "reason": "Looks like: coding help", "classifier_version": "triage-2026-10-a"}
+```
+
+`query` may be empty and is limited to 8,000 characters. The endpoint answers 200 even when the classifier can't load (`route: agentic`, `decided_by: fallback`). It counts toward the rate limit.
 
 ## Task Management API
 
@@ -328,7 +378,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.0.3"
+  "version": "3.1.1"
 }
 ```
 
@@ -341,7 +391,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.0.3",
+  "version": "3.1.1",
   "environment": "prod"
 }
 ```
@@ -358,7 +408,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.0.3"
+    "version": "3.1.1"
   },
   "llm_service": {
     "status": "ok",

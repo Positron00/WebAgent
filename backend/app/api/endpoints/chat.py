@@ -14,7 +14,7 @@ from app.api.http_errors import raise_safe_http_exception
 router = APIRouter()
 task_manager = TaskManager()
 
-@router.post("/", response_model=ChatResponse)
+@router.post("/", response_model=ChatResponse, deprecated=True)
 async def create_chat(
     request: ChatRequest, 
     background_tasks: BackgroundTasks

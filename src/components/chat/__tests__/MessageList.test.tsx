@@ -41,4 +41,21 @@ describe('MessageList Component', () => {
     expect(screen.getByRole('note')).toHaveTextContent('Hello');
     expect(screen.getByRole('article')).toHaveTextContent('Hi there!');
   });
-}); 
+
+  it('shows a second answer to the same question (Research this in depth)', () => {
+    const messages: ChatMessage[] = [
+      { id: 'u1', role: 'user', content: 'What is a tuple?' },
+      { id: 'a1', role: 'assistant', content: 'Short answer',
+        route: { route: 'direct', decidedBy: 'model', reason: 'Auto · definition' } },
+      { id: 'a2', role: 'assistant', content: 'Researched answer',
+        route: { route: 'agentic', decidedBy: 'override', reason: 'You asked for research' } },
+    ];
+    render(<MessageList messages={messages} isLoading={false} />);
+
+    expect(screen.getByText('Short answer')).toBeInTheDocument();
+    expect(screen.getByText('Researched answer')).toBeInTheDocument();
+    expect(screen.getByText('Answered directly')).toBeInTheDocument();
+    expect(screen.getByText('Deep research')).toBeInTheDocument();
+  });
+});
+

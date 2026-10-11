@@ -2,6 +2,44 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.1.1 - 2026-10-11
+
+Fixes found by running 3.1.0 for real (real model and search keys, the Docker image, and the web app by hand) before merging.
+
+### Fixed
+- Backend direct answers (`mode: off`, or `auto` routed direct) included the model's reasoning ("assistant to=self … We need …"): the prompt now ends where the answer starts, and the reply goes through the reasoning strip shared with web research (`app/utils/reasoning.py`)
+- The backend direct path described images it never received; the prompt now says an image was attached but can't be seen
+- A plain question that the supervisor planned as document extraction, with no document attached, failed in seconds ("Document ID is required for extraction"); it is now researched
+- Sending an image in the web app failed with "did not match any variant of untagged enum MessageContent": `/api/chat` now sends `image_url` as `{url}`, the format Together expects
+- `npm run build` failed: `/api/settings` exported helper functions, which Next.js doesn't allow in a route file; they moved to `src/utils/defaultAgenticMode.ts`
+- No tooltips on the Agentic mode toggle or the route label in some browsers: a `Tooltip` component replaces the native `title` attribute and shows at once on hover and keyboard focus; the route label is focusable
+
+### Changed
+- Kubernetes: memory limit 1.5 GiB (was 1 GiB) and request 1 GiB (was 512 MiB). Two workers measured at 955 MiB with triage off and 1.08 GiB with it on
+- Measured and recorded: triage p95 25 ms through the web app, direct answers median 3.4 s (p95 5.1 s), encoder layer 91.7 MB, offline start of the image with triage on
+
+## 3.1.0 - 2026-10-11
+
+### Added
+- Agentic triage: the Agentic button becomes Off / Auto / Always. In Auto, `POST /api/triage` (rules plus a local MiniLM + logistic-regression classifier, ~9 ms) picks a direct answer or the research agents; every answer shows "Answered directly" or "Deep research", and direct answers in Auto offer "Research this in depth"
+- `mode` (`off` / `auto` / `always`) on `POST /api/task` and `POST /api/v1/chat/completions`; a backend direct path that answers without building the workflow (text only; `image_ignored: true` when a request had an image); `route`, `decided_by` and `p_agentic` on task results
+- Agentic requests carry the last 8 messages (`previous_messages`), so follow-ups are researched in context
+- Shadow mode, opt-in collection of questions for review (30-day retention), four `webagent_triage_*` metrics and two Grafana panels
+- Curated data (`backend/data/triage/`), training and release-gate scripts (`backend/scripts/train_triage.py`, `eval_triage.py`), and classifier `triage-2026-10-a`
+- `GET /api/settings` serves the default mode from `WEBAGENT_DEFAULT_AGENTIC_MODE` in `.env.local`, re-read without a restart
+
+### Changed
+- **`/api/task` with neither `mode` nor `agentic` now means `off`** (it used to run the workflow). The web app always sends `agentic: true`
+- `POST /api/v1/chat/` and `POST /api/v1/tasks/create` are marked deprecated in OpenAPI
+- Shell and container `WEBAGENT_*` variables win over `.env.local` and the YAML loader's exported values
+- Docs: API reference (task modes, `/api/triage`), architecture, Vercel and production checklist cover triage; version 3.1.0
+- Backend Docker image: `WEB_CONCURRENCY=2` (was 4) and the MiniLM encoder baked into `/opt/models`
+- uat and prod keep triage off for now: `triage-2026-10-a` misses the release gate (research recall 0.931, target 0.95), and the startup check refuses a classifier that hasn't passed
+
+### Fixed
+- Direct answers no longer show invented sources (`generateMockSources` removed)
+- `/api/v1/openapi.json` failed to build because `TaskInfo` put a Python type into its JSON schema
+
 ## 3.0.3 - 2026-10-10
 
 ### Added

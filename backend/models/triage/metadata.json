@@ -1,0 +1,34 @@
+{
+  "version": "triage-2026-10-a",
+  "encoder_name": "sentence-transformers/all-MiniLM-L6-v2",
+  "threshold": 0.5,
+  "data_hash": "sha256:48771b4cdc96429722741b9303e9ffebabd72fc546103faabb3dc858d3038afc",
+  "trained_at": "2026-10-11T20:26:12+00:00",
+  "categories": {
+    "casual_chat": "casual conversation or opinion",
+    "casual_research": "casually phrased research",
+    "coding_help": "coding help",
+    "comparison_research": "comparison needing current sources",
+    "current_events": "current events",
+    "definition": "definition of a stable concept",
+    "followup": "follow-up to an earlier question",
+    "how_to": "how-to with a stable answer",
+    "long_routine": "long text to rewrite or summarize",
+    "market_data": "statistics or market data",
+    "math_calc": "math or calculation",
+    "report": "in-depth report or literature review",
+    "time_sensitive_short": "short time-sensitive question",
+    "writing_short": "short writing task"
+  },
+  "validation": {
+    "research_recall": 0.9841,
+    "direct_rate": 0.8421
+  },
+  "test": {
+    "research_recall": 0.9306,
+    "routine_direct": 0.9518,
+    "research_precision": 0.9437,
+    "rows": 155,
+    "passed": false
+  }
+}

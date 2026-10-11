@@ -33,9 +33,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     WEBAGENT_NLTK_AUTO_DOWNLOAD=false \
     NLTK_DATA=/usr/local/share/nltk_data \
     HF_HOME=/app/data/hf-cache \
+    SENTENCE_TRANSFORMERS_HOME=/opt/models \
     MLFLOW_TRACKING_URI=file:///app/data/mlruns \
     GIT_PYTHON_REFRESH=quiet \
-    WEB_CONCURRENCY=4
+    WEB_CONCURRENCY=2
 
 # Create non-root user
 RUN groupadd -g 1000 webagent && \
@@ -52,6 +53,10 @@ ENV PATH=/home/webagent/.local/bin:$PATH
 # NLTK corpora used by document extraction
 RUN PYTHONUSERBASE=/home/webagent/.local python -m nltk.downloader -d /usr/local/share/nltk_data \
     punkt stopwords wordnet maxent_ne_chunker words
+
+# Triage encoder baked in so prod startup never downloads it.
+RUN mkdir -p /opt/models && PYTHONUSERBASE=/home/webagent/.local python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/opt/models')" \
+    && chown -R webagent:webagent /opt/models
 
 # Copy application code
 COPY --chown=webagent:webagent . .

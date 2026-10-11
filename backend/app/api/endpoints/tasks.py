@@ -75,7 +75,7 @@ async def get_task_error(task_id: str):
     
     return error_details
 
-@router.post("/create")
+@router.post("/create", deprecated=True)
 @timing_decorator
 async def create_task(request: Dict[str, Any], background_tasks: BackgroundTasks):
     """

@@ -125,6 +125,52 @@ MEMORY_USAGE = Gauge(
     registry=WEBAGENT_REGISTRY
 )
 
+TRIAGE_DECISIONS = Counter(
+    "webagent_triage_decisions_total",
+    "Triage routing decisions",
+    ["route", "decided_by"],
+    registry=WEBAGENT_REGISTRY,
+)
+
+TRIAGE_LATENCY = Histogram(
+    "webagent_triage_latency_seconds",
+    "Triage classify latency",
+    buckets=(0.01, 0.025, 0.05, 0.075, 0.1, 0.2, 0.5, 1.0, 3.0),
+    registry=WEBAGENT_REGISTRY,
+)
+
+TRIAGE_OVERRIDES = Counter(
+    "webagent_triage_overrides_total",
+    "Research-in-depth override clicks",
+    registry=WEBAGENT_REGISTRY,
+)
+
+TRIAGE_UNCERTAIN = Counter(
+    "webagent_triage_uncertain_total",
+    "Model decisions near the triage threshold",
+    registry=WEBAGENT_REGISTRY,
+)
+
+
+def record_triage_decision(decision, threshold: Optional[float] = None) -> None:
+    """Record metrics for one triage decision (decision: TriageDecision).
+
+    `threshold` is the one the decision used; model decisions need it for the uncertain count.
+    """
+    TRIAGE_DECISIONS.labels(route=decision.route, decided_by=decision.decided_by).inc()
+    # Mode and override decisions never run `classify`; their 0 ms would hide its real latency.
+    if decision.decided_by not in ("mode", "override"):
+        TRIAGE_LATENCY.observe(decision.latency_ms / 1000.0)
+    if decision.decided_by == "override":
+        TRIAGE_OVERRIDES.inc()
+    if decision.decided_by == "model" and decision.p_agentic is not None and threshold is not None:
+        from app.core.config import settings
+
+        cfg = getattr(settings, "TRIAGE", None)
+        band = cfg.uncertain_band if cfg else 0.15
+        if abs(decision.p_agentic - threshold) < band:
+            TRIAGE_UNCERTAIN.inc()
+
 # Middleware for tracking HTTP requests
 class PrometheusMiddleware(BaseHTTPMiddleware):
     """Middleware that collects Prometheus metrics for HTTP requests."""

@@ -4,7 +4,7 @@ These models define the structure and types of the configuration loaded from YAM
 """
 from enum import Enum
 from typing import Dict, List, Optional, Union, Literal
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 
 class LogLevel(str, Enum):
@@ -175,6 +175,23 @@ class LangSmithConfig(BaseModel):
     log_level: LogLevel = Field(default=LogLevel.INFO)
 
 
+class TriageConfig(BaseModel):
+    """Agentic triage (Off / Auto / Always routing)."""
+
+    model_config = ConfigDict(protected_namespaces=())
+    enabled: bool = Field(default=True)
+    mode: str = Field(default="act")
+    threshold: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    uncertain_band: float = Field(default=0.15, ge=0.0, le=0.5)
+    llm_tiebreak: bool = Field(default=False)
+    tiebreak_upper: float = Field(default=0.65, ge=0.0, le=1.0)
+    collect: bool = Field(default=False)
+    collect_retention_days: int = Field(default=30, gt=0)
+    model_dir: str = Field(default="models/triage")
+    encoder_name: str = Field(default="sentence-transformers/all-MiniLM-L6-v2")
+    short_query_words: int = Field(default=6, gt=0)
+
+
 class AppConfig(BaseModel):
     """Main application configuration."""
     api: ApiConfig = Field(default_factory=ApiConfig)
@@ -187,6 +204,7 @@ class AppConfig(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     langsmith: LangSmithConfig = Field(default_factory=LangSmithConfig)
+    triage: TriageConfig = Field(default_factory=TriageConfig)
     
     @field_validator('cors')
     @classmethod

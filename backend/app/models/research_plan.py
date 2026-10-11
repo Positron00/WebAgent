@@ -37,6 +37,22 @@ def normalize_research_plan(raw: Dict[str, Any]) -> ResearchPlan:
     )
 
 
+def without_missing_document(plan: ResearchPlan, has_document: bool) -> ResearchPlan:
+    """Drop a document-extraction step the model asked for when no document was attached.
+
+    The supervisor model sometimes sets `requires_document_extraction` on plain questions; the
+    extraction step then fails with "Document ID is required". Research the question instead.
+    """
+    if not plan.requires_document_extraction or has_document:
+        return plan
+    return plan.model_copy(
+        update={
+            "requires_document_extraction": False,
+            "requires_web_search": plan.requires_web_search or not plan.requires_internal_knowledge,
+        }
+    )
+
+
 def research_query(state: Any) -> str:
     """Text to search with: the supervisor's standalone rewrite of a follow-up, else the raw query."""
     plan = normalize_research_plan(state.context.get("research_plan", {}))

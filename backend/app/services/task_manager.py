@@ -9,6 +9,7 @@ import logging
 import os
 import traceback
 
+from app.agents.supervisor import SupervisorAgent
 from app.graph.workflows import get_agent_workflow
 from app.models.task import TaskInfo, WorkflowState
 from app.core.metrics import timing_decorator, track_task_start, track_task_completion
@@ -79,7 +80,96 @@ class TaskManager:
             if age > timedelta(minutes=TASK_TIMEOUT_MINUTES):
                 return "error", {"error": "Task was interrupted before it finished"}
             return "processing", None
-        return status, saved.get("result")
+        return status, TaskManager._result_for_client(saved)
+
+    @staticmethod
+    def _result_for_client(saved: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Merge routing metadata into the report returned to API clients."""
+        result = saved.get("result")
+        if not isinstance(result, dict):
+            return result
+        meta_keys = ("route", "decided_by", "p_agentic", "image_ignored", "triage")
+        meta = {k: saved[k] for k in meta_keys if k in saved}
+        return {**result, **meta} if meta else result
+
+    @staticmethod
+    def _result_meta(context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Route fields for a saved result.
+
+        `context["triage"]` is the decision that chose the path; `context["shadow_triage"]` (shadow
+        mode only) is what the classifier would have chosen and is what clients see as `triage`.
+        """
+        ctx = context or {}
+        meta: Dict[str, Any] = {}
+        decision = ctx.get("triage")
+        if decision:
+            meta["route"] = decision.get("route")
+            meta["decided_by"] = decision.get("decided_by")
+            if decision.get("p_agentic") is not None:
+                meta["p_agentic"] = decision.get("p_agentic")
+        triage = ctx.get("shadow_triage") or decision
+        if triage:
+            meta["triage"] = triage
+        if ctx.get("had_image"):
+            meta["image_ignored"] = True
+        return meta
+
+    async def run_direct(self, task_id: str, message: str, context: Optional[Dict[str, Any]] = None):
+        """One text-only LLM call without building the LangGraph workflow."""
+        task_id_token = current_task_id.set(task_id)
+        start_time = datetime.now()
+        ctx = context or {}
+        task_info = TaskInfo(
+            task_id=task_id,
+            status="processing",
+            created_at=datetime.now(),
+            message="Direct response started",
+            query=message,
+            current_step="direct",
+        )
+        self.active_tasks[task_id] = task_info
+        track_task_start(task_id)
+        try:
+            supervisor = SupervisorAgent()
+            content = await supervisor.answer_directly(
+                message, ctx.get("previous_messages", []), image_attached=bool(ctx.get("had_image"))
+            )
+            report = {"title": "Response", "content": content, "type": "direct_response"}
+            self.task_results[task_id] = report
+            task_info.status = "completed"
+            task_info.completed_at = datetime.now()
+            task_info.message = "Task completed successfully"
+            task_info.current_step = "completed"
+            duration = (datetime.now() - start_time).total_seconds()
+            track_task_completion(task_id, duration, "completed")
+        except Exception as e:
+            logger.exception("Direct task %s failed: %s", task_id, e)
+            task_info.status = "error"
+            task_info.error = str(e)
+            self.task_results[task_id] = {"error": str(e)}
+            duration = (datetime.now() - start_time).total_seconds()
+            track_task_completion(task_id, duration, "error")
+        finally:
+            if task_id in self.active_tasks:
+                self.active_tasks[task_id] = task_info
+            if task_info.status in ("completed", "error"):
+                meta = self._result_meta(ctx)
+                result = dict(self.task_results.get(task_id) or {})
+                if isinstance(result, dict):
+                    result.update(meta)
+                    self.task_results[task_id] = result
+                payload = {
+                    "task_id": task_id,
+                    "query": message,
+                    "status": task_info.status,
+                    "created_at": task_info.created_at,
+                    "completed_at": task_info.completed_at or datetime.now(),
+                    "duration_seconds": round((datetime.now() - start_time).total_seconds(), 2),
+                    "result": result,
+                    **meta,
+                }
+                result_store.save_result(task_id, payload)
+            current_task_id.reset(task_id_token)
 
     @timing_decorator
     async def run_workflow(self, task_id: str, message: str, context: Optional[Dict[str, Any]] = None):
@@ -202,18 +292,22 @@ class TaskManager:
             if task_id in self.active_tasks:
                 self.active_tasks[task_id] = task_info
             if task_info.status in ("completed", "error"):
-                result_store.save_result(
-                    task_id,
-                    {
-                        "task_id": task_id,
-                        "query": message,
-                        "status": task_info.status,
-                        "created_at": task_info.created_at,
-                        "completed_at": task_info.completed_at or datetime.now(),
-                        "duration_seconds": round((datetime.now() - start_time).total_seconds(), 2),
-                        "result": self.task_results.get(task_id),
-                    },
-                )
+                meta = self._result_meta(context)
+                result = dict(self.task_results.get(task_id) or {})
+                if isinstance(result, dict):
+                    result.update(meta)
+                    self.task_results[task_id] = result
+                payload = {
+                    "task_id": task_id,
+                    "query": message,
+                    "status": task_info.status,
+                    "created_at": task_info.created_at,
+                    "completed_at": task_info.completed_at or datetime.now(),
+                    "duration_seconds": round((datetime.now() - start_time).total_seconds(), 2),
+                    "result": result,
+                    **meta,
+                }
+                result_store.save_result(task_id, payload)
             current_task_id.reset(task_id_token)
     
     def get_task_status(self, task_id: str) -> Tuple[str, Optional[Dict[str, Any]]]:

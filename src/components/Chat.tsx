@@ -12,7 +12,7 @@ import Image from 'next/image';
 
 export default function Chat() {
   const { state, sendMessage, clearMessages } = useChat();
-  const { accessibility, showNotification } = useApp();
+  const { accessibility, showNotification, modeReady } = useApp();
   const [input, setInput] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -137,6 +137,7 @@ export default function Chat() {
             onSubmit={handleSubmit}
             onFileSelect={handleFileSelect}
             isLoading={state.isLoading}
+            disabled={!modeReady}
             onNewChat={clearMessages}
             screenshotActive={!!imageFile && imageFile.name.startsWith('screenshot-')}
             onClearScreenshot={() => setImageFile(null)}

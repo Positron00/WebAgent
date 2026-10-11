@@ -198,17 +198,73 @@ No API key needed:
 
 Require `X-API-Key` when API-key auth is on (always in uat/prod):
 
-- **POST /api/task**: Start a multi-agent task from the web app (`{"query": "...", "agentic": true}`); returns a `task_id`
-- **GET /api/task/{task_id}**: Task status (`processing`, `completed`, `failed`) and report. Any worker can answer, and finished reports survive a restart
-- **POST /api/v1/chat/completions**, **GET /api/v1/chat/status/{task_id}**: OpenAI-style chat request and its status
-- **POST /api/v1/chat/**, **GET /api/v1/chat/{task_id}**: Start a chat workflow and read its result
-- **POST /api/v1/tasks/create**, **GET /api/v1/tasks/**, **GET /api/v1/tasks/{task_id}** (plus `/result`, `/error`), **DELETE /api/v1/tasks/{task_id}**: Task management
+- **POST /api/task**: Start a task (`{"query": "...", "mode": "off" | "auto" | "always"}`); returns a `task_id`. See [Agentic triage](#agentic-triage) for modes
+- **GET /api/task/{task_id}**: Task status (`processing`, `completed`, `failed`) and report, with `route`, `decided_by` and (when the classifier ran) `p_agentic`. Any worker can answer, and finished reports survive a restart
+- **POST /api/triage**: Decide whether a question needs the research agents (`{"query", "previous_user_question", "has_image"}` → `{"route", "p_agentic", "decided_by", "reason", "classifier_version"}`)
+- **POST /api/v1/chat/completions**, **GET /api/v1/chat/status/{task_id}**: OpenAI-style chat request and its status; accepts `mode` like `/api/task`
+- **POST /api/v1/chat/** (deprecated), **GET /api/v1/chat/{task_id}**: Start a chat workflow and read its result
+- **POST /api/v1/tasks/create** (deprecated), **GET /api/v1/tasks/**, **GET /api/v1/tasks/{task_id}** (plus `/result`, `/error`), **DELETE /api/v1/tasks/{task_id}**: Task management
 - **POST /api/v1/documents/upload**, **POST /api/v1/documents/search**, **GET /api/v1/documents/document/{document_id}**, **GET /api/v1/documents/related/{document_id}**: Documents
 - **GET /api/v1/status**: LLM and service status
 
 Requests are rate-limited per caller (60 per minute by default). Behind the Next.js proxy the caller is the end user, taken from `X-Forwarded-For`, which is trusted only from `WEBAGENT_TRUSTED_PROXIES`.
 
 See the OpenAPI documentation for complete details and request/response schemas.
+
+## Agentic triage
+
+Triage decides whether a question gets one quick model answer (`direct`) or the research workflow (`agentic`). Rules run first (an image or a greeting → direct; "research …", "write a report …" → agentic), then a small local classifier: frozen `all-MiniLM-L6-v2` embeddings plus logistic regression, about 9 ms per question on a laptop CPU once warmed up. When the classifier can't load or fails, the answer is `agentic` with `decided_by: fallback`. The design is in `planning/specs/agentic-triage/`.
+
+### Modes on `/api/task` and `/api/v1/chat/completions`
+
+| Request | Path |
+|---|---|
+| `"mode": "off"`, or `"agentic": false`, or **neither field** | Direct: one text-only model call with `previous_messages`, no workflow |
+| `"mode": "always"`, or `"agentic": true` | Research workflow |
+| `"mode": "auto"` | Classifier decides (same answer as `POST /api/triage`) |
+| `"triage_override": true` | Research workflow, counted as an override (the web app's "Research this in depth") |
+
+`mode` wins over the old flag (`agentic` on `/api/task`, `agentic_toggle` on chat completions). **Breaking change:** `/api/task` with neither field used to run the workflow; it now means `off`. The web app always sends `agentic: true` on this endpoint, so it is not affected. Images are not sent to the model on either backend path; results of a request with an image have `image_ignored: true`.
+
+```bash
+curl -X POST http://localhost:8000/api/task -H "X-API-Key: $WEBAGENT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What changed in EU AI rules this year?", "mode": "auto",
+       "previous_messages": [{"role": "user", "content": "Tell me about AI regulation"}]}'
+
+curl -X POST http://localhost:8000/api/triage -H "X-API-Key: $WEBAGENT_API_KEY" \
+  -H "Content-Type: application/json" -d '{"query": "explain list comprehensions"}'
+```
+
+### Configuration
+
+A `triage:` section in `config/{env}.yaml`; these environment variables override it:
+
+| Variable | Meaning |
+|---|---|
+| `WEBAGENT_TRIAGE_ENABLED` | `false` skips triage: every `auto` decision is `agentic` (`decided_by: config`) and the model never loads |
+| `WEBAGENT_TRIAGE_MODE` | `shadow` labels requests sent with `agentic: true` / `mode: always` without changing their route; `act` (default) doesn't. `/api/triage` and `mode: auto` always act |
+| `WEBAGENT_TRIAGE_THRESHOLD` | Overrides the threshold stored in `models/triage/metadata.json` (0–1) |
+| `WEBAGENT_TRIAGE_COLLECT` | `true` saves shadow decisions and override clicks, **with question text**, for review (on in dev, off in uat/prod) |
+| `WEBAGENT_TRIAGE_LLM_TIEBREAK` | `true` lets one LLM call (3 s limit) settle borderline decisions. Off by default |
+
+In uat and prod the server refuses to start unless `models/triage/classifier.joblib`, `metadata.json` and the encoder are on disk and `metadata.json` records a passed release gate (`test.passed: true`), or triage is disabled. The current version, `triage-2026-10-a`, misses the gate, so `config/uat.yaml` and `config/prod.yaml` set `enabled: false` for now. The Docker image bakes the encoder into `/opt/models` (`SENTENCE_TRANSFORMERS_HOME`). In dev, a missing model logs a warning and triage falls back to agentic.
+
+Collected files are `data/triage/collected/YYYY-MM-DD.jsonl` (in a container, `/app/data/triage/collected/`; copy them out with `docker cp`). They are git-ignored and deleted after 30 days.
+
+Metrics: `webagent_triage_decisions_total{route,decided_by}`, `webagent_triage_latency_seconds`, `webagent_triage_overrides_total`, `webagent_triage_uncertain_total`, shown in the Grafana dashboard's two triage panels.
+
+### Training a new classifier version
+
+Run from `backend/` (see `data/triage/README.md` for how the data is made):
+
+```bash
+python scripts/eval_triage.py --check-data              # validate train.jsonl and test.jsonl
+python scripts/train_triage.py --version triage-2026-10-b
+python scripts/eval_triage.py --write-metadata          # release gate; exit code 1 if it fails
+```
+
+Ship a version only if the gate passes: research recall ≥ 95% and routine questions routed direct ≥ 80% on `test.jsonl`.
 
 ## Testing
 

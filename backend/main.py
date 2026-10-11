@@ -3,6 +3,7 @@ WebAgent Backend Microservice
 ----------------------------
 Main application entry point for the FastAPI server.
 """
+import asyncio
 import os
 import sys
 import uuid
@@ -22,6 +23,10 @@ if str(current_dir) not in sys.path:
 # Now import application modules
 from app.api.router import api_router, health_router
 from app.api.endpoints.task import router as task_router
+from app.api.endpoints.triage import router as triage_router
+from starlette.concurrency import run_in_threadpool
+from app.services import triage_collect
+from app.services.triage_model import warm_up
 from app.core.config import settings
 from app.core.middleware import setup_middlewares, LimitSizeMiddleware, SecurityHeadersMiddleware
 from app.core.logger import logger
@@ -87,6 +92,19 @@ settings.ENABLE_CODE_EXECUTION = server_code_execution_enabled()
 async def validate_production_settings() -> None:
     # Also run before uvicorn starts in the Docker image (see app/core/startup_checks.py).
     check_production_settings(settings.ENABLE_CODE_EXECUTION)
+    cfg = getattr(settings, "TRIAGE", None)
+    if cfg and cfg.enabled:
+        await run_in_threadpool(warm_up)
+    # Overrides are collected even with triage disabled, so retention cleanup always runs.
+    triage_collect.cleanup()
+    app.state.triage_cleanup_task = asyncio.create_task(triage_collect.cleanup_daily())
+
+
+@app.on_event("shutdown")
+async def stop_triage_cleanup() -> None:
+    task = getattr(app.state, "triage_cleanup_task", None)
+    if task is not None:
+        task.cancel()
 
 
 # Include API router
@@ -96,6 +114,12 @@ app.include_router(
     task_router,
     prefix="/api/task",
     tags=["task"],
+    dependencies=[Depends(require_api_key)],
+)
+app.include_router(
+    triage_router,
+    prefix="/api/triage",
+    tags=["triage"],
     dependencies=[Depends(require_api_key)],
 )
 
