@@ -213,7 +213,7 @@ See the OpenAPI documentation for complete details and request/response schemas.
 
 ## Agentic triage
 
-Triage decides whether a question gets one quick model answer (`direct`) or the research workflow (`agentic`). Rules run first (an image or a greeting → direct; "research …", "write a report …" → agentic), then a small local classifier: frozen `all-MiniLM-L6-v2` embeddings plus logistic regression, about 9 ms per question on a laptop CPU once warmed up. When the classifier can't load or fails, the answer is `agentic` with `decided_by: fallback`. The design is in `planning/specs/agentic-triage/`.
+Triage decides whether a question gets one quick model answer (`direct`) or the research workflow (`agentic`). Rules run first (an image or a greeting → direct; "research …", "write a report …" → agentic), then a small local classifier: an `all-MiniLM-L6-v2` encoder fine-tuned on our routing data, plus logistic regression, about 5 ms per question on a laptop CPU once warmed up. When the classifier can't load or fails, the answer is `agentic` with `decided_by: fallback`. The design is in `planning/specs/agentic-triage/`.
 
 ### Modes on `/api/task` and `/api/v1/chat/completions`
 
@@ -248,7 +248,7 @@ A `triage:` section in `config/{env}.yaml`; these environment variables override
 | `WEBAGENT_TRIAGE_COLLECT` | `true` saves shadow decisions and override clicks, **with question text**, for review (on in dev, off in uat/prod) |
 | `WEBAGENT_TRIAGE_LLM_TIEBREAK` | `true` lets one LLM call (3 s limit) settle borderline decisions. Off by default |
 
-In uat and prod the server refuses to start unless `models/triage/classifier.joblib`, `metadata.json` and the encoder are on disk and `metadata.json` records a passed release gate (`test.passed: true`), or triage is disabled. The current version, `triage-2026-10-a`, misses the gate, so `config/uat.yaml` and `config/prod.yaml` set `enabled: false` for now. The Docker image bakes the encoder into `/opt/models` (`SENTENCE_TRANSFORMERS_HOME`). In dev, a missing model logs a warning and triage falls back to agentic.
+In uat and prod the server refuses to start unless `models/triage/classifier.joblib`, `metadata.json` and the encoder are on disk and `metadata.json` records a passed release gate (`test.passed: true`), or triage is disabled. The current version, `triage-2026-10-c`, passes the gate; `config/uat.yaml` and `config/prod.yaml` still set `enabled: false` until the shadow week and a human review of the training data. The fine-tuned encoder lives in `models/triage/encoder/` and is copied into the image with the code, so the server never downloads a model. Its weights are stored with Git LFS: run `git lfs pull` after cloning, before building the image. In dev, a missing model logs a warning and triage falls back to agentic.
 
 Collected files are `data/triage/collected/YYYY-MM-DD.jsonl` (in a container, `/app/data/triage/collected/`; copy them out with `docker cp`). They are git-ignored and deleted after 30 days.
 
@@ -260,9 +260,12 @@ Run from `backend/` (see `data/triage/README.md` for how the data is made):
 
 ```bash
 python scripts/eval_triage.py --check-data              # validate train.jsonl and test.jsonl
-python scripts/train_triage.py --version triage-2026-10-b
+python scripts/train_triage.py --version triage-2026-10-d --finetune   # fine-tune MiniLM (~1 min on an Apple GPU)
 python scripts/eval_triage.py --write-metadata          # release gate; exit code 1 if it fails
+python scripts/eval_triage.py --data data/triage/probe.jsonl   # second check in a different style
 ```
+
+Without `--finetune` the encoder stays frozen and training takes seconds; metadata.json then names the base encoder instead of `encoder_path`.
 
 Ship a version only if the gate passes: research recall ≥ 95% and routine questions routed direct ≥ 80% on `test.jsonl`.
 

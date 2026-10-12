@@ -82,7 +82,9 @@ def evaluate(model_dir: Path, test_path: Path, encoder=None) -> Dict[str, object
     clf = joblib.load(model_dir / "classifier.joblib")["classifier"]
     threshold = float(meta["threshold"])
     rows = load_rows(test_path)
-    enc = encoder or _encoder(meta["encoder_name"])
+    # A fine-tuned encoder is saved next to the classifier (metadata "encoder_path").
+    encoder_ref = str(model_dir / meta["encoder_path"]) if meta.get("encoder_path") else meta["encoder_name"]
+    enc = encoder or _encoder(encoder_ref)
     X = np.asarray(enc.encode(model_texts(rows), normalize_embeddings=True))
     proba = clf.predict_proba(X)[:, list(clf.classes_).index("agentic")]
     pred_agentic = proba >= threshold

@@ -1,0 +1,40 @@
+{"text": "what is the capital of Australia?", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "who wrote Pride and Prejudice", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "why is the ocean salty", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "how many bones are in the human body", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "When did World War II end?", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "is 97 prime", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "rewrite: we r late sry", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "gimme a pun about tacos", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "what's a good gift for a 10 year old who likes dinosaurs", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "how does a refrigerator work", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "Explain the 2008 financial crisis in simple terms", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "what happened in the French Revolution", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "tips for a first marathon", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "Who was the first person on the moon?", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "translate 'where is the train station' to Japanese", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "What does the Constitution's First Amendment say?", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "Make my resume bullet stronger: helped customers", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "what were the causes of WW1", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "can you explain quantum entanglement", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "Summarize the plot of Hamlet", "label": "direct", "category": "probe", "source": "generated"}
+{"text": "who won the Oscar for best actor this year", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "is it raining in Chicago", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "how did the markets react to the jobs numbers", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "anything new on the Mars rover", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "price of AAPL", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "Is the new Zelda worth buying, what do reviews say", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "what are the rules for carrying liquids on planes now", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "Is Twitter still called X?", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "how much does a Tesla Model 3 cost right now", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "what's trending on YouTube", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "did the strike end", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "how much is a Big Mac in Japan right now", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "which countries need a visa for US citizens this year", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "new studies on red meat and cancer?", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "what are the current COVID booster recommendations", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "what movies are opening this Friday", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "best phone under 500 dollars", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "What's the population of Canada", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "are flights to Hawaii cheap this month", "label": "agentic", "category": "probe", "source": "generated"}
+{"text": "how are the Lakers doing this season", "label": "agentic", "category": "probe", "source": "generated"}

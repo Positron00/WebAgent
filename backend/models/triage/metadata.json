@@ -1,9 +1,16 @@
 {
-  "version": "triage-2026-10-a",
+  "version": "triage-2026-10-c",
   "encoder_name": "sentence-transformers/all-MiniLM-L6-v2",
+  "encoder_path": "encoder",
+  "fine_tuning": {
+    "method": "setfit-style contrastive pairs",
+    "pairs_per_row": 4,
+    "epochs": 1,
+    "fit_rows": 1996
+  },
   "threshold": 0.5,
-  "data_hash": "sha256:48771b4cdc96429722741b9303e9ffebabd72fc546103faabb3dc858d3038afc",
-  "trained_at": "2026-10-11T20:26:12+00:00",
+  "data_hash": "sha256:b7124175db510df4ab075413710a2e8a9bc88199a1e2ac2ea2352a6f24f50c2a",
+  "trained_at": "2026-10-11T23:18:41+00:00",
   "categories": {
     "casual_chat": "casual conversation or opinion",
     "casual_research": "casually phrased research",
@@ -12,6 +19,7 @@
     "current_events": "current events",
     "definition": "definition of a stable concept",
     "followup": "follow-up to an earlier question",
+    "general_knowledge": "settled history or general knowledge",
     "how_to": "how-to with a stable answer",
     "long_routine": "long text to rewrite or summarize",
     "market_data": "statistics or market data",
@@ -21,14 +29,14 @@
     "writing_short": "short writing task"
   },
   "validation": {
-    "research_recall": 0.9841,
-    "direct_rate": 0.8421
+    "research_recall": 0.9798,
+    "direct_rate": 0.9921
   },
   "test": {
-    "research_recall": 0.9306,
-    "routine_direct": 0.9518,
-    "research_precision": 0.9437,
+    "research_recall": 1.0,
+    "routine_direct": 1.0,
+    "research_precision": 1.0,
     "rows": 155,
-    "passed": false
+    "passed": true
   }
 }

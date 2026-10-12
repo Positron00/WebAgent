@@ -86,10 +86,16 @@ if TRACKING_ENABLED:
     # Always use settings.MLFLOW_ARTIFACT_LOCATION for artifacts
     experiment = mlflow.get_experiment_by_name("rag_agent_performance")
     if experiment is None:
-        mlflow.create_experiment(
-            "rag_agent_performance",
-            artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
-        )
+        # Several uvicorn workers import this module at once on a fresh data volume; if another
+        # worker created the experiment first, that is fine (it used to kill this worker).
+        try:
+            mlflow.create_experiment(
+                "rag_agent_performance",
+                artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
+            )
+        except mlflow.exceptions.MlflowException:
+            if mlflow.get_experiment_by_name("rag_agent_performance") is None:
+                raise
     else:
         mlflow.set_experiment("rag_agent_performance")
 

@@ -33,7 +33,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     WEBAGENT_NLTK_AUTO_DOWNLOAD=false \
     NLTK_DATA=/usr/local/share/nltk_data \
     HF_HOME=/app/data/hf-cache \
-    SENTENCE_TRANSFORMERS_HOME=/opt/models \
     MLFLOW_TRACKING_URI=file:///app/data/mlruns \
     GIT_PYTHON_REFRESH=quiet \
     WEB_CONCURRENCY=2
@@ -54,17 +53,14 @@ ENV PATH=/home/webagent/.local/bin:$PATH
 RUN PYTHONUSERBASE=/home/webagent/.local python -m nltk.downloader -d /usr/local/share/nltk_data \
     punkt stopwords wordnet maxent_ne_chunker words
 
-# Triage encoder baked in so prod startup never downloads it.
-RUN mkdir -p /opt/models && PYTHONUSERBASE=/home/webagent/.local python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/opt/models')" \
-    && chown -R webagent:webagent /opt/models
-
-# Copy application code
+# Copy application code. This includes the fine-tuned triage encoder (models/triage/encoder/),
+# so startup never downloads a model.
 COPY --chown=webagent:webagent . .
 
-# Create necessary directories with proper permissions
+# Create the writable folders. COPY --chown already set the owner of everything else; a recursive
+# chown/chmod here would store a second copy of /app (code and triage encoder) in a new layer.
 RUN mkdir -p /app/logs /app/config /app/data && \
-    chown -R webagent:webagent /app && \
-    chmod -R 755 /app
+    chown webagent:webagent /app /app/logs /app/config /app/data
 
 # Switch to non-root user
 USER webagent
