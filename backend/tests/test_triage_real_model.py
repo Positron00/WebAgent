@@ -1,11 +1,12 @@
-"""The committed classifier with the real MiniLM encoder. Skipped when either isn't on disk."""
+"""The committed classifier with its real encoder (the fine-tuned folder in models/triage/encoder/,
+or the cached base MiniLM for a frozen classifier). Skipped when either isn't on disk."""
 import pytest
 
 from app.services import triage_model
 
 pytestmark = pytest.mark.real_triage_model
 
-if not (triage_model.model_files_present() and triage_model.encoder_files_present()):
+if not (triage_model.model_files_present() and triage_model.encoder_available()):
     pytest.skip("triage classifier or MiniLM encoder not available", allow_module_level=True)
 
 
@@ -26,6 +27,9 @@ def model():
         ("what are the latest developments in the EU AI Act this month", "agentic"),
         ("compare current pricing of the top three CRM tools for small teams", "agentic"),
         ("bitcoin price now?", "agentic"),
+        # Fine-tuning on the first 4x data sent settled history to research; keep it direct.
+        ("when was the eiffel tower built", "direct"),
+        ("who won the pulitzer prize for fiction this year", "agentic"),
     ],
 )
 def test_clear_cases(model, text, route):
@@ -35,3 +39,9 @@ def test_clear_cases(model, text, route):
 
 def test_deterministic(model):
     assert model.predict_proba("explain closures") == model.predict_proba("explain closures")
+
+
+def test_fine_tuned_encoder_is_loaded_from_the_model_folder(model):
+    if not model.metadata.encoder_path:
+        pytest.skip("committed classifier uses the frozen base encoder")
+    assert model.metadata.encoder_path == "encoder"

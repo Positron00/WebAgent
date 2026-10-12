@@ -1,6 +1,6 @@
 # Plan: triage chat questions before the agentic workflow
 
-Status: draft v6, aligned with the spec in [`planning/specs/agentic-triage/`](specs/agentic-triage/README.md); implementation status is in the spec README (the first classifier version doesn't pass the gate yet, so uat/prod keep triage off) · Base: `main` at v3.0.3 (d408f60) · 2026-10-11
+Status: draft v7, aligned with the spec in [`planning/specs/agentic-triage/`](specs/agentic-triage/README.md); implementation status is in the spec README (the first classifier version doesn't pass the gate yet, so uat/prod keep triage off) · Base: `main` at v3.0.3 (d408f60) · 2026-10-11
 
 Decided:
 
@@ -141,7 +141,7 @@ The header is needed because a 503 can also come from the backend itself; only t
 | Training data needed | None | ~500–1,000 labeled questions | Same set; does better with fewer |
 | Rewrites follow-ups | Yes | No (not needed: the supervisor does it) | No |
 | Testable offline | Only with a fake | Yes | Yes |
-| Effort | Lowest | Low: train in seconds, retrain any time | Medium: adds the `setfit` dependency and a training run |
+| Effort | Lowest | Low: train in seconds, retrain any time | Medium: about a minute of GPU training with sentence-transformers' own trainer (no new dependency), and a 90 MB encoder to ship |
 
 **Recommendation:** start with frozen `sentence-transformers/all-MiniLM-L6-v2` embeddings (384 dimensions, 22M parameters) and a scikit-learn logistic regression on top. Move to SetFit fine-tuning of the same model only if the held-out evaluation misses the targets below. Keep an LLM tie-breaker as an option for the uncertain band, but leave it off by default.
 
@@ -188,7 +188,7 @@ The classes are **agentic** (needs current or external information, several sour
 3. **Real questions:** from shadow mode (phase 2) and override clicks (phase 3), labeled by an LLM judge. Review every case where the judge and the classifier disagree. Shadow mode only sees questions sent with Agentic on, so its sample leans toward research; during the shadow week, use a deliberate mix of questions.
 4. **Held-out test set:** about 150 questions, **written by hand separately** from the seed set (not paraphrases of it), stratified by category, with at least 10 per hard-case category. Never used for training or for picking the threshold, and checked for near-duplicates of training rows. This is the release gate.
 
-**As built (2026-10-11):** the first version's 600 training and 155 test rows were written by AI agents instead of by hand (the test set by a separate agent that never saw the training set), across 14 categories, and still need a person's review. See `backend/data/triage/README.md`.
+**As built (2026-10-11):** the first version's 600 training and 155 test rows were written by AI agents instead of by hand (the test set by a separate agent that never saw the training set). The training set was then grown about 4x to 2,496 rows across 15 categories (adding `general_knowledge`), and a 40-row `probe.jsonl` was added as a second check. All of it still needs a person's review. See `backend/data/triage/README.md`.
 
 The curated data is stored as `backend/data/triage/train.jsonl` and `test.jsonl`, with `text`, `label`, `category`, `source`. It's versioned in git: it's small text, with no user data unless anonymized.
 
@@ -209,8 +209,8 @@ The curated data is stored as `backend/data/triage/train.jsonl` and `test.jsonl`
   - Embed one warm-up sentence at startup, so the first user doesn't pay for model loading.
   - `sentence-transformers` 3.3.1, `torch` 2.5.1, `scikit-learn` 1.5.2 and `joblib` are already in `requirements.txt` and `constraints.txt`. No new dependency is needed until SetFit.
 - **Startup checks:** in uat and prod, `app.core.startup_checks` fails if `classifier.joblib` or the encoder is missing, unless `WEBAGENT_TRIAGE_ENABLED=false`. This follows the sandbox check from 3.0.2. In dev, a missing model logs a warning, and triage falls back to agentic.
-- **Docker:** download the encoder at build time into `/opt/models` and set `SENTENCE_TRANSFORMERS_HOME=/opt/models`, not into `/app/data` (where `HF_HOME` points today). That path is a mounted volume, which would hide files baked into the image. The image grows by about 90 MB. `models/triage/` is copied by the existing `COPY . .`, and `.dockerignore` already keeps `data/*` (the curated data) out. This must land before shadow mode runs in a container.
-- **Fine-tuning (if needed):** `backend/scripts/train_triage.py --setfit` fine-tunes MiniLM with SetFit on the same data. The fine-tuned model is saved under `backend/models/triage/encoder/` (about 90 MB; store it with Git LFS or as a release asset, not in plain git).
+- **Docker:** the fine-tuned encoder in `models/triage/encoder/` is copied in with the code by the existing `COPY . .` (about 90 MB), not stored under `/app/data` (where `HF_HOME` points), which is a mounted volume and would hide it. `.dockerignore` already keeps `data/*` (the curated data) out. Run `git lfs pull` before building. 3.1.x baked the base encoder into `/opt/models` instead; that step was removed once the fine-tuned encoder shipped.
+- **Fine-tuning (done, `triage-2026-10-c`):** `backend/scripts/train_triage.py --finetune` fine-tunes MiniLM SetFit-style on contrastive pairs from the same data, with sentence-transformers' own trainer (no `setfit` package), in about a minute on an Apple GPU. The fine-tuned model is saved under `backend/models/triage/encoder/` (about 90 MB, weights in Git LFS). It passes the gate 155/155 and gets 39/40 on `probe.jsonl`; its scores are almost always near 0 or 1, so the uncertain band rarely fires.
 
 ### User experience
 
@@ -242,13 +242,13 @@ The curated data is stored as `backend/data/triage/train.jsonl` and `test.jsonl`
 | `WEBAGENT_DEFAULT_AGENTIC_MODE` | Web app | `off` | Mode for users with no saved setting. Read at runtime by `GET /api/settings`, so changes apply on the next page load without a restart |
 | `WEBAGENT_TRIAGE_ENABLED` | Backend | `true` | `false`: triage answers `agentic` with `decided_by: config`, so Auto behaves like Always |
 | `WEBAGENT_TRIAGE_MODE` | Backend | `act` (`shadow` in dev during phase 2) | `shadow`: `/api/task` classifies every question sent to the workflow (`agentic: true`, later `mode: always`; not overrides) and records the decision, but always runs the workflow. It never changes a route: `/api/triage` always answers, and `mode: auto` always acts |
-| `WEBAGENT_TRIAGE_THRESHOLD` | Backend | from `metadata.json` (0.5 for `triage-2026-10-a`) | Override the trained threshold |
+| `WEBAGENT_TRIAGE_THRESHOLD` | Backend | from `metadata.json` (0.5 for `triage-2026-10-c`) | Override the trained threshold |
 | `WEBAGENT_TRIAGE_LLM_TIEBREAK` | Backend | `false` | Ask the LLM when p is in the uncertain band |
 | `WEBAGENT_TRIAGE_COLLECT` | Backend | `true` in dev, `false` in uat and prod | Write shadow decisions and overrides, with question text, to `backend/data/triage/collected/` |
 
 Backend settings also get a `triage:` section in `backend/config/{dev,uat,prod}.yaml`, with the environment variables overriding it, as the `security:` settings do. A few tuning values are YAML only, with no environment variable: the uncertain band (0.15), the tie-break upper bound (0.65), retention days (30), the model folder, the encoder name, and the short-question word count (6).
 
-The backend image also sets `SENTENCE_TRANSFORMERS_HOME=/opt/models` and `WEB_CONCURRENCY=2`.
+The backend image also sets `WEB_CONCURRENCY=2`.
 
 ### Observability
 
@@ -355,7 +355,7 @@ Total for phases 0–3 and 5: about 13 working days, plus the shadow-mode week. 
 **Phase 4: tune** (ongoing)
 
 - Weekly: retrain with override and shadow data, re-run the eval gate, and release a new classifier version if it improves.
-- Try SetFit fine-tuning if the frozen encoder plateaus below the targets.
+- Retrain with `--finetune` (done once, `triage-2026-10-c`) and check `probe.jsonl` as well as the gate, since fine-tuning can overfit to the training style.
 
 **Phase 5: backend modes for API clients** (about 1.5 days). See "API clients and recurring tasks".
 
@@ -414,7 +414,7 @@ Still open (for the phase 6 plan): schedule ownership without user accounts, whe
   - `app/services/triage.py`, `app/services/triage_model.py`, `app/services/triage_collect.py`, `app/api/endpoints/triage.py` (all new)
   - `main.py` (mount `/api/triage`, warm-up), `app/api/endpoints/task.py` (`previous_messages` in phase 0, shadow, override), `app/services/task_manager.py`, `app/core/metrics.py`, `app/core/startup_checks.py`, `app/core/config.py` and `config_def.py`, `config/*.yaml` (`triage:` section)
   - `models/triage/` (new), `data/triage/` (new: `categories.json`, `train.jsonl`, `test.jsonl`, `README.md`; `collected/` git-ignored)
-  - `Dockerfile` (bake the encoder, `WEB_CONCURRENCY=2`), `grafana/dashboards/webagent-backend-dashboard.json`, tests. No new Python dependencies before SetFit. Kubernetes already runs 2 workers, so `deployment.yaml` stays unless the memory check fails
+  - `Dockerfile` (`WEB_CONCURRENCY=2`; the fine-tuned encoder comes in with the code), `grafana/dashboards/webagent-backend-dashboard.json`, `.gitattributes` (Git LFS for the encoder weights), tests. No new Python dependencies, fine-tuning included. Kubernetes already runs 2 workers, so `deployment.yaml` stays unless the memory check fails
 - Scripts: `backend/scripts/train_triage.py`, `backend/scripts/eval_triage.py`, `backend/scripts/triage_data.py` (all new)
 - Web app:
   - `src/app/api/triage/route.ts` (new), `src/app/api/settings/route.ts` (new), `src/app/api/task/backend.ts` (unreachable header)

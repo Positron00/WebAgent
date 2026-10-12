@@ -29,6 +29,8 @@ class TriageMetadata:
     threshold: float
     data_hash: str
     categories: Dict[str, str]
+    # Fine-tuned encoder folder, relative to the model folder; None means the base encoder by name.
+    encoder_path: Optional[str] = None
 
 
 class MiniLMTriageModel:
@@ -97,6 +99,26 @@ def encoder_files_present(encoder_name: Optional[str] = None) -> bool:
     return any((d / folder).is_dir() for d in encoder_cache_dirs())
 
 
+def _read_metadata(model_dir_path: Path) -> Optional[dict]:
+    import json
+
+    try:
+        return json.loads((model_dir_path / "metadata.json").read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def encoder_available(model_dir_path: Optional[Path] = None) -> bool:
+    """True if the encoder this classifier needs is on disk: its fine-tuned folder, or the base
+    encoder in a local cache. Checks files only, so it never imports torch."""
+    d = model_dir_path or model_dir()
+    meta = _read_metadata(d) or {}
+    if meta.get("encoder_path"):
+        folder = d / meta["encoder_path"]
+        return (folder / "config.json").is_file() and (folder / "model.safetensors").is_file()
+    return encoder_files_present(meta.get("encoder_name"))
+
+
 def load_model(model_dir_path: Optional[Path] = None) -> Optional[MiniLMTriageModel]:
     d = model_dir_path or model_dir()
     joblib_path = d / "classifier.joblib"
@@ -113,6 +135,7 @@ def load_model(model_dir_path: Optional[Path] = None) -> Optional[MiniLMTriageMo
         threshold=float(meta_raw["threshold"]),
         data_hash=meta_raw.get("data_hash", ""),
         categories=meta_raw.get("categories", {}),
+        encoder_path=meta_raw.get("encoder_path"),
     )
     cfg = getattr(settings, "TRIAGE", None)
     expected_encoder = cfg.encoder_name if cfg else metadata.encoder_name
@@ -130,8 +153,16 @@ def load_model(model_dir_path: Optional[Path] = None) -> Optional[MiniLMTriageMo
         from sentence_transformers import SentenceTransformer
 
         torch.set_num_threads(1)
-        local_only = settings.WEBAGENT_ENV in ("uat", "prod")
-        encoder = SentenceTransformer(metadata.encoder_name, device="cpu", local_files_only=local_only)
+        if metadata.encoder_path:
+            # Fine-tuned encoder shipped next to the classifier: a local folder, never downloaded.
+            folder = d / metadata.encoder_path
+            if not folder.is_dir():
+                logger.error("Fine-tuned triage encoder missing: %s", folder)
+                return None
+            encoder = SentenceTransformer(str(folder), device="cpu")
+        else:
+            local_only = settings.WEBAGENT_ENV in ("uat", "prod")
+            encoder = SentenceTransformer(metadata.encoder_name, device="cpu", local_files_only=local_only)
     except Exception as exc:
         logger.warning("Could not load triage encoder: %s", exc)
         return None

@@ -75,7 +75,8 @@ Terms used throughout:
 **REQ-023 Release gate (must).** `scripts/eval_triage.py` prints recall, precision and a per-category confusion matrix on `test.jsonl`, and exits non-zero unless research recall ≥ 95% and routine-routed-direct ≥ 80%. A classifier version ships only if the gate passes.
 - Verify: run before each release; result recorded in `metadata.json["test"]` (with `passed`). In uat and prod, `startup_checks` refuses a classifier whose `test.passed` isn't `true` (NFR-08).
 
-**REQ-024 SetFit path (should, phase 4).** `train_triage.py --setfit` fine-tunes the encoder on the same data. Used only if the frozen encoder misses the gate. The fine-tuned encoder is stored with Git LFS or as a release asset, not in plain git.
+**REQ-024 Fine-tuning path (should, phase 4; done 2026-10-11).** `train_triage.py --finetune` (alias `--setfit`) fine-tunes the encoder SetFit-style on the same data, using sentence-transformers only. The fine-tuned encoder is stored in `models/triage/encoder/` with its weights in Git LFS, not in plain git.
+- Verify: pytest (pair building); gate and `probe.jsonl` on the trained version.
 
 ## 4. Collection and privacy (phase 2)
 
@@ -161,5 +162,5 @@ Terms used throughout:
 | NFR-06 | Each worker's extra memory for triage ≤ 150 MB. The backend runs **2 uvicorn workers** (image default and Kubernetes) and fits the Kubernetes memory limit (1.5 GiB) with 20% headroom | Measure with cgroup stats in the container |
 | NFR-07 | Classifier is deterministic: same input and version → same output | pytest |
 | NFR-08 | In uat and prod, the server refuses to start without the classifier and encoder, or with a classifier that hasn't passed the release gate, unless triage is disabled. In dev, it starts with a warning and triage falls back to agentic | pytest (`startup_checks`) |
-| NFR-09 | No new Python dependency before SetFit. The image grows by ≤ 100 MB | Diff of `requirements.txt`; `docker image ls` |
+| NFR-09 | No new Python dependency (fine-tuning uses sentence-transformers' own trainer). The image grows by ≤ 100 MB over 3.0.3 | Diff of `requirements.txt`; `docker image ls` |
 | NFR-10 | All existing tests still pass; new code has unit tests | CI |

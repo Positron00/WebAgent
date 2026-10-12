@@ -1,6 +1,6 @@
 # Spec: agentic triage (Off / Auto / Always)
 
-Status: draft v4, aligned with the implementation (see "Implementation status") · Source plan: [`planning/agentic-triage-plan.md`](../../agentic-triage-plan.md) (draft v6, aligned with this spec) · Base: `main` at v3.0.3 (`d408f60`) · 2026-10-11
+Status: draft v5, aligned with the implementation (see "Implementation status") · Source plan: [`planning/agentic-triage-plan.md`](../../agentic-triage-plan.md) (draft v7, aligned with this spec) · Base: `main` at v3.0.3 (`d408f60`) · 2026-10-11
 
 ## What this feature does
 
@@ -46,7 +46,7 @@ Out of scope:
 These came from checking the plan against the code; the plan has been updated to match.
 
 1. **Follow-up history already reaches the supervisor.** `SupervisorAgent._with_history` reads `context["previous_messages"]` and folds the last 8 messages into `{query}`. Phase 0 needs only the new `TaskRequest` field and the client change; no new prompt variable, and `test_followup_query.py` stays as it is.
-2. **The Hugging Face cache lives on the data volume.** The Dockerfile sets `HF_HOME=/app/data/hf-cache`, and `/app/data` is mounted in Compose and Kubernetes. The encoder is baked into `/opt/models` with `SENTENCE_TRANSFORMERS_HOME`.
+2. **The Hugging Face cache lives on the data volume.** The Dockerfile sets `HF_HOME=/app/data/hf-cache`, and `/app/data` is mounted in Compose and Kubernetes, so a model there would be hidden. 3.1.x baked the base encoder into `/opt/models`; since `triage-2026-10-c` the fine-tuned encoder ships in `models/triage/encoder/` with the code instead.
 3. **"Backend unreachable" needs a marker.** A 503 could come from the Next.js proxy or the backend. The proxy adds `X-WebAgent-Proxy-Error: unreachable` so the client can tell them apart.
 4. **The backend LLM wrapper is text only**, which led to decision 1.
 5. **`/api/v1/chat/completions` defaults to non-agentic today**, which led to decision 2.
@@ -54,18 +54,19 @@ These came from checking the plan against the code; the plan has been updated to
 7. **The Docker image excludes `data/*`** (`.dockerignore`), so curated data stays out of the image, while `models/triage/` is copied by the existing `COPY . .`.
 8. **Shadow mode only sees questions sent with Agentic on**, so its data leans toward research. The shadow week uses a deliberate mix of questions, and the seed set supplies routine examples.
 
-## Implementation status (2026-10-11, releases 3.1.0 and 3.1.1, merged to `main`)
+## Implementation status (2026-10-11, releases 3.1.0, 3.1.1 and 3.2.0, merged to `main`)
 
 Code for phases 0, 1, 2, 3 and 5 is in place and matches these documents; backend pytest and Jest pass.
 
 | Item | Status |
 |---|---|
-| Classifier `triage-2026-10-a` (task 1.8) | Trained on 600 generated rows; **fails the gate** on 155 test rows: research recall 0.931 (target 0.95), routine direct 0.952, precision 0.944, threshold 0.5. Gap and plan in `backend/data/triage/README.md` |
-| Consequence | uat/prod run with `triage.enabled: false` (Auto acts like Always) until a version passes; `startup_checks` enforces the gate. Dev runs it in shadow mode |
+| Classifier `triage-2026-10-c` (release 3.2.0; tasks 1.8, 4.3) | Training data grown about 4x to 2,496 generated rows (new `general_knowledge` category), MiniLM fine-tuned SetFit-style (REQ-024). **Passes the gate**: 155/155 on `test.jsonl`, and 39/40 on `probe.jsonl`, a second check in a different style. Scores are almost always near 0 or 1, so the uncertain metric and tie-breaker see little. Earlier `triage-2026-10-a` (600 rows, frozen) failed with research recall 0.931. Details in `backend/data/triage/README.md` |
+| Container with `triage-2026-10-c` | About 83 MB larger than 3.0.3 by layers (target ≤ 100 MB); the fine-tuned encoder is the only new content. Starts with no network, triage off and on; both workers load the encoder from `/app/models/triage/encoder` in ~155 ms and route as locally. Per-worker memory unchanged: ~595 MB off, ~677 MB on, within the 1.5 GiB limit |
+| Consequence (updated) | The gate no longer blocks uat/prod; they keep `triage.enabled: false` until the shadow week and a human data review. The encoder ships in `models/triage/encoder/` (weights in Git LFS) and is copied into the image; the base-encoder bake step was removed |
 | Data review (tasks 1.2–1.4) | Rows were written by AI agents (`source: "generated"`), not by hand; a person still has to review both files |
 | Classify latency (task 1.10, NFR-01) | p50 8.9 ms, p95 9.6 ms on a laptop CPU (Apple Silicon), well under 100 ms. Through the Next.js proxy: p50 17 ms, p95 25 ms (target < 300 ms) |
 | Direct-path timing (task 1.9, NFR-02) | `/api/chat`, 20 routine questions: median 3.4 s, p95 5.1 s, max 6.6 s. The < 10 s target stands. Triage routed all 20 direct |
-| Container (task 2.9, NFR-06, NFR-09) | Encoder layer 91.7 MB (target ≤ 100 MB). Starts with no network, triage off and on; with triage on, both workers load the encoder from `/opt/models` in ~0.2 s and classify the same as locally. Triage adds ~90 MB per worker (682 vs 592 MB resident). **Memory doesn't fit:** the container uses 1.08 GiB with triage on and 955 MiB with it off, against the old 1 GiB Kubernetes limit. **Decided:** the limit is now 1.5 GiB (request 1 GiB), which leaves 28% headroom with triage on |
+| Container (task 2.9, NFR-06, NFR-09) | Measured with 3.1.0's baked base encoder: encoder layer 91.7 MB (target ≤ 100 MB). Starts with no network, triage off and on; with triage on, both workers load the encoder in ~0.2 s and classify the same as locally. Triage adds ~90 MB per worker (682 vs 592 MB resident). **Memory doesn't fit:** the container uses 1.08 GiB with triage on and 955 MiB with it off, against the old 1 GiB Kubernetes limit. **Decided:** the limit is now 1.5 GiB (request 1 GiB), which leaves 28% headroom with triage on |
 | Follow-up history (task 0.5) | Real run: "what about Europe?" after a question on US EV sales produced a report on the European EV market in 2025 |
 | Not done yet | 2.11 dashboard screenshot; manual browser check of the toggle and override; shadow week; 3.11 switch to `act`; 3.12 container run in Auto; phase 4 |
 

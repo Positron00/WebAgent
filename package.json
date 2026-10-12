@@ -1,6 +1,6 @@
 {
   "name": "webagent-platform",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "description": "WebAgent multi-agent research platform: Next.js web app and FastAPI/LangGraph backend",
   "private": true,
   "scripts": {

@@ -4,32 +4,44 @@ Curated data for the question-routing classifier (`backend/scripts/train_triage.
 
 | File | Rows | Use |
 |---|---|---|
-| `categories.json` | 14 categories | Category id, the label shown on hover ("Looks like: …"), class (`direct`, `agentic`, or `mixed` for follow-ups) and whether it is a hard case |
-| `train.jsonl` | 600 | Training and threshold picking (80/20 split inside the training script) |
+| `categories.json` | 15 categories | Category id, the label shown on hover ("Looks like: …"), class (`direct`, `agentic`, or `mixed` for follow-ups) and whether it is a hard case |
+| `train.jsonl` | 2,496 (1,265 direct, 1,231 agentic) | Fine-tuning, training and threshold picking (80/20 split inside the training script) |
 | `test.jsonl` | 155 | Release gate only. Never used for training or threshold picking |
+| `probe.jsonl` | 40 | A second check in a different style: hard questions written after training, none closer than 0.87 to a training row. Not part of the gate |
 | `collected/` | — | Shadow decisions and override clicks written by the server when collection is on. Git-ignored, deleted after 30 days. **Contains real user questions** |
 
 Each row: `{"text", "label": "agentic" | "direct", "category", "source": "seed" | "generated" | "collected"}`. Follow-up rows hold the joined form `previous question → follow-up`, the same text the server builds for short follow-ups.
 
-## How the current data was made (version `triage-2026-10-a`)
+## How the data was made
 
-All rows are `source: "generated"`: written by AI agents, not by hand. The spec asks for hand-written seed and test sets; **a person still has to review both files** (task 1.2–1.4) before the gate result can be trusted.
+All rows are `source: "generated"`: written by AI, not by hand. The spec asks for hand-written seed and test sets; **a person still has to review both files** (tasks 1.2–1.4) before the gate result can be fully trusted.
 
-- `train.jsonl`: 322 rows across all categories (at least 22 each), then 280 more aimed at the hard cases (casual research, follow-ups, reports, short time-sensitive questions, long pasted text). Two rows that collided with test rows were removed.
-- `test.jsonl`: written by a separate agent that never saw `train.jsonl`. 23 of its first 160 rows turned out to be near-copies of training rows (classic textbook questions) and were removed; 18 fresh rows replaced them.
-- `--check-data` passes: schema, known categories, labels matching the category class, no duplicates, no test row with embedding similarity ≥ 0.9 to a training row, and at least 20 train / 10 test rows per hard case.
+**Version a (600 train rows).** 322 rows across all categories, then 280 more aimed at the hard cases. The test set was written by a separate agent that never saw `train.jsonl`; near-copies of training rows were replaced.
 
-Prompt used for the training rows (abridged):
+**Version c (2,496 train rows, about 4x).** 1,896 rows added on 2026-10-11:
 
-> Write questions a chat-assistant user would type, one JSON object per line with `text`, `label`, `category`, `source: "generated"`. `direct` = one quick LLM call is enough (stable knowledge, coding, math, rewriting pasted text, chit-chat). `agentic` = needs web research or current data (news, prices, comparisons with current sources, reports). Cover every category in `categories.json`. Follow-ups use `previous → follow-up` with a follow-up under 6 words, labelled by what the follow-up needs. Long routine rows are 60–200 words of pasted text with a rewrite/summarize request. Vary length, wording and casing; include near-misses. Don't start with "research", "find sources", "write a report", etc. (rules handle those). No personal data.
+- About 100–300 more per category, weighted toward the misses of version a: casually phrased research (297 in total), reports (198), follow-ups (357, half of them routine follow-ups to a research question such as "→ what does IPO stand for?"), and opinion-style chat (189).
+- A new category, `general_knowledge` (116 rows: settled history, literature, geography and science facts), plus 30 topic-matched questions that need current facts ("Who is the current president of France?"). Without it, the fine-tuned encoder learned "sounds like an event" = research and sent "When did World War II end?" to research.
+- Removed: rows the rules already answer, exact duplicates, follow-ups of 6 words or more (the server joins only shorter ones), 15 rows with embedding similarity ≥ 0.9 to a test row, and 6 paraphrases of test questions the writer had seen in an earlier error list.
+- `--check-data` passes. The test set is unchanged, so versions a and c are compared on the same gate. It has no `general_knowledge` rows; add some, written separately, when a person reviews the test set.
 
-## Current result
+## Current result: `triage-2026-10-c`
 
-`triage-2026-10-a` **fails the gate**: research recall 0.931 (target 0.95), routine routed direct 0.952 (target 0.80), precision 0.944, at threshold 0.5. Misses are casually phrased research and reports; false alarms are direct follow-ups after a research question ("→ what does IPO stand for?"). Validation recall (0.98) is higher than test recall because the validation split comes from the same generated data, so the threshold lands on the 0.5 cap.
+Version c fine-tunes MiniLM on contrastive pairs (SetFit-style; see `scripts/train_triage.py --finetune`), then fits the logistic regression on its embeddings. Version b is the same 4x data with the frozen encoder, trained only for comparison.
 
-Because it fails, uat and prod run with `triage.enabled: false`, and `startup_checks` refuses a classifier whose `metadata.json` doesn't record `test.passed: true`. Dev uses it in shadow mode to collect real questions.
+| Version | Gate (155 rows): research recall / routine direct | `probe.jsonl` (40 rows): research / routine | Scores between 0.2 and 0.8 |
+|---|---|---|---|
+| a: 600 rows, frozen | 0.931 / 0.952 (fails) | 16/20 / 19/20 | 68% |
+| b: 2,496 rows, frozen | 0.986 / 0.952 (passes) | 18/20 / 19/20 | 38% |
+| **c: 2,496 rows, fine-tuned (shipped)** | **1.000 / 1.000 (passes)** | **20/20 / 19/20** | **0%** |
 
-Next steps, in order: review and rewrite rows by hand; add reviewed shadow-week questions to `train.jsonl` (never `test.jsonl`); retrain and re-run the gate; if the frozen encoder still plateaus, try SetFit (phase 4, REQ-024).
+Read the numbers with care:
+
+- The test set and the training data come from the same kind of generator, so the gate is easier than real traffic. `probe.jsonl` is a second check written in a different style; its only miss on version c is "is 97 prime" (sent to research).
+- Version c's scores are almost always near 0 or 1. When it is wrong, it is confidently wrong, the `webagent_triage_uncertain_total` metric will stay near zero, and the optional LLM tie-breaker would rarely run. The override button and the override rate are the safety net.
+- Fine-tuning ran on the 80% fit split only, so the threshold (0.5) is picked on rows the encoder never saw.
+
+uat and prod still run with `triage.enabled: false` until the shadow week and a human review of the data; the gate itself now passes. Dev uses the classifier in shadow mode.
 
 ## Commands
 
@@ -37,6 +49,9 @@ Run from `backend/`:
 
 ```bash
 python scripts/eval_triage.py --check-data
-python scripts/train_triage.py --version triage-2026-10-b
+python scripts/train_triage.py --version triage-2026-10-d --finetune   # ~1 minute on an Apple GPU
 python scripts/eval_triage.py --write-metadata   # exit code 1 if the gate fails
+python scripts/eval_triage.py --data data/triage/probe.jsonl   # second check, not the gate
 ```
+
+Without `--finetune` the encoder stays frozen and training takes seconds. The fine-tuned encoder is written to `models/triage/encoder/`; its weights are stored with Git LFS (`.gitattributes`), so run `git lfs pull` after cloning.

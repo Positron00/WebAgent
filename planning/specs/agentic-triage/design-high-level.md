@@ -147,15 +147,15 @@ The rule behind these: when the backend is up but triage is unsure or broken, pr
 | Category list | `backend/data/triage/categories.json` | Yes | No |
 | Collected decisions and overrides | `backend/data/triage/collected/YYYY-MM-DD.jsonl` locally; `/app/data/triage/collected/` on the data volume in a container | No (ignored) | Yes; deleted after 30 days |
 | Classifier | `backend/models/triage/classifier.joblib` (classifier + category centroids, < 100 KB) + `metadata.json` | Yes | No |
-| Encoder (frozen MiniLM) | HF cache in dev; `/opt/models` in the image | No | No |
-| Fine-tuned encoder (if SetFit) | `backend/models/triage/encoder/` | Git LFS / release asset | No |
+| Fine-tuned encoder (current) | `backend/models/triage/encoder/`, copied into the image | Yes, weights via Git LFS | No |
+| Base encoder (only for a frozen classifier) | HF cache | No | No |
 | Mode setting | Browser `localStorage`, own key | n/a | No |
 | Route on messages | Browser `localStorage` (chat history) | n/a | Already stored |
 | Route on task results | `backend/data/results/<id>.json` | No | Already stored |
 
 ## 6. Deployment
 
-- **Image:** the Dockerfile downloads `sentence-transformers/all-MiniLM-L6-v2` at build time into `/opt/models` and sets `SENTENCE_TRANSFORMERS_HOME=/opt/models`. It must not go under `/app/data` (`HF_HOME` today), because that path is a mounted volume and would hide baked files. The encoder loads with `local_files_only=True` in uat and prod, so startup never downloads.
+- **Image:** the fine-tuned encoder in `models/triage/encoder/` is copied in with the code (`COPY . .`) and loaded from that folder, so startup never downloads. It must not live under `/app/data` (`HF_HOME`), because that path is a mounted volume and would hide it. Build from a checkout with `git lfs pull` done, or the weights are only LFS pointers and the startup check fails. (3.1.x instead baked the base encoder into `/opt/models`; a frozen classifier would need that step back.)
 - **Workers:** each uvicorn worker loads its own encoder (~90 MB of weights, ~100–150 MB resident) and uses one torch thread. The backend runs **2 workers**: Kubernetes already sets `WEB_CONCURRENCY=2`, and the Dockerfile default (used by Compose) drops from 4 to 2. The Kubernetes memory limit is 1.5 GiB (raised from 1 GiB in 3.1.0, after task 2.9 measured 1.08 GiB with triage on), with a 1 GiB request.
 - **The image doesn't ship the curated data.** `.dockerignore` excludes `data/*`, so `train.jsonl` and `test.jsonl` stay out of the image. `models/triage/` is copied by the existing `COPY . .`.
 - **Startup:** each worker loads the model and embeds one warm-up sentence before serving. `python -m app.core.startup_checks` checks that the files exist (it doesn't load the model, to keep it fast).

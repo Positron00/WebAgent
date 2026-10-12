@@ -120,13 +120,14 @@ Layout (`backend/tests/`):
 | `test_web_research_prompt.py` | The web research prompt has no unfilled placeholders and ends with `ANALYSIS:`; reasoning before the answer is dropped; per-agent output limits |
 | `test_startup_checks.py` | uat/prod refuse to start with unsafe settings or without a triage classifier that passed the release gate (unless triage is off); the command-line check the Docker image runs exits with a message |
 | `test_mlflow_logging.py` | Repeated MLflow logging inside an active run doesn't fail |
+| `test_mlflow_experiment_race.py` | A worker that loses the race to create the MLflow experiment keeps starting |
 | `test_direct_answer.py` | The backend direct path: a prompt the text model answers, reasoning stripped from the reply, a note when an attached image can't be seen |
 | `test_triage_rules.py`, `test_triage_classify.py` | Triage rules and near-misses; threshold, follow-up joining, fallback, kill switch, reasons, metrics, logs, tie-breaker (fake model) |
 | `test_triage_endpoint.py`, `test_triage_config.py` | `POST /api/triage` contract, auth, size limits, rate limit; `WEBAGENT_TRIAGE_*` overrides |
 | `test_triage_collect.py` | Collected questions: off unless enabled, written only under `collected/`, 30-day cleanup |
 | `test_task_previous_messages.py`, `test_task_shadow.py`, `test_task_modes.py` | `/api/task` history, shadow mode, overrides, and the `off` / `auto` / `always` modes on both task endpoints |
-| `test_train_triage.py` | Training script, threshold choice, release-gate exit codes, `--check-data` |
-| `test_triage_real_model.py` | The committed classifier with the cached MiniLM encoder (marker `real_triage_model`; skipped if the encoder isn't cached) |
+| `test_train_triage.py` | Training script, threshold choice, contrastive pairs for fine-tuning, release-gate exit codes, `--check-data` |
+| `test_triage_real_model.py` | The committed classifier with its fine-tuned encoder from `models/triage/encoder/`, including a settled-history question that must stay direct (marker `real_triage_model`; skipped if the encoder isn't on disk, e.g. LFS weights not pulled) |
 | `unit/`, `integration/`, `diagnostics/` | Routing, security, API and diagnostics tests |
 
 `backend/tests/conftest.py`:

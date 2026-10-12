@@ -9,7 +9,7 @@ import sys
 
 from app.core.config import settings
 from app.core.security import INSECURE_SECRET_DEFAULT
-from app.services.triage_model import encoder_files_present, gate_passed, model_files_present
+from app.services.triage_model import encoder_available, gate_passed, model_files_present
 from app.utils.code_sandbox import sandbox_mode
 
 
@@ -36,10 +36,11 @@ def check_triage_files() -> None:
             "(metadata.json test.passed is not true; run scripts/eval_triage.py --write-metadata). "
             "Set WEBAGENT_TRIAGE_ENABLED=false or ship a version that passes."
         )
-    if not encoder_files_present():
+    if not encoder_available():
         raise RuntimeError(
-            f"Triage encoder {cfg.encoder_name} is not downloaded (looked in SENTENCE_TRANSFORMERS_HOME "
-            "and the Hugging Face cache). Set WEBAGENT_TRIAGE_ENABLED=false or bake it into the image."
+            "The triage encoder is missing: the fine-tuned folder named by metadata.json \"encoder_path\" "
+            f"(models/triage/encoder/), or for a frozen classifier {cfg.encoder_name} in "
+            "SENTENCE_TRANSFORMERS_HOME or the Hugging Face cache. Set WEBAGENT_TRIAGE_ENABLED=false or ship it."
         )
 
 

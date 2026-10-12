@@ -2,6 +2,22 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.2.0 - 2026-10-11
+
+### Added
+- Classifier `triage-2026-10-c`: MiniLM fine-tuned SetFit-style on about 4x the training data (2,496 rows, from 600), with a new `general_knowledge` category. It passes the release gate (155/155 on `test.jsonl`) and gets 39/40 on the new `probe.jsonl`, a second check in a different style. Classification takes about 5 ms
+- `train_triage.py --finetune` (alias `--setfit`): contrastive-pair fine-tuning with sentence-transformers' own trainer, no new dependency; the encoder is saved to `models/triage/encoder/`
+- Git LFS for the encoder weights (`.gitattributes`); run `git lfs pull` after cloning
+
+### Changed
+- The server, eval script and startup check load the fine-tuned encoder from `encoder_path` in `metadata.json`
+- Backend Docker image: no longer bakes the base encoder into `/opt/models`; the fine-tuned encoder comes in with the code. The writable-folder step no longer runs a recursive `chown`/`chmod`, which stored a second copy of `/app` in its own layer
+- uat and prod still keep triage off until the shadow week and a human review of the training data
+- Docs: data and backend READMEs, production checklist, `docs/TESTING.md`, plan (v7) and spec (v5) describe the fine-tuned encoder, `probe.jsonl` and Git LFS; version 3.2.0
+
+### Fixed
+- On a fresh data volume, one uvicorn worker died at startup ("Experiment 'rag_agent_performance' already exists") because both workers created the MLflow experiment at once; uvicorn restarted it, so it showed only as a traceback
+
 ## 3.1.1 - 2026-10-11
 
 Fixes found by running 3.1.0 for real (real model and search keys, the Docker image, and the web app by hand) before merging.

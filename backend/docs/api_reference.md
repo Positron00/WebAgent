@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.1.1).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.2.0).
 
 ## Base URL
 
@@ -225,7 +225,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -378,7 +378,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.1.1"
+  "version": "3.2.0"
 }
 ```
 
@@ -391,7 +391,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "environment": "prod"
 }
 ```
@@ -408,7 +408,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.1.1"
+    "version": "3.2.0"
   },
   "llm_service": {
     "status": "ok",

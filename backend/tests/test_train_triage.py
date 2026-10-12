@@ -105,3 +105,17 @@ def test_check_data_finds_problems(tmp_path):
     assert "test row also in train" in text
     assert "near-duplicate" in text
     assert "hard case followup" in text
+
+
+def test_contrastive_pairs_balance_same_and_different_labels():
+    from train_triage import contrastive_pairs
+
+    texts = [f"q{i}" for i in range(10)]
+    y = np.array([0] * 5 + [1] * 5)
+    first, second, scores = contrastive_pairs(texts, y, pairs_per_row=2, seed=1)
+    assert len(first) == len(second) == len(scores) == 10 * 2 * 2
+    assert scores.count(1.0) == scores.count(0.0)
+    label = dict(zip(texts, y))
+    for a, b, score in zip(first, second, scores):
+        assert a != b
+        assert (label[a] == label[b]) == (score == 1.0)

@@ -6,6 +6,7 @@
   {"id": "casual_chat", "label": "casual conversation or opinion", "class": "direct", "hard_case": false},
   {"id": "writing_short", "label": "short writing task", "class": "direct", "hard_case": false},
   {"id": "long_routine", "label": "long text to rewrite or summarize", "class": "direct", "hard_case": true},
+  {"id": "general_knowledge", "label": "settled history or general knowledge", "class": "direct", "hard_case": false},
   {"id": "current_events", "label": "current events", "class": "agentic", "hard_case": false},
   {"id": "comparison_research", "label": "comparison needing current sources", "class": "agentic", "hard_case": false},
   {"id": "report", "label": "in-depth report or literature review", "class": "agentic", "hard_case": false},

@@ -68,7 +68,7 @@ def test_prod_without_encoder_is_rejected(prod, monkeypatch, tmp_path):
     (tmp_path / "classifier.joblib").write_bytes(b"x")
     (tmp_path / "metadata.json").write_text('{"test": {"passed": true}}')
     monkeypatch.setattr(settings, "TRIAGE", TriageConfig(enabled=True, model_dir=str(tmp_path)))
-    monkeypatch.setattr(startup_checks, "encoder_files_present", lambda: False)
+    monkeypatch.setattr(startup_checks, "encoder_available", lambda: False)
     with pytest.raises(RuntimeError, match="encoder"):
         startup_checks.check_production_settings(code_execution_enabled=False)
 
@@ -104,3 +104,14 @@ def test_command_line_check_exits_with_a_message():
     assert out.returncode == 1
     assert "Startup check failed" in out.stderr
     assert "WEBAGENT_CODE_SANDBOX=docker" in out.stderr
+
+
+def test_encoder_available_checks_the_fine_tuned_folder(tmp_path):
+    from app.services.triage_model import encoder_available
+
+    (tmp_path / "metadata.json").write_text('{"encoder_name": "x/y", "encoder_path": "encoder"}')
+    assert not encoder_available(tmp_path)
+    (tmp_path / "encoder").mkdir()
+    (tmp_path / "encoder" / "config.json").write_text("{}")
+    (tmp_path / "encoder" / "model.safetensors").write_bytes(b"0")
+    assert encoder_available(tmp_path)

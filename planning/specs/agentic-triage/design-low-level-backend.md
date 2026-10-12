@@ -185,15 +185,18 @@ def get_model() -> Optional[TriageModel]: ...   # cached per process
 def set_model_for_tests(model: Optional[TriageModel]) -> None: ...
 def warm_up() -> None: ...                     # load + embed one sentence; logs duration, or a warning if files are missing
 def model_files_present(model_dir: Path) -> bool: ...
-def encoder_files_present(encoder_name: Optional[str] = None) -> bool: ...  # folder check only, no torch
+def encoder_files_present(encoder_name: Optional[str] = None) -> bool: ...  # base encoder in a cache; no torch
+def encoder_available(model_dir: Optional[Path] = None) -> bool: ...        # what this classifier needs; no torch
 ```
 
-`encoder_files_present` looks for `models--sentence-transformers--all-MiniLM-L6-v2` under `SENTENCE_TRANSFORMERS_HOME`, `HF_HUB_CACHE`, and `HF_HOME/hub` (default `~/.cache/huggingface/hub`).
+`TriageMetadata` also has `encoder_path: Optional[str]`: the fine-tuned encoder folder relative to the model folder (`"encoder"`), or `None` for a frozen classifier that uses the base encoder by name.
+
+`encoder_available` reads `metadata.json`: with `encoder_path`, it checks that folder has `config.json` and `model.safetensors`; otherwise it calls `encoder_files_present`, which looks for `models--sentence-transformers--all-MiniLM-L6-v2` under `SENTENCE_TRANSFORMERS_HOME`, `HF_HUB_CACHE`, and `HF_HOME/hub` (default `~/.cache/huggingface/hub`). The startup check uses `encoder_available`.
 
 Details:
 
 - `classifier.joblib` holds a dict: `{"classifier": LogisticRegression, "centroids": np.ndarray (n_categories, 384), "category_ids": list[str]}`. The classifier is fitted on the string labels `"agentic"` / `"direct"`, so `predict_proba` finds the agentic column by name. Centroids are the mean normalized embedding per category; `nearest_category` is the max cosine similarity.
-- The encoder loads with `SentenceTransformer(name, device="cpu", local_files_only=<env != dev>)`. Its cache folder comes from `SENTENCE_TRANSFORMERS_HOME` when set (the image), else the normal Hugging Face cache (dev). `torch.set_num_threads(1)` is called once before loading.
+- With `encoder_path`, the encoder loads from that local folder (`SentenceTransformer(str(model_dir / encoder_path), device="cpu")`); a missing folder logs an error and falls back. Without it, it loads by name with `local_files_only=<env != dev>`. `torch.set_num_threads(1)` is called once before loading.
 - Embeddings use `normalize_embeddings=True`.
 - Loading is lazy and guarded by a `threading.Lock`, so two requests at startup don't load twice. A failed load (`load_model` returns `None` or raises, e.g. a corrupt `classifier.joblib`) is remembered for 60 s before retrying, so a broken model doesn't add load time to every request. `get_model` and `warm_up` never raise.
 - `metadata.encoder_name` must equal the configured encoder; a mismatch logs an error and `load_model` returns `None` (fallback).
@@ -376,7 +379,8 @@ Both live in `backend/scripts/` (next to the MLflow helper scripts) and run from
 
 ```
 python scripts/train_triage.py [--data data/triage/train.jsonl] [--out models/triage]
-                               [--version triage-YYYY-MM-x] [--recall-target 0.95] [--seed 13] [--setfit]
+                               [--version triage-YYYY-MM-x] [--recall-target 0.95] [--seed 13]
+                               [--finetune [--pairs-per-row 4] [--epochs 1]]
 ```
 
 1. Load and validate rows (`load_rows` in `scripts/triage_data.py`, shared with the eval script) and the category labels (`load_categories`). `categories.json` is a list of `{"id", "label", "class": "direct" | "agentic" | "mixed", "hard_case": bool}`; `mixed` is for follow-ups, which can have either label.
@@ -395,7 +399,12 @@ python scripts/train_triage.py [--data data/triage/train.jsonl] [--out models/tr
  "test": null}
 ```
 
-`--setfit` is accepted but exits with code 2 and a message until phase 4 (REQ-024) builds it.
+`--finetune` (alias `--setfit`, REQ-024) fine-tunes the encoder before step 4, SetFit-style, using sentence-transformers only (no `setfit` package):
+
+- Pairs come from the fit split only: for each row, `--pairs-per-row` (default 4) partners with the same label (score 1.0) and as many with the other label (score 0.0).
+- `SentenceTransformerTrainer` with `CosineSimilarityLoss`, 1 epoch (`--epochs`), batch 32, learning rate 2e-5, warm-up 10%. It runs on the Apple GPU (MPS) or CUDA when there is one; about 1 minute for ~16,000 pairs on an Apple laptop.
+- The encoder is saved to `<out>/encoder/` (about 88 MB); `metadata.json` gets `"encoder_path": "encoder"` and a `fine_tuning` block. The threshold is still picked on the validation split, which the encoder never saw.
+- `eval_triage.py` loads the encoder from `encoder_path` when it is set.
 
 `scripts/eval_triage.py`:
 
@@ -411,17 +420,10 @@ python scripts/eval_triage.py [--data data/triage/test.jsonl] [--model models/tr
 
 `Dockerfile`, runtime stage:
 
-- In the main `ENV` block: add `SENTENCE_TRANSFORMERS_HOME=/opt/models` and change `WEB_CONCURRENCY=4` to `WEB_CONCURRENCY=2` (decided).
-- Right after the NLTK download step, the same way that step finds the user-installed packages:
-
-```dockerfile
-# Triage encoder, baked in so startup never downloads it. Not under /app/data: that is a mounted volume.
-RUN PYTHONUSERBASE=/home/webagent/.local python -c "from sentence_transformers import SentenceTransformer; \
-SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/opt/models')" \
- && chown -R webagent:webagent /opt/models
-```
-
-- `models/triage/` is copied by the existing `COPY . .`; `.dockerignore` excludes `data/*`, so the curated data stays out of the image.
+- In the main `ENV` block: change `WEB_CONCURRENCY=4` to `WEB_CONCURRENCY=2` (decided).
+- `models/triage/` (classifier, metadata and the fine-tuned `encoder/`) is copied by the existing `COPY . .`; `.dockerignore` excludes `data/*`, so the curated data stays out of the image. Build after `git lfs pull`, so the encoder weights are real files and not LFS pointers.
+- The step after the copy only creates and chowns the writable folders (`/app/logs`, `/app/config`, `/app/data`). A recursive `chown -R`/`chmod -R /app` there stored a second copy of `/app`, encoder included, in its own layer.
+- 3.1.0 and 3.1.1 instead baked the base encoder into `/opt/models` (`SENTENCE_TRANSFORMERS_HOME`). That step was removed with `triage-2026-10-c`; a frozen classifier version would need it back.
 
 `HF_HOME` stays on `/app/data/hf-cache` for anything else. `kubernetes/deployment.yaml` already sets `WEB_CONCURRENCY=2`; its memory limit rose from 1 GiB to 1.5 GiB after task 2.9 measured 1.08 GiB with triage on. `docker-compose.yml` sets no worker count, so it picks up the new image default of 2.
 
