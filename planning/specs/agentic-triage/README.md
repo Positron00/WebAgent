@@ -54,13 +54,13 @@ These came from checking the plan against the code; the plan has been updated to
 7. **The Docker image excludes `data/*`** (`.dockerignore`), so curated data stays out of the image, while `models/triage/` is copied by the existing `COPY . .`.
 8. **Shadow mode only sees questions sent with Agentic on**, so its data leans toward research. The shadow week uses a deliberate mix of questions, and the seed set supplies routine examples.
 
-## Implementation status (2026-10-11, releases 3.1.0 and 3.1.1, merged to `main`)
+## Implementation status (2026-10-11, releases 3.1.0, 3.1.1 and 3.2.0, merged to `main`)
 
 Code for phases 0, 1, 2, 3 and 5 is in place and matches these documents; backend pytest and Jest pass.
 
 | Item | Status |
 |---|---|
-| Classifier `triage-2026-10-c` (tasks 1.8, 4.3) | Training data grown about 4x to 2,496 generated rows (new `general_knowledge` category), MiniLM fine-tuned SetFit-style (REQ-024). **Passes the gate**: 155/155 on `test.jsonl`, and 39/40 on `probe.jsonl`, a second check in a different style. Scores are almost always near 0 or 1, so the uncertain metric and tie-breaker see little. Earlier `triage-2026-10-a` (600 rows, frozen) failed with research recall 0.931. Details in `backend/data/triage/README.md` |
+| Classifier `triage-2026-10-c` (release 3.2.0; tasks 1.8, 4.3) | Training data grown about 4x to 2,496 generated rows (new `general_knowledge` category), MiniLM fine-tuned SetFit-style (REQ-024). **Passes the gate**: 155/155 on `test.jsonl`, and 39/40 on `probe.jsonl`, a second check in a different style. Scores are almost always near 0 or 1, so the uncertain metric and tie-breaker see little. Earlier `triage-2026-10-a` (600 rows, frozen) failed with research recall 0.931. Details in `backend/data/triage/README.md` |
 | Container with `triage-2026-10-c` | About 83 MB larger than 3.0.3 by layers (target ≤ 100 MB); the fine-tuned encoder is the only new content. Starts with no network, triage off and on; both workers load the encoder from `/app/models/triage/encoder` in ~155 ms and route as locally. Per-worker memory unchanged: ~595 MB off, ~677 MB on, within the 1.5 GiB limit |
 | Consequence (updated) | The gate no longer blocks uat/prod; they keep `triage.enabled: false` until the shadow week and a human data review. The encoder ships in `models/triage/encoder/` (weights in Git LFS) and is copied into the image; the base-encoder bake step was removed |
 | Data review (tasks 1.2–1.4) | Rows were written by AI agents (`source: "generated"`), not by hand; a person still has to review both files |
