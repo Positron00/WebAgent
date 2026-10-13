@@ -4,7 +4,11 @@ Senior Research Agent for the WebAgent backend.
 This agent synthesizes findings from other research agents and produces a comprehensive report.
 """
 from typing import Dict, List, Any
+import ast
+import csv
+import json
 import logging
+import re
 from datetime import datetime
 
 from langchain.prompts import ChatPromptTemplate
@@ -79,6 +83,34 @@ class ResearchEvaluation(BaseModel):
     missing_information: List[str] = Field(description="List of missing or insufficient information")
     research_questions: List[str] = Field(description="Specific questions that need to be addressed in additional research")
 
+# The prompt's own example values; models sometimes copy them back.
+_PLACEHOLDER = re.compile(r"^(question|item|requirement)\s*\d+(:.*)?$|^\.{2,}$|^…$", re.IGNORECASE)
+
+
+def _parse_list(value: str) -> List[str]:
+    """Parse `["a, b", "c"]` from the evaluation block.
+
+    Splitting on every comma cut questions that contain commas into fragments ("b", "middle"),
+    which were then searched for; quoted items are kept whole.
+    """
+    for parse in (json.loads, ast.literal_eval):
+        try:
+            items = parse(value)
+            if isinstance(items, list):
+                # literal_eval reads a trailing `...` as Ellipsis
+                return [str(item).strip() for item in items if item is not Ellipsis and str(item).strip()]
+        except (ValueError, SyntaxError, TypeError):
+            continue
+    inner = value[1:-1]
+    row = next(csv.reader([inner], skipinitialspace=True), [])
+    return [item.strip().strip('"\'') for item in row if item.strip().strip('"\'')]
+
+
+def _is_placeholder(item: Any) -> bool:
+    text = str(item).strip()
+    return len(text) < 3 or bool(_PLACEHOLDER.match(text))
+
+
 class SeniorResearchAgent(BaseAgent):
     """
     Senior Research Agent that synthesizes findings and creates the final report.
@@ -123,12 +155,7 @@ class SeniorResearchAgent(BaseAgent):
                         
                         # Handle lists
                         if value.startswith('[') and value.endswith(']'):
-                            value = value[1:-1]  # Remove brackets
-                            if value:
-                                items = [item.strip().strip('"\'') for item in value.split(',')]
-                                eval_dict[key] = items
-                            else:
-                                eval_dict[key] = []
+                            eval_dict[key] = _parse_list(value)
                         # Handle boolean
                         elif value.lower() in ['yes', 'true']:
                             eval_dict[key] = True
@@ -159,6 +186,10 @@ class SeniorResearchAgent(BaseAgent):
                         # Default to requiring more research if we have missing information
                         eval_dict["requires_additional_research"] = bool(eval_dict.get("missing_information", []))
                 
+                for list_key in ("research_questions", "missing_information"):
+                    if isinstance(eval_dict.get(list_key), list):
+                        eval_dict[list_key] = [q for q in eval_dict[list_key] if not _is_placeholder(q)]
+
                 # Ensure research_questions exists - needed for tests
                 if "research_questions" not in eval_dict:
                     # If not specified, extract from missing_information

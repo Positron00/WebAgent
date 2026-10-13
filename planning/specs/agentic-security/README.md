@@ -65,7 +65,7 @@ Both ask the same **decision point** (Cedar policies, in-process). A local class
 | [`design-high-level.md`](design-high-level.md) | Components, sources and trust, flows for each checkpoint, outcomes, taint, tokens, failure handling, deployment, key decisions |
 | [`design-low-level-backend.md`](design-low-level-backend.md) | Python modules, types, the LLM factory change, `check_hop`, tool guards, the decision point and policies, ContextDefender, endpoints, config, metrics, scripts |
 | [`design-low-level-webapp.md`](design-low-level-webapp.md) | The `/api/chat` guard call and fallback, `apiClient` handling of consent/decline/escalate, the consent dialog, the security summary under answers |
-| [`shadow-week-runbook.md`](shadow-week-runbook.md) | Deploying 3.2.4 to uat with the guard and triage in shadow mode, what to watch, the review, and the criteria for act mode |
+| [`shadow-week-runbook.md`](shadow-week-runbook.md) | Deploying 3.2.5 to uat with the guard and triage in shadow mode, what to watch, the review, and the criteria for act mode |
 | [`tasks.md`](tasks.md) | Work in phases, each task with the requirements it covers, dependencies, done criteria and estimates |
 
 Read in that order. Requirements say *what*; the designs say *how*; tasks say *in what order*. When documents disagree, `requirements.md` wins, then the designs, then the plan.
@@ -87,7 +87,7 @@ Out of scope:
 
 1. **Cedar** is the decision point, run in-process through `cedarpy`.
 2. The web app's direct chat **calls the backend** for checkpoint 1; when the backend is unreachable, Next.js runs the fast patterns and fails open with the existing fallback notice.
-3. The Kubernetes memory limit rises to **2 GiB** (request 1.5 GiB) before checkpoint 1 ships.
+3. The Kubernetes memory limit rises to **2 GiB** (request 1.5 GiB) before checkpoint 1 ships. Raised again to **3 GiB** (request 2 GiB) in 3.2.5: two workers peaked at 1.81 GiB in the simulated shadow week.
 4. Consent in the middle of a task: **skip the action and offer "Approve and re-run"**; pausing tasks comes later.
 5. Public datasets **only where the licence allows**, each recorded in the data README.
 

@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 import joblib
 import numpy as np
 
+from app.core.model_lock import lock_for
 from app.core.config import BACKEND_DIR, settings
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,8 @@ class MiniLMTriageModel:
         self.metadata = metadata
 
     def predict_proba(self, text: str) -> float:
-        emb = self._encoder.encode([text], normalize_embeddings=True)
+        with lock_for(self._encoder):
+            emb = self._encoder.encode([text], normalize_embeddings=True)
         proba = self._classifier.predict_proba(emb)[0]
         classes = list(self._classifier.classes_)
         idx = classes.index("agentic") if "agentic" in classes else int(np.argmax(proba))
@@ -51,7 +53,8 @@ class MiniLMTriageModel:
     def nearest_category(self, text: str) -> str:
         if self._centroids.size == 0:
             return "general"
-        emb = self._encoder.encode([text], normalize_embeddings=True)[0]
+        with lock_for(self._encoder):
+            emb = self._encoder.encode([text], normalize_embeddings=True)[0]
         sims = self._centroids @ emb
         cat_id = self._category_ids[int(np.argmax(sims))]
         return self.metadata.categories.get(cat_id, cat_id)

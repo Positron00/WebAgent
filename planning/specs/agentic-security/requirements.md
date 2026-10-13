@@ -233,7 +233,7 @@ Terms used throughout:
 | SNFR-02 | A decision takes < 2 ms p95 | pytest benchmark |
 | SNFR-03 | Red-team suite: zero exfiltrating searches and zero unsafe code executed, and the tasks still finish | Red-team pytest |
 | SNFR-04 | Benign regression: false-decline rate < 0.5% of tasks (triage training questions and 3.0.3 container-run questions) | Benign suite |
-| SNFR-05 | Two workers with triage and ContextDefender fit the 2 GiB Kubernetes limit with 20% headroom | cgroup stats in the container |
+| SNFR-05 | Two workers with triage and ContextDefender fit the 3 GiB Kubernetes limit with 20% headroom (2 GiB until 3.2.5; two workers peaked at 1.81 GiB in the simulated shadow week) | cgroup stats in the container |
 | SNFR-06 | Classifier and decisions are deterministic: same input, model and policies → same outcome | pytest |
 | SNFR-07 | New dependencies: only `cedarpy` | `requirements.txt` diff |
 | SNFR-08 | All tests run offline (fakes for LLMs, Tavily and the judge); existing tests still pass | CI |

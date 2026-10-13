@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 # Download name -> path that nltk.data.find() looks up.
 NLTK_RESOURCES: Dict[str, str] = {
     "punkt": "tokenizers/punkt",
+    # NLTK 3.8.2+ sent_tokenize/word_tokenize load punkt_tab, not punkt
+    "punkt_tab": "tokenizers/punkt_tab",
     "stopwords": "corpora/stopwords",
     "wordnet": "corpora/wordnet",
     "maxent_ne_chunker": "chunkers/maxent_ne_chunker",

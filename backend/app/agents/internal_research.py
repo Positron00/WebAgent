@@ -19,6 +19,8 @@ from datetime import datetime
 import asyncio
 from functools import lru_cache
 
+from app.core import task_tracking
+
 import torch
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
@@ -665,8 +667,8 @@ class RAGRetriever:
             retrieval_time = time.time() - start_time
             
             if TRACKING_ENABLED:
-                mlflow.log_metric("retrieval_time", retrieval_time)
-                mlflow.log_metric("num_retrieved_docs", len(results))
+                task_tracking.log_metric("retrieval_time", retrieval_time)
+                task_tracking.log_metric("num_retrieved_docs", len(results))
             
             logger.info(f"Retrieved {len(results)} documents in {retrieval_time:.2f}s")
             return results
@@ -674,7 +676,7 @@ class RAGRetriever:
         except Exception as e:
             logger.error(f"Error in document retrieval: {str(e)}")
             if TRACKING_ENABLED:
-                mlflow.log_metric("retrieval_error", 1)
+                task_tracking.log_metric("retrieval_error", 1)
             return []
 
 
@@ -761,8 +763,8 @@ class RAGReranker:
             # Log performance metrics
             rerank_time = time.time() - start_time
             if TRACKING_ENABLED:
-                mlflow.log_metric("rerank_time", rerank_time)
-                mlflow.log_metric("top_score", reranked_docs[0].get("score", 0) if reranked_docs else 0)
+                task_tracking.log_metric("rerank_time", rerank_time)
+                task_tracking.log_metric("top_score", reranked_docs[0].get("score", 0) if reranked_docs else 0)
             
             logger.info(f"Reranked documents in {rerank_time:.2f}s, top score: {reranked_docs[0].get('score', 0):.4f}" if reranked_docs else "No documents to rerank")
             return reranked_docs
@@ -770,7 +772,7 @@ class RAGReranker:
         except Exception as e:
             logger.error(f"Error in document reranking: {str(e)}")
             if TRACKING_ENABLED:
-                mlflow.log_metric("rerank_error", 1)
+                task_tracking.log_metric("rerank_error", 1)
             return documents[:top_n]
 
 
@@ -954,7 +956,7 @@ class InternalResearchAgent(BaseAgent):
             research_questions=questions_str
         )
     
-    async def _generate_findings_with_retry(self, prompt_inputs: dict, max_retries: int = 3) -> str:
+    async def _generate_findings_with_retry(self, prompt_inputs: dict, state: WorkflowState, max_retries: int = 3) -> str:
         """
         Generate research findings with retry logic for rate limiting.
         
@@ -975,9 +977,9 @@ class InternalResearchAgent(BaseAgent):
                 context_blob = str(prompt_inputs.get(context_key) or "")
                 hop = await acheck_hop(
                     "internal_research",
-                    task_items(self._current_state)
+                    task_items(state)
                     + ([ContextItem("retrieved_doc", context_blob, ref="retrieval")] if context_blob else []),
-                    self._current_state,
+                    state,
                 )
                 if context_blob:
                     prompt_inputs = {**prompt_inputs, context_key: kept_text(hop, "retrieval", context_blob)}
@@ -1064,11 +1066,9 @@ class InternalResearchAgent(BaseAgent):
         state.current_step = "internal_research"
         
         if TRACKING_ENABLED:
-            mlflow.start_run(run_name="rag_agent_run")
-            mlflow.log_param("query", state.query)
+            task_tracking.start_run("rag_agent_run", {"query": state.query})
         
         start_time = time.time()
-        self._current_state = state
         
         try:
             # Get the research plan
@@ -1088,8 +1088,8 @@ class InternalResearchAgent(BaseAgent):
                 })
                 
                 if TRACKING_ENABLED:
-                    mlflow.log_param("status", "skipped")
-                    mlflow.end_run()
+                    task_tracking.log_param("status", "skipped")
+                    task_tracking.end_run()
                 
                 return state
             
@@ -1154,8 +1154,8 @@ class InternalResearchAgent(BaseAgent):
                 })
                 
                 if TRACKING_ENABLED:
-                    mlflow.log_param("status", "no_documents")
-                    mlflow.end_run()
+                    task_tracking.log_param("status", "no_documents")
+                    task_tracking.end_run()
                 
                 return state
             
@@ -1241,7 +1241,7 @@ class InternalResearchAgent(BaseAgent):
             }
             
             # Generate findings with retry logic
-            analysis = await self._generate_findings_with_retry(prompt_inputs)
+            analysis = await self._generate_findings_with_retry(prompt_inputs, state)
             
             # Check if we got a valid response
             if not analysis or len(analysis.strip()) == 0:
@@ -1277,12 +1277,12 @@ class InternalResearchAgent(BaseAgent):
             state.context["internal_research_findings"] = analysis
             
             if TRACKING_ENABLED:
-                mlflow.log_param("status", "completed")
-                mlflow.log_param("iteration", iteration)
-                mlflow.log_metric("total_time", internal_research_report["metrics"]["total_time"])
-                mlflow.log_metric("num_retrieved", internal_research_report["metrics"]["num_retrieved"])
-                mlflow.log_metric("num_reranked", internal_research_report["metrics"]["num_reranked"])
-                mlflow.end_run()
+                task_tracking.log_param("status", "completed")
+                task_tracking.log_param("iteration", iteration)
+                task_tracking.log_metric("total_time", internal_research_report["metrics"]["total_time"])
+                task_tracking.log_metric("num_retrieved", internal_research_report["metrics"]["num_retrieved"])
+                task_tracking.log_metric("num_reranked", internal_research_report["metrics"]["num_reranked"])
+                task_tracking.end_run()
             
             logger.info(f"Internal Research completed with {len(reranked_documents)} relevant documents in {internal_research_report['metrics']['total_time']:.2f}s (iteration {iteration}).")
             return state
@@ -1292,9 +1292,9 @@ class InternalResearchAgent(BaseAgent):
             state.mark_error(f"Internal Research Agent failed: {str(e)}")
             
             if TRACKING_ENABLED:
-                mlflow.log_param("status", "error")
-                mlflow.log_param("error", str(e))
-                mlflow.end_run()
+                task_tracking.log_param("status", "error")
+                task_tracking.log_param("error", str(e))
+                task_tracking.end_run()
                 
             return state
 

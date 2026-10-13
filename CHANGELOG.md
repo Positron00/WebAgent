@@ -2,6 +2,23 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.2.5 - 2026-10-13
+
+Fixes from a simulated shadow week (3.2.4 in Docker with the uat settings and real model and search calls, three tasks at a time).
+
+### Fixed
+- Concurrent tasks in one worker failed with "Run ... is already active": MLflow's fluent API keeps one active run per thread and every task runs on the event loop's thread. Each task now gets its own run through `MlflowClient` (`app/core/task_tracking.py`), and tracking errors never fail a task
+- Security scoring failed with "Already borrowed" when tasks scored at the same time: Hugging Face fast tokenizers aren't thread-safe. Each tokenizer now has a lock (`app/core/model_lock.py`), used by ContextDefender, search alignment and triage
+- Every document extraction failed: NLTK 3.9's tokenizers need `punkt_tab`, which the image didn't install. The image and the NLTK helper now include it, and a test checks the image downloads every resource the code asks for
+- Some plain questions with Agentic on ended with "Workflow ended without a report": the supervisor planned them as document extraction with every step off. A plan with nothing to do is now researched on the web
+- Follow-up research searched for fragments such as "b" and "middle", and for the prompt's own placeholders ("question 1"): follow-up questions were split at every comma. Quoted list items are now kept whole and placeholders dropped
+- Internal research no longer reads the task's state from the agent instance, which concurrent tasks overwrote
+
+### Changed
+- ContextDefender encodes all chunks of a text in one batch instead of one at a time: 4–7× faster on long pages, same scores
+- Kubernetes memory limit 3 GiB, request 2 GiB (was 2 GiB / 1.5 GiB): two workers peaked at 1.81 GiB in the simulation
+- Shadow-week runbook: deploy 3.2.5, the new memory targets, and what the simulation found (section 9)
+
 ## 3.2.4 - 2026-10-13
 
 ### Fixed
