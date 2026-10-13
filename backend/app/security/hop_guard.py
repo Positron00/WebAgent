@@ -4,10 +4,11 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import time
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from app.core.config import settings
-from app.core.metrics import record_guard_decision
+from app.core.metrics import GUARD_HOP_SECONDS, record_guard_decision
 from app.models.task import WorkflowState
 from app.security import context_defender, judge, ledger, patterns, records
 from app.security.decision import decide
@@ -211,6 +212,42 @@ def check_hop(
     *,
     chat_id: Optional[str] = None,
 ) -> HopResult:
+    """Checkpoint 1 for one hop, timed for SNFR-01 (also when it stops the task)."""
+    started = time.perf_counter()
+    try:
+        return _check_hop(agent, items, state, chat_id=chat_id)
+    finally:
+        GUARD_HOP_SECONDS.labels(agent=agent).observe(time.perf_counter() - started)
+
+
+def _item_record(item: ContextItem, scores: ItemScores) -> Dict[str, Any]:
+    """What the shadow-week review needs about one judged item; the page URL only for web results
+    (public), no text outside dev (SNFR-09)."""
+    row: Dict[str, Any] = {
+        "source": item.source,
+        "axes": dict(scores.axes),
+        "top_axis": scores.top_axis,
+        "threat_risk": scores.threat_risk,
+        "pattern_hits": sorted(scores.pattern_hits),
+        "scores_available": scores.scores_available,
+        "chunks": len(scores.chunks),
+        "tainted_input": bool(item.tainted),
+        "model_version": scores.model_version,
+    }
+    if item.source == "web_result" and item.ref:
+        row["ref"] = item.ref
+    if settings.WEBAGENT_ENV == "dev":
+        row["text"] = item.text[:2000]
+    return row
+
+
+def _check_hop(
+    agent: str,
+    items: List[ContextItem],
+    state: Optional[WorkflowState],
+    *,
+    chat_id: Optional[str] = None,
+) -> HopResult:
     """Checkpoint 1 for one hop (SEC-031). Raises GuardStop for a refused user turn (act mode)."""
     cfg = _guard_cfg()
     if cfg is None or not cfg.enabled:
@@ -233,7 +270,8 @@ def check_hop(
         ctx = _scores_context(item, scores, state, input_mode=input_mode, has_image=has_image)
         decision = decide(agent, "converse", resource, ctx, shadow=shadow)
         record_guard_decision(1, "converse", decision)
-        records.record_collection(checkpoint=1, action="converse", decision=decision, state_context=state_ctx)
+        records.record_collection(checkpoint=1, action="converse", decision=decision, state_context=state_ctx,
+                                  item=_item_record(item, scores))
         decisions.append(decision)
         _log_decision(decision, item, scores, agent, state)
 
