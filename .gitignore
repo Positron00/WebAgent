@@ -73,6 +73,9 @@ backend/data/results/
 backend/data/registry/
 backend/data/hf-cache/
 backend/data/triage/collected/
+backend/data/security/collected/
+backend/data/security/escalations/
+backend/data/security/tokens/
 backend/demos/logs/
 backend/demos/results/
 

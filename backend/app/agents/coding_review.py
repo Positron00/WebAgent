@@ -16,15 +16,18 @@ import traceback
 
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
-from langchain_openai import ChatOpenAI
 from langchain.schema.messages import HumanMessage
 
 from app.models.task import WorkflowState
-from app.services.llm import get_llm_without_tags
+from app.services.llm import get_agent_llm
+from app.security.hop_guard import acheck_hop, kept_text, task_items
+from app.security.types import ContextItem
 from app.agents.base_agent import BaseAgent
 from app.core.loadEnvYAML import get_agents_config
 from app.utils.code_sandbox import run_python_file
 from app.core.config import settings
+from app.security.tool_guard import guard_tool
+from app.security.guarded_llm import register_template
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +77,9 @@ IMPROVEMENT EXPLANATION:
 A brief explanation of the changes made and why they improve the code.
 """
 
+# Static prompt text is never scored by the safety net (SEC-032).
+register_template("coding_review", CODING_REVIEW_PROMPT)
+
 class CodingReviewAgent(BaseAgent):
     """
     Coding Review Agent that reviews, executes, debugs, and fixes code.
@@ -88,33 +94,9 @@ class CodingReviewAgent(BaseAgent):
         self.allowed_libraries = ", ".join(agents_config.coding.allowed_modules) if hasattr(agents_config, "coding") else "matplotlib, seaborn, pandas, numpy"
         self.timeout_seconds = getattr(agents_config.coding, "timeout_seconds", 30) if hasattr(agents_config, "coding") else 30
         
-        # Initialize OpenAI client
-        self.openai_api_key = settings.OPENAI_API_KEY
-        self.openai_model = "gpt-4o-mini"  # Use a good model for code review
-        
-        if self.openai_api_key:
-            self.openai_llm = ChatOpenAI(
-                temperature=0.3,  # Lower temperature for more deterministic results
-                model=self.openai_model,
-                api_key=self.openai_api_key,
-                max_tokens=5000
-            )
-            logger.info(f"Initialized OpenAI {self.openai_model} for Coding Review with max_tokens={self.openai_llm.max_tokens}")
-            
-            # Initialize smaller o3-mini model for code cleaning
-            self.code_cleaner_model = ChatOpenAI(
-                temperature=0.1,  # Very low temperature for consistent code formatting
-                model="o3-mini",
-                api_key=self.openai_api_key,
-                max_tokens=5000
-            )
-            logger.info(f"Initialized OpenAI o3-mini for code cleaning")
-        else:
-            # Fallback to the default LLM if OpenAI key not found
-            logger.warning("OpenAI API key not found. Using fallback LLM")
-            self.openai_llm = None
-            self.code_cleaner_model = None
-            self.llm = get_llm_without_tags()
+        self.llm = get_agent_llm("coding_review")
+        self.openai_llm = getattr(self.llm, "inner", self.llm)
+        self.code_cleaner_model = getattr(self.llm, "inner", self.llm)
     
 
     async def run(self, state: WorkflowState) -> WorkflowState:
@@ -138,7 +120,7 @@ class CodingReviewAgent(BaseAgent):
             clean_code = self.clean_code(code)
             
             # Execute the code and get results
-            success, execution_result = self.execute_python_code(clean_code)
+            success, execution_result = self.execute_python_code(clean_code, state)
             
             # Prepare error details
             error_details = execution_result if not success else ""
@@ -153,6 +135,19 @@ class CodingReviewAgent(BaseAgent):
             
             # Generate the code review using LLM
             logger.info("Generating code review and fixes")
+            hop = await acheck_hop(
+                "coding_review",
+                task_items(state)
+                + [
+                    ContextItem("agent_output", clean_code, ref="coding_assistant"),
+                    ContextItem("tool_output", str(execution_result), ref="execute_code"),
+                    ContextItem("tool_output", str(error_details), ref="execute_code_errors"),
+                ],
+                state,
+            )
+            # Execution output is untrusted (the generated code wrote it): use what checkpoint 1 kept.
+            prompt_dict["execution_result"] = kept_text(hop, "execute_code", str(execution_result))
+            prompt_dict["error_details"] = kept_text(hop, "execute_code_errors", str(error_details))
             review_result = await self._generate_review(prompt_dict)
             
             # Extract parts from the review result
@@ -166,7 +161,9 @@ class CodingReviewAgent(BaseAgent):
             fixed_code_success = False
             if fixed_code and not success:
                 logger.info("Executing fixed code")
-                fixed_code_success, fixed_code_execution_result = self.execute_python_code(fixed_code)
+                fixed_code_success, fixed_code_execution_result = self.execute_python_code(
+                    fixed_code, state
+                )
             
             # Create the coding review report
             review_report = {
@@ -241,7 +238,7 @@ class CodingReviewAgent(BaseAgent):
             return max(code_blocks, key=len).strip()
         return ""
     
-    def execute_python_code(self, code: str) -> tuple:
+    def execute_python_code(self, code: str, state: Optional[WorkflowState] = None) -> tuple:
         """Execute Python code and return the result."""
         from app.core.config import settings
 
@@ -249,7 +246,27 @@ class CodingReviewAgent(BaseAgent):
             return False, "Code execution is disabled on this server"
         if not code:
             return False, "No code provided"
-            
+        if state is not None:
+            import asyncio
+            import concurrent.futures
+
+            async def _guarded():
+                return await guard_tool(
+                    "tool::execute_code",
+                    {"code": code},
+                    state,
+                    principal="coding_review",
+                )
+
+            try:
+                asyncio.get_running_loop()
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    allowed = pool.submit(lambda: asyncio.run(_guarded())).result()
+            except RuntimeError:
+                allowed = asyncio.run(_guarded())
+            if not allowed:
+                return False, "Code execution was not allowed by the security guard"
+
         try:
             # Create a temporary file to write the code
             with tempfile.NamedTemporaryFile(suffix='.py', delete=False, mode='w') as temp_file:

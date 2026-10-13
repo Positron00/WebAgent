@@ -5,6 +5,7 @@ import { ChatMessage } from '@/types/chat';
 import { useApp } from '@/contexts/AppContext';
 import { useChat } from '@/contexts/ChatContext';
 import { RouteLabel } from './RouteLabel';
+import { SecuritySummary } from './SecuritySummary';
 import ReactMarkdown from 'react-markdown';
 import { InformationCircleIcon, BeakerIcon } from '@heroicons/react/24/outline';
 import { CHAT_THEME } from '@/config/chatTheme';
@@ -209,7 +210,7 @@ function groupMessagesIntoTurns(messages: ChatMessage[]): ConversationTurn[] {
 
 export function MessageList({ messages, isLoading, error }: MessageListProps) {
   const { accessibility, agenticMode } = useApp();
-  const { researchInDepth } = useChat();
+  const { researchInDepth, approveAndRerun } = useChat();
   const latestTurnRef = useRef<HTMLDivElement>(null);
   const turns = groupMessagesIntoTurns(messages);
 
@@ -412,25 +413,43 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
                         aria-label="assistant's response"
                         style={getMessageStyles('assistant')}
                       >
-                        {processedContent &&
-                          renderArticleContent(processedContent, hasSources)}
-                        {assistantMessage.route && (
-                          <RouteLabel
-                            info={assistantMessage.route}
-                            mode={agenticMode}
-                            canOverride={
-                              !userMessage.imageAttached && !isLoading
-                            }
-                            onOverride={() => {
-                              if (assistantMessage.id) {
-                                researchInDepth(assistantMessage.id);
-                              }
-                            }}
-                          />
-                        )}
-                        {renderWorkflowLogs(
-                          assistantMessage.logs,
-                          assistantMessage.route?.route === 'agentic'
+                        {assistantMessage.refusal ? (
+                          <p className="text-sm text-amber-200/90 border border-amber-500/30 bg-amber-950/30 rounded-lg px-3 py-2">
+                            {assistantMessage.refusal.code === 'escalated'
+                              ? 'Escalated'
+                              : 'Declined'}
+                            : {assistantMessage.refusal.reason}
+                          </p>
+                        ) : (
+                          <>
+                            {processedContent &&
+                              renderArticleContent(processedContent, hasSources)}
+                            {assistantMessage.route && (
+                              <RouteLabel
+                                info={assistantMessage.route}
+                                mode={agenticMode}
+                                canOverride={
+                                  !userMessage.imageAttached && !isLoading
+                                }
+                                onOverride={() => {
+                                  if (assistantMessage.id) {
+                                    researchInDepth(assistantMessage.id);
+                                  }
+                                }}
+                              />
+                            )}
+                            {assistantMessage.security && assistantMessage.id && (
+                              <SecuritySummary
+                                security={assistantMessage.security}
+                                busy={isLoading}
+                                onApprove={() => approveAndRerun(assistantMessage.id!)}
+                              />
+                            )}
+                            {renderWorkflowLogs(
+                              assistantMessage.logs,
+                              assistantMessage.route?.route === 'agentic'
+                            )}
+                          </>
                         )}
                       </div>
                     </div>

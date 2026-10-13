@@ -27,6 +27,13 @@ def test_good_prod_settings_pass(prod):
     startup_checks.check_production_settings(code_execution_enabled=False)
 
 
+def test_prod_loads_security_policies(prod, monkeypatch):
+    from app.core.config_def import SecurityGuardConfig
+
+    monkeypatch.setattr(settings, "SECURITY_GUARD", SecurityGuardConfig(enabled=True))
+    startup_checks.check_security_guard()
+
+
 def test_default_secret_is_rejected(prod, monkeypatch):
     monkeypatch.setattr(settings, "SECRET_KEY", INSECURE_SECRET_DEFAULT)
     with pytest.raises(RuntimeError, match="WEBAGENT_SECURITY_SECRET_KEY"):
@@ -115,3 +122,54 @@ def test_encoder_available_checks_the_fine_tuned_folder(tmp_path):
     (tmp_path / "encoder" / "config.json").write_text("{}")
     (tmp_path / "encoder" / "model.safetensors").write_bytes(b"0")
     assert encoder_available(tmp_path)
+
+
+def _defender_files(tmp_path, meta):
+    import json
+
+    (tmp_path / "heads.joblib").write_bytes(b"x")
+    (tmp_path / "metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+
+
+def _shadow_guard(monkeypatch, tmp_path):
+    from app.core.config_def import SecurityGuardConfig
+    from app.security import context_defender
+
+    monkeypatch.setattr(settings, "SECURITY_GUARD", SecurityGuardConfig(enabled=True, input_mode="shadow"))
+    monkeypatch.setattr(context_defender, "model_dir", lambda: tmp_path)
+    monkeypatch.setattr(startup_checks, "defender_encoder_files_present", lambda *a: True)
+
+
+def test_shadow_mode_starts_with_a_model_that_failed_the_gate(prod, monkeypatch, tmp_path):
+    _shadow_guard(monkeypatch, tmp_path)
+    _defender_files(tmp_path, {"use_minilm": True, "test": {"passed": False}})
+    startup_checks.check_security_guard_files()
+
+
+def test_missing_fine_tuned_security_encoder_is_rejected_even_in_shadow_mode(prod, monkeypatch, tmp_path):
+    _shadow_guard(monkeypatch, tmp_path)
+    _defender_files(tmp_path, {"use_minilm": True, "finetuned_encoder": True, "test": {"passed": False}})
+    with pytest.raises(RuntimeError, match="fine-tuned encoder"):
+        startup_checks.check_security_guard_files()
+    (tmp_path / "encoder").mkdir()
+    (tmp_path / "encoder" / "config.json").write_text("{}")
+    (tmp_path / "encoder" / "model.safetensors").write_bytes(b"x")
+    startup_checks.check_security_guard_files()
+
+
+def test_prompt_guard_judge_without_the_model_is_rejected(prod, monkeypatch, tmp_path):
+    from app.core.config_def import SecurityGuardConfig
+    from app.security import context_defender, prompt_guard
+
+    monkeypatch.setattr(settings, "SECURITY_GUARD", SecurityGuardConfig(
+        enabled=True, input_mode="shadow", judge=True, jailbreak_judge="prompt_guard"))
+    monkeypatch.setattr(context_defender, "model_dir", lambda: tmp_path)
+    monkeypatch.setattr(startup_checks, "defender_encoder_files_present", lambda *a: True)
+    _defender_files(tmp_path, {"use_minilm": True, "test": {"passed": False}})
+    monkeypatch.setattr(prompt_guard, "MODEL_DIR", tmp_path / "prompt_guard")
+    with pytest.raises(RuntimeError, match="prompt_guard"):
+        startup_checks.check_security_guard_files()
+    (tmp_path / "prompt_guard").mkdir()
+    (tmp_path / "prompt_guard" / "config.json").write_text("{}")
+    (tmp_path / "prompt_guard" / "model.safetensors").write_bytes(b"x")
+    startup_checks.check_security_guard_files()

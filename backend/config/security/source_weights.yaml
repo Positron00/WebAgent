@@ -1,0 +1,41 @@
+# Per-source axis weights for threat_risk (ContextDefender, phase 2).
+defaults:
+  injection: 1.0
+  harm: 1.0
+  sensitive_data: 1.0
+  jailbreak: 1.0
+user_turn:
+  injection: 0.6
+  harm: 1.0
+  sensitive_data: 1.0
+  jailbreak: 1.0
+history:
+  injection: 0.8
+  harm: 1.0
+  sensitive_data: 1.0
+  jailbreak: 1.0
+web_result:
+  injection: 1.0
+  harm: 1.0
+  sensitive_data: 1.0
+  jailbreak: 1.0
+retrieved_doc:
+  injection: 1.0
+  harm: 1.0
+  sensitive_data: 1.0
+  jailbreak: 1.0
+document:
+  injection: 1.0
+  harm: 1.0
+  sensitive_data: 1.0
+  jailbreak: 1.0
+tool_output:
+  injection: 1.0
+  harm: 1.0
+  sensitive_data: 1.0
+  jailbreak: 1.0
+unlabelled:
+  injection: 1.0
+  harm: 1.0
+  sensitive_data: 1.0
+  jailbreak: 1.0

@@ -32,7 +32,7 @@ from pydantic import Field, ConfigDict
 from pydantic_settings import BaseSettings
 from app import __version__
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
-from app.core.config_def import TriageConfig
+from app.core.config_def import SecurityGuardConfig, TriageConfig
 
 # The backend folder holds app/, config/ and data/. In the Docker image it is /app,
 # so data paths are built from BACKEND_DIR rather than from the repo root.
@@ -297,9 +297,47 @@ def _build_triage_settings() -> TriageConfig:
     )
 
 
+def _build_security_guard_settings() -> SecurityGuardConfig:
+    base = getattr(app_config, "security_guard", None) if app_config else None
+    if base is None:
+        base = SecurityGuardConfig()
+    log = logging.getLogger(__name__)
+
+    def _mode(field: str, env_name: str, yaml_value: str) -> str:
+        yaml_mode = (yaml_value or "shadow").strip().lower()
+        if yaml_mode not in ("shadow", "act"):
+            log.warning("Invalid security_guard.%s=%s in YAML; using shadow", field, yaml_value)
+            yaml_mode = "shadow"
+        mode = (os.getenv(env_name) or yaml_mode).strip().lower()
+        if mode not in ("shadow", "act"):
+            log.warning("Invalid %s=%s; using YAML", env_name, mode)
+            mode = yaml_mode
+        return mode
+
+    return SecurityGuardConfig(
+        enabled=_triage_bool("WEBAGENT_GUARD_ENABLED", base.enabled),
+        input_mode=_mode("input_mode", "WEBAGENT_GUARD_INPUT_MODE", base.input_mode),
+        tool_mode=_mode("tool_mode", "WEBAGENT_GUARD_TOOL_MODE", base.tool_mode),
+        judge=_triage_bool("WEBAGENT_GUARD_JUDGE", base.judge),
+        collect=_triage_bool("WEBAGENT_GUARD_COLLECT", base.collect),
+        collect_retention_days=base.collect_retention_days,
+        model_dir=base.model_dir,
+        policy_dir=base.policy_dir,
+    )
+
+
+def _attach_guard(settings_obj):
+    settings_obj.SECURITY_GUARD = _build_security_guard_settings()
+    return settings_obj
+
+
 def _attach_triage(settings_obj):
     settings_obj.TRIAGE = _build_triage_settings()
     return settings_obj
+
+
+def _attach_runtime_config(settings_obj):
+    return _attach_guard(_attach_triage(settings_obj))
 
 
 def _security_setting(yaml_name: str, env_name: str, default):
@@ -357,7 +395,7 @@ if app_config:
         MLFLOW_TRACKING_URI: Optional[str] = getattr(app_config.security, 'mlflow_tracking_uri', None) if hasattr(app_config, 'security') else None
     
     # Create settings instance with YAML values
-    settings = _attach_triage(YAMLConfigSettings())
+    settings = _attach_runtime_config(YAMLConfigSettings())
 else:
     # Create settings instance from .env and default values
-    settings = _attach_triage(Settings())
+    settings = _attach_runtime_config(Settings())

@@ -38,6 +38,8 @@ from app.models.task import WorkflowState
 from app.models.research_plan import normalize_research_plan, without_missing_document
 from app.utils.json_utils import extract_json_object
 from app.utils.reasoning import strip_reasoning
+from app.security.guarded_llm import register_template
+from app.security.hop_guard import acheck_hop, task_items
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -80,10 +82,15 @@ Use the conversation for context. Do not show your reasoning or notes.
 
 Answer:"""
 
+# Static prompt text is never scored by the safety net (SEC-032).
+register_template("supervisor", SUPERVISOR_PROMPT)
+register_template("supervisor", DIRECT_ANSWER_PROMPT)
+
 IMAGE_NOT_AVAILABLE_NOTE = (
     "Note: the user attached an image, but you cannot see it. Do not describe or guess its "
     "content; if the question depends on the image, say you can't view images here."
 )
+
 
 
 class SupervisorAgent(BaseAgent):
@@ -155,6 +162,7 @@ class SupervisorAgent(BaseAgent):
             # The model never receives the image; without this note it describes one anyway.
             conversation += f"\n\n{IMAGE_NOT_AVAILABLE_NOTE}"
         prompt = DIRECT_ANSWER_PROMPT.format(conversation=conversation)
+        await acheck_hop("supervisor", task_items(state), state)
         direct = await self.llm.ainvoke(prompt)
         text = direct if isinstance(direct, str) else getattr(direct, "content", str(direct))
         # The text model continues the prompt and may think out loud before answering.
@@ -205,6 +213,7 @@ class SupervisorAgent(BaseAgent):
         
         try:
             state.add_log("Supervisor: Analyzing query and planning research")
+            await acheck_hop("supervisor", task_items(state), state)
             result = await self.chain.ainvoke({"query": self._with_history(state)})
             
             plan_data = result if isinstance(result, dict) else extract_json_object(str(result))

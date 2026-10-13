@@ -4,13 +4,20 @@ Run as `python -m app.core.startup_checks` before starting uvicorn (the Docker i
 with several workers, uvicorn restarts a worker that fails at startup, so a failure inside the
 app alone would loop forever instead of stopping the container.
 """
+import logging
 import os
 import sys
 
 from app.core.config import settings
 from app.core.security import INSECURE_SECRET_DEFAULT
+from app.security.context_defender import (
+    encoder_files_present as defender_encoder_files_present,
+    gate_passed as defender_gate_passed,
+    model_files_present as defender_model_files_present,
+)
 from app.services.triage_model import encoder_available, gate_passed, model_files_present
 from app.utils.code_sandbox import sandbox_mode
+from app.security.decision import PolicyLoadError, get_engine
 
 
 def server_code_execution_enabled() -> bool:
@@ -44,9 +51,79 @@ def check_triage_files() -> None:
         )
 
 
+def check_security_guard() -> None:
+    """In uat/prod with the guard enabled, Cedar policies must load and pass tests."""
+    cfg = getattr(settings, "SECURITY_GUARD", None)
+    if cfg is None or not cfg.enabled:
+        return
+    if settings.WEBAGENT_ENV not in ("uat", "prod"):
+        return
+    try:
+        get_engine(force_reload=True)
+    except PolicyLoadError as exc:
+        raise RuntimeError(f"Security guard policies failed to load: {exc}") from exc
+    except Exception as exc:
+        raise RuntimeError(f"Security guard policy check failed: {exc}") from exc
+
+
+def check_security_guard_files() -> None:
+    """In uat/prod with the guard enabled, policies are required; model gate when artifacts exist."""
+    cfg = getattr(settings, "SECURITY_GUARD", None)
+    if cfg is None or not cfg.enabled:
+        return
+    if settings.WEBAGENT_ENV not in ("uat", "prod"):
+        return
+    get_engine(force_reload=True)
+    if not defender_model_files_present():
+        return
+    import json
+
+    from app.security.context_defender import finetuned_encoder_present, model_dir
+
+    try:
+        meta = json.loads((model_dir() / "metadata.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        meta = {}
+    # Missing encoder files are a broken image in any mode: the model would silently score nothing.
+    if meta.get("finetuned_encoder") and not finetuned_encoder_present():
+        raise RuntimeError(
+            "The ContextDefender fine-tuned encoder is missing (models/security/encoder; run "
+            "`git lfs pull` before building). Set WEBAGENT_GUARD_ENABLED=false or ship the encoder."
+        )
+    if meta.get("use_minilm") and not defender_encoder_files_present():
+        raise RuntimeError(
+            "The ContextDefender base encoder is missing (sentence-transformers/all-MiniLM-L6-v2 in "
+            "SENTENCE_TRANSFORMERS_HOME or the Hugging Face cache). Set WEBAGENT_GUARD_ENABLED=false "
+            "or bake the encoder into the image."
+        )
+    if cfg.judge and getattr(cfg, "jailbreak_judge", "llm") == "prompt_guard":
+        from app.security import prompt_guard
+
+        if not prompt_guard.available():
+            raise RuntimeError(
+                "jailbreak_judge is prompt_guard but models/security/prompt_guard has no model "
+                "(scripts/fetch_security_sources.py --prompt-guard 86M, then `git lfs pull` before building)."
+            )
+    if not defender_gate_passed():
+        if cfg.input_mode != "act":
+            # Shadow mode exists to collect data with an unproven model; only acting needs the gate.
+            logging.getLogger(__name__).warning(
+                "ContextDefender has not passed its release gate; checkpoint 1 stays in shadow mode"
+            )
+            return
+        raise RuntimeError(
+            "The ContextDefender model has not passed the release gate "
+            "(models/security/metadata.json test.passed is not true; run "
+            "scripts/eval_context_defender.py --write-metadata). "
+            "Set WEBAGENT_GUARD_ENABLED=false or ship a version that passes."
+        )
+
+
 def check_production_settings(code_execution_enabled: bool) -> None:
     """Raise RuntimeError if uat/prod settings are unsafe. Does nothing in dev."""
     check_triage_files()
+    check_security_guard_files()
+    check_security_guard()
     if settings.WEBAGENT_ENV not in ("uat", "prod"):
         return
     if settings.SECRET_KEY == INSECURE_SECRET_DEFAULT:

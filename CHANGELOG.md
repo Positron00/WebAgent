@@ -2,6 +2,16 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## Unreleased
+
+### Added
+- Agentic security checkpoints: Cedar decision point (`cedarpy`), ContextDefender classifier (four risk axes), checkpoint 1 (`check_hop` + guarded LLM factory + `POST /api/guard/input`), checkpoint 2 (`guard_tool` on search, retrieval, document load, and code execution), consent/approval tokens, escalation and shadow collection, Prometheus guard metrics, and red-team test skeleton
+- Web app: server-side guard call on `/api/chat` with pattern fallback, consent dialog, security summary under agentic answers, and guard-aware `apiClient` (no fallback on 403/409)
+
+### Changed
+- All agent LLM calls route through `get_agent_llm()` / `GuardedModel`; `get_trusted_llm()` is limited to triage tie-break, the tool judge, and diagnostics
+- `security_guard:` in `backend/config/{dev,uat,prod}.yaml` with `WEBAGENT_GUARD_*` overrides (default shadow mode in dev/uat/prod until the shadow week)
+
 ## 3.2.0 - 2026-10-11
 
 ### Added

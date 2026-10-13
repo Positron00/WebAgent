@@ -151,6 +151,76 @@ TRIAGE_UNCERTAIN = Counter(
     registry=WEBAGENT_REGISTRY,
 )
 
+GUARD_DECISIONS = Counter(
+    "webagent_guard_decisions_total",
+    "Security guard decisions",
+    ["checkpoint", "action", "outcome", "shadow"],
+    registry=WEBAGENT_REGISTRY,
+)
+
+GUARD_LATENCY = Histogram(
+    "webagent_guard_latency_seconds",
+    "Security guard decision latency",
+    ["checkpoint"],
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 3.0),
+    registry=WEBAGENT_REGISTRY,
+)
+
+GUARD_JUDGE = Counter(
+    "webagent_guard_judge_total",
+    "LLM judge verdicts (checkpoint 1 user turns and checkpoint 2 tool calls)",
+    ["verdict"],
+    registry=WEBAGENT_REGISTRY,
+)
+
+GUARD_ESCALATIONS = Counter(
+    "webagent_guard_escalations_total",
+    "Security guard escalations",
+    registry=WEBAGENT_REGISTRY,
+)
+
+GUARD_UNLABELLED = Counter(
+    "webagent_guard_unlabelled_total",
+    "Guarded LLM calls without check_hop",
+    ["agent"],
+    registry=WEBAGENT_REGISTRY,
+)
+
+GUARD_CONTEXT_SCORE = Histogram(
+    "webagent_contextdefender_score",
+    "ContextDefender axis scores",
+    ["axis", "source"],
+    buckets=tuple(float(x) for x in range(0, 101, 5)),
+    registry=WEBAGENT_REGISTRY,
+)
+
+
+GUARD_SHADOW_POLICY = Counter(
+    "webagent_guard_shadow_policy_total",
+    "Shadow-only policies that matched (recorded, not applied)",
+    ["policy_id", "action"],
+)
+GUARD_ALIGNMENT = Histogram(
+    "webagent_guard_search_alignment",
+    "Alignment (0-100) of search and retrieval queries with the task at checkpoint 2",
+    ["tainted"],
+    buckets=(10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
+)
+
+
+def record_guard_decision(checkpoint: int, action: str, decision) -> None:
+    """Record metrics for one guard decision (``decision``: :class:`Decision`)."""
+    shadow_label = "true" if decision.shadow else "false"
+    GUARD_DECISIONS.labels(
+        checkpoint=str(checkpoint),
+        action=action,
+        outcome=decision.outcome,
+        shadow=shadow_label,
+    ).inc()
+    GUARD_LATENCY.labels(checkpoint=str(checkpoint)).observe(decision.latency_ms / 1000.0)
+    for policy_id in getattr(decision, "shadow_policy_ids", ()) or ():
+        GUARD_SHADOW_POLICY.labels(policy_id=policy_id, action=action).inc()
+
 
 def record_triage_decision(decision, threshold: Optional[float] = None) -> None:
     """Record metrics for one triage decision (decision: TriageDecision).

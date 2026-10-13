@@ -6,9 +6,13 @@ import { apiClient } from '@/utils/apiClient';
 import { ChatMessage } from '@/types/chat';
 import { RouteInfo } from '@/types/routing';
 
-jest.mock('@/utils/apiClient', () => ({
-  apiClient: { sendChatMessage: jest.fn() },
-}));
+jest.mock('@/utils/apiClient', () => {
+  const actual = jest.requireActual<typeof import('@/utils/apiClient')>('@/utils/apiClient');
+  return {
+    ...actual,
+    apiClient: { sendChatMessage: jest.fn() },
+  };
+});
 
 jest.mock('@/utils/logger', () => ({
   logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },

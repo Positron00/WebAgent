@@ -12,7 +12,9 @@ import traceback
 from app.agents.supervisor import SupervisorAgent
 from app.graph.workflows import get_agent_workflow
 from app.models.task import TaskInfo, WorkflowState
+from app.core.config import settings
 from app.core.metrics import timing_decorator, track_task_start, track_task_completion
+from app.security.errors import GuardDeclined, GuardStop
 from app.services import result_store
 from app.core.log_context import current_task_id
 
@@ -114,6 +116,40 @@ class TaskManager:
             meta["image_ignored"] = True
         return meta
 
+    @staticmethod
+    def _security_block(context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Copy the workflow security ledger for API clients (SEC-082)."""
+        ctx = context or {}
+        sec = ctx.get("security")
+        if not isinstance(sec, dict):
+            sec = {
+                "tainted": False,
+                "hops": [],
+                "dropped": [],
+                "skipped": [],
+                "approvals": [],
+                "declined_actions_in_task": 0,
+            }
+        guard_cfg = getattr(settings, "SECURITY_GUARD", None)
+        # The summary only hides itself when nothing was enforced, i.e. both checkpoints are in shadow.
+        shadow = (guard_cfg.input_mode == "shadow" and guard_cfg.tool_mode == "shadow") if guard_cfg else True
+        return {
+            "tainted": bool(sec.get("tainted")),
+            "shadow": shadow,
+            "hops": list(sec.get("hops") or []),
+            "dropped": list(sec.get("dropped") or []),
+            "skipped": list(sec.get("skipped") or []),
+            "approvals": list(sec.get("approvals") or []),
+            "declined_actions_in_task": int(sec.get("declined_actions_in_task", 0)),
+        }
+
+    @classmethod
+    def _guard_failure(cls, stop: BaseException, context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Result for a task a checkpoint stopped (SEC-046): `escalated` or `declined`, final."""
+        decision = stop.decision  # type: ignore[attr-defined]
+        code = "escalated" if decision.outcome == "escalate" else "declined"
+        return {"error": decision.reason, "error_code": code, "security": cls._security_block(context)}
+
     async def run_direct(self, task_id: str, message: str, context: Optional[Dict[str, Any]] = None):
         """One text-only LLM call without building the LangGraph workflow."""
         task_id_token = current_task_id.set(task_id)
@@ -142,6 +178,13 @@ class TaskManager:
             task_info.current_step = "completed"
             duration = (datetime.now() - start_time).total_seconds()
             track_task_completion(task_id, duration, "completed")
+        except (GuardStop, GuardDeclined) as stop:
+            # GuardStop/GuardDeclined derive from BaseException, so they must be caught explicitly.
+            task_info.status = "error"
+            task_info.error = stop.decision.reason
+            self.task_results[task_id] = self._guard_failure(stop, ctx)
+            duration = (datetime.now() - start_time).total_seconds()
+            track_task_completion(task_id, duration, "error")
         except Exception as e:
             logger.exception("Direct task %s failed: %s", task_id, e)
             task_info.status = "error"
@@ -206,6 +249,12 @@ class TaskManager:
             
             # Initialize the state
             ctx = context or {}
+            ctx = {**ctx, "task_id": task_id}
+            # Create the security ledger up front and share the same dict with the state, so a task
+            # a checkpoint stops still reports what happened before the stop (SEC-082).
+            from app.security import ledger as security_ledger
+
+            ctx["security"] = security_ledger.get_ledger(WorkflowState(query=message, context={}))
             inputs: Dict[str, Any] = {}
             if ctx.get("document_id"):
                 inputs["document_id"] = ctx["document_id"]
@@ -235,6 +284,7 @@ class TaskManager:
             # Log completion
             logger.info(f"Task {task_id} finished workflow in {duration:.2f} seconds")
 
+            security = self._security_block(final_state.context)
             if final_state.final_report:
                 task_info.status = "completed"
                 task_info.completed_at = datetime.now()
@@ -244,7 +294,9 @@ class TaskManager:
                     f"Storing final report for task {task_id} "
                     f"(content length: {len(final_state.final_report.get('content', ''))})"
                 )
-                self.task_results[task_id] = final_state.final_report
+                report = dict(final_state.final_report)
+                report["security"] = security
+                self.task_results[task_id] = report
                 track_task_completion(task_id, duration, "completed")
             else:
                 task_info.status = "error"
@@ -254,12 +306,27 @@ class TaskManager:
                 task_info.error = error_msg
                 task_info.current_step = "error"
                 logger.warning(f"Workflow for task {task_id} ended without a final report")
-                self.task_results[task_id] = {"error": error_msg}
+                self.task_results[task_id] = {"error": error_msg, "security": security}
                 self.task_errors[task_id] = {
                     "message": error_msg,
                     "workflow_error": final_state.error,
                 }
                 track_task_completion(task_id, duration, "error")
+
+        except (GuardStop, GuardDeclined) as stop:
+            duration = (datetime.now() - start_time).total_seconds()
+            task_info.status = "error"
+            task_info.completed_at = datetime.now()
+            task_info.message = stop.decision.reason
+            task_info.error = stop.decision.reason
+            task_info.current_step = "error"
+            self.task_results[task_id] = self._guard_failure(stop, ctx)
+            self.task_errors[task_id] = {
+                "message": stop.decision.reason,
+                "error_code": self.task_results[task_id]["error_code"],
+                "policy_ids": list(stop.decision.policy_ids),
+            }
+            track_task_completion(task_id, duration, "error")
                 
         except Exception as e:
             # Calculate duration for metrics

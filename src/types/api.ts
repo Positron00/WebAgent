@@ -12,6 +12,7 @@ export interface ChatRequestMessage {
 
 import type { RouteInfo } from '@/types/routing';
 import type { Source } from '@/types/chat';
+import type { SecuritySummary } from '@/types/security';
 
 export interface ChatResponseMessage {
   content: string;
@@ -46,4 +47,5 @@ export interface ChatCompletionResponse {
     total_tokens: number;
   };
   route?: RouteInfo;
+  security?: SecuritySummary;
 } 

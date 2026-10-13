@@ -10,6 +10,7 @@ export interface Source {
 }
 
 import type { RouteInfo } from '@/types/routing';
+import type { GuardRefusal, SecuritySummary } from '@/types/security';
 
 export interface ChatMessage {
   id?: string;
@@ -20,6 +21,8 @@ export interface ChatMessage {
   logs?: string[]; // Workflow progress logs
   route?: RouteInfo;
   imageAttached?: boolean;
+  security?: SecuritySummary;
+  refusal?: GuardRefusal;
 }
 
 export interface ChatState {

@@ -85,6 +85,25 @@ def _isolate_triage(request, tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _isolate_rate_limit(monkeypatch):
+    """Each test starts with an empty rate-limit bucket, so suites don't 429 each other by order."""
+    from app.core import security
+
+    monkeypatch.setattr(security, "rate_limit_data", {})
+    monkeypatch.setattr(security, "_last_rate_limit_sweep", 0.0)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_context_defender(monkeypatch):
+    from app.security import context_defender
+
+    monkeypatch.setattr(context_defender, "load_model", lambda *a, **k: None)
+    context_defender.set_model_for_tests(None)
+    yield
+    context_defender.set_model_for_tests(None)
+
+
+@pytest.fixture(autouse=True)
 def _isolate_model_registry(tmp_path, monkeypatch):
     """Keep tests from writing the model registry into the real data folder."""
     monkeypatch.setenv("WEBAGENT_MODEL_REGISTRY_PATH", str(tmp_path / "models_registry.json"))
