@@ -8,7 +8,7 @@ import logging
 import re
 import threading
 import time
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -19,6 +19,7 @@ import numpy as np
 import yaml
 
 from app.core.config import BACKEND_DIR, settings
+from app.core.model_lock import lock_for
 from app.security.patterns import scan
 
 from app.security.types import ContextItem, ItemScores, Source
@@ -71,7 +72,8 @@ def featurize(texts: Sequence[str], route: str, encoder, vectorizer, combine: bo
     if route == "minilm":
         if encoder is None:
             raise RuntimeError("MiniLM route needs the encoder")
-        emb = np.asarray(encoder.encode(list(texts), normalize_embeddings=True))
+        with lock_for(encoder):
+            emb = np.asarray(encoder.encode(list(texts), normalize_embeddings=True))
         if combine and vectorizer is not None:
             from scipy.sparse import csr_matrix, hstack
 
@@ -100,21 +102,32 @@ class ContextDefenderModel:
             return "tfidf"
         return route_chunk(chunk, self._vocabulary)
 
-    def _chunk_risk(self, chunk: str) -> Dict[str, float]:
-        """P(risk present) per axis for one chunk; binary heads (none vs. low/high)."""
-        route = self._route(chunk)
-        out: Dict[str, float] = {}
-        cache: Dict[str, np.ndarray] = {}
+    def _chunk_risks(self, chunks: Sequence[str]) -> List[Dict[str, float]]:
+        """P(risk present) per axis for each chunk; binary heads (none vs. low/high).
+
+        All chunks of a text go through the encoder in one batch: encoding them one by one cost
+        about 90 ms per window on CPU, so a long web page took seconds per hop.
+        """
+        routes = [self._route(c) for c in chunks]
+        combine = bool(self._bundle.get("combine_features"))
+        cache: Dict[str, Any] = {}
+        out: List[Dict[str, float]] = [{} for _ in chunks]
         for axis in AXES:
             axis_heads = self._heads.get(axis) or {}
             if not axis_heads:
-                out[axis] = 0.0
+                for risk in out:
+                    risk[axis] = 0.0
                 continue
-            use_route = route if route in axis_heads else next(iter(axis_heads))
-            if use_route not in cache:
-                cache[use_route] = featurize([chunk], use_route, self._encoder, self._vectorizer,
-                                             combine=bool(self._bundle.get("combine_features")))
-            out[axis] = float(axis_heads[use_route].predict_proba(cache[use_route])[0][-1])
+            groups: Dict[str, List[int]] = defaultdict(list)
+            for i, route in enumerate(routes):
+                groups[route if route in axis_heads else next(iter(axis_heads))].append(i)
+            for use_route, idx in groups.items():
+                if use_route not in cache:
+                    cache[use_route] = featurize(list(chunks), use_route, self._encoder, self._vectorizer,
+                                                 combine=combine)
+                probs = axis_heads[use_route].predict_proba(cache[use_route][idx])[:, -1]
+                for i, p in zip(idx, probs):
+                    out[i][axis] = float(p)
         return out
 
     def score_text(self, text: str, source: Source) -> Tuple[Dict[str, int], Tuple[Dict[str, int], ...], Dict[str, float]]:
@@ -122,8 +135,7 @@ class ContextDefenderModel:
         chunks = chunk_text(text, self.tokenizer) or [text]
         chunk_scores: List[Dict[str, int]] = []
         pooled = {a: 0.0 for a in AXES}
-        for chunk in chunks:
-            risk = self._chunk_risk(chunk)
+        for risk in self._chunk_risks(chunks):
             chunk_scores.append({a: round(100 * risk[a]) for a in AXES})
             for a in AXES:
                 pooled[a] = max(pooled[a], risk[a])
@@ -158,8 +170,14 @@ def _units(text: str, tokenizer) -> Tuple[List[Any], Any]:
     """Token ids (with the MiniLM tokenizer) or words, plus a function that joins units back."""
     if tokenizer is None:
         return text.split(), lambda units: " ".join(units)
-    ids = tokenizer.encode(text, add_special_tokens=False)
-    return list(ids), lambda units: tokenizer.decode(units, skip_special_tokens=True)
+    with lock_for(tokenizer):
+        ids = tokenizer.encode(text, add_special_tokens=False)
+
+    def join(units):
+        with lock_for(tokenizer):
+            return tokenizer.decode(units, skip_special_tokens=True)
+
+    return list(ids), join
 
 
 def set_chunking(size: int, stride: int) -> None:

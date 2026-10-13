@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional, Protocol
 
 import numpy as np
 
+from app.core.model_lock import lock_for
 from app.core.config import settings
 from app.models.research_plan import research_query
 from app.models.task import WorkflowState
@@ -48,7 +49,8 @@ def _task_embedding(state: WorkflowState, encoder: _Encoder) -> np.ndarray:
     text = task_text(state)
     if text in cache:
         return np.asarray(cache[text])
-    vec = np.asarray(encoder.encode([text], normalize_embeddings=True)[0])
+    with lock_for(encoder):
+        vec = np.asarray(encoder.encode([text], normalize_embeddings=True)[0])
     cache[text] = vec.tolist()
     return vec
 
@@ -65,7 +67,8 @@ def cosine_alignment(args_text: str, state: WorkflowState) -> int:
     if encoder is None:
         return 100
     try:
-        arg_vec = np.asarray(encoder.encode([args_text], normalize_embeddings=True)[0])
+        with lock_for(encoder):
+            arg_vec = np.asarray(encoder.encode([args_text], normalize_embeddings=True)[0])
         task_vec = _task_embedding(state, encoder)
         cos = float(np.dot(arg_vec, task_vec))
         return int(round(100 * max(0.0, cos)))

@@ -42,7 +42,11 @@ def without_missing_document(plan: ResearchPlan, has_document: bool) -> Research
 
     The supervisor model sometimes sets `requires_document_extraction` on plain questions; the
     extraction step then fails with "Document ID is required". Research the question instead.
+    It also sometimes plans a plain question as document extraction with every step false; the
+    workflow then ends without a report, so a plan with nothing to do is researched on the web too.
     """
+    if not (plan.requires_web_search or plan.requires_internal_knowledge or plan.requires_document_extraction):
+        return plan.model_copy(update={"requires_web_search": True})
     if not plan.requires_document_extraction or has_document:
         return plan
     return plan.model_copy(

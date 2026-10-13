@@ -73,7 +73,7 @@ class DocumentExtractionAgent(BaseAgent):
         }
         
         # Download NLTK resources if not already present
-        ensure_nltk_data('punkt', 'stopwords', 'wordnet')
+        ensure_nltk_data('punkt', 'punkt_tab', 'stopwords', 'wordnet')
         
         # Initialize lemmatizer
         self.lemmatizer = WordNetLemmatizer()

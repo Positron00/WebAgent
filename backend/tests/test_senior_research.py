@@ -323,3 +323,22 @@ async def test_error_handling():
     finally:
         # Restore original chain
         agent.chain = original_chain 
+
+def test_follow_up_questions_with_commas_stay_whole():
+    # Seen in the 3.2.4 shadow-week simulation: splitting on every comma searched for "b" and "middle".
+    text = ('```evaluation\nresearch_status: needs_more_research\n'
+            'research_questions: ["What are the best, worst-case and middle estimates?", "When was it published?"]\n'
+            'missing_information: ["costs, by year"]\n```\nReport')
+    evaluation = SeniorResearchAgent()._parse_evaluation(text)
+    assert evaluation["research_questions"] == ["What are the best, worst-case and middle estimates?",
+                                                "When was it published?"]
+    assert evaluation["missing_information"] == ["costs, by year"]
+
+
+def test_copied_prompt_placeholders_are_not_searched():
+    # The model sometimes copies the prompt's example list back; those were searched verbatim.
+    text = ('```evaluation\nresearch_status: needs_more_research\n'
+            'research_questions: ["question 1", "question 2", ...]\nmissing_information: ["item 1"]\n```\nReport')
+    evaluation = SeniorResearchAgent()._parse_evaluation(text)
+    assert evaluation["research_questions"] == []
+    assert evaluation["missing_information"] == []

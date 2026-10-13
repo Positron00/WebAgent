@@ -50,3 +50,11 @@ def test_internal_only_plan_is_not_forced_onto_the_web():
     plan = ResearchPlan(requires_web_search=False, requires_internal_knowledge=True, requires_document_extraction=True)
     fixed = without_missing_document(plan, has_document=False)
     assert (fixed.requires_web_search, fixed.requires_internal_knowledge) == (False, True)
+
+
+def test_plan_with_no_step_becomes_web_research():
+    # Seen in the 3.2.4 shadow-week simulation: "What does the acronym HTTP stand for?" planned as
+    # document extraction with every step false ended without a report.
+    plan = ResearchPlan(requires_web_search=False)
+    for has_document in (False, True):
+        assert without_missing_document(plan, has_document=has_document).requires_web_search

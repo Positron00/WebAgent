@@ -53,7 +53,7 @@ ENV PATH=/home/webagent/.local/bin:$PATH
 
 # NLTK corpora used by document extraction
 RUN PYTHONUSERBASE=/home/webagent/.local python -m nltk.downloader -d /usr/local/share/nltk_data \
-    punkt stopwords wordnet maxent_ne_chunker words
+    punkt punkt_tab stopwords wordnet maxent_ne_chunker words
 
 # Base MiniLM for the security guard (ContextDefender and alignment), baked in so startup never
 # downloads it. Not under /app/data: that is a mounted volume. The triage encoder is the fine-tuned

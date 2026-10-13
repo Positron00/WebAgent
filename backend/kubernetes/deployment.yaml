@@ -5,7 +5,7 @@ metadata:
   namespace: default
   labels:
     app: webagent-backend
-    version: "3.2.4"
+    version: "3.2.5"
 spec:
   # One replica: task status and results live in /app/data, which is per pod (emptyDir).
   # To run more replicas, mount /app/data from a shared ReadWriteMany volume.
@@ -22,7 +22,7 @@ spec:
     metadata:
       labels:
         app: webagent-backend
-        version: "3.2.4"
+        version: "3.2.5"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
@@ -35,7 +35,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: webagent-backend
-        image: webagent/backend:3.2.4
+        image: webagent/backend:3.2.5
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
@@ -84,11 +84,12 @@ spec:
         resources:
           limits:
             cpu: "1"
-            # 2 workers with triage + ContextDefender: budget 2 GiB (SNFR-05); measure after deploy.
-            memory: "2Gi"
+            # 2 workers with triage + ContextDefender peaked at 1.81 GiB in the 3.2.4 simulated
+            # shadow week (about 1.25 GiB RSS per worker); 3 GiB keeps 20% headroom (SNFR-05).
+            memory: "3Gi"
           requests:
             cpu: "500m"
-            memory: "1536Mi"
+            memory: "2Gi"
         livenessProbe:
           httpGet:
             path: /health
