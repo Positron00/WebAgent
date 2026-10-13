@@ -68,7 +68,7 @@ Code for phases 0, 1, 2, 3 and 5 is in place and matches these documents; backen
 | Direct-path timing (task 1.9, NFR-02) | `/api/chat`, 20 routine questions: median 3.4 s, p95 5.1 s, max 6.6 s. The < 10 s target stands. Triage routed all 20 direct |
 | Container (task 2.9, NFR-06, NFR-09) | Measured with 3.1.0's baked base encoder: encoder layer 91.7 MB (target ≤ 100 MB). Starts with no network, triage off and on; with triage on, both workers load the encoder in ~0.2 s and classify the same as locally. Triage adds ~90 MB per worker (682 vs 592 MB resident). **Memory doesn't fit:** the container uses 1.08 GiB with triage on and 955 MiB with it off, against the old 1 GiB Kubernetes limit. **Decided:** the limit is now 1.5 GiB (request 1 GiB), which leaves 28% headroom with triage on |
 | Follow-up history (task 0.5) | Real run: "what about Europe?" after a question on US EV sales produced a report on the European EV market in 2025 |
-| Not done yet | 2.11 dashboard screenshot; manual browser check of the toggle and override; shadow week; 3.11 switch to `act`; 3.12 container run in Auto; phase 4 |
+| Not done yet | 2.11 dashboard screenshot; manual browser check of the toggle and override; shadow week (scheduled in uat with release 3.2.3, alongside the security guard's, with collection approved; see `planning/specs/agentic-security/shadow-week-runbook.md`); 3.11 switch to `act`; 3.12 container run in Auto; phase 4 |
 
 ### Review fixes (2026-10-11)
 

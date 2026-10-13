@@ -2,6 +2,12 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.2.3 - 2026-10-13
+
+### Changed
+- uat runs triage's pending shadow week alongside the security guard's: `triage.enabled: true`, `mode: shadow`, `collect: true` in `backend/config/uat.yaml`. With Agentic on, triage classifies each question and records what it would have done; routing doesn't change. Triage collection stores question text for its review (30-day retention), approved for this week
+- Shadow-week runbook covers both: triage metrics, the mix of questions to send, triage's end-of-week review, and rolling either back
+
 ## 3.2.2 - 2026-10-13
 
 Getting ready for the security guard's shadow week in uat: what it judged is now recorded and measurable, and there is a runbook for the week and for deciding on act mode.

@@ -1,15 +1,15 @@
-# Shadow week runbook (release 3.2.2, uat)
+# Shadow week runbook (release 3.2.3, uat)
 
-Goal: run the security guard on real uat traffic for about a week in shadow mode (it checks everything and records what it would do, but blocks nothing), then decide whether checkpoint 1 can act. Tasks 3.8 and 5.1–5.3 in [`tasks.md`](tasks.md); targets in [`requirements.md`](requirements.md) (SEC-028, SNFR-01, SNFR-05).
+Goal: run the security guard on real uat traffic for about a week in shadow mode (it checks everything and records what it would do, but blocks nothing), then decide whether checkpoint 1 can act. Triage runs its own pending shadow week at the same time (decided 2026-10-13; see section 7). Tasks 3.8 and 5.1–5.3 in [`tasks.md`](tasks.md); targets in [`requirements.md`](requirements.md) (SEC-028, SNFR-01, SNFR-05).
 
 ## 1. Before deploying
 
 - [ ] `git lfs pull` (the ContextDefender encoder and dataset are LFS files; without them the image has pointer files and the guard can't score).
-- [ ] Build and push the backend image: `docker build --build-arg APP_VERSION=3.2.2 -t webagent/backend:3.2.2 backend/`, then deploy with `backend/kubernetes/deploy.sh -e uat -v 3.2.2` (the script applies the manifests; it doesn't build). It needs `OPENAI_API_KEY`, `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD` in the environment.
+- [ ] Build and push the backend image: `docker build --build-arg APP_VERSION=3.2.3 -t webagent/backend:3.2.3 backend/`, then deploy with `backend/kubernetes/deploy.sh -e uat -v 3.2.3` (the script applies the manifests; it doesn't build). It needs `OPENAI_API_KEY`, `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD` in the environment.
 - [ ] Environment: `WEBAGENT_ENV=uat`, a real `WEBAGENT_SECURITY_SECRET_KEY` (signs consent and approval tokens), `WEB_CONCURRENCY=2`. The guard itself uses `OPENAI_API_KEY` only if the harm judge is turned on.
 - [ ] `backend/config/uat.yaml`, `security_guard:` — `enabled: true`, `input_mode: shadow`, `tool_mode: shadow`, `collect: true`, `judge: false`. (Set in 3.2.2.)
 - [ ] Kubernetes: memory limit 2 GiB, request 1.5 GiB (`kubernetes/deployment.yaml`), one replica (collection writes to `/app/data`, which must be writable).
-- [ ] Optional, decide before deploying: run triage's own pending shadow week at the same time (`triage: enabled: true, mode: shadow, collect: true` in `uat.yaml`). Not set by default.
+- [ ] `uat.yaml`, `triage:` — `enabled: true`, `mode: shadow`, `collect: true`, `llm_tiebreak: false` (set in 3.2.3). Triage collection in uat stores question text; approved for this week (triage task 2.12).
 
 ## 2. Right after deploying
 
@@ -31,6 +31,9 @@ Prometheus (adjust the range to the period):
 | Shadow rule matches | `increase(webagent_guard_shadow_policy_total[1d])` | how often `untainted-search-misaligned` would act |
 | Memory per pod | `container_memory_working_set_bytes` (or `kubectl top pod`) | ≤ 1.6 GiB (2 GiB with 20% headroom, SNFR-05) |
 | Unlabelled LLM calls | `increase(webagent_guard_unlabelled_total[1d])` | 0 |
+| Triage: what it would route (Agentic-on questions) | `sum by (route, decided_by) (increase(webagent_triage_decisions_total[1d]))` | the split, for the review |
+| Triage: uncertain questions | `increase(webagent_triage_uncertain_total[1d])` | low (scores are mostly near 0 or 1) |
+| Triage: time per question, p95 | `histogram_quantile(0.95, sum by (le) (rate(webagent_triage_latency_seconds_bucket[1d])))` | about 5 ms |
 
 And the collection summary (counts only, no text), from `backend/` on the pod or a copy of the folder:
 
@@ -66,8 +69,14 @@ Then: act in uat for a day or two, watch the same numbers, then prod. Checkpoint
 
 ## 6. Rolling back
 
-Any time, without a new image: set `WEBAGENT_GUARD_INPUT_MODE=shadow` (or `WEBAGENT_GUARD_ENABLED=false`) and restart the pod.
+Any time, without a new image: set `WEBAGENT_GUARD_INPUT_MODE=shadow` (or `WEBAGENT_GUARD_ENABLED=false`) and restart the pod. Triage: `WEBAGENT_TRIAGE_ENABLED=false` (or `WEBAGENT_TRIAGE_COLLECT=false` to stop collecting questions).
 
-## 7. What collection holds
+## 7. Triage's shadow week
 
-Per decision: time, task id, checkpoint, outcome, policy ids, scores and pattern hits, web-result URLs, and tool arguments (search queries, code). User text is stored only as a hash outside dev. Files live in `/app/data/security/collected/` on the uat volume, are git-ignored, and are deleted after 30 days (`collect_retention_days`).
+Triage only sees questions sent with **Agentic on**, so during the week send a deliberate mix of routine questions (definitions, quick facts, rewrites) and real research questions with Agentic on. For each one it records what it would have decided; routing doesn't change.
+
+At the end of the week, follow triage's own review (`planning/specs/agentic-triage/tasks.md`, "Shadow week"): label the collected questions (`/app/data/triage/collected/`) with an LLM judge, review every disagreement between the judge and the classifier, anonymize, add them to `backend/data/triage/train.jsonl` (never to `test.jsonl`), retrain and re-run the gate. If the gate still passes, task 3.11 switches triage to `mode: act`.
+
+## 8. What collection holds
+
+Per decision: time, task id, checkpoint, outcome, policy ids, scores and pattern hits, web-result URLs, and tool arguments (search queries, code). User text is stored only as a hash outside dev. Files live in `/app/data/security/collected/` on the uat volume, are git-ignored, and are deleted after 30 days (`collect_retention_days`). Triage's files (`/app/data/triage/collected/`) hold the question text itself, because its review labels them; same 30-day retention.
