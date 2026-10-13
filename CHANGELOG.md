@@ -2,6 +2,13 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.2.4 - 2026-10-13
+
+### Fixed
+- `/metrics` showed one uvicorn worker's values at random (the image runs two): every worker now writes to `PROMETHEUS_MULTIPROC_DIR` (`/tmp/webagent_prometheus`, set in the image and emptied before the workers start) and `/metrics` sums them. Requests in progress count live workers; memory is one series per worker (`pid` label). Without the variable (dev, tests) nothing changes
+- On a fresh data volume one worker still crashed at startup, creating MLflow's default experiment at the same moment as the other ("Yaml file ... exists"; uvicorn restarted it). The store is now prepared once by the startup checks, before the workers start, and the import-time lookup retries once
+- `/metrics` counted its own scrapes in `http_requests_total`
+
 ## 3.2.3 - 2026-10-13
 
 ### Changed

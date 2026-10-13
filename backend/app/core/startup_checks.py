@@ -138,9 +138,25 @@ def check_production_settings(code_execution_enabled: bool) -> None:
         )
 
 
+def prepare_mlflow_store() -> None:
+    """Create the MLflow store and experiment once, before uvicorn starts its workers.
+
+    On a fresh data volume every worker otherwise creates `mlruns/0/meta.yaml` at import at the same
+    moment and one crashes ("Yaml file ... exists"); uvicorn restarts it, but the traceback alarms.
+    Best effort: MLflow problems never block startup.
+    """
+    try:
+        from app.core.mlflow_utils import get_or_create_experiment
+
+        get_or_create_experiment("rag_agent_performance")
+    except Exception as exc:  # noqa: BLE001
+        print(f"MLflow store not prepared (workers will try): {exc}", file=sys.stderr)
+
+
 if __name__ == "__main__":
     try:
         check_production_settings(server_code_execution_enabled())
     except RuntimeError as e:
         print(f"Startup check failed: {e}", file=sys.stderr)
         sys.exit(1)
+    prepare_mlflow_store()

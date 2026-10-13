@@ -145,6 +145,7 @@ GPU_MEMORY_USAGE = Gauge(
     "gpu_memory_usage_bytes",
     "GPU memory usage in bytes",
     ["device"],
+    multiprocess_mode="all",
     registry=WEBAGENT_REGISTRY
 )
 

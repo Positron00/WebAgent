@@ -12,6 +12,7 @@ from typing import Callable, Dict, Optional, List, Set
 
 from fastapi import FastAPI, Request, Response
 from prometheus_client import (
+    CONTENT_TYPE_LATEST,
     REGISTRY,
     Counter,
     Gauge,
@@ -19,6 +20,7 @@ from prometheus_client import (
     Summary,
     CollectorRegistry,
     generate_latest,
+    multiprocess,
 )
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
@@ -30,6 +32,7 @@ WEBAGENT_REGISTRY = CollectorRegistry()
 
 # Define endpoints that should be excluded from metrics collection
 METRICS_EXCLUDED_ENDPOINTS: Set[str] = {
+    "/metrics",
     "/api/v1/metrics",
     "/health",
     "/api/v1/health",
@@ -56,6 +59,7 @@ REQUESTS_IN_PROGRESS = Gauge(
     "http_requests_in_progress",
     "Number of HTTP requests in progress",
     ["method", "endpoint"],
+    multiprocess_mode="livesum",  # summed over live workers when PROMETHEUS_MULTIPROC_DIR is set
     registry=WEBAGENT_REGISTRY
 )
 
@@ -122,6 +126,7 @@ MEMORY_USAGE = Gauge(
     "memory_usage_bytes",
     "Memory usage in bytes",
     ["type"],
+    multiprocess_mode="all",  # one series per worker (`pid` label) with several workers
     registry=WEBAGENT_REGISTRY
 )
 
@@ -465,11 +470,25 @@ def setup_metrics(app: FastAPI):
         """Prometheus metrics endpoint."""
         # Update memory usage before serving metrics
         update_memory_usage()
-        
-        return Response(
-            content=generate_latest(WEBAGENT_REGISTRY),
-            media_type="text/plain"
-        )
+
+        return Response(content=metrics_payload(), media_type=CONTENT_TYPE_LATEST)
+
+    @app.on_event("shutdown")
+    def _mark_worker_dead() -> None:
+        # Live gauges (requests in progress) stop counting this worker once it exits.
+        if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+            multiprocess.mark_process_dead(os.getpid())
+
+
+def metrics_payload() -> bytes:
+    """All metrics. With several uvicorn workers (PROMETHEUS_MULTIPROC_DIR set, as in the image) every
+    worker writes its values to that folder and this sums them; otherwise a scrape would see only the
+    worker that happened to answer it."""
+    if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+        registry = CollectorRegistry()
+        multiprocess.MultiProcessCollector(registry)
+        return generate_latest(registry)
+    return generate_latest(WEBAGENT_REGISTRY)
 
 # Dictionary to store execution times for functions
 _execution_times = {}

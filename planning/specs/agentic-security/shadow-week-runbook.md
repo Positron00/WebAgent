@@ -1,14 +1,14 @@
-# Shadow week runbook (release 3.2.3, uat)
+# Shadow week runbook (release 3.2.4, uat)
 
 Goal: run the security guard on real uat traffic for about a week in shadow mode (it checks everything and records what it would do, but blocks nothing), then decide whether checkpoint 1 can act. Triage runs its own pending shadow week at the same time (decided 2026-10-13; see section 7). Tasks 3.8 and 5.1–5.3 in [`tasks.md`](tasks.md); targets in [`requirements.md`](requirements.md) (SEC-028, SNFR-01, SNFR-05).
 
 ## 1. Before deploying
 
 - [ ] `git lfs pull` (the ContextDefender encoder and dataset are LFS files; without them the image has pointer files and the guard can't score).
-- [ ] Build and push the backend image: `docker build --build-arg APP_VERSION=3.2.3 -t webagent/backend:3.2.3 backend/`, then deploy with `backend/kubernetes/deploy.sh -e uat -v 3.2.3` (the script applies the manifests; it doesn't build). It needs `OPENAI_API_KEY`, `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD` in the environment.
+- [ ] Build and push the backend image: `docker build --build-arg APP_VERSION=3.2.4 -t webagent/backend:3.2.4 backend/`, then deploy with `backend/kubernetes/deploy.sh -e uat -v 3.2.4` (the script applies the manifests; it doesn't build). It needs `OPENAI_API_KEY`, `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD` in the environment.
 - [ ] Environment: `WEBAGENT_ENV=uat`, a real `WEBAGENT_SECURITY_SECRET_KEY` (signs consent and approval tokens), `WEB_CONCURRENCY=2`. The guard itself uses `OPENAI_API_KEY` only if the harm judge is turned on.
 - [ ] `backend/config/uat.yaml`, `security_guard:` — `enabled: true`, `input_mode: shadow`, `tool_mode: shadow`, `collect: true`, `judge: false`. (Set in 3.2.2.)
-- [ ] Kubernetes: memory limit 2 GiB, request 1.5 GiB (`kubernetes/deployment.yaml`), one replica (collection writes to `/app/data`, which must be writable).
+- [ ] Kubernetes: memory limit 2 GiB, request 1.5 GiB (`kubernetes/deployment.yaml`), one replica (collection writes to `/app/data`, which must be writable). `/tmp` must be writable too: since 3.2.4 every worker writes its metrics to `PROMETHEUS_MULTIPROC_DIR` (`/tmp/webagent_prometheus`) and `/metrics` sums them; with a read-only root filesystem, mount an `emptyDir` at `/tmp`.
 - [ ] `uat.yaml`, `triage:` — `enabled: true`, `mode: shadow`, `collect: true`, `llm_tiebreak: false` (set in 3.2.3). Triage collection in uat stores question text; approved for this week (triage task 2.12).
 
 ## 2. Right after deploying
@@ -29,7 +29,7 @@ Prometheus (adjust the range to the period):
 | What checkpoint 1 would do | `sum by (outcome) (increase(webagent_guard_decisions_total{checkpoint="1"}[1d]))` | watch decline / consent / escalate |
 | Real searches' alignment (untainted) | `histogram_quantile(0.1, sum by (le) (rate(webagent_guard_search_alignment_bucket{tainted="false"}[1d])))` | sets the shadow rule's threshold |
 | Shadow rule matches | `increase(webagent_guard_shadow_policy_total[1d])` | how often `untainted-search-misaligned` would act |
-| Memory per pod | `container_memory_working_set_bytes` (or `kubectl top pod`) | ≤ 1.6 GiB (2 GiB with 20% headroom, SNFR-05) |
+| Memory per pod | `container_memory_working_set_bytes` (or `kubectl top pod`); per worker: `memory_usage_bytes{type="rss"}` (one series per `pid`) | ≤ 1.6 GiB per pod (2 GiB with 20% headroom, SNFR-05) |
 | Unlabelled LLM calls | `increase(webagent_guard_unlabelled_total[1d])` | 0 |
 | Triage: what it would route (Agentic-on questions) | `sum by (route, decided_by) (increase(webagent_triage_decisions_total[1d]))` | the split, for the review |
 | Triage: uncertain questions | `increase(webagent_triage_uncertain_total[1d])` | low (scores are mostly near 0 or 1) |

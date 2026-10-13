@@ -173,3 +173,14 @@ def test_prompt_guard_judge_without_the_model_is_rejected(prod, monkeypatch, tmp
     (tmp_path / "prompt_guard" / "config.json").write_text("{}")
     (tmp_path / "prompt_guard" / "model.safetensors").write_bytes(b"x")
     startup_checks.check_security_guard_files()
+
+
+def test_mlflow_store_preparation_never_blocks_startup(monkeypatch, capsys):
+    import app.core.mlflow_utils as mu
+
+    def boom(name):
+        raise RuntimeError("store unavailable")
+
+    monkeypatch.setattr(mu, "get_or_create_experiment", boom)
+    startup_checks.prepare_mlflow_store()  # must not raise
+    assert "not prepared" in capsys.readouterr().err
