@@ -90,8 +90,13 @@ register_template("internal_research", FOLLOWUP_RESEARCH_PROMPT)
 TRACKING_ENABLED = os.environ.get("MLFLOW_TRACKING_URI") is not None
 if TRACKING_ENABLED:
     import mlflow
-    # Always use settings.MLFLOW_ARTIFACT_LOCATION for artifacts
-    experiment = mlflow.get_experiment_by_name("rag_agent_performance")
+    # Always use settings.MLFLOW_ARTIFACT_LOCATION for artifacts. The first call on an empty store also
+    # creates MLflow's default experiment, which several workers can race on: retry once (the image's
+    # startup checks prepare the store before the workers start, so this is a second line).
+    try:
+        experiment = mlflow.get_experiment_by_name("rag_agent_performance")
+    except Exception:  # noqa: BLE001 - "Yaml file ... exists" from a concurrent first write
+        experiment = mlflow.get_experiment_by_name("rag_agent_performance")
     if experiment is None:
         # Several uvicorn workers import this module at once on a fresh data volume; if another
         # worker created the experiment first, that is fine (it used to kill this worker).

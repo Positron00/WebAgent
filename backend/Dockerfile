@@ -25,6 +25,7 @@ ARG APP_VERSION=0.0.0
 # WEBAGENT_ENV selects config/prod.yaml (API keys required, debug off).
 # NLTK data is installed at build time, so startup never downloads it.
 ENV PYTHONDONTWRITEBYTECODE=1 \
+    PROMETHEUS_MULTIPROC_DIR=/tmp/webagent_prometheus \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
     PATH="/app:${PATH}" \
@@ -82,4 +83,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 # Task status is shared between workers through /app/data/results, so several workers are safe.
 # The startup checks run once first, so bad uat/prod settings stop the container with a clear
 # message instead of uvicorn restarting failed workers forever.
-CMD ["sh", "-c", "python -m app.core.startup_checks && exec uvicorn main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY}"]
+# Metrics from every uvicorn worker are written to PROMETHEUS_MULTIPROC_DIR and summed by /metrics; the
+# folder must exist before anything imports the app, and is emptied again before the workers start.
+CMD ["sh", "-c", "mkdir -p \"$PROMETHEUS_MULTIPROC_DIR\" && python -m app.core.startup_checks && rm -rf \"$PROMETHEUS_MULTIPROC_DIR\" && mkdir -p \"$PROMETHEUS_MULTIPROC_DIR\" && exec uvicorn main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY}"]
