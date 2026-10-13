@@ -105,10 +105,12 @@ security_guard:
   collect: true            # shadow week: decisions with scores for review (no text outside dev; 30-day retention)
 
 triage:
-  # Off until a classifier version passes the release gate (REQ-023); Auto then acts like Always.
-  enabled: false
-  mode: act
-  collect: false
+  # Shadow week (2026-10-13), alongside the security guard's: with Agentic on, triage classifies each
+  # question and records what it would have done; routing is unchanged. Collection stores question text
+  # for the review (30-day retention). After the review, task 3.11 sets mode: act.
+  enabled: true
+  mode: shadow
+  collect: true
   llm_tiebreak: false
 
 # Logging configuration
