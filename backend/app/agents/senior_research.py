@@ -14,6 +14,9 @@ from pydantic import BaseModel, Field
 
 from app.models.task import WorkflowState
 from app.services.llm import get_agent_llm
+from app.security.hop_guard import acheck_hop, kept_text, task_items
+from app.security.types import ContextItem
+from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
 
@@ -64,6 +67,9 @@ research_questions: ["question 1", "question 2", ...]
 
 After the evaluation, provide your complete synthesized report.
 """
+
+# Static prompt text is never scored by the safety net (SEC-032).
+register_template("senior_research", SENIOR_RESEARCH_PROMPT)
 
 # Define the evaluation output structure
 class ResearchEvaluation(BaseModel):
@@ -236,6 +242,17 @@ class SeniorResearchAgent(BaseAgent):
             
             logger.debug(f"Synthesizing findings from web and internal research (iteration {current_iteration}/3)")
             
+            hop = await acheck_hop(
+                "senior_research",
+                task_items(state)
+                + [
+                    ContextItem("agent_output", str(web_findings), ref="web_research"),
+                    ContextItem("agent_output", str(internal_findings), ref="internal_research"),
+                ],
+                state,
+            )
+            web_findings = kept_text(hop, "web_research", str(web_findings))
+            internal_findings = kept_text(hop, "internal_research", str(internal_findings))
             # Run the LLM chain to synthesize the findings
             full_output = await self.chain.ainvoke({
                 "query": state.query,

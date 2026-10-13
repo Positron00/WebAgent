@@ -33,8 +33,11 @@ from sentence_transformers import CrossEncoder
 
 from app.models.task import WorkflowState
 from app.models.research_plan import research_query
-from app.services.llm import get_llm
+from app.security.hop_guard import acheck_hop, kept_text, task_items
+from app.security.types import ContextItem
 from app.services.vectordb import retrieve_documents, get_vectordb_service
+from app.security.tool_guard import guard_tool
+from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
 from app.utils.metrics import timing_decorator, log_memory_usage
@@ -78,6 +81,10 @@ Specific research questions to address:
 
 Please focus on finding this information in your analysis.
 """
+
+# Static prompt text is never scored by the safety net (SEC-032).
+register_template("internal_research", INTERNAL_RESEARCH_PROMPT)
+register_template("internal_research", FOLLOWUP_RESEARCH_PROMPT)
 
 # Experiment tracking configuration
 TRACKING_ENABLED = os.environ.get("MLFLOW_TRACKING_URI") is not None
@@ -958,7 +965,17 @@ class InternalResearchAgent(BaseAgent):
         
         while attempts < max_retries:
             try:
-                # Format the prompt using the prompt template directly
+                # Checkpoint 1 first: the prompt is built from the retrieved text it kept (SEC-031).
+                context_key = "context" if "context" in prompt_inputs else "documents"
+                context_blob = str(prompt_inputs.get(context_key) or "")
+                hop = await acheck_hop(
+                    "internal_research",
+                    task_items(self._current_state)
+                    + ([ContextItem("retrieved_doc", context_blob, ref="retrieval")] if context_blob else []),
+                    self._current_state,
+                )
+                if context_blob:
+                    prompt_inputs = {**prompt_inputs, context_key: kept_text(hop, "retrieval", context_blob)}
                 formatted_prompt = self.prompt.format_messages(**prompt_inputs)
                 
                 # Invoke the LLM directly, avoiding the chain to prevent tags conflicts
@@ -998,8 +1015,8 @@ class InternalResearchAgent(BaseAgent):
                     try:
                         logger.warning("Trying alternative LLM invocation method")
                         # Create a brand new LLM instance without any config
-                        from app.services.llm import get_llm
-                        temporary_llm = get_llm("gpt-3.5-turbo")
+                        from app.services.llm import get_agent_llm
+                        temporary_llm = get_agent_llm("internal_research")
                         
                         # Format the prompt and invoke directly
                         raw_output = await temporary_llm.ainvoke(formatted_prompt)
@@ -1046,6 +1063,7 @@ class InternalResearchAgent(BaseAgent):
             mlflow.log_param("query", state.query)
         
         start_time = time.time()
+        self._current_state = state
         
         try:
             # Get the research plan
@@ -1083,10 +1101,18 @@ class InternalResearchAgent(BaseAgent):
             
             # 1. Retrieve documents using the RAG Retriever
             logger.info(f"Retrieving internal documents (iteration {iteration})")
-            retrieved_documents = await self.retriever.retrieve(
-                query=search_query,
-                k=self.config.get("retrieve_k", 20)
-            )
+            if await guard_tool(
+                "tool::internal_retrieve",
+                {"query": search_query},
+                state,
+                principal="internal_research",
+            ):
+                retrieved_documents = await self.retriever.retrieve(
+                    query=search_query,
+                    k=self.config.get("retrieve_k", 20)
+                )
+            else:
+                retrieved_documents = []
             
             # If follow-up research and there are specific questions, get additional documents
             if is_followup:
@@ -1095,6 +1121,13 @@ class InternalResearchAgent(BaseAgent):
                 
                 for i, question in enumerate(questions[:2]):  # Limit to 2 additional questions
                     logger.info(f"Performing additional document retrieval for: {question}")
+                    if not await guard_tool(
+                        "tool::internal_retrieve",
+                        {"query": question},
+                        state,
+                        principal="internal_research",
+                    ):
+                        continue
                     additional_docs = await self.retriever.retrieve(
                         query=question,
                         k=self.config.get("retrieve_k", 10)  # Fewer documents for follow-up questions

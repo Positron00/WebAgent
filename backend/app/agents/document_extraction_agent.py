@@ -37,6 +37,8 @@ from sklearn.metrics import silhouette_score
 # Import local modules
 from app.core.config import settings
 from app.services.llm import get_agent_llm
+from app.security.hop_guard import check_hop, kept_text, task_items
+from app.security.types import ContextItem
 from app.agents.base_agent import BaseAgent
 from app.utils.metrics import timing_decorator, log_memory_usage
 from app.utils.document_utils import extract_text_from_document
@@ -44,6 +46,7 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.schema.runnable import RunnableLambda
 from app.core.logger import logger, get_logger
 from app.models.task import WorkflowState
+from app.security.tool_guard import guard_tool
 from app.services.document_loader import get_document_loader_service
 
 # Initialize logging
@@ -358,6 +361,17 @@ class DocumentExtractionAgent(BaseAgent):
             logger.warning(f"Document text too long ({len(text)} chars), truncating to {max_length}")
             text = text[:max_length] + "...[truncated]"
         
+        # Checkpoint 1 on the document text first; the prompt uses what it kept (SEC-031).
+        state = getattr(self, "_hop_state", None)
+        if state is not None:
+            doc_ref = getattr(self, "_current_document_id", None) or "document"
+            hop = check_hop(
+                "document_extraction",
+                task_items(state) + [ContextItem("document", text, ref=doc_ref)],
+                state,
+            )
+            text = kept_text(hop, doc_ref, text)
+
         # Prepare the prompt
         prompt = template.format(text=text)
         
@@ -662,6 +676,14 @@ class DocumentExtractionAgent(BaseAgent):
         
         # Retrieve document from vector database
         try:
+            if not await guard_tool(
+                "tool::document_extract",
+                {"document_id": document_id},
+                state,
+                principal="document_extraction",
+            ):
+                state.error = "Document extraction was not allowed by the security guard"
+                return state
             document = vectordb.get_document_by_artifact_id(document_id)
             if not document:
                 state.error = f"Document with ID {document_id} not found in vector database"
@@ -669,6 +691,8 @@ class DocumentExtractionAgent(BaseAgent):
                 
             # Extract text content from document
             text = document.page_content
+            self._hop_state = state
+            self._current_document_id = document_id
             
             # Select extraction method
             method = state.inputs.get("extraction_method", "auto")

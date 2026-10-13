@@ -5,13 +5,22 @@ import { useChat } from '@/contexts/ChatContext';
 import { useApp } from '@/contexts/AppContext';
 import { MessageInput } from './chat/MessageInput';
 import { MessageList, hasCodeBlocks, extractCodeBlocks } from './chat/MessageList';
+import { ConsentDialog } from './chat/ConsentDialog';
 import { SourceCanvas } from './chat/SourceCanvas';
 import { CodeCanvas } from './chat/CodeCanvas';
 import { XMarkIcon, PaperClipIcon, InformationCircleIcon, CodeBracketIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 
 export default function Chat() {
-  const { state, sendMessage, clearMessages } = useChat();
+  const {
+    state,
+    sendMessage,
+    clearMessages,
+    pendingConsent,
+    sendWithConsent,
+    editPendingMessage,
+    setEditPendingHandler,
+  } = useChat();
   const { accessibility, showNotification, modeReady } = useApp();
   const [input, setInput] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -39,6 +48,10 @@ export default function Chat() {
   
   // Determine the canvas type
   const canvasType = latestAssistantMessageWithCode ? 'code' : 'sources';
+
+  useEffect(() => {
+    setEditPendingHandler((text) => setInput(text));
+  }, [setEditPendingHandler]);
 
   // Create/clear preview URL when imageFile changes
   useEffect(() => {
@@ -162,6 +175,14 @@ export default function Chat() {
           </div>
         )}
       </div>
+
+      {pendingConsent && (
+        <ConsentDialog
+          reason={pendingConsent.reason}
+          onSendAnyway={() => sendWithConsent()}
+          onEditMessage={editPendingMessage}
+        />
+      )}
 
       {/* Screenshot Preview Overlay */}
       {screenshotPreview && (

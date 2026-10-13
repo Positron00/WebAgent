@@ -59,6 +59,7 @@ seaborn>=0.13.0
 pillow>=10.2.0
 
 # Security
+cedarpy>=4.8.7
 python-jose[cryptography]>=3.3.0
 PyJWT>=2.8.0
 passlib[bcrypt]>=1.7.4

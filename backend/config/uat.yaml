@@ -95,6 +95,15 @@ agents:
     model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.4
 
+security_guard:
+  enabled: true
+  input_mode: shadow
+  tool_mode: shadow
+  judge: false
+  harm_judge: moderation   # OpenAI moderation (needs OPENAI_API_KEY); or llm / off
+  jailbreak_judge: llm      # trusted chat model; or off
+  collect: false
+
 triage:
   # Off until a classifier version passes the release gate (REQ-023); Auto then acts like Always.
   enabled: false

@@ -17,8 +17,8 @@ CODE = "import matplotlib.pyplot as plt\nplt.plot([1, 2, 3], [4, 5, 6])\nplt.tit
 def no_real_models(monkeypatch):
     """Build the agents without OpenAI clients or any network access."""
     monkeypatch.setattr(settings, "OPENAI_API_KEY", None)
-    monkeypatch.setattr(assistant_module, "get_llm_without_tags", lambda: object())
-    monkeypatch.setattr(review_module, "get_llm_without_tags", lambda: object())
+    monkeypatch.setattr(assistant_module, "get_agent_llm", lambda _name: object())
+    monkeypatch.setattr(review_module, "get_agent_llm", lambda _name: object())
 
 
 def state_with(**reports):

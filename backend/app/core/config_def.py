@@ -175,6 +175,27 @@ class LangSmithConfig(BaseModel):
     log_level: LogLevel = Field(default=LogLevel.INFO)
 
 
+class SecurityGuardConfig(BaseModel):
+    """Agentic security guard (checkpoints 1 and 2)."""
+
+    enabled: bool = Field(default=True)
+    input_mode: Literal["shadow", "act"] = Field(default="shadow")
+    tool_mode: Literal["shadow", "act"] = Field(default="shadow")
+    judge: bool = Field(default=False)
+    # Checkpoint 1 judges for borderline user turns (SEC-035a). "moderation" is OpenAI's moderation
+    # endpoint (needs OPENAI_API_KEY; built for this content, so it doesn't refuse); "llm" is the
+    # trusted chat model, which may refuse to judge clearly harmful text (a refusal counts as flagged).
+    harm_judge: Literal["moderation", "llm", "off"] = Field(default="moderation")
+    # "prompt_guard" is Meta's Llama Prompt Guard 2, run locally from models/security/prompt_guard
+    # (gated download, Llama 4 Community License); nothing leaves the server and it can't refuse.
+    jailbreak_judge: Literal["prompt_guard", "llm", "off"] = Field(default="llm")
+    prompt_guard_threshold: float = Field(default=0.5, gt=0.0, lt=1.0)
+    collect: bool = Field(default=False)
+    collect_retention_days: int = Field(default=30, gt=0)
+    model_dir: str = Field(default="models/security")
+    policy_dir: str = Field(default="config/security")
+
+
 class TriageConfig(BaseModel):
     """Agentic triage (Off / Auto / Always routing)."""
 
@@ -205,6 +226,7 @@ class AppConfig(BaseModel):
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     langsmith: LangSmithConfig = Field(default_factory=LangSmithConfig)
     triage: TriageConfig = Field(default_factory=TriageConfig)
+    security_guard: SecurityGuardConfig = Field(default_factory=SecurityGuardConfig)
     
     @field_validator('cors')
     @classmethod

@@ -33,6 +33,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     WEBAGENT_NLTK_AUTO_DOWNLOAD=false \
     NLTK_DATA=/usr/local/share/nltk_data \
     HF_HOME=/app/data/hf-cache \
+    SENTENCE_TRANSFORMERS_HOME=/opt/models \
     MLFLOW_TRACKING_URI=file:///app/data/mlruns \
     GIT_PYTHON_REFRESH=quiet \
     WEB_CONCURRENCY=2
@@ -52,6 +53,12 @@ ENV PATH=/home/webagent/.local/bin:$PATH
 # NLTK corpora used by document extraction
 RUN PYTHONUSERBASE=/home/webagent/.local python -m nltk.downloader -d /usr/local/share/nltk_data \
     punkt stopwords wordnet maxent_ne_chunker words
+
+# Base MiniLM for the security guard (ContextDefender and alignment), baked in so startup never
+# downloads it. Not under /app/data: that is a mounted volume. The triage encoder is the fine-tuned
+# copy in models/triage/encoder/, which comes in with the code.
+RUN mkdir -p /opt/models && PYTHONUSERBASE=/home/webagent/.local python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/opt/models')" \
+    && chown -R webagent:webagent /opt/models
 
 # Copy application code. This includes the fine-tuned triage encoder (models/triage/encoder/),
 # so startup never downloads a model.

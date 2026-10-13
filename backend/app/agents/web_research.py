@@ -17,6 +17,9 @@ from app.services.llm import get_agent_llm
 from app.services.web_search import perform_web_search
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
+from app.security.tool_guard import guard_tool
+from app.security.guarded_llm import register_template
+from app.security.hop_integration import format_web_items, run_with_hop, web_result_items
 from app.utils.reasoning import strip_reasoning
 logger = logging.getLogger(__name__)
 
@@ -60,6 +63,12 @@ Specific research questions to address:
 
 Please focus on finding this information in your analysis.
 """
+
+# Static prompt text is never scored by the safety net (SEC-032).
+register_template("web_research", WEB_RESEARCH_PROMPT)
+register_template("web_research", FOLLOWUP_RESEARCH_PROMPT)
+
+
 
 class WebResearchAgent(BaseAgent):
     """
@@ -167,11 +176,19 @@ class WebResearchAgent(BaseAgent):
             
             logger.debug(f"Using search depth: {depth}")
             
-            search_results = await perform_web_search(
-                query=search_query,
-                search_depth=depth,
-                max_results=5  # Reduced from 7 to avoid overloading
-            )
+            if not await guard_tool(
+                "tool::web_search",
+                {"query": search_query},
+                state,
+                principal="web_research",
+            ):
+                search_results = []
+            else:
+                search_results = await perform_web_search(
+                    query=search_query,
+                    search_depth=depth,
+                    max_results=5  # Reduced from 7 to avoid overloading
+                )
             
             # If we couldn't get results, try a simplified query
             if not search_results:
@@ -180,11 +197,17 @@ class WebResearchAgent(BaseAgent):
                 simplified_query = " ".join(search_query.split()[:6])
                 logger.info(f"Simplified query: {simplified_query}")
                 
-                search_results = await perform_web_search(
-                    query=simplified_query,
-                    search_depth="basic",  # Always use basic for fallback
-                    max_results=3
-                )
+                if await guard_tool(
+                    "tool::web_search",
+                    {"query": simplified_query},
+                    state,
+                    principal="web_research",
+                ):
+                    search_results = await perform_web_search(
+                        query=simplified_query,
+                        search_depth="basic",  # Always use basic for fallback
+                        max_results=3
+                    )
         except Exception as search_error:
             logger.error(f"Error during web search: {str(search_error)}")
             # Create empty results to continue with
@@ -198,12 +221,18 @@ class WebResearchAgent(BaseAgent):
             for question in questions:
                 logger.info(f"Performing additional search for: {question}")
                 try:
-                    additional_results = await perform_web_search(
-                        query=question,
-                        search_depth="basic",  # Changed from "focused" to valid "basic"
-                        max_results=3
-                    )
-                    search_results.extend(additional_results)
+                    if await guard_tool(
+                        "tool::web_search",
+                        {"query": question},
+                        state,
+                        principal="web_research",
+                    ):
+                        additional_results = await perform_web_search(
+                            query=question,
+                            search_depth="basic",  # Changed from "focused" to valid "basic"
+                            max_results=3
+                        )
+                        search_results.extend(additional_results)
                 except Exception as additional_error:
                     logger.error(f"Error during additional search: {str(additional_error)}")
         
@@ -219,22 +248,28 @@ class WebResearchAgent(BaseAgent):
             state.update_with_agent_output("web_research", empty)
             return state
         
-        # Format the search results for the prompt
-        formatted_results = self._format_search_results(search_results)
-        
-        # Prepare the prompt with the research plan and results
-        prompt_text = self.prompt.format(
-            query=query,
-            research_plan="\n".join(f"- {q}" for q in research_plan.get("questions", []))
-            or "No specific research plan provided.",
-            search_results=formatted_results,
-            feedback_section=self._format_feedback(state.context.get("research_feedback", {}), iteration),
-        )
-        
+        variable_items = web_result_items(search_results)
+
+        def build_prompt(hop):
+            kept_web = [i for i in hop.items if i.source == "web_result"]
+            formatted_results = format_web_items(kept_web)
+            return self.prompt.format(
+                query=query,
+                research_plan="\n".join(f"- {q}" for q in research_plan.get("questions", []))
+                or "No specific research plan provided.",
+                search_results=formatted_results,
+                feedback_section=self._format_feedback(state.context.get("research_feedback", {}), iteration),
+            )
+
         # Call the language model to analyze the results
         try:
-            # Call the LLM directly
-            response = await self.llm.ainvoke(prompt_text)
+            response, _hop = await run_with_hop(
+                "web_research",
+                state,
+                variable_items,
+                build_prompt,
+                self.llm.ainvoke,
+            )
             assistant_message = (
                 response if isinstance(response, str) else getattr(response, "content", "")
             )

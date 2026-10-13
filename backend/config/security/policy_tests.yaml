@@ -1,0 +1,329 @@
+# Offline policy table (SEC-014). Each row is evaluated through decide() at load time.
+tests:
+  - name: baseline allow user turn
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+    expected: allow
+
+  - name: baseline allow agent output
+    principal: senior_research
+    action: converse
+    resource: task-1
+    context:
+      source: agent_output
+      injection: 10
+    expected: allow
+
+  - name: untrusted injection watch
+    principal: web_research
+    action: converse
+    resource: task-1
+    context:
+      source: web_result
+      injection: 25
+    expected: verify
+
+  - name: untrusted injection drop score
+    principal: web_research
+    action: converse
+    resource: task-1
+    context:
+      source: web_result
+      injection: 45
+    expected: decline
+
+  - name: untrusted injection drop pattern
+    principal: web_research
+    action: converse
+    resource: task-1
+    context:
+      source: document
+      pattern_hits: [injection_phrase]
+    expected: decline
+
+  - name: user harm decline
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      harm: 90
+    expected: decline
+
+  - name: user jailbreak consent
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      jailbreak: 75
+      harm: 10
+    expected: consent
+
+  - name: user jailbreak consented
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      jailbreak: 75
+      harm: 10
+      consented: true
+    expected: allow
+
+  - name: search secret decline
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      pattern_hits: [api_key]
+    expected: decline
+
+  - name: tainted search verify
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      tainted: true
+      alignment: 40
+    expected: verify
+
+  - name: tainted code consent
+    principal: coding_review
+    action: tool::execute_code
+    resource: task-1
+    context:
+      source: tool
+      tainted: true
+      code_execution_enabled: true
+    expected: consent
+
+  - name: tainted code approved
+    principal: coding_review
+    action: tool::execute_code
+    resource: task-1
+    context:
+      source: tool
+      tainted: true
+      code_execution_enabled: true
+      approved_tools: [tool::execute_code]
+    expected: allow
+
+  - name: repeated declines escalate
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      declined_actions_in_task: 3
+    expected: escalate
+
+  - name: classifier down untrusted verify
+    principal: web_research
+    action: converse
+    resource: task-1
+    context:
+      source: web_result
+      scores_available: false
+    expected: verify
+
+  - name: classifier down user turn allow
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      scores_available: false
+    expected: allow
+
+  - name: document provenance decline
+    principal: document_extraction
+    action: tool::document_extract
+    resource: task-1
+    context:
+      source: tool
+      pattern_hits: [document_provenance]
+    expected: decline
+
+  - name: search personal data verify
+    principal: internal_research
+    action: tool::internal_retrieve
+    resource: task-1
+    context:
+      source: tool
+      pattern_hits: [email]
+    expected: verify
+
+  - name: search url verify
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      pattern_hits: [site_operator]
+    expected: verify
+
+  - name: code dangerous decline
+    principal: coding_review
+    action: tool::execute_code
+    resource: task-1
+    context:
+      source: tool
+      code_findings: [process]
+      code_execution_enabled: true
+    expected: decline
+
+  - name: code disabled decline
+    principal: coding_review
+    action: tool::execute_code
+    resource: task-1
+    context:
+      source: tool
+      code_execution_enabled: false
+    expected: decline
+
+  - name: severity decline over verify
+    principal: web_research
+    action: converse
+    resource: task-1
+    context:
+      source: web_result
+      injection: 45
+      scores_available: false
+    expected: decline
+
+  - name: severity escalate over decline
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      pattern_hits: [api_key]
+      declined_actions_in_task: 3
+    expected: escalate
+
+  - name: network code consent
+    principal: coding_review
+    action: tool::execute_code
+    resource: task-1
+    context:
+      source: tool
+      code_findings: [network]
+      code_execution_enabled: true
+    expected: consent
+
+  # Thresholds come from the loaded model's metadata (thresholds.py); these rows use non-default ones.
+  - name: harm decline at a model threshold
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      harm: 93
+      harm_decline_at: 92
+    expected: decline
+
+  - name: harm below a model decline threshold is verified
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      harm: 91
+      harm_decline_at: 92
+    expected: verify
+
+  - name: harm below a model verify threshold
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      harm: 70
+      harm_verify_at: 75
+      harm_decline_at: 92
+    expected: allow
+
+  - name: injection watch band follows the model thresholds
+    principal: web_research
+    action: converse
+    resource: task-1
+    context:
+      source: web_result
+      injection: 45
+      injection_watch_at: 30
+      injection_drop_at: 60
+    expected: verify
+
+  - name: user harm verify band goes to the judge
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      harm: 60
+    expected: verify
+
+  - name: history harm verify band
+    principal: web_research
+    action: converse
+    resource: task-1
+    context:
+      source: history
+      harm: 60
+    expected: verify
+
+  - name: user jailbreak verify band
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      jailbreak: 55
+    expected: verify
+
+  - name: user harm below the verify band
+    principal: intake
+    action: converse
+    resource: task-1
+    context:
+      source: user_turn
+      harm: 30
+      jailbreak: 30
+    expected: allow
+
+  - name: misaligned search in an untainted task is only recorded
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      alignment: 12
+    expected: allow
+    expected_shadow: [untainted-search-misaligned]
+
+  - name: aligned search in an untainted task records nothing
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      alignment: 75
+    expected: allow
+    expected_shadow: []
+
+  - name: misaligned search in a tainted task is verified, the shadow rule still recorded
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      alignment: 12
+      tainted: true
+    expected: verify
+    expected_shadow: []

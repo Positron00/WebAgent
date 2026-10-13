@@ -5,6 +5,7 @@ import { CHAT_SETTINGS } from '@/config/chat';
 import { logger } from '@/utils/logger';
 import { clientConfig } from '@/config/clientConfig';
 import { routeQuestion } from '@/utils/routeQuestion';
+import { isGuardRefusal, normalizeSecuritySummary } from '@/types/security';
 
 const TRIAGE_ROUTING_FALLBACK_NOTICE =
   "I'm answering directly because research routing is temporarily unavailable.\n\n";
@@ -75,7 +76,7 @@ function extractErrorMessage(errorData: unknown): string | undefined {
 /**
  * Enhanced error class with additional context for better debugging
  */
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
@@ -388,7 +389,7 @@ export class ApiClient {
     knowledgeFocus?: string,
     citeSources?: boolean,
     mode: AgenticMode = 'off',
-    options?: { forceAgentic?: boolean }
+    options?: { forceAgentic?: boolean; consentToken?: string; approvalTokens?: string[] }
   ): Promise<ChatCompletionResponse> {
     const history = messages.slice(0, -1);
     const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
@@ -449,7 +450,8 @@ export class ApiClient {
         promptStyle,
         knowledgeFocus,
         citeSources,
-        fallbackNotice
+        fallbackNotice,
+        options?.consentToken
       );
     } else {
       logger.info('Routing to multi-agent system', { mode, decidedBy: routeInfo.decidedBy });
@@ -457,7 +459,9 @@ export class ApiClient {
         query,
         image,
         buildPreviousMessages(history),
-        options?.forceAgentic
+        options?.forceAgentic,
+        options?.consentToken,
+        options?.approvalTokens
       );
       response = agenticResult.response;
       if (agenticResult.usedFallback) {
@@ -478,7 +482,8 @@ export class ApiClient {
     promptStyle?: string,
     knowledgeFocus?: string,
     citeSources?: boolean,
-    fallbackNotice?: boolean
+    fallbackNotice?: boolean,
+    consentToken?: string
   ): Promise<ChatCompletionResponse> {
     const requestMessages = messages.map((msg) => ({
       role: msg.role,
@@ -505,6 +510,7 @@ export class ApiClient {
           citeSources,
           agentic: false,
           image: image || null,
+          ...(consentToken ? { consentToken } : {}),
         }),
       }
     );
@@ -522,7 +528,9 @@ export class ApiClient {
     query: string,
     image?: string | null,
     previousMessages: { role: 'user' | 'assistant'; content: string }[] = [],
-    triageOverride?: boolean
+    triageOverride?: boolean,
+    consentToken?: string,
+    approvalTokens?: string[]
   ): Promise<{ response: ChatCompletionResponse; usedFallback: boolean }> {
     const requestId = this.generateRequestId();
     const startTime = Date.now();
@@ -537,6 +545,8 @@ export class ApiClient {
         agentic: true,
         previous_messages: previousMessages,
         ...(triageOverride ? { triage_override: true } : {}),
+        ...(consentToken ? { consent_token: consentToken } : {}),
+        ...(approvalTokens?.length ? { approval_tokens: approvalTokens } : {}),
       };
       
       // Use the multi-agent API endpoint
@@ -559,6 +569,9 @@ export class ApiClient {
 
       throw new Error('Multi-agent API did not return a task_id');
     } catch (error) {
+      if (error instanceof ApiError && isGuardRefusal(error.data)) {
+        throw error;
+      }
       logger.error('Multi-agent request failed, falling back to Together AI LLM', { 
         requestId, 
         error: error instanceof Error ? error.message : String(error),
@@ -659,6 +672,9 @@ export class ApiClient {
         );
 
         if (result.status === 'completed' && result.result) {
+          const security = normalizeSecuritySummary(
+            result.security ?? result.result?.security
+          );
           return {
             choices: [{
               message: {
@@ -672,11 +688,24 @@ export class ApiClient {
               prompt_tokens: 0,
               completion_tokens: 0,
               total_tokens: 0
-            }
+            },
+            ...(security ? { security } : {}),
           };
         }
 
         if (result.status === 'failed') {
+          if (result.error_code === 'escalated') {
+            throw new ApiError(
+              result.error || 'Task escalated for review',
+              403,
+              {
+                code: 'escalated',
+                reason: result.error || 'Task escalated for review',
+              },
+              undefined,
+              `${clientConfig.api.endpoints.task}/${taskId}`
+            );
+          }
           failureMessage = result.error || 'Unknown error';
           break;
         }
@@ -694,6 +723,9 @@ export class ApiClient {
           nextPollIn: currentInterval
         });
       } catch (error) {
+        if (error instanceof ApiError && isGuardRefusal(error.data)) {
+          throw error;
+        }
         logger.error('Error polling task', { 
           taskId, 
           pollCount, 

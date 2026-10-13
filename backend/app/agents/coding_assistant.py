@@ -11,11 +11,13 @@ import os
 
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
-from langchain_openai import ChatOpenAI
 from langchain.schema.messages import HumanMessage
 
 from app.models.task import WorkflowState
-from app.services.llm import get_llm_without_tags
+from app.services.llm import get_agent_llm
+from app.security.hop_guard import acheck_hop, kept_text, task_items
+from app.security.types import ContextItem
+from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
 from app.core.loadEnvYAML import get_agents_config
 from app.core.config import settings
@@ -67,6 +69,9 @@ CODE:
 IMPORTANT: The code must be self-contained, properly formatted with good documentation, and fully executable. Never truncate the code.
 """
 
+# Static prompt text is never scored by the safety net (SEC-032).
+register_template("coding_assistant", CODING_ASSISTANT_PROMPT)
+
 class CodingAssistantAgent(BaseAgent):
     """
     Coding Assistant Agent that generates code for data visualization.
@@ -81,23 +86,7 @@ class CodingAssistantAgent(BaseAgent):
         self.allowed_libraries = ", ".join(agents_config.coding.allowed_modules)
         self.timeout_seconds = agents_config.coding.timeout_seconds
         
-        # Initialize OpenAI client - we'll use GPT-4o mini with code interpreter
-        self.openai_api_key = settings.OPENAI_API_KEY
-        self.openai_model = "gpt-4o-mini"
-        
-        if self.openai_api_key:
-            self.openai_llm = ChatOpenAI(
-                temperature=0.7, 
-                model=self.openai_model,
-                api_key=self.openai_api_key,
-                max_tokens=5000
-            )
-            logger.info(f"Initialized OpenAI {self.openai_model} for Coding Assistant with max_tokens={self.openai_llm.max_tokens}")
-        else:
-            # Fallback to the default LLM if OpenAI key not found
-            logger.warning("OpenAI API key not found. Using fallback LLM")
-            self.openai_llm = None
-            self.llm = get_llm_without_tags()
+        self.llm = get_agent_llm("coding_assistant")
     
     async def run(self, state: WorkflowState) -> WorkflowState:
         """
@@ -122,10 +111,19 @@ class CodingAssistantAgent(BaseAgent):
             logger.debug("Generating visualization code based on research findings and data insights")
             
             # Build the prompt string manually
+            hop = await acheck_hop(
+                "coding_assistant",
+                task_items(state)
+                + [
+                    ContextItem("agent_output", research_findings, ref="senior_research"),
+                    ContextItem("agent_output", data_insights, ref="data_analysis"),
+                ],
+                state,
+            )
             prompt = CODING_ASSISTANT_PROMPT.format(
                 query=state.query,
-                research_findings=research_findings,
-                data_insights=data_insights,
+                research_findings=kept_text(hop, "senior_research", research_findings),
+                data_insights=kept_text(hop, "data_analysis", data_insights),
                 allowed_libraries=self.allowed_libraries
             )
             
@@ -365,22 +363,12 @@ class CodingAssistantAgent(BaseAgent):
         import asyncio
         import re
         
-        # Prioritize OpenAI methods if available
-        if self.openai_llm:
-            methods = [
-                self._try_openai_code_interpreter,
-                self._try_openai_completion,
-                self._try_langchain_invoke,  # As fallback
-                self._try_fallback
-            ]
-        else:
-            # Original methods if OpenAI not available
-            methods = [
-                self._try_direct_api,
-                self._try_langchain_agenerate,
-                self._try_langchain_invoke,
-                self._try_fallback
-            ]
+        methods = [
+            self._try_direct_api,
+            self._try_langchain_agenerate,
+            self._try_langchain_invoke,
+            self._try_fallback,
+        ]
         
         request_count = 0  # Track number of LLM requests made
         
@@ -416,130 +404,6 @@ class CodingAssistantAgent(BaseAgent):
         # If all methods fail, return a basic response
         logger.error("All code generation methods failed")
         return """{"explanation": "Error generating code", "code": "# Error occurred during code generation\\n# Please try again later"}"""
-    
-    async def _try_openai_code_interpreter(self, prompt):
-        """Use OpenAI with code interpreter tool enabled."""
-        try:
-            import openai
-            
-            # Configure the client
-            client = openai.OpenAI(api_key=self.openai_api_key)
-            
-            # Create the messages
-            messages = [
-                {"role": "system", "content": "You are a specialized Python coding assistant. Generate clean, well-documented code using data visualization libraries like matplotlib, seaborn, pandas, and numpy."},
-                {"role": "user", "content": prompt}
-            ]
-            
-            try:
-                # Try first with code interpreter as a tool type directly
-                response = client.chat.completions.create(
-                    model=self.openai_model,
-                    messages=messages,
-                    temperature=0.7,
-                    tools=[{"type": "code_interpreter"}],
-                    tool_choice="auto",
-                    max_tokens=5000
-                )
-            except Exception as e:
-                if "Missing required parameter: 'tools[0].function'" in str(e):
-                    logger.warning("Trying alternative format for code interpreter tool")
-                    # Alternative format with a function definition
-                    response = client.chat.completions.create(
-                        model=self.openai_model,
-                        messages=messages,
-                        temperature=0.7,
-                        max_tokens=5000
-                    )
-                else:
-                    raise
-            
-            # Extract the response content
-            result = response.choices[0].message.content
-            
-            # Log the raw response for debugging
-            logger.debug(f"Raw OpenAI response: {response}")
-            logger.debug(f"Content from response: {result}")
-            
-            # Also check for tool outputs
-            tool_outputs = []
-            if hasattr(response.choices[0].message, 'tool_calls') and response.choices[0].message.tool_calls is not None:
-                for tool_call in response.choices[0].message.tool_calls:
-                    if hasattr(tool_call, 'type') and tool_call.type == 'code_interpreter' and hasattr(tool_call, 'code_interpreter'):
-                        if hasattr(tool_call.code_interpreter, 'input'):
-                            tool_outputs.append(f"```python\n{tool_call.code_interpreter.input}\n```")
-                        if hasattr(tool_call.code_interpreter, 'outputs'):
-                            for output in tool_call.code_interpreter.outputs:
-                                if hasattr(output, 'type') and output.type == 'image':
-                                    tool_outputs.append(f"# Image output available but not displayed in text")
-                                elif hasattr(output, 'text'):
-                                    tool_outputs.append(f"# Output:\n# {output.text.replace('\n', '\n# ')}")
-            
-            # Combine the text response with any tool outputs
-            if tool_outputs:
-                result += "\n\n" + "\n\n".join(tool_outputs)
-            
-            # Extract explanation and code from structured format
-            import re
-            
-            # Log the raw output for debugging
-            logger.debug(f"Raw output from LLM: {result[:500]}...")
-            
-            # Extract code blocks
-            code_blocks = re.findall(r'```(?:python)?\s*(.*?)```', result, re.DOTALL)
-            
-            # Extract explanation
-            explanation_match = re.search(r'EXPLANATION:(.*?)(?:CODE:|```|$)', result, re.DOTALL)
-            explanation = explanation_match.group(1).strip() if explanation_match else "Generated code based on your query"
-            
-            # If code blocks found, use the longest one
-            if code_blocks:
-                code = max(code_blocks, key=len).strip()
-                logger.debug(f"Extracted code block with length: {len(code)}")
-            else:
-                # If no code blocks with backticks found, look for anything that might be code
-                code_patterns = ['import ', 'def ', 'class ', 'if __name__']
-                code_lines = []
-                in_code_section = False
-                
-                for line in result.split('\n'):
-                    if any(pattern in line for pattern in code_patterns):
-                        in_code_section = True
-                    
-                    if in_code_section:
-                        code_lines.append(line)
-                
-                code = '\n'.join(code_lines) if code_lines else result
-                logger.debug(f"No code blocks found, extracted {len(code_lines)} lines with code-like patterns")
-            
-            # Create a JSON object with the extracted code and explanation
-            formatted_result = {
-                "explanation": explanation,
-                "visualizations": [],
-                "code": f"```python\n{code}\n```"
-            }
-            
-            # Convert to JSON string
-            import json
-            result = json.dumps(formatted_result)
-            logger.debug(f"Reformatted response as JSON: {result[:100]}...")
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"OpenAI code interpreter error: {str(e)}")
-            raise
-    
-    async def _try_openai_completion(self, prompt):
-        """Use OpenAI chat completion without code interpreter."""
-        try:
-            # Use langchain's wrapper for OpenAI
-            messages = [HumanMessage(content=prompt)]
-            response = await self.openai_llm.agenerate([messages])
-            return response.generations[0][0].text
-        except Exception as e:
-            logger.error(f"OpenAI completion error: {str(e)}")
-            raise
     
     async def _try_direct_api(self, prompt):
         """Try using direct API call."""
@@ -589,19 +453,8 @@ class CodingAssistantAgent(BaseAgent):
         return getattr(result, "content", result)
     
     async def _try_fallback(self, prompt):
-        """Try using OpenAI API as fallback."""
-        from langchain_openai import ChatOpenAI
-        from langchain.schema.messages import HumanMessage
-        
-        try:
-            openai_llm = ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo", max_tokens=2500)
-            messages = [HumanMessage(content=prompt)]
-            response = await openai_llm.agenerate([messages])
-            return response.generations[0][0].text
-        except Exception as e:
-            logger.error(f"OpenAI fallback failed: {str(e)}")
-            # Last resort fallback
-            return """{"explanation": "All code generation methods failed", "code": "# Error generating code\\n# Please try again later"}"""
+        """Last-resort placeholder when every factory-backed path failed."""
+        return """{"explanation": "All code generation methods failed", "code": "# Error generating code\\n# Please try again later"}"""
 
 
 def get_coding_assistant_agent():

@@ -2,12 +2,22 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core import security
 from app.core.config import settings
 from app.services import triage_model
 from main import app
 from tests.fakes.triage import FakeTriageModel
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_triage_client(monkeypatch):
+    """Other suites share the global rate-limit bucket; reset it so contract tests are not 429."""
+    monkeypatch.setattr(security, "rate_limit_data", {})
+    monkeypatch.setattr(security, "_last_rate_limit_sweep", 0.0)
+    monkeypatch.setattr(settings, "API_KEY_ENABLED", False)
+    monkeypatch.delenv("WEBAGENT_API_KEY", raising=False)
 
 
 def test_empty_query_answered_by_rule():

@@ -1,3 +1,7 @@
 # Fine-tuned triage encoder weights (~90 MB) go to Git LFS, not plain git.
 # After cloning, run `git lfs pull` before building the backend image.
 backend/models/triage/encoder/*.safetensors filter=lfs diff=lfs merge=lfs -text
+# Fine-tuned ContextDefender encoder (~90 MB), same rule as the triage encoder.
+backend/models/security/encoder/*.safetensors filter=lfs diff=lfs merge=lfs -text
+# Llama Prompt Guard 2 weights (Llama 4 Community License; LICENSE and NOTICE ship beside them).
+backend/models/security/prompt_guard/*.safetensors filter=lfs diff=lfs merge=lfs -text

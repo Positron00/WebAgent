@@ -32,7 +32,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # Import app modules
-from app.services.llm import get_llm, get_together_llm, get_llm_status
+from app.services.llm import _build_llm, get_together_llm, get_llm_status
 from app.core.loadEnvYAML import get_llm_config
 from app.graph.workflows import get_agent_workflow
 from app.models.task import WorkflowState

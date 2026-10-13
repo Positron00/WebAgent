@@ -1,0 +1,13 @@
+entity Agent;
+entity Task;
+entity Chat;
+type GuardContext = {
+  source: String, injection: Long, harm: Long, sensitive_data: Long, jailbreak: Long, threat_risk: Long,
+  top_axis: String, scores_available: Bool, pattern_hits: Set<String>, tainted: Bool, alignment: Long,
+  code_findings: Set<String>, approved_tools: Set<String>, consented: Bool, has_image: Bool,
+  declined_actions_in_task: Long, mode: String, env: String, code_execution_enabled: Bool, sandbox: String,
+  injection_watch_at: Long, injection_drop_at: Long, harm_verify_at: Long, harm_decline_at: Long,
+  jailbreak_verify_at: Long, jailbreak_consent_at: Long
+};
+action "converse", "tool::web_search", "tool::internal_retrieve", "tool::document_extract", "tool::execute_code"
+  appliesTo { principal: [Agent], resource: [Task, Chat], context: GuardContext };

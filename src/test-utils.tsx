@@ -102,37 +102,33 @@ jest.mock('@/contexts/AppContext', () => {
   };
 });
 
+const mockChatContextValue: ChatContextType = {
+  state: {
+    messages: [],
+    isLoading: false,
+  },
+  pendingConsent: null,
+  sendMessage: jest.fn().mockResolvedValue(undefined),
+  sendWithConsent: jest.fn().mockResolvedValue(undefined),
+  editPendingMessage: jest.fn(),
+  setEditPendingHandler: jest.fn(),
+  clearMessages: jest.fn(),
+  getMessageHistory: jest.fn().mockReturnValue([]),
+  researchInDepth: jest.fn().mockResolvedValue(undefined),
+  approveAndRerun: jest.fn().mockResolvedValue(undefined),
+};
+
 // Mock the ChatContext
 jest.mock('@/contexts/ChatContext', () => {
   return {
     ChatProvider: ({ children }: { children: React.ReactNode }) => {
       return (
-        <MockChatContext.Provider
-          value={{
-            state: {
-              messages: [],
-              isLoading: false
-            },
-            sendMessage: jest.fn().mockResolvedValue(undefined),
-            clearMessages: jest.fn(),
-            getMessageHistory: jest.fn().mockReturnValue([]),
-            researchInDepth: jest.fn().mockResolvedValue(undefined)
-          }}
-        >
+        <MockChatContext.Provider value={mockChatContextValue}>
           {children}
         </MockChatContext.Provider>
       );
     },
-    useChat: () => ({
-      state: {
-        messages: [],
-        isLoading: false
-      },
-      sendMessage: jest.fn().mockResolvedValue(undefined),
-      clearMessages: jest.fn(),
-      getMessageHistory: jest.fn().mockReturnValue([]),
-      researchInDepth: jest.fn().mockResolvedValue(undefined)
-    })
+    useChat: () => mockChatContextValue,
   };
 });
 
@@ -161,18 +157,7 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
         isOffline: false
       }}
     >
-      <MockChatContext.Provider
-        value={{
-          state: {
-            messages: [],
-            isLoading: false
-          },
-          sendMessage: jest.fn().mockResolvedValue(undefined),
-          clearMessages: jest.fn(),
-          getMessageHistory: jest.fn().mockReturnValue([]),
-          researchInDepth: jest.fn().mockResolvedValue(undefined)
-        }}
-      >
+      <MockChatContext.Provider value={mockChatContextValue}>
         {children}
       </MockChatContext.Provider>
     </MockAppContext.Provider>
@@ -211,16 +196,7 @@ export const useApp = () => ({
   isOffline: false
 });
 
-export const useChat = () => ({
-  state: {
-    messages: [],
-    isLoading: false
-  },
-  sendMessage: jest.fn().mockResolvedValue(undefined),
-  clearMessages: jest.fn(),
-  getMessageHistory: jest.fn().mockReturnValue([]),
-  researchInDepth: jest.fn().mockResolvedValue(undefined)
-});
+export const useChat = () => mockChatContextValue;
 
 // Override render method
 export { customRender as render };

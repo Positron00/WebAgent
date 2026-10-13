@@ -171,6 +171,10 @@ async def run_research_agents(
         *(agent(state.model_copy(deep=True)) for agent in agents)
     )
 
+    from app.security import ledger as security_ledger
+
+    security_ledger.merge(state, list(results))
+
     agent_report_names = {"web_research", "internal_research"}
     for result in results:
         for name, report in result.reports.items():

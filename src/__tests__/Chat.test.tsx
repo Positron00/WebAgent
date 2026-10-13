@@ -6,6 +6,15 @@ import { mockAccessibility } from '@/test-utils';
 // Mock fetch
 global.fetch = jest.fn();
 
+const chatContextExtras = {
+  pendingConsent: null,
+  sendWithConsent: jest.fn().mockResolvedValue(undefined),
+  editPendingMessage: jest.fn(),
+  setEditPendingHandler: jest.fn(),
+  researchInDepth: jest.fn().mockResolvedValue(undefined),
+  approveAndRerun: jest.fn().mockResolvedValue(undefined),
+};
+
 // Mock the useChat hook
 jest.mock('@/contexts/ChatContext', () => ({
   useChat: () => ({
@@ -16,7 +25,13 @@ jest.mock('@/contexts/ChatContext', () => ({
     },
     sendMessage: jest.fn().mockResolvedValue(undefined),
     clearMessages: jest.fn(),
-    getMessageHistory: jest.fn().mockReturnValue([])
+    getMessageHistory: jest.fn().mockReturnValue([]),
+    pendingConsent: null,
+    sendWithConsent: jest.fn().mockResolvedValue(undefined),
+    editPendingMessage: jest.fn(),
+    setEditPendingHandler: jest.fn(),
+    researchInDepth: jest.fn().mockResolvedValue(undefined),
+    approveAndRerun: jest.fn().mockResolvedValue(undefined),
   })
 }));
 
@@ -46,7 +61,8 @@ describe('Chat Component', () => {
       },
       sendMessage: jest.fn().mockResolvedValue(undefined),
       clearMessages: jest.fn(),
-      getMessageHistory: jest.fn().mockReturnValue([])
+      getMessageHistory: jest.fn().mockReturnValue([]),
+      ...chatContextExtras,
     }));
   });
 
@@ -114,7 +130,8 @@ describe('Chat Component', () => {
       },
       sendMessage: mockSendMessage,
       clearMessages: jest.fn(),
-      getMessageHistory: jest.fn().mockReturnValue([])
+      getMessageHistory: jest.fn().mockReturnValue([]),
+      ...chatContextExtras,
     }));
 
     const { rerender } = render(<Chat />);
@@ -142,7 +159,8 @@ describe('Chat Component', () => {
       },
       sendMessage: mockSendMessage,
       clearMessages: jest.fn(),
-      getMessageHistory: jest.fn().mockReturnValue([])
+      getMessageHistory: jest.fn().mockReturnValue([]),
+      ...chatContextExtras,
     }));
 
     // Force a re-render to apply the updated mock
@@ -175,7 +193,8 @@ describe('Chat Component', () => {
       },
       sendMessage: mockSendMessage,
       clearMessages: jest.fn(),
-      getMessageHistory: jest.fn().mockReturnValue([])
+      getMessageHistory: jest.fn().mockReturnValue([]),
+      ...chatContextExtras,
     }));
 
     const { rerender } = render(<Chat />);
@@ -199,7 +218,8 @@ describe('Chat Component', () => {
       },
       sendMessage: mockSendMessage,
       clearMessages: jest.fn(),
-      getMessageHistory: jest.fn().mockReturnValue([])
+      getMessageHistory: jest.fn().mockReturnValue([]),
+      ...chatContextExtras,
     }));
 
     // Force a re-render to apply the updated mock
@@ -235,7 +255,8 @@ describe('Chat Component', () => {
       },
       sendMessage: jest.fn(),
       clearMessages: jest.fn(),
-      getMessageHistory: jest.fn().mockReturnValue([])
+      getMessageHistory: jest.fn().mockReturnValue([]),
+      ...chatContextExtras,
     }));
 
     render(<Chat />);
@@ -285,7 +306,8 @@ describe('Chat Component', () => {
       },
       sendMessage: jest.fn().mockRejectedValue(new Error(errorMessage)),
       clearMessages: jest.fn(),
-      getMessageHistory: jest.fn().mockReturnValue([])
+      getMessageHistory: jest.fn().mockReturnValue([]),
+      ...chatContextExtras,
     }));
 
     // Render the component with the error state

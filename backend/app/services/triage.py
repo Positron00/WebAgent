@@ -159,9 +159,9 @@ _tiebreak_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="triage-ti
 
 def _ask_llm(prompt: str) -> str:
     """One text LLM call. Replaced in tests."""
-    from app.services.llm import get_llm
+    from app.services.llm import get_trusted_llm
 
-    reply = get_llm().invoke(prompt)
+    reply = get_trusted_llm().invoke(prompt)
     return reply if isinstance(reply, str) else str(getattr(reply, "content", reply))
 
 

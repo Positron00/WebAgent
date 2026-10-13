@@ -617,13 +617,37 @@ def apply_max_tokens(llm, limit: Optional[int]):
     return llm
 
 
+_AGENT_CONFIG_KEYS = {
+    "coding_assistant": "coding",
+    "coding_review": "coding",
+}
+
+
+def _agent_config(agents_config, agent_name: str):
+    key = _AGENT_CONFIG_KEYS.get(agent_name, agent_name)
+    return getattr(agents_config, key, None)
+
+
+def _build_llm_for_agent(agent_name: str, model: Optional[str], provider: Optional[str]):
+    """Resolve the inner model for a named agent (OpenAI for coding when configured)."""
+    if provider and provider.lower() == "openai":
+        return get_openai_llm(model)
+    if agent_name in ("coding_assistant", "coding_review") and settings.OPENAI_API_KEY:
+        return get_openai_llm(model or settings.OPENAI_MODEL)
+    return _build_llm(model)
+
+
 def get_agent_llm(agent_name: str):
-    """Return an LLM configured for a named agent from YAML ``agents:`` config."""
+    """Return a guarded LLM configured for a named agent from YAML ``agents:`` config."""
+    from app.security.guarded_llm import GuardedModel
+
     agents_config = get_agents_config()
-    agent_cfg = getattr(agents_config, agent_name, None)
+    agent_cfg = _agent_config(agents_config, agent_name)
     model = getattr(agent_cfg, "model", None) if agent_cfg else None
+    provider = getattr(agent_cfg, "provider", None) if agent_cfg else None
     limit = getattr(agent_cfg, "max_tokens", None) if agent_cfg else None
-    return apply_max_tokens(get_llm(model), limit)
+    inner = apply_max_tokens(_build_llm_for_agent(agent_name, model, provider), limit)
+    return GuardedModel(inner, agent=agent_name)
 
 
 @log_llm_request(provider="groq")
@@ -756,7 +780,12 @@ def get_self_hosted_llm(model_name: Optional[str] = None):
         logger.error(traceback.format_exc())
         raise
 
-def get_llm(model_name: Optional[str] = None):
+def get_trusted_llm(model_name: Optional[str] = None):
+    """Unguarded LLM for trusted-only inputs (judge, tie-breaker, diagnostics)."""
+    return _build_llm(model_name)
+
+
+def _build_llm(model_name: Optional[str] = None):
     """
     Get a LangChain LLM instance based on the configured provider.
     
@@ -905,7 +934,7 @@ async def get_llm_status():
     
     try:
         # Try creating an LLM instance
-        llm = get_llm()
+        llm = _build_llm()
         
         # For status check, just return the provider info without making an actual API call
         # This avoids unnecessary costs for simple status checks
@@ -1127,7 +1156,7 @@ def confirm_llm_selection(required_provider=None):
     print(f"\nSelection confirmed. Using {provider} with model {model}")
     return provider, model
 
-def get_llm_without_tags(model_name: Optional[str] = None):
+def _build_llm_without_tags(model_name: Optional[str] = None):
     """
     Get a LangChain LLM instance based on the configured provider, but with no tags.
     This helps prevent duplicate tags when chaining with prompts that already have tags.
@@ -1138,7 +1167,7 @@ def get_llm_without_tags(model_name: Optional[str] = None):
     Returns:
         A configured LLM instance without tags
     """
-    llm = get_llm(model_name)
+    llm = _build_llm(model_name)
     
     # Remove any tags by wrapping the LLM in a simple wrapper that doesn't pass tags
     class NoTagsLLMWrapper:

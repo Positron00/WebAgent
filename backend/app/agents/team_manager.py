@@ -16,6 +16,9 @@ from langchain.schema.output import Generation
 
 from app.models.task import WorkflowState
 from app.services.llm import get_agent_llm
+from app.security.hop_guard import acheck_hop, kept_text, task_items
+from app.security.types import ContextItem
+from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
 from app.core.metrics import timing_decorator, track_task_completion
 
@@ -70,6 +73,9 @@ Respond with ONLY a JSON object (no text before or after it), structured as foll
 
 IMPORTANT: Your goal is to create a unified, cohesive report that reads as if it was written by a single expert rather than assembled from multiple sources. Ensure the report flows logically and maintains a consistent tone throughout.
 """
+
+# Static prompt text is never scored by the safety net (SEC-032).
+register_template("team_manager", TEAM_MANAGER_PROMPT)
 
 # Global variable to store the singleton instance
 _team_manager_instance = None
@@ -200,6 +206,19 @@ class TeamManagerAgent(BaseAgent):
             
             logger.debug("Compiling report and checking if analysis or coding is needed")
             
+            hop = await acheck_hop(
+                "team_manager",
+                task_items(state)
+                + [
+                    ContextItem("agent_output", research_synthesis, ref="senior_research"),
+                    ContextItem("agent_output", data_analysis, ref="data_analysis"),
+                    ContextItem("agent_output", visualization_code, ref="coding_assistant"),
+                ],
+                state,
+            )
+            research_synthesis = kept_text(hop, "senior_research", research_synthesis)
+            data_analysis = kept_text(hop, "data_analysis", data_analysis)
+            visualization_code = kept_text(hop, "coding_assistant", visualization_code)
             # Run the LLM chain to compile the report and check for needs
             final_report_content = await self.chain.ainvoke({
                 "query": state.query,

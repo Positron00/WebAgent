@@ -6,6 +6,9 @@ import { rateLimiter } from '@/utils/rateLimiter';
 import { logger } from '@/utils/logger';
 import { clientConfig } from '@/config/clientConfig';
 import { ApiError } from '@/utils/errors';
+import { callGuard } from '@/app/api/guard/client';
+import { scanUserTurn } from '@/utils/guardPatterns';
+import { GUARD_UNAVAILABLE_NOTICE } from '@/config/security/notices';
 
 // Mark this route as dynamic to handle POST requests
 export const dynamic = 'force-dynamic';
@@ -38,7 +41,8 @@ export async function POST(req: Request) {
       knowledgeFocus = 'general',
       citeSources = true,
       agentic = false,
-      requestType = null
+      requestType = null,
+      consentToken = null,
     } = body;
 
     if (!validateRequest(messages)) {
@@ -67,6 +71,29 @@ export async function POST(req: Request) {
         fallback: false,
         version: clientConfig.version
       });
+    }
+
+    const guard = await callGuard(messages, !!image, consentToken ?? null, req);
+    if (guard.kind === 'refused') {
+      return NextResponse.json(guard.body, { status: guard.status });
+    }
+
+    let guardUnavailableNotice = false;
+    if (guard.kind === 'unreachable') {
+      const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+      const lastText =
+        typeof lastUser?.content === 'string' ? lastUser.content : '';
+      if (lastText && scanUserTurn(lastText).length > 0) {
+        return NextResponse.json(
+          {
+            code: 'declined',
+            reason:
+              "This message looks like an attempt to change the assistant's instructions.",
+          },
+          { status: 403 }
+        );
+      }
+      guardUnavailableNotice = true;
     }
 
     // Get the appropriate system prompt based on the promptStyle
@@ -161,6 +188,8 @@ export async function POST(req: Request) {
     // Only add fallback announcement if this is a multi-agent fallback request
     if (requestType === 'multi-agent-fallback') {
       responseContent = `I'm currently operating in fallback mode as the multi-agent system is unavailable. Here's my response:\n\n${responseContent}`;
+    } else if (guardUnavailableNotice) {
+      responseContent = GUARD_UNAVAILABLE_NOTICE + responseContent;
     }
 
     return NextResponse.json({

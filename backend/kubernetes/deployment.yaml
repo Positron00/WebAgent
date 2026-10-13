@@ -84,11 +84,11 @@ spec:
         resources:
           limits:
             cpu: "1"
-            # 2 workers measured at 955 MiB (triage off) and 1.08 GiB (triage on) in 3.1.0; per-worker use unchanged in 3.2.0.
-            memory: "1536Mi"
+            # 2 workers with triage + ContextDefender: budget 2 GiB (SNFR-05); measure after deploy.
+            memory: "2Gi"
           requests:
             cpu: "500m"
-            memory: "1Gi"
+            memory: "1536Mi"
         livenessProbe:
           httpGet:
             path: /health

@@ -5,6 +5,10 @@ jest.mock('@/utils/logger', () => ({
   logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
+jest.mock('@/app/api/guard/client', () => ({
+  callGuard: jest.fn().mockResolvedValue({ kind: 'ok', outcome: 'allow' }),
+}));
+
 export {};
 
 const fetchMock = jest.fn();

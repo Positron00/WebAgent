@@ -498,7 +498,7 @@ class SystemDiagnostics:
 
         try:
             # Try to get the LLM service
-            from app.services.llm import get_llm, get_llm_service_status
+            from app.services.llm import get_trusted_llm, get_llm_service_status
 
             # Get LLM service status (this should not make API calls)
             service_status = get_llm_service_status()
@@ -513,7 +513,7 @@ class SystemDiagnostics:
                 # This section is commented out to avoid making actual API calls during diagnostics
                 # Uncomment if you want to verify the actual API calls work
                 """
-                llm = get_llm()
+                llm = get_trusted_llm()
                 start_test = time.time()
                 response = llm.invoke("Respond with 'OK' if you can read this message.")
                 test_time = time.time() - start_test

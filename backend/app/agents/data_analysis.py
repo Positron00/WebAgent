@@ -13,6 +13,9 @@ from langchain.schema.output_parser import StrOutputParser
 
 from app.models.task import WorkflowState
 from app.services.llm import get_agent_llm
+from app.security.hop_guard import acheck_hop, kept_text, task_items
+from app.security.types import ContextItem
+from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -51,6 +54,9 @@ Your output should be structured as JSON with the following format:
 }}
 """
 
+# Static prompt text is never scored by the safety net (SEC-032).
+register_template("data_analysis", DATA_ANALYSIS_PROMPT)
+
 class DataAnalysisAgent(BaseAgent):
     """
     Data Analysis Agent that analyzes structured data and extracts insights.
@@ -84,6 +90,12 @@ class DataAnalysisAgent(BaseAgent):
             
             logger.debug("Analyzing research findings for patterns and insights")
             
+            hop = await acheck_hop(
+                "data_analysis",
+                task_items(state) + [ContextItem("agent_output", research_findings, ref="senior_research")],
+                state,
+            )
+            research_findings = kept_text(hop, "senior_research", research_findings)
             # Run the LLM chain to analyze the data
             analysis_result = await self.chain.ainvoke({
                 "query": state.query,

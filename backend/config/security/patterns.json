@@ -1,0 +1,65 @@
+{
+  "injection_phrase": [
+    "(?i)ignore\\s+(all\\s+)?(the\\s+)?(previous|prior|above|earlier)\\s+(instructions|directions|rules|prompts?)",
+    "(?i)disregard\\s+(all\\s+)?(the\\s+)?(previous|prior|above|earlier)\\s+(instructions|directions|rules)",
+    "(?i)forget\\s+(all\\s+)?(your|the|previous|prior)\\s+(instructions|rules|guidelines)",
+    "(?i)you\\s+are\\s+now\\s+",
+    "(?i)(note|message|instructions?)\\s+(to|for)\\s+(the\\s+)?(ai|assistant|llm|language\\s+model|chatbot)\\b",
+    "(?i)new\\s+system\\s+prompt"
+  ],
+  "role_marker": [
+    "(?i)<\\|im_start\\|>\\s*system",
+    "(?i)\\[system\\]",
+    "(?i)###\\s*system"
+  ],
+  "hidden_text": [
+    "[\\u200b-\\u200f\\u2060\\ufeff]",
+    "(?i)display\\s*:\\s*none",
+    "(?i)visibility\\s*:\\s*hidden"
+  ],
+  "api_key": [
+    "\\bsk-(?:[A-Za-z]+-)?[A-Za-z0-9_-]{20,}",
+    "\\bAKIA[0-9A-Z]{16}\\b",
+    "\\btvly-[A-Za-z0-9_-]{16,}",
+    "\\blsv2_[A-Za-z0-9_]{20,}",
+    "\\bgh[pousr]_[A-Za-z0-9]{30,}",
+    "\\bgithub_pat_[A-Za-z0-9_]{22,}",
+    "\\bxox[abprs]-[A-Za-z0-9-]{10,}",
+    "\\bAIza[0-9A-Za-z_-]{35}\\b",
+    "(?i)api[_-]?key\\s*[:=]\\s*['\\\"]?[A-Za-z0-9_\\-]{16,}",
+    "\\b[sr]k_live_[A-Za-z0-9]{20,}",
+    "\\bSG\\.[A-Za-z0-9_-]{16,}\\.[A-Za-z0-9_-]{16,}",
+    "\\bSK[0-9a-f]{32}\\b",
+    "\\bhf_[A-Za-z0-9]{30,}",
+    "\\bnpm_[A-Za-z0-9]{36}\\b",
+    "\\bpypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{20,}",
+    "\\bglpat-[A-Za-z0-9_-]{20,}",
+    "\\beyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}",
+    "(?i)\\bbearer\\s+[A-Za-z0-9._~+/-]{20,}",
+    "(?i)\\b(?:token|secret|access[_-]?key|auth[_-]?token)['\\\"]?\\s*[:=]\\s*['\\\"]?[A-Za-z0-9_\\-./+]{20,}"
+  ],
+  "private_key": [
+    "-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----"
+  ],
+  "password": [
+    "(?i)password\\s*[:=]\\s*['\\\"]?(?!(?:redacted|changeme|your[-_]|<|\\$\\{|\\{\\{|\\*{3}|x{6}|os\\.environ))[^\\s'\\\"]{8,}",
+    "(?i)\\b[a-z][a-z0-9+.-]*://[^\\s:/@]+:(?!(?:redacted|changeme|your[-_]|<|\\$\\{|\\{\\{|\\*{3}|x{6}|os\\.environ))[^\\s@/]{6,}@"
+  ],
+  "email": [
+    "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+  ],
+  "phone": [
+    "\\b(?:\\+?1[-. ]?)?\\(?\\d{3}\\)?[-. ]?\\d{3}[-. ]?\\d{4}\\b"
+  ],
+  "long_token": [
+    "\\b[A-Za-z0-9+/]{40,}={0,2}\\b",
+    "\\b[0-9a-fA-F]{48,}\\b"
+  ],
+  "url": [
+    "https?://[A-Za-z0-9._~:/?#\\[\\]@!$&'()*+,;=%-]+"
+  ],
+  "site_operator": [
+    "(?i)\\bsite:[A-Za-z0-9._-]+"
+  ],
+  "query_too_long": []
+}

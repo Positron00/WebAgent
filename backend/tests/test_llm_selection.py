@@ -54,7 +54,7 @@ def test_uses_configured_provider_with_matching_model(provider, monkeypatch):
     calls = []
     monkeypatch.setattr(llm, "get_together_llm", lambda model_name=None: calls.append(model_name) or "together-llm")
 
-    assert llm.get_llm("meta-models/Muse-Glimmer-30B") == "together-llm"
+    assert llm._build_llm("meta-models/Muse-Glimmer-30B") == "together-llm"
     assert calls == ["meta-models/Muse-Glimmer-30B"]
 
 
@@ -64,14 +64,14 @@ def test_falls_back_to_next_provider_without_its_model(provider, monkeypatch):
     monkeypatch.setattr(llm, "get_groq_llm", lambda model_name=None: calls.append(model_name) or "groq-llm")
 
     # Together fails; Groq is next and must not receive a Together-only model name
-    assert llm.get_llm("meta-models/Muse-Glimmer-30B") == "groq-llm"
+    assert llm._build_llm("meta-models/Muse-Glimmer-30B") == "groq-llm"
     assert calls == [None]
 
 
 def test_all_providers_failing_raises_with_details(provider):
     provider("together")
     with pytest.raises(RuntimeError) as error:
-        llm.get_llm()
+        llm._build_llm()
     message = str(error.value)
     for name in ("together", "groq", "openai", "anthropic", "gemini", "self"):
         assert f"- {name}:" in message
@@ -80,17 +80,19 @@ def test_all_providers_failing_raises_with_details(provider):
 def test_fake_llm_only_when_explicitly_allowed(provider, monkeypatch):
     provider("together")
     monkeypatch.setenv("WEBAGENT_ALLOW_FAKE_LLM", "true")
-    fake = llm.get_llm()
+    fake = llm._build_llm()
     assert "unavailable" in fake.invoke("hi")
 
 
 def test_agent_uses_its_yaml_model(monkeypatch):
     agents = SimpleNamespace(team_manager=SimpleNamespace(model="org/team-model"))
     monkeypatch.setattr(llm, "get_agents_config", lambda: agents)
-    monkeypatch.setattr(llm, "get_llm", lambda model=None: f"llm:{model}")
+    monkeypatch.setattr(llm, "_build_llm_for_agent", lambda agent, model=None, provider=None: f"llm:{model}")
 
-    assert llm.get_agent_llm("team_manager") == "llm:org/team-model"
-    assert llm.get_agent_llm("unknown_agent") == "llm:None"
+    guarded = llm.get_agent_llm("team_manager")
+    assert getattr(guarded, "inner", guarded) == "llm:org/team-model"
+    unknown = llm.get_agent_llm("unknown_agent")
+    assert getattr(unknown, "inner", unknown) == "llm:None"
 
 
 def test_rate_limit_queues_back_to_back_calls(monkeypatch):

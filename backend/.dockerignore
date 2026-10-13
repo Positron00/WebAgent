@@ -7,6 +7,8 @@
 data/*
 !data/sample_docs/
 logs/
+.venv/
+venv/
 mlruns/
 mlflow.db
 *.db
