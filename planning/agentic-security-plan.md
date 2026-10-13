@@ -1,6 +1,6 @@
 # Plan: security checkpoints before the LLM and before tools
 
-Status: v4, aligned with the as-built code (first model trained; gate not yet passed) · Spec: [`specs/agentic-security/`](specs/agentic-security/README.md) · Base: `main` at v3.2.0 (`c462ccb`) · 2026-10-11 · Pattern: the "behavioral context layer" design (context classifier + shared policy decision point + two enforcement points)
+Status: v5, as built in release 3.2.1 (ContextDefender `cd-2026-10-13-2` passes the release gate; checkpoint 1 still in shadow mode) · Spec: [`specs/agentic-security/`](specs/agentic-security/README.md) · Base: `main` at v3.2.0 (`c462ccb`) · 2026-10-11 · Pattern: the "behavioral context layer" design (context classifier + shared policy decision point + two enforcement points)
 
 Decided (2026-10-11):
 

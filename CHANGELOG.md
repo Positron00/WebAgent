@@ -2,15 +2,29 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
-## Unreleased
+## 3.2.1 - 2026-10-13
+
+Agentic security guard, in shadow mode: it checks every LLM call's context and every tool call, records what it would do, and blocks nothing until checkpoint 1 is switched to act mode. Spec: `planning/specs/agentic-security/`; plan: `planning/agentic-security-plan.md`.
 
 ### Added
-- Agentic security checkpoints: Cedar decision point (`cedarpy`), ContextDefender classifier (four risk axes), checkpoint 1 (`check_hop` + guarded LLM factory + `POST /api/guard/input`), checkpoint 2 (`guard_tool` on search, retrieval, document load, and code execution), consent/approval tokens, escalation and shadow collection, Prometheus guard metrics, and red-team test skeleton
-- Web app: server-side guard call on `/api/chat` with pattern fallback, consent dialog, security summary under agentic answers, and guard-aware `apiClient` (no fallback on 403/409)
+- Checkpoint 1 (before every LLM call, including the web app's direct chat through `POST /api/guard/input`) and checkpoint 2 (before web search, retrieval, document loading and code execution), deciding through Cedar policies run in-process with `cedarpy`. Outcomes are allow, verify, consent, decline and escalate; consent and approval use single-use signed tokens
+- ContextDefender `cd-2026-10-13-2`: scores context on four axes (injection, harm, sensitive data, jailbreak) with `all-MiniLM-L12-v2` fine-tuned on 35,026 rows from public datasets, 96-token windows and calibrated heads. It **passes the release gate**: injection recall 0.973 at 1.4% false positives on benign pages; harm and jailbreak recall 0.931 and 0.961 with at most 0.8% of ordinary questions declined or asked for consent; secret and personal-data recall 0.984 and 0.979
+- Per-model policy thresholds chosen on held-out rows with an upper confidence bound and passed into the policy context; borderline harm turns go to OpenAI's moderation endpoint (`harm_judge: moderation`; the judge is off by default), and a refusal or content block from a chat-model judge counts as flagged
+- Shadow-only policies (`@shadow("true")`): recorded, never applied. `untainted-search-misaligned` collects how far real searches drift from the task (`webagent_guard_search_alignment`) before any rule acts on it
+- Fast patterns for more credential formats (Stripe, SendGrid, Twilio, Hugging Face, npm, PyPI, GitLab, JWT, bearer tokens, credentials in URLs), with placeholders such as `REDACTED` or `${API_KEY}` excluded
+- Web app: guard call on `/api/chat` with a pattern fallback, consent dialog, security summary under agentic answers
+- Data and evaluation scripts: `fetch_security_sources.py`, `build_security_dataset.py` (licences and attribution in `backend/data/security/README.md`), `train_context_defender.py` (`--finetune`, `--reselect-thresholds`), `eval_context_defender.py` (`--with-judge`), `eval_checkpoint2_injecagent.py`
+- The ContextDefender dataset and encoder in Git LFS (`git lfs pull` after cloning)
 
 ### Changed
-- All agent LLM calls route through `get_agent_llm()` / `GuardedModel`; `get_trusted_llm()` is limited to triage tie-break, the tool judge, and diagnostics
-- `security_guard:` in `backend/config/{dev,uat,prod}.yaml` with `WEBAGENT_GUARD_*` overrides (default shadow mode in dev/uat/prod until the shadow week)
+- Every agent LLM call goes through the guarded model factory; `get_trusted_llm()` is limited to the triage tie-breaker, the judges and diagnostics
+- `security_guard:` in `backend/config/{dev,uat,prod}.yaml` with `WEBAGENT_GUARD_*` overrides; shadow mode everywhere. Startup requires a passing gate only in act mode, and the model's encoder files in any mode
+- Backend image bakes the base `all-MiniLM-L6-v2` again (alignment checks use it); `.dockerignore` excludes local virtualenvs, which had added 1.6 GB to the image. Kubernetes memory budget 2 GiB for two workers
+- New dependency: `cedarpy`
+
+### Notes
+- Llama Prompt Guard 2 was evaluated as a jailbreak judge and as a second opinion on injection; it isn't enabled or shipped (more consent prompts than jailbreaks caught, and no injection gain)
+- Before act mode: confirm false positives on real pages from shadow mode; end to end with the harm judge, 1.23% of ordinary questions are declined (reported, not gated)
 
 ## 3.2.0 - 2026-10-11
 

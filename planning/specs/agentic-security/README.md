@@ -1,6 +1,6 @@
 # Spec: security checkpoints (pre-LLM and pre-tool)
 
-Status: phases 0–4 implemented, running in shadow mode; ContextDefender `cd-2026-10-13-2` **passed the release gate** (2026-10-13), so checkpoint 1 may go to act mode when the operators choose (`input_mode: act`; not switched yet) · Source plan: [`planning/agentic-security-plan.md`](../../agentic-security-plan.md) (v4) · 2026-10-13
+Status: phases 0–4 implemented, running in shadow mode; ContextDefender `cd-2026-10-13-2` **passed the release gate** (2026-10-13), so checkpoint 1 may go to act mode when the operators choose (`input_mode: act`; not switched yet) · Release 3.2.1 · Source plan: [`planning/agentic-security-plan.md`](../../agentic-security-plan.md) (v5) · 2026-10-13
 
 ## ContextDefender status (2026-10-13)
 
