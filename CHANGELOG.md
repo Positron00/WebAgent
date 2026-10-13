@@ -2,6 +2,22 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.2.2 - 2026-10-13
+
+Getting ready for the security guard's shadow week in uat: what it judged is now recorded and measurable, and there is a runbook for the week and for deciding on act mode.
+
+### Added
+- Collection rows say what was judged: checkpoint 1 rows carry the item's source, axis scores, pattern hits and model version (and the URL for web results; text only in dev); checkpoint 2 rows carry alignment, taint and pattern hits
+- `webagent_guard_hop_seconds{agent}` and `webagent_guard_tool_seconds{action}`: the whole time each checkpoint adds, for the latency targets (checkpoint 1 < 150 ms p95 per hop, checkpoint 2 < 20 ms per tool call)
+- `scripts/review_security_collection.py`: daily summary of collected decisions (counts only), a labelling sheet of untrusted items the guard would have acted on, and the real false-positive rate with a 95% upper bound from the labelled sheet
+- Shadow-week runbook: `planning/specs/agentic-security/shadow-week-runbook.md` (deploy checklist, daily queries and targets, review, act-mode criteria, rollback)
+
+### Changed
+- uat collects the guard's decisions (`security_guard.collect: true`; 30-day retention); the guard stays in shadow mode and the judge stays off
+
+### Fixed
+- `webagent_guard_search_alignment` and `webagent_guard_shadow_policy_total` were registered outside the app's metrics registry, so `/metrics` never showed them
+
 ## 3.2.1 - 2026-10-13
 
 Agentic security guard, in shadow mode: it checks every LLM call's context and every tool call, records what it would do, and blocks nothing until checkpoint 1 is switched to act mode. Spec: `planning/specs/agentic-security/`; plan: `planning/agentic-security-plan.md`.

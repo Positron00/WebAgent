@@ -194,7 +194,7 @@ Terms used throughout:
 
 ## 8. Observability (phases 1–4)
 
-**SEC-080 Metrics (must).** `webagent_guard_decisions_total{checkpoint, action, outcome, shadow}`, `webagent_guard_latency_seconds{checkpoint}`, `webagent_contextdefender_score{axis, source}` (histogram of 0–100), `webagent_guard_judge_total{verdict}`, `webagent_guard_unlabelled_total{agent}`, `webagent_guard_escalations_total`, `webagent_guard_shadow_policy_total{policy_id, action}`, `webagent_guard_search_alignment{tainted}` (histogram of 0–100 for search and retrieval).
+**SEC-080 Metrics (must).** `webagent_guard_decisions_total{checkpoint, action, outcome, shadow}`, `webagent_guard_latency_seconds{checkpoint}`, `webagent_contextdefender_score{axis, source}` (histogram of 0–100), `webagent_guard_judge_total{verdict}`, `webagent_guard_unlabelled_total{agent}`, `webagent_guard_escalations_total`, `webagent_guard_shadow_policy_total{policy_id, action}`, `webagent_guard_search_alignment{tainted}` (histogram of 0–100 for search and retrieval), `webagent_guard_hop_seconds{agent}` and `webagent_guard_tool_seconds{action}` (whole-checkpoint time, for SNFR-01).
 - Verify: pytest reads the registry.
 
 **SEC-081 No text in logs outside dev (must).** One log line per non-allow decision (checkpoint, action, outcome, policy ids, top axis and score, task ID); text only when `WEBAGENT_ENV=dev`.

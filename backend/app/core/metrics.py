@@ -199,12 +199,30 @@ GUARD_SHADOW_POLICY = Counter(
     "webagent_guard_shadow_policy_total",
     "Shadow-only policies that matched (recorded, not applied)",
     ["policy_id", "action"],
+    registry=WEBAGENT_REGISTRY,
 )
 GUARD_ALIGNMENT = Histogram(
     "webagent_guard_search_alignment",
     "Alignment (0-100) of search and retrieval queries with the task at checkpoint 2",
     ["tainted"],
     buckets=(10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
+    registry=WEBAGENT_REGISTRY,
+)
+# Whole-checkpoint time (scoring, decisions, judge), for SNFR-01: checkpoint 1 < 150 ms p95 per hop,
+# checkpoint 2 < 20 ms p95 per tool call without the judge. GUARD_LATENCY times the Cedar decision only.
+GUARD_HOP_SECONDS = Histogram(
+    "webagent_guard_hop_seconds",
+    "Checkpoint 1 time per hop (scoring and decisions)",
+    ["agent"],
+    buckets=(0.01, 0.025, 0.05, 0.1, 0.15, 0.25, 0.5, 1.0, 2.5, 5.0),
+    registry=WEBAGENT_REGISTRY,
+)
+GUARD_TOOL_SECONDS = Histogram(
+    "webagent_guard_tool_seconds",
+    "Checkpoint 2 time per tool call (checks, alignment, decision, judge)",
+    ["action"],
+    buckets=(0.005, 0.01, 0.02, 0.05, 0.1, 0.25, 0.5, 1.0, 3.0, 5.0),
+    registry=WEBAGENT_REGISTRY,
 )
 
 

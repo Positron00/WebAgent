@@ -62,7 +62,11 @@ def record_collection(
     decision: Decision,
     state_context: Dict[str, Any],
     args: Optional[Dict[str, Any]] = None,
+    item: Optional[Dict[str, Any]] = None,
+    context: Optional[Dict[str, Any]] = None,
 ) -> None:
+    """One collected decision. `item` (checkpoint 1) and `context` (checkpoint 2) carry scores and
+    features for the shadow-week review; text only in dev (SNFR-09)."""
     cfg = getattr(settings, "SECURITY_GUARD", None)
     if cfg is None or not cfg.collect:
         return
@@ -80,6 +84,10 @@ def record_collection(
         "args": args or {},
         **_text_field(state_context.get("query")),
     }
+    if item is not None:
+        row["item"] = item
+    if context is not None:
+        row["context"] = context
     try:
         path = _collected_dir() / f"{datetime.now(timezone.utc).date().isoformat()}.jsonl"
         _append_jsonl(path, row)

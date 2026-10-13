@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import asyncio
+import time
 import logging
 from typing import Any, Dict, List, Optional, Set
 
 from app.core.config import settings
-from app.core.metrics import GUARD_ALIGNMENT, record_guard_decision
+from app.core.metrics import GUARD_ALIGNMENT, GUARD_TOOL_SECONDS, record_guard_decision
 from app.models.task import WorkflowState
 from app.security import alignment, code_checks, patterns
 from app.security.decision import decide
@@ -140,8 +141,22 @@ async def guard_tool(
     """
     Run checkpoint 2 for a tool call.
 
-    Returns True when the tool should run. Raises :class:`GuardStop` on escalate.
+    Returns True when the tool should run. Raises :class:`GuardStop` on escalate. Timed for SNFR-01.
     """
+    started = time.perf_counter()
+    try:
+        return await _guard_tool(action, args, state, principal=principal)
+    finally:
+        GUARD_TOOL_SECONDS.labels(action=action).observe(time.perf_counter() - started)
+
+
+async def _guard_tool(
+    action: ToolAction,
+    args: Dict[str, Any],
+    state: WorkflowState,
+    *,
+    principal: str,
+) -> bool:
     cfg = _guard_cfg()
     if cfg is None or not cfg.enabled:
         return True
@@ -167,6 +182,8 @@ async def guard_tool(
         decision=decision,
         state_context=state.context,
         args=args,
+        context={k: context.get(k) for k in ("alignment", "tainted", "pattern_hits", "code_findings",
+                                               "approved_tools", "declined_actions_in_task")},
     )
 
     effective = decision.outcome
