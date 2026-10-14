@@ -106,7 +106,8 @@ The diagnostics can help identify issues with:
 
 2. Install dependencies (pinned by `backend/constraints.txt`):
    ```bash
-   pip install -r backend/requirements.txt -c backend/constraints.txt
+   pip install -r requirements.txt
+   # (from repo root: runtime + dev, with backend/constraints.txt pins; the Docker image installs backend/requirements.txt only)
    ```
 
 3. Create `.env.local` in the repo root from the template and add your keys:
@@ -193,21 +194,27 @@ The WebAgent backend exposes several API endpoints:
 No API key needed:
 
 - **GET /health**: Liveness/readiness probe (not rate-limited)
-- **GET /api/v1/health/**, **GET /api/v1/health/detailed**: Health and detailed diagnostics
+- **GET /api/v1/health/**: Basic health
 - **GET /metrics** (also **/api/v1/metrics**): Prometheus metrics (not rate-limited)
 
 Require `X-API-Key` when API-key auth is on (always in uat/prod):
 
 - **POST /api/task**: Start a task (`{"query": "...", "mode": "off" | "auto" | "always"}`); returns a `task_id`. See [Agentic triage](#agentic-triage) for modes
-- **GET /api/task/{task_id}**: Task status (`processing`, `completed`, `failed`) and report, with `route`, `decided_by` and (when the classifier ran) `p_agentic`. Any worker can answer, and finished reports survive a restart
+- **GET /api/task/{task_id}**: Task status (`processing`, `completed`, `failed`) and report, with `route`, `decided_by` and (when the classifier ran) `p_agentic`. While a research run works, `progress` holds its current step and last log lines; a failed run has `error_code` (`timeout`, `budget`, `cancelled`, `escalated`, …); every finished report has `tokens_used`. Any worker can answer, and finished reports survive a restart
+- **POST /api/task/{task_id}/cancel**: Stop a running task (202 `{"status": "cancelling"}`; 409 if it already finished, 404 if unknown). The worker running it stops within a few seconds and saves `error_code: cancelled`
 - **POST /api/triage**: Decide whether a question needs the research agents (`{"query", "previous_user_question", "has_image"}` → `{"route", "p_agentic", "decided_by", "reason", "classifier_version"}`)
 - **POST /api/v1/chat/completions**, **GET /api/v1/chat/status/{task_id}**: OpenAI-style chat request and its status; accepts `mode` like `/api/task`
-- **POST /api/v1/chat/** (deprecated), **GET /api/v1/chat/{task_id}**: Start a chat workflow and read its result
-- **POST /api/v1/tasks/create** (deprecated), **GET /api/v1/tasks/**, **GET /api/v1/tasks/{task_id}** (plus `/result`, `/error`), **DELETE /api/v1/tasks/{task_id}**: Task management
-- **POST /api/v1/documents/upload**, **POST /api/v1/documents/search**, **GET /api/v1/documents/document/{document_id}**, **GET /api/v1/documents/related/{document_id}**: Documents
+- **POST /api/v1/chat/** and **POST /api/v1/tasks/create** (both deprecated; use `/api/task`): start a research run, through the same intake guard, limits and run supervisor as `/api/task` in Always mode. Only `context.document_id` is used from the request's context
+- **GET /api/v1/chat/{task_id}**, **GET /api/v1/tasks/{task_id}** (plus `/result`, `/error`): a task's status and result
+- **GET /api/v1/tasks/?limit=20&offset=0**: Saved tasks, newest first (`limit` 1–100); each shows its question's length, not its text. **DELETE /api/v1/tasks/{task_id}** deletes the task and its saved file
+- **POST /api/v1/documents/upload** (415 for an unsupported file type), **POST /api/v1/documents/search**, **GET /api/v1/documents/document/{document_id}**, **GET /api/v1/documents/related/{document_id}**: Documents (IDs are UUIDs)
 - **GET /api/v1/status**: LLM and service status
+- **GET /api/v1/health/detailed**: Detailed service health
+- **GET /api/v1/observability/metrics**, **/drift**, **/alerts**, **/health**; **POST /api/v1/observability/llm/reset_baseline**, **/doc/reset_baseline**: model and document drift, alerts and observability metrics (see [docs/RUNBOOK.md](../docs/RUNBOOK.md))
 
-Requests are rate-limited per caller (60 per minute by default). Behind the Next.js proxy the caller is the end user, taken from `X-Forwarded-For`, which is trusted only from `WEBAGENT_TRUSTED_PROXIES`.
+Errors carry `"error": {"code": "...", "message": "..."}`; `HTTPException` and validation errors also keep FastAPI's `detail`. Intake-guard refusals (403, 409) keep their own flat shape, which the web app reads.
+
+Requests are rate-limited per caller (60 per minute by default). Behind the Next.js proxy the caller is the user's sign-in session, sent as `X-WebAgent-Client`; the backend accepts that header only from `WEBAGENT_TRUSTED_PROXIES` or from a caller holding the API key. Other proxies' callers are taken from the right-most untrusted `X-Forwarded-For` address.
 
 See the OpenAPI documentation for complete details and request/response schemas.
 
@@ -332,8 +339,10 @@ backend/
 ├── tests/                # Test suite
 ├── main.py               # Application entry point
 ├── path_setup.py         # Path configuration utility
-├── requirements.txt      # Dependencies
-└── requirements-llm.txt  # LLM-specific dependencies
+├── requirements.txt          # Runtime (server image)
+├── requirements-dev.txt      # Tests, lint, dev sandbox libs
+├── requirements-demos.txt    # Optional demo extras
+└── requirements-llm.txt      # LLM-specific dependencies
 ```
 
 ### Adding a New Agent
@@ -387,12 +396,15 @@ Key environment variables used by the application:
 | LANGSMITH_PROJECT_NAME | LangSmith project | webagent-research |
 | LANGSMITH_TRACING_ENABLED | Set `false` to turn tracing off | true |
 | WEBAGENT_API_KEY | Key clients send as `X-API-Key` (required in uat/prod) | |
-| WEBAGENT_SECURITY_SECRET_KEY | JWT signing secret (required in uat/prod) | insecure dev default |
+| WEBAGENT_SECURITY_SECRET_KEY | Signs the security guard's consent and approval tokens (required in uat/prod) | insecure dev default |
 | WEBAGENT_SECURITY_API_KEY_ENABLED | Require `X-API-Key` | false (true in uat/prod YAML) |
 | WEBAGENT_ENABLE_CODE_EXECUTION | Let agents run generated code in the API server | false |
 | WEBAGENT_CODE_SANDBOX | `local` (no secrets, CPU/memory limits) or `docker` (isolated; required in uat/prod) | local |
-| WEBAGENT_TRUSTED_PROXIES | Proxies whose `X-Forwarded-For` is used for per-user rate limits | 127.0.0.1,::1 |
-| WEBAGENT_TASK_TIMEOUT_MINUTES | A task still processing after this long is reported as interrupted | 30 |
+| WEBAGENT_TRUSTED_PROXIES | Proxies whose `X-WebAgent-Client` (or right-most untrusted `X-Forwarded-For` address) is used for per-user rate limits | 127.0.0.1,::1 |
+| WEBAGENT_ALLOW_OPEN_DEV | In dev with API keys off, allow listening on an address other than 127.0.0.1 | false |
+| WEBAGENT_TASK_MAX_SECONDS | A research run is stopped after this long (`error_code: timeout`) | 420 |
+| WEBAGENT_SEARCH_TIMEOUT_SECONDS | Each Tavily search (with its retry) gives up after this long | 30 |
+| WEBAGENT_TASK_TIMEOUT_MINUTES | A task still processing after this long is reported as interrupted (a worker died); keep it above the run limit | 30 |
 | WEBAGENT_NLTK_AUTO_DOWNLOAD | Download missing NLTK data on first use | true (false in the Docker image) |
 | WEBAGENT_MODEL_REGISTRY_PATH | Model registry state file | backend/data/registry/models_registry.json |
 | WEB_CONCURRENCY | Uvicorn workers in the Docker image (task status is shared through `data/results`) | 4 |

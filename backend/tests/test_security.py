@@ -475,7 +475,7 @@ class TestAPISecuritySuite:
                     response_text = response.text
                     assert "<script>" not in response_text, "XSS payload was returned unescaped in response"
                     assert "alert(" not in response_text, "Potentially executable JavaScript was returned in response"
-            except:
+            except Exception:
                 # The endpoint might reject the request due to authentication,
                 # but we at least tested that the middleware processed the request
                 pass
@@ -511,7 +511,7 @@ class TestAPISecuritySuite:
                             # Make sure it's wrapped in quotes or escaped
                             assert f'"{payload}"' in response_text or f'\\"{payload}\\"' in response_text, \
                                 f"Injection payload '{payload}' was returned unescaped in response"
-                except:
+                except Exception:
                     # The endpoint might reject the request due to authentication,
                     # but we at least tested that the middleware processed the request
                     pass
@@ -521,5 +521,3 @@ class TestAPISecuritySuite:
             pytest.skip(f"Skipping test_injection_prevention due to error: {str(e)}")
 
 
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__]) 

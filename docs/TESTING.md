@@ -94,7 +94,7 @@ Mock `@/utils/apiClient` to control what the "server" returns (see `ChatContext.
 
 ### Coverage floor
 
-`jest.config.js` sets `coverageThreshold` just below current coverage, so `npm run test:coverage` fails if coverage drops. Raise the numbers when you add tests.
+`jest.config.js` sets `coverageThreshold` (lines/statements/branches/functions) at least 5 points below measured coverage, so `npm run test:coverage` fails if coverage drops. Raise the numbers when you add tests. CI enforces a backend coverage floor via `--cov-fail-under` in `.github/workflows/ci.yml`.
 
 ## Backend Tests
 

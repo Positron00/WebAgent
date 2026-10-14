@@ -168,5 +168,3 @@ def main():
     
     return success_count == total_count
 
-if __name__ == "__main__":
-    main() 

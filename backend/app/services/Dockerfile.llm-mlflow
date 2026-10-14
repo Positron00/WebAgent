@@ -1,3 +1,5 @@
+# Self-hosted LLM server with MLflow tracking. Build with backend/ as the context (it has a .dockerignore):
+#   docker build -f backend/app/services/Dockerfile.llm-mlflow -t webagent/llm-mlflow backend
 FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
 
 WORKDIR /app
@@ -10,15 +12,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
-COPY backend/requirements-llm.txt /app/requirements.txt
+COPY requirements-llm.txt /app/requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy service files
-COPY backend/app/services/self_hosted_llm_service.py /app/self_hosted_llm_service.py
-COPY backend/app/services/MLFLOW_INTEGRATION.md /app/MLFLOW_INTEGRATION.md
-COPY backend/app/services/README_SELF_HOSTED_LLM.md /app/README_SELF_HOSTED_LLM.md
+COPY standalone/llm_server.py /app/llm_server.py
+COPY app/services/MLFLOW_INTEGRATION.md /app/MLFLOW_INTEGRATION.md
+COPY app/services/README_SELF_HOSTED_LLM.md /app/README_SELF_HOSTED_LLM.md
 
 # Default environment variables
 ENV MODEL_PATH=/models/llama-3
@@ -42,10 +44,14 @@ EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD curl -f http://localhost:${PORT}/health || exit 1
 
+RUN useradd --create-home --uid 10001 llm && chown -R llm:llm /app /models /app/mlflow-artifacts
+USER llm
+
 # Command to run the service
-CMD ["python", "self_hosted_llm_service.py", \
-     "--model_path", "${MODEL_PATH}", \
-     "--port", "${PORT}", \
-     "--host", "${HOST}", \
-     "--mlflow_tracking_uri", "${MLFLOW_TRACKING_URI}", \
-     "--mlflow_experiment_name", "${MLFLOW_EXPERIMENT_NAME}"] 
+# Shell form, so the ${...} settings above are expanded (exec form passes them literally).
+CMD python llm_server.py \
+    --model_path "${MODEL_PATH}" \
+    --port "${PORT}" \
+    --host "${HOST}" \
+    --mlflow_tracking_uri "${MLFLOW_TRACKING_URI}" \
+    --mlflow_experiment_name "${MLFLOW_EXPERIMENT_NAME}"

@@ -1,43 +1,55 @@
-import { NextResponse } from 'next/server';
-import { logger } from '@/utils/logger';
+import { NextResponse } from "next/server";
+import { logger } from "@/utils/logger";
+import { SESSION_HEADER } from "@/utils/session";
 
 // Forwards /api/task requests to the FastAPI backend so the API key never reaches the browser.
-const BACKEND_URL = process.env.WEBAGENT_BACKEND_URL || 'http://127.0.0.1:8000';
+const BACKEND_URL = process.env.WEBAGENT_BACKEND_URL || "http://127.0.0.1:8000";
 
-// The caller's address, so the backend rate-limits each user instead of this proxy.
-function callerAddress(incoming?: Request): string | null {
-  if (!incoming) return null;
-  const forwarded = incoming.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded;
-  return incoming.headers.get('x-real-ip');
+/**
+ * Headers the backend uses to identify and rate-limit this caller. The session ID comes from
+ * the middleware (it deletes any browser-sent value); browser headers such as
+ * X-Forwarded-For are never copied, so a browser can't pick its own client ID.
+ */
+export function backendClientHeaders(
+  incoming?: Request,
+): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (process.env.WEBAGENT_API_KEY) {
+    headers["X-API-Key"] = process.env.WEBAGENT_API_KEY;
+  }
+  const sid = incoming?.headers.get(SESSION_HEADER);
+  if (sid) {
+    headers["X-WebAgent-Client"] = `s:${sid}`;
+  }
+  return headers;
 }
 
 export async function forwardToBackend(
   path: string,
   init: RequestInit,
-  incoming?: Request
+  incoming?: Request,
 ): Promise<NextResponse> {
   const headers = new Headers(init.headers);
-  if (process.env.WEBAGENT_API_KEY) {
-    headers.set('X-API-Key', process.env.WEBAGENT_API_KEY);
-  }
-  const caller = callerAddress(incoming);
-  if (caller) {
-    headers.set('X-Forwarded-For', caller);
-  }
+  Object.entries(backendClientHeaders(incoming)).forEach(([name, value]) =>
+    headers.set(name, value),
+  );
 
   try {
-    const response = await fetch(`${BACKEND_URL}${path}`, { ...init, headers, cache: 'no-store' });
+    const response = await fetch(`${BACKEND_URL}${path}`, {
+      ...init,
+      headers,
+      cache: "no-store",
+    });
     const body = await response.json().catch(() => ({}));
     return NextResponse.json(body, { status: response.status });
   } catch (error) {
-    logger.error('Multi-agent backend unreachable', {
+    logger.error("Multi-agent backend unreachable", {
       path,
       error: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json(
-      { error: 'Multi-agent backend unavailable' },
-      { status: 503, headers: { 'X-WebAgent-Proxy-Error': 'unreachable' } }
+      { error: "Multi-agent backend unavailable" },
+      { status: 503, headers: { "X-WebAgent-Proxy-Error": "unreachable" } },
     );
   }
 }

@@ -6,6 +6,7 @@ import uuid
 from app.core.log_context import current_task_id
 from app.services import task_manager as task_manager_module
 from app.services.task_manager import TaskManager
+from tests.fakes.workflow import StreamingFakeWorkflow
 
 
 class ListHandler(logging.Handler):
@@ -71,7 +72,7 @@ async def test_concurrent_tasks_keep_their_own_ids():
 async def test_task_manager_tags_logs_written_inside_the_workflow(monkeypatch):
     logger, handler = capture("test.log_context.workflow")
 
-    class FakeWorkflow:
+    class FakeWorkflow(StreamingFakeWorkflow):
         async def ainvoke(self, state):
             logger.info("agent working")
             state.mark_completed({"content": "done"})

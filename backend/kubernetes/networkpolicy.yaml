@@ -1,0 +1,26 @@
+# IMP-063: only the ingress controller and Prometheus may reach the backend port.
+# Requires a CNI that enforces NetworkPolicy (see kubernetes/README.md).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: webagent-backend-ingress
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: webagent-backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8000

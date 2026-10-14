@@ -101,7 +101,3 @@ async def test_deduplication():
     
     return result_state
 
-if __name__ == "__main__":
-    logger.info("Starting deduplication test")
-    asyncio.run(test_deduplication())
-    logger.info("Test completed") 

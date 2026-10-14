@@ -18,6 +18,7 @@ for _name in ("LANGSMITH_TRACING_ENABLED", "LANGSMITH_TRACING", "LANGCHAIN_TRACI
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 os.environ["WEBAGENT_NLTK_AUTO_DOWNLOAD"] = "false"
+os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
 
 _LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost", "0.0.0.0"}
 _real_connect = socket.socket.connect

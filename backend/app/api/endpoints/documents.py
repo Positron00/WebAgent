@@ -16,7 +16,7 @@ import tempfile
 import shutil
 import asyncio
 
-from app.services.document_loader import get_document_loader_service
+from app.services.document_loader import DocumentLoaderService, get_document_loader_service
 from app.services.vectordb import get_vectordb_service
 from app.services.graphdb import get_graph_db_service
 from app.core.config import settings
@@ -28,6 +28,25 @@ logger = logging.getLogger(__name__)
 
 # Create router
 router = APIRouter()
+
+
+def _canonical_id(document_id: Any) -> Optional[str]:
+    """The canonical form of a UUID document ID, or None for anything else."""
+    try:
+        return str(uuid.UUID(str(document_id)))
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
+def _artifact_dir(document_id: str) -> Path:
+    """The artifact folder for a real document ID; 404 for anything else."""
+    canonical = _canonical_id(document_id)
+    if canonical is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+    path = Path(settings.ARTIFACTS_PATH) / canonical
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Document not found")
+    return path
 
 # Models
 
@@ -41,7 +60,7 @@ class DocumentMetadata(BaseModel):
 class DocumentSearchQuery(BaseModel):
     """Document search query model."""
     query: str = Field(..., description="Search query text")
-    limit: int = Field(10, description="Maximum number of results")
+    limit: int = Field(10, ge=1, le=50, description="Maximum number of results")
     include_content: bool = Field(False, description="Whether to include document content")
 
 class DocumentResponse(BaseModel):
@@ -86,6 +105,10 @@ async def upload_document(
     Returns:
         Document information
     """
+    suffix = os.path.splitext(file.filename or "")[1].lower()
+    if suffix not in DocumentLoaderService.supported_extensions():
+        raise HTTPException(status_code=415, detail=f"Unsupported file type: {suffix or 'none'}")
+
     document_loader = get_document_loader_service()
     
     # Parse metadata
@@ -97,7 +120,7 @@ async def upload_document(
             raise HTTPException(status_code=400, detail=f"Invalid metadata JSON: {str(e)}")
     
     # Create a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
         # Write uploaded file data to temp file
         shutil.copyfileobj(file.file, temp_file)
         temp_file_path = temp_file.name
@@ -184,10 +207,7 @@ async def get_document(
     Returns:
         Document information
     """
-    # Check if document exists
-    artifact_dir = Path(settings.ARTIFACTS_PATH) / document_id
-    if not artifact_dir.exists():
-        raise HTTPException(status_code=404, detail="Document not found")
+    artifact_dir = _artifact_dir(document_id)
     
     try:
         # Get artifact metadata
@@ -207,7 +227,7 @@ async def get_document(
         
         # Create base response
         response = DocumentResponse(
-            id=document_id,
+            id=artifact_dir.name,
             filename=artifact_metadata["original_filename"],
             metadata=artifact_metadata,
             upload_time=artifact_metadata["upload_time"],
@@ -223,6 +243,8 @@ async def get_document(
                     response.metadata["content"] = f.read()
         
         return response
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error retrieving document: {str(e)}")
         raise_safe_http_exception(500, e, public_message="Error retrieving document")
@@ -232,8 +254,8 @@ async def get_document(
 async def get_related_documents(
     document_id: str,
     relationship_type: Optional[str] = Query(None, description="Filter by relationship type"),
-    depth: int = Query(1, description="Relationship depth"),
-    limit: int = Query(10, description="Maximum number of results")
+    depth: int = Query(1, ge=1, le=3, description="Relationship depth"),
+    limit: int = Query(10, ge=1, le=50, description="Maximum number of results")
 ) -> List[DocumentResponse]:
     """
     Get documents related to the specified document.
@@ -247,6 +269,7 @@ async def get_related_documents(
     Returns:
         List of related documents
     """
+    document_id = _artifact_dir(document_id).name
     graph_db = get_graph_db_service()
     
     try:
@@ -259,7 +282,7 @@ async def get_related_documents(
         # Format responses
         responses = []
         for doc in related:
-            doc_id = doc.get("id")
+            doc_id = _canonical_id(doc.get("id"))
             
             # Skip if no valid ID
             if not doc_id:

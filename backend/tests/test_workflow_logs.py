@@ -195,21 +195,17 @@ class TestWorkflowLogs:
                 agentic_toggle=True
             )
             
-            # Create a background tasks mock
-            background_tasks = MagicMock()
-            
             # Import the endpoint function
             from app.api.endpoints.frontend import frontend_chat_completions
             
             # Call the endpoint function
-            response = await frontend_chat_completions(request, background_tasks)
+            response = await frontend_chat_completions(request)
             
-            # Verify background task was called
-            assert background_tasks.add_task.called, "Background task should be added"
-            
-            # Verify task was started with agentic_toggle=True
-            task_kwargs = background_tasks.add_task.call_args[1]
-            assert task_kwargs.get("context", {}).get("agentic_toggle") is True, "Task should be started with agentic_toggle=True"
+            # Verify the run was started on the workflow path with agentic_toggle=True
+            assert mock_task_manager.start.called, "The run should be started"
+            _task_id, _message, context = mock_task_manager.start.call_args.args
+            assert mock_task_manager.start.call_args.kwargs["direct"] is False
+            assert context.get("agentic_toggle") is True, "Task should be started with agentic_toggle=True"
     
     def test_workflow_logs_format(self):
         """Test that workflow logs are formatted correctly for frontend display."""
@@ -284,5 +280,3 @@ class TestWorkflowLogs:
         assert "logs" not in non_agentic_result["state"].final_report, "Logs should not be in final report when agentic mode is OFF"
 
 
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__]) 

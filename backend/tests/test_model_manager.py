@@ -204,5 +204,3 @@ class TestModelManager(unittest.TestCase):
         self.mock_os.kill.assert_called_with(12345, 15)  # 15 is SIGTERM
 
 
-if __name__ == "__main__":
-    unittest.main() 

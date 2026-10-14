@@ -1,8 +1,13 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Source } from '@/types/chat';
-import { LinkIcon, DocumentTextIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import React from "react";
+import { Source } from "@/types/chat";
+import { safeUrl } from "@/utils/safeUrl";
+import {
+  LinkIcon,
+  DocumentTextIcon,
+  GlobeAltIcon,
+} from "@heroicons/react/24/outline";
 
 interface SourceCanvasProps {
   sources: Source[];
@@ -20,31 +25,33 @@ export function SourceCanvas({ sources, isVisible }: SourceCanvasProps) {
         <div className="flex flex-col items-center justify-center h-64 text-gray-400">
           <DocumentTextIcon className="w-16 h-16 mb-4 opacity-50" />
           <p className="text-center">No sources to display</p>
-          <p className="text-center text-sm mt-2">Sources will appear here when available</p>
+          <p className="text-center text-sm mt-2">
+            Sources will appear here when available
+          </p>
         </div>
       </div>
     );
   }
 
   // Get a color based on domain
-  const getDomainColor = (domain: string = '') => {
+  const getDomainColor = (domain: string = "") => {
     const colors = {
-      'wikipedia': 'bg-blue-500',
-      'research': 'bg-purple-500',
-      'science': 'bg-green-500',
-      'national': 'bg-yellow-500',
-      'tech': 'bg-cyan-500',
-      'nature': 'bg-emerald-500',
-      'arx': 'bg-rose-500',
-      'medical': 'bg-red-500',
-      'history': 'bg-amber-500'
+      wikipedia: "bg-blue-500",
+      research: "bg-purple-500",
+      science: "bg-green-500",
+      national: "bg-yellow-500",
+      tech: "bg-cyan-500",
+      nature: "bg-emerald-500",
+      arx: "bg-rose-500",
+      medical: "bg-red-500",
+      history: "bg-amber-500",
     };
-    
+
     for (const [key, color] of Object.entries(colors)) {
       if (domain.includes(key)) return color;
     }
-    
-    return 'bg-gray-500';
+
+    return "bg-gray-500";
   };
 
   return (
@@ -52,19 +59,20 @@ export function SourceCanvas({ sources, isVisible }: SourceCanvasProps) {
       <h3 className="text-lg font-medium text-white mb-4 pb-2 border-b border-gray-700">
         Source Canvas
       </h3>
-      
+
       <div className="grid grid-cols-1 gap-4">
         {sources.map((source, index) => {
           const domainColor = getDomainColor(source.domain);
-          
+          const href = safeUrl(source.url);
+
           return (
-            <div 
+            <div
               key={source.id}
               className="bg-gray-800 border border-gray-700 hover:border-blue-500 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
             >
               {/* Domain Color Banner */}
               <div className={`h-2 w-full ${domainColor}`}></div>
-              
+
               {/* Content Section */}
               <div className="p-4">
                 {/* Title with Icon */}
@@ -80,7 +88,7 @@ export function SourceCanvas({ sources, isVisible }: SourceCanvasProps) {
                     {source.title}
                   </h4>
                 </div>
-                
+
                 {/* Snippet Preview */}
                 {source.snippet && (
                   <div className="bg-gray-900/50 rounded p-3 mb-3">
@@ -89,32 +97,40 @@ export function SourceCanvas({ sources, isVisible }: SourceCanvasProps) {
                     </p>
                   </div>
                 )}
-                
+
                 {/* Footer with Domain & Relevance */}
                 <div className="flex justify-between items-center text-xs text-gray-400 mt-2">
                   <div className="flex items-center">
                     <GlobeAltIcon className="w-3 h-3 mr-1" />
-                    <span>{source.domain || 'unknown source'}</span>
+                    <span>{source.domain || "unknown source"}</span>
                   </div>
-                  
+
                   {source.relevance !== undefined && (
-                    <span className={`${domainColor} px-2 py-0.5 rounded-full text-white`}>
+                    <span
+                      className={`${domainColor} px-2 py-0.5 rounded-full text-white`}
+                    >
                       {Math.round(source.relevance * 100)}%
                     </span>
                   )}
                 </div>
               </div>
-              
+
               {/* Link Section */}
-              {source.url && (
-                <a 
-                  href={source.url} 
-                  target="_blank" 
+              {href ? (
+                <a
+                  href={href}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="block bg-gray-700 hover:bg-gray-600 p-2 text-xs text-center text-gray-300 hover:text-white transition-colors"
                 >
                   Visit Source →
                 </a>
+              ) : (
+                source.url && (
+                  <span className="block bg-gray-700 p-2 text-xs text-center text-gray-400 break-all">
+                    {source.url}
+                  </span>
+                )
               )}
             </div>
           );
@@ -122,4 +138,4 @@ export function SourceCanvas({ sources, isVisible }: SourceCanvasProps) {
       </div>
     </div>
   );
-} 
+}

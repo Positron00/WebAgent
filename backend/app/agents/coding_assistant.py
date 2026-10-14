@@ -21,6 +21,7 @@ from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
 from app.core.loadEnvYAML import get_agents_config
 from app.core.config import settings
+from app.core.log_context import describe_text
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,9 @@ class CodingAssistantAgent(BaseAgent):
             Updated workflow state with code generation results
         """
         try:
-            logger.info(f"Coding Assistant Agent processing query: {state.query}")
+            logger.info(f"Coding Assistant Agent processing query ({describe_text(state.query)})")
+            if settings.WEBAGENT_ENV == "dev":
+                logger.debug("Query: %s", state.query)
             
             # Get the research findings and data insights
             senior_research_output = state.reports.get("senior_research", {})
@@ -161,7 +164,8 @@ class CodingAssistantAgent(BaseAgent):
                                 try:
                                     code_data = json.loads(sanitized_json)
                                     logger.info("Successfully parsed JSON after sanitizing control characters")
-                                except:
+                                except json.JSONDecodeError:
+                                    logger.warning("JSON still invalid after sanitizing; escaping control characters")
                                     # Second approach: manually escape control characters
                                     import re
                                     # Replace common control sequences with proper escapes
@@ -171,7 +175,8 @@ class CodingAssistantAgent(BaseAgent):
                                     try:
                                         code_data = json.loads(fixed_json)
                                         logger.info("Successfully parsed JSON after escaping control characters")
-                                    except:
+                                    except json.JSONDecodeError:
+                                        logger.warning("JSON still invalid after escaping control characters")
                                         raise # Let it fall through to general error handling
                         except json.JSONDecodeError as e:
                             if "Extra data" in str(e):
@@ -187,7 +192,8 @@ class CodingAssistantAgent(BaseAgent):
                                 fixed_json = re.sub(r'("(?:\\.|[^"\\])*")|\n', lambda m: m.group(1) or "\\n", cleaned_result)
                                 try:
                                     code_data = json.loads(fixed_json)
-                                except:
+                                except json.JSONDecodeError:
+                                    logger.warning("JSON still invalid after escaping newlines")
                                     raise  # Let it fall through to the extraction code
                     else:
                         # Try to extract JSON from text
@@ -196,7 +202,8 @@ class CodingAssistantAgent(BaseAgent):
                         if json_match:
                             try:
                                 code_data = json.loads(json_match.group(1))
-                            except:
+                            except json.JSONDecodeError:
+                                logger.warning("Extracted JSON substring is not valid JSON")
                                 raise  # Let it fall through to the extraction code
                         else:
                             # Look for partial JSON structure with a code key

@@ -20,6 +20,36 @@ from app.utils.code_sandbox import sandbox_mode
 from app.security.decision import PolicyLoadError, get_engine
 
 
+LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+
+
+def check_dev_exposure(host: str) -> None:
+    """In dev with API keys off, refuse a host other machines can reach."""
+    if settings.WEBAGENT_ENV != "dev" or settings.API_KEY_ENABLED or settings.ALLOW_OPEN_DEV:
+        return
+    if host not in LOOPBACK:
+        raise SystemExit(
+            f"Dev backend would listen on {host} with API keys off. "
+            "Set api.host to 127.0.0.1, turn on API keys, or set WEBAGENT_ALLOW_OPEN_DEV=true."
+        )
+
+
+def check_task_timeouts() -> None:
+    """Warn when the stale-record timeout could mark a run that is still allowed to run as interrupted."""
+    # Same parsing as task_manager.TASK_TIMEOUT_MINUTES, which this module must not import (heavy).
+    try:
+        stale_minutes = int(os.getenv("WEBAGENT_TASK_TIMEOUT_MINUTES", "30"))
+    except ValueError:
+        return
+    if stale_minutes * 60 <= settings.TASK_MAX_SECONDS + 60:
+        logging.getLogger(__name__).warning(
+            "WEBAGENT_TASK_TIMEOUT_MINUTES (%s min) should be more than WEBAGENT_TASK_MAX_SECONDS "
+            "(%s s) plus a minute; running tasks may be reported as interrupted",
+            stale_minutes,
+            settings.TASK_MAX_SECONDS,
+        )
+
+
 def server_code_execution_enabled() -> bool:
     """The API server runs generated code only when explicitly enabled."""
     return os.getenv("WEBAGENT_ENABLE_CODE_EXECUTION", "false").lower() == "true"

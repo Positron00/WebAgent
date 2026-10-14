@@ -534,8 +534,8 @@ def generate():
         if mlflow_run:
             try:
                 mlflow.end_run()
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Could not end MLflow run: {e}")
 
 @app.route("/health", methods=["GET"])
 def health_check():
@@ -566,10 +566,10 @@ def health_check():
                 # Try to list experiments to verify connection
                 mlflow.list_experiments()
                 mlflow_status = "connected"
-            except:
+            except Exception:
                 mlflow_status = "error_connecting"
-        except:
-            pass
+        except Exception as e:
+            logger.debug(f"MLflow status unavailable: {e}")
         
         return jsonify({
             "status": "ready",
@@ -719,8 +719,8 @@ def signal_handler(sig, frame):
     # End any active MLflow run
     try:
         mlflow.end_run()
-    except:
-        pass
+    except Exception as e:
+        logger.warning(f"Could not end MLflow run: {e}")
         
     unload_model()
     # Give a brief moment for cleanup before exiting
@@ -776,8 +776,8 @@ def main():
         # Ensure model is unloaded properly and MLflow run is ended
         try:
             mlflow.end_run()
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Could not end MLflow run: {e}")
         unload_model()
 
 if __name__ == "__main__":

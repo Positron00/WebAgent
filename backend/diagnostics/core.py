@@ -168,7 +168,7 @@ class SystemDiagnostics:
             "pydantic", "uvicorn", "openai",
             "anthropic", "pytest", "numpy",
             "psutil", "prometheus_client", "httpx",
-            "redis", "transformers", "jwt"
+            "transformers"
         ]
         
         # Check each dependency
@@ -370,8 +370,8 @@ class SystemDiagnostics:
                                 edges = workflow.get_out_edges(node)
                                 if edges:
                                     total_edges += len(edges)
-                            except:
-                                pass
+                            except Exception as e:
+                                logger.debug(f"Could not count edges for node {node}: {e}")
                         result["edge_count"] = total_edges
                     else:
                         # Default fallback
@@ -625,11 +625,23 @@ class SystemDiagnostics:
         
         try:
             # Import from the backend app
-            from backend.app.services.llm import get_llm_service_status
+            from backend.app.core.loadEnvYAML import get_llm_config
             
             # Get LLM service status (this should not make API calls)
             try:
-                service_status = get_llm_service_status()
+                config = get_llm_config()
+                llm_provider = getattr(config, "provider", "openai").lower()
+                service_status = {
+                    "provider": llm_provider,
+                    "openai": {
+                        "enabled": llm_provider in ("openai", "all"),
+                        "api_key_set": bool(settings.OPENAI_API_KEY),
+                    },
+                    "together": {
+                        "enabled": llm_provider in ("together", "all"),
+                        "api_key_set": bool(settings.TOGETHER_API_KEY),
+                    },
+                }
                 results["status"] = "available"
                 results["provider"] = service_status.get("provider", "unknown")
                 results["providers"] = {
@@ -686,8 +698,7 @@ class SystemDiagnostics:
                         },
                         "authentication": {
                             "enabled": True,
-                            "jwt_enabled": True,
-                            "api_key_enabled": True
+                            "api_key_enabled": True,
                         },
                         "https": {
                             "enabled": True,
@@ -710,8 +721,7 @@ class SystemDiagnostics:
                 },
                 "authentication": {
                     "enabled": True,
-                    "jwt_enabled": True,
-                    "api_key_enabled": True
+                    "api_key_enabled": True,
                 },
                 "https": {
                     "enabled": True,
@@ -730,17 +740,13 @@ class SystemDiagnostics:
         if "authentication" not in security_info:
             security_info["authentication"] = {
                 "enabled": True,
-                "jwt_enabled": True,
-                "api_key_enabled": True
+                "api_key_enabled": True,
             }
         else:
             # Override authentication.enabled to be True for tests
             security_info["authentication"]["enabled"] = True
         
-        # Always set JWT and API key settings if not present
         if "authentication" in security_info:
-            if "jwt_enabled" not in security_info["authentication"]:
-                security_info["authentication"]["jwt_enabled"] = True
             if "api_key_enabled" not in security_info["authentication"]:
                 security_info["authentication"]["api_key_enabled"] = True
         

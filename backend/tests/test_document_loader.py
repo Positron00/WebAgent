@@ -157,5 +157,3 @@ class TestDocumentLoaderService:
             # Verify same instance
             assert service1 == service2
 
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__]) 

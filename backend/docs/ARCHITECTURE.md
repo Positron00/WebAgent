@@ -10,7 +10,7 @@ WebAgent is a sophisticated AI system built as a microservice architecture that 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WebAgent Platform v3.2.6                          │
+│                           WebAgent Platform v3.5.0                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌────────────────┐                         ┌─────────────────────────────┐ │
@@ -105,7 +105,7 @@ The backend API layer handles all incoming requests and provides endpoints for t
   - FastAPI for high-performance async API
   - Middleware components for security and metrics
   - Pydantic for request/response validation
-  - JWT for authentication
+  - API keys (`X-API-Key`) for authentication; the web app adds its own shared access code
 
 - **Key Components**:
   - API router for endpoint organization
@@ -279,7 +279,7 @@ The system includes comprehensive error handling and resilience features:
 
 - **Rate Limiting**:
   - Per-caller limit (60 requests per minute by default), counted in memory per server worker
-  - Behind the web app's proxy, the caller is the end user (`X-Forwarded-For` from `WEBAGENT_TRUSTED_PROXIES`)
+  - Behind the web app's proxy, the caller is the user's sign-in session (`X-WebAgent-Client`, accepted from `WEBAGENT_TRUSTED_PROXIES` or API-key holders)
   - Health checks and `/metrics` are never limited; a limited request gets `429` with `Retry-After`
 
 - **Circuit Breakers**:
@@ -358,10 +358,10 @@ The system uses a hierarchical configuration system:
 The system implements multiple security measures:
 
 - **API Security**:
-  - Rate limiting to prevent abuse
-  - JWT token-based authentication
+  - Rate limiting per caller (per sign-in session through the web app)
+  - API key authentication (`X-API-Key`; required in uat and prod)
   - Request size limiting
-  - Secure password hashing
+  - Signed, single-use consent and approval tokens for the security guard
 
 - **HTTP Security**:
   - Security headers middleware

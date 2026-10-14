@@ -16,7 +16,7 @@ cors:
     - "https://admin.webagent.example.com"
   allow_credentials: true
   allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-  allow_headers: ["Content-Type", "Authorization", "X-Requested-With"]
+  allow_headers: ["Content-Type", "Authorization", "X-Requested-With", "X-API-Key"]
 
 # Database settings
 database:
@@ -25,13 +25,6 @@ database:
     path: ""  # Will use settings.VECTOR_DB_PATH
     embedding_dimension: 1536
     distance_metric: "cosine"
-  redis:
-    host: "redis-master.production.svc.cluster.local"
-    port: 6379
-    db: 0
-    password: null  # Use environment variable in production
-    key_prefix: "webagent:prod:"
-
 # LLM settings
 llm:
   provider: "together"
@@ -128,4 +121,3 @@ security:
   algorithm: "HS256"
   password_min_length: 12
   api_key_enabled: true
-  jwt_enabled: false 

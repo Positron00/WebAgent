@@ -53,7 +53,7 @@ def start_llm_service(model_path, port, mlflow_tracking_uri, experiment_name, qu
                 print(f"Service is ready on port {port}")
             else:
                 print(f"Service not ready yet, status: {response.json().get('status', 'unknown')}")
-        except:
+        except (requests.RequestException, ValueError):
             print("Waiting for service to start...")
         
         retries += 1
@@ -95,8 +95,8 @@ def run_evaluation(base_url, test_set, run_name=None):
             mlflow.log_param("device", health_data.get("device", "unknown"))
             if "memory_allocated_gb" in health_data:
                 mlflow.log_metric("memory_allocated_gb", float(health_data.get("memory_allocated_gb", 0)))
-    except:
-        print("Warning: Could not retrieve model information from health check")
+    except Exception as e:
+        print(f"Warning: Could not retrieve model information from health check: {e}")
     
     # Process each test case
     total_tokens = 0

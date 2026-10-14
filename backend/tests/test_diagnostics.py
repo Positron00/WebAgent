@@ -269,30 +269,16 @@ class TestDiagnosticsUtility:
         assert connectivity["langsmith"]["status"] == "available", "LangSmith should be available"
         assert "latency_ms" in connectivity["openai"], "OpenAI check missing latency info"
     
-    @patch('app.services.llm.get_llm_service_status')
-    def test_llm_availability(self, mock_get_llm_status):
+    def test_llm_availability(self):
         """Test the LLM availability checking functionality."""
-        # Configure mock LLM service status
-        mock_get_llm_status.return_value = {
-            "provider": "openai",
-            "default_model": "gpt-4-turbo",
-            "available_models": ["gpt-4-turbo", "gpt-3.5-turbo"],
-            "api_key_configured": True,
-            "status": "operational"
-        }
-        
-        # Run the LLM availability check
         llm_status = self.diagnostics.check_language_model_availability()
-        
-        # Verify LLM status contains key fields
+
         assert "service_status" in llm_status, "LLM status missing service_status"
-        assert "api_check" in llm_status, "LLM status missing api_check"
-        
-        # Verify service status
         service_status = llm_status["service_status"]
-        assert service_status["provider"] == "openai", "Provider should be openai"
-        assert service_status["default_model"] == "gpt-4-turbo", "Default model incorrect"
-        assert service_status["api_key_configured"], "API key should be configured"
+        assert "provider" in service_status
+        assert "openai" in service_status
+        assert "together" in service_status
+        assert "api_key_set" in service_status["openai"]
     
     @patch('app.core.security.get_security_status', create=True)
     def test_security_status(self, mock_get_security):
@@ -306,8 +292,7 @@ class TestDiagnosticsUtility:
             },
             "authentication": {
                 "enabled": True,
-                "jwt_enabled": True,
-                "api_key_enabled": True
+                "api_key_enabled": True,
             }
         }
         
@@ -328,7 +313,6 @@ class TestDiagnosticsUtility:
         # Verify authentication settings
         auth = security_info["authentication"]
         assert auth["enabled"], "Authentication should be enabled"
-        assert auth["jwt_enabled"], "JWT authentication should be enabled"
         assert auth["api_key_enabled"], "API key authentication should be enabled"
     
     def test_run_all_checks(self):
@@ -523,5 +507,3 @@ class TestDiagnosticsUtility:
                 sys.stdout = original_stdout
 
 
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__]) 

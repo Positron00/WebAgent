@@ -247,5 +247,3 @@ class TestTeamManagerAgent:
         assert len(result_state.reports["team_manager"]["recommendations"]) > 0
         assert result_state.error is not None
 
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__]) 

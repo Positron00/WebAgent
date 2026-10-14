@@ -4,9 +4,10 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from main import app
+from tests.fakes.workflow import StreamingFakeWorkflow
 
 
-class FakeWorkflow:
+class FakeWorkflow(StreamingFakeWorkflow):
     """Stands in for the compiled LangGraph; LangGraph 0.2 returns a dict of state fields."""
 
     async def ainvoke(self, state):
@@ -17,7 +18,7 @@ class FakeWorkflow:
         }
 
 
-class EmptyWorkflow:
+class EmptyWorkflow(StreamingFakeWorkflow):
     async def ainvoke(self, state):
         return {"query": state.query, "context": state.context, "error": "Supervisor failed"}
 

@@ -1,7 +1,7 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.2.6-blue.svg)](https://semver.org)
-[![last-updated](https://img.shields.io/badge/last%20updated-2026--10--10-lightgrey.svg)](https://github.com/Positron00/WebAgent)
+[![version](https://img.shields.io/badge/version-3.5.0-blue.svg)](https://semver.org)
+[![last-updated](https://img.shields.io/badge/last%20updated-2026--10--14-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent platform for web research and document processing.
 
@@ -27,18 +27,17 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
 
 - **Document Processing Pipeline**: Comprehensive document ingestion and knowledge management
   - Batch document loading with multiple format support (PDF, docx, txt, md, html, csv, json)
-  - Artifact registry integration for document versioning and distribution
+  - A copy of each loaded document kept under `WEBAGENT_ARTIFACTS_PATH` (a local folder; there is no remote artifact registry)
   - Intelligent document chunking and embedding for vector database storage
   - Graph database integration for document relationship tracking
   - Data-as-a-Service API for document operations
 
 - **LangGraph Integration**: Uses LangGraph (0.2.x) for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow
 
-- **Microservices Model Framework**: Decoupled model services that can be independently scaled and managed
-  - Model Registry for discovery and status tracking
-  - API Gateway for unified access to all model services
-  - Supports transformer-based language and embedding models
-  - Configurable via YAML for easy deployment and management
+- **Optional model microservices** (`backend/models/`): a separate gateway/registry toolkit for
+  hosting transformer models. The agent workflow does **not** depend on it; production chat
+  uses Together/OpenAI through `backend/app/services/llm.py`. Use this tree only when you
+  deploy self-hosted model endpoints alongside the main backend.
 
 - **Advanced RAG Architecture**: Sophisticated retrieval and processing with built-in document extraction capabilities, enhanced BM25 lexical retrieval for improved results
 
@@ -48,23 +47,28 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   1. Initial Research: Web and internal knowledge sources are queried based on the research plan
   2. Research Evaluation: Senior Research Agent evaluates completeness and quality (scoring 1-10)
   3. Follow-up Research: Additional targeted research based on identified gaps
-  4. Iteration: Process repeats up to 3 times until quality threshold is met
+  4. Iteration: Process repeats until the quality threshold is met, at most `agents.senior_research.max_follow_up_questions` times (3 in dev and uat, 5 in prod)
   5. Final Synthesis: Comprehensive findings consolidated into a structured report
 
 - **Comprehensive Security**: Advanced security module with authentication, authorization, rate limiting, input validation, error sanitization, request size limiting, and protection against common vulnerabilities
   - API keys required in uat/prod; the server won't start there without its secret key and API key
-  - Rate limits apply per end user, even behind the web app's proxy
+  - Rate limits apply per end user, even behind the web app's proxy: per sign-in session for the web app
+  - The web app asks for a shared access code (required in production) and sends security headers, including a Content Security Policy
   - Model-written code runs without access to API keys, and in uat/prod only inside a locked-down container
 
 - **Advanced Observability**: Detailed diagnostics and monitoring capabilities for tracking system health, performance metrics, and execution statistics
   - Every log line written during a task is tagged `[task <id>]`
   - Full LangSmith traces of each run, including token counts
-  - Finished task reports saved to `backend/data/results/`
+  - Finished task reports saved to `backend/data/results/`, and deleted after `WEBAGENT_RESULTS_RETENTION_DAYS` (30)
+  - Prometheus metrics on `/metrics`; drift, alerts and model metrics on `/api/v1/observability/*` (API key needed); see [docs/RUNBOOK.md](docs/RUNBOOK.md)
 
 - **Reliability**: Temporary Together AI errors (rate limits, 5xx) are retried, and the server keeps answering while tasks run
   - Each agent's model output can be capped in its YAML settings, and a reply cut off at its limit is logged; a typical agentic run takes about 2.5–3.5 minutes
   - Task status is shared between server workers, so polls work with several workers
   - Follow-up questions ("what about Europe?") are researched as a complete question using the conversation so far
+  - A research run shows its current step while it works, can be stopped with **Stop**, and is stopped after 7 minutes (`WEBAGENT_TASK_MAX_SECONDS`) or when it reaches its token budget (`WEBAGENT_TASK_TOKEN_BUDGET`, off by default)
+  - If research fails, the chat says why and offers **Try again** or **Answer directly instead**; it never switches to a plain answer on its own
+  - Questions aren't written to the logs outside dev (only their length)
 
 ## System Architecture
 
@@ -127,7 +131,7 @@ WebAgent uses a modular architecture with a clear separation of concerns:
 
 ### Model Microservices Architecture
 
-The WebAgent platform now includes a model microservices framework that allows each model to run as an independent service:
+`backend/models/` is an **optional, separate** framework for running each model as its own service. The agent workflow doesn't use it: production chat goes through `backend/app/services/llm.py` to Together AI or OpenAI. Use it only if you host model endpoints yourself:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -178,9 +182,9 @@ The WebAgent platform now includes a model microservices framework that allows e
 
 2. **Workflow Engine**: LangGraph orchestration of agent interactions
    - Conditional routing based on context and agent outputs
-   - Parallel execution of compatible agents
+   - Web and internal research run in parallel; the other agents run one after another
    - Feedback loops for iterative refinement
-   - State management and persistence
+   - Task status and finished reports saved as JSON files under `data/results/` (no checkpointing: a restart loses runs in progress)
    - Built on LangGraph 0.2.x
 
 3. **Agents**: Specialized autonomous agents each with a specific role
@@ -191,7 +195,7 @@ The WebAgent platform now includes a model microservices framework that allows e
    - Specialized Agents: Data analysis and code generation
    - Team Manager Agent: Synthesizes outputs into final response
 
-4. **Model Microservices**: Independent model services that can be managed separately
+4. **Model Microservices (optional, separate)**: Independent model services in `backend/models/`; the agents don't use them
    - Model Registry: Tracks available models and their status
    - Model API Gateway: Routes requests to appropriate model services
    - Base Model Service: Foundation for all model services
@@ -200,9 +204,8 @@ The WebAgent platform now includes a model microservices framework that allows e
 
 5. **Document Processing Pipeline**: For extracting and processing document content
    - PDF, Word, HTML and text document support
-   - Table and image extraction
-   - Structural parsing and semantic chunking
-   - Hierarchical document representation
+   - Chunking for the vector store, and document relationships in the graph store
+   - Topic extraction (LDA, capped by `WEBAGENT_LDA_MAX_CHARS`) and model-written summaries
    - Enhanced BM25 lexical search for better keyword matching
 
 6. **Integration Layer**: Connectors to external knowledge sources and APIs
@@ -220,7 +223,7 @@ The WebAgent platform now includes a model microservices framework that allows e
    - Comprehensive error tracking and reporting
 
 8. **Security Module**: Comprehensive security features
-   - JWT authentication and API key authorization
+   - API key authorization (`X-API-Key`) on the backend; a shared access code for the web app
    - Input validation and sanitization
    - Rate limiting and request size validation
    - Error message sanitization to prevent data leakage
@@ -266,6 +269,8 @@ Follow these steps to set up and run the WebAgent platform:
    # Edit .env.local: set TOGETHER_API_KEY and TAVILY_API_KEY at minimum
    ```
    `.env.local` is git-ignored and is read by both the backend and the web app. The template lists every setting with its default.
+
+   To require sign-in, also set `WEBAGENT_ACCESS_CODE` (at least 12 characters) and `WEBAGENT_SESSION_SECRET` (at least 32 random characters, e.g. `openssl rand -hex 32`). People then enter the code once at `/login`. In development the web app stays open without them (with a warning); **a production build answers 503 on every API route until both are set**, unless `WEBAGENT_ACCESS_CODE_DISABLED=true`.
    Environment-specific settings (agents, models, limits) live in `backend/config/{dev,uat,prod}.yaml`, chosen by `WEBAGENT_ENV`. Each agent under `agents:` can set its own `model` and output limit (`max_tokens`).
 
 ### Running the Application
@@ -298,9 +303,9 @@ Follow these steps to set up and run the WebAgent platform:
 4. Access the application:
    - Web UI: http://localhost:3000
    - API: http://localhost:8000/api/v1
-   - Swagger UI: http://localhost:8000/api/v1/docs
+   - Swagger UI: http://localhost:8000/api/v1/docs (dev only; off in uat and prod)
    - Health check: http://localhost:8000/health
-   - Model API Gateway: http://localhost:8100
+   - Model API Gateway (only if you started the optional model services): http://localhost:8100
 
 ### Deploying
 
@@ -326,18 +331,11 @@ WebAgent includes comprehensive testing and diagnostic tools.
    npm run test:coverage     # fails if web app coverage drops below the floor in jest.config.js
    npm run coverage:backend
    ```
-   See [docs/TESTING.md](docs/TESTING.md) for details.
+   See [docs/TESTING.md](docs/TESTING.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for setup and CI details.
 
-3. Run model service tests:
+3. Run the optional model service tests on their own:
    ```bash
-   # Run model registry and API gateway tests
-   python -m backend.tests.test_models
-   
-   # Run model service implementation tests
-   python -m backend.tests.test_model_services
-   
-   # Run model manager tests (simplified version)
-   python -m backend.tests.test_model_manager_simplified
+   python -m pytest backend/tests/test_models.py backend/tests/test_model_services.py backend/tests/test_model_manager.py
    ```
 
 4. Run diagnostics:
@@ -352,7 +350,7 @@ WebAgent includes comprehensive testing and diagnostic tools.
    python -m backend.diagnostics.system_check
    ```
 
-2. Check model services status:
+2. Check model services status (optional model services only):
    ```bash
    curl http://localhost:8100/metrics
    ```
@@ -408,9 +406,13 @@ WebAgent includes comprehensive testing and diagnostic tools.
 8. **A backend test fails with "Test tried to open a network connection"**
    - The test reached a real service (LLM, Tavily, LangSmith, Hugging Face, NLTK). Fake it instead; see [docs/TESTING.md](docs/TESTING.md)
 
-9. **Agentic runs are slow, or the web app gives up after 8 minutes**
-   - A typical run takes 2.5–3.5 minutes. Open the task's LangSmith trace and compare each model call's completion tokens with its limit: a call that stops exactly at the limit is running away, and the backend log says "stopped at the max_tokens limit"
+9. **Agentic runs are slow, or "The research took too long and was stopped."**
+   - A typical run takes 2.5–3.5 minutes; the backend stops a run after `WEBAGENT_TASK_MAX_SECONDS` (420 s), and the web app waits up to 8 minutes. Open the task's LangSmith trace and compare each model call's completion tokens with its limit: a call that stops exactly at the limit is running away, and the backend log says "stopped at the max_tokens limit"
    - Lower or raise that agent's `max_tokens` under `agents:` in `backend/config/{env}.yaml`, and check that agent's prompt
+
+## Security
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md). For contributor setup, see [CONTRIBUTING.md](CONTRIBUTING.md). For deploy, rollback, key rotation, backups, and spending caps, see [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
 ## License
 

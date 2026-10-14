@@ -86,7 +86,7 @@ def test_sync_call_returns_text_and_reports_usage(monkeypatch):
 
 
 async def test_async_call_returns_text_and_reports_usage(monkeypatch):
-    monkeypatch.setattr(together_llm, "ClientSession", lambda: FakeSession(FakeAsyncResponse()))
+    monkeypatch.setattr(together_llm, "ClientSession", lambda **kw: FakeSession(FakeAsyncResponse()))
     recorder = UsageRecorder()
 
     text = await make_llm().ainvoke("Lists vs tuples?", config={"callbacks": [recorder]})
@@ -113,7 +113,7 @@ def test_server_errors_keep_the_text_the_retry_logic_looks_for(monkeypatch):
 
 
 async def test_bad_requests_are_not_retried(monkeypatch):
-    monkeypatch.setattr(together_llm, "ClientSession", lambda: FakeSession(FakeAsyncResponse(status=400)))
+    monkeypatch.setattr(together_llm, "ClientSession", lambda **kw: FakeSession(FakeAsyncResponse(status=400)))
 
     with pytest.raises(ValueError, match="invalid payload: error body") as error:
         await make_llm().ainvoke("q")

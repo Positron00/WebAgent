@@ -473,11 +473,11 @@ def setup_metrics(app: FastAPI):
 
         return Response(content=metrics_payload(), media_type=CONTENT_TYPE_LATEST)
 
-    @app.on_event("shutdown")
-    def _mark_worker_dead() -> None:
-        # Live gauges (requests in progress) stop counting this worker once it exits.
-        if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
-            multiprocess.mark_process_dead(os.getpid())
+
+def mark_worker_dead() -> None:
+    """Call at shutdown: live gauges (requests in progress) stop counting this worker once it exits."""
+    if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+        multiprocess.mark_process_dead(os.getpid())
 
 
 def metrics_payload() -> bytes:

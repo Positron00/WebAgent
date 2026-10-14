@@ -17,6 +17,11 @@ def short_task_id(task_id: str) -> str:
     return task_id[:8]
 
 
+def describe_text(text: Optional[str]) -> str:
+    """Log-safe description of user text: its length only (IMP-070)."""
+    return f"{len(text or '')} chars"
+
+
 def install_task_id_logging() -> None:
     """Add a `task_id` attribute to every log record and prefix messages during a task."""
     global _installed

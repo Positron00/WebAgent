@@ -86,7 +86,7 @@ async def test_parse_evaluation():
     assert "missing_information" in evaluation
     assert "requires_additional_research" in evaluation
     assert "research_questions" in evaluation
-    assert evaluation["requires_additional_research"] is False
+    assert evaluation["requires_additional_research"] is True
 
 
 @pytest.mark.asyncio
@@ -186,17 +186,7 @@ async def test_finalizing_research_report():
     original_chain = agent.chain
     agent.chain = AsyncMock()
     
-    # Create a structured response without trying to copy
-    modified_response = {
-        "status": "complete",
-        "score": 9,
-        "missing_information": [],
-        "research_questions": [],
-        "evaluation": COMPLETE_RESPONSE,
-        "final_report": "This is a comprehensive analysis of AI assistants."
-    }
-    
-    agent.chain.ainvoke = AsyncMock(return_value=modified_response)
+    agent.chain.ainvoke = AsyncMock(return_value=COMPLETE_RESPONSE)
     
     state = create_test_workflow_state(
         query="What is the current state of AI assistants?",
@@ -342,3 +332,65 @@ def test_copied_prompt_placeholders_are_not_searched():
     evaluation = SeniorResearchAgent()._parse_evaluation(text)
     assert evaluation["research_questions"] == []
     assert evaluation["missing_information"] == []
+
+
+# IMP-031: an evaluation that can't be read is "unknown" and asks for more research, never "complete".
+UNKNOWN = {"research_status": "unknown", "score": None, "requirements_met": [],
+           "missing_information": [], "research_questions": [], "requires_additional_research": True}
+GOOD_BLOCK = ('```evaluation\nresearch_status: complete\nrequirements_met: ["req 1: met"]\n'
+              'missing_information: []\nresearch_questions: []\n```\n# Report\nAll answered.')
+
+
+def test_reply_without_an_evaluation_block_is_unknown(caplog):
+    with caplog.at_level("WARNING"):
+        evaluation = SeniorResearchAgent()._parse_evaluation("# Report\nNo evaluation here.")
+    assert evaluation == UNKNOWN
+    assert "treating research as unknown" in caplog.text
+
+
+def test_broken_evaluation_block_is_unknown(monkeypatch, caplog):
+    agent = SeniorResearchAgent()
+    unclosed = "```evaluation\nresearch_status: complete\nrequirements_met: [\n# Report"
+    assert agent._parse_evaluation(unclosed) == UNKNOWN
+
+    def broken_parse(value):
+        raise ValueError("unreadable list")
+
+    monkeypatch.setattr("app.agents.senior_research._parse_list", broken_parse)
+    with caplog.at_level("WARNING"):
+        assert agent._parse_evaluation(GOOD_BLOCK) == UNKNOWN
+    assert "unreadable list" in caplog.text
+
+
+def test_good_evaluation_block_is_read():
+    evaluation = SeniorResearchAgent()._parse_evaluation(GOOD_BLOCK)
+    assert evaluation["research_status"] == "complete"
+    assert evaluation["requires_additional_research"] is False
+    assert evaluation["requirements_met"] == ["req 1: met"]
+
+
+async def _run_once(reply, iteration, max_iterations=3):
+    agent = SeniorResearchAgent()
+    agent.max_iterations = max_iterations
+    agent.chain = AsyncMock()
+    agent.chain.ainvoke = AsyncMock(return_value=reply)
+    state = create_test_workflow_state(query="q", context={"research_iteration": iteration})
+    return await agent.run(state)
+
+
+@pytest.mark.asyncio
+async def test_unknown_evaluation_asks_for_more_research_before_the_limit():
+    state = await _run_once("# Report without evaluation", iteration=1)
+    assert state.context["continue_research"] is True
+    assert state.reports["senior_research"]["research_status"] == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_unknown_evaluation_finishes_with_the_last_synthesis_at_the_limit():
+    state = await _run_once("# Final synthesis", iteration=3)
+    assert state.context["continue_research"] is False
+    assert state.context["research_complete"] is True
+    findings = state.context["verified_findings"]
+    assert findings["synthesis"] == "# Final synthesis"
+    assert findings["score"] is None
+    assert findings["max_iterations_reached"] is True

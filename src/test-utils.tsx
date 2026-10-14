@@ -1,24 +1,26 @@
-import React, { ReactElement, createContext } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
-import { AppContextType } from '@/contexts/AppContext';
-import { ChatContextType } from '@/contexts/ChatContext';
-import { AccessibilitySettings } from '@/utils/storage';
-import { AgenticMode } from '@/types/routing';
+import React, { ReactElement, createContext } from "react";
+import { render, RenderOptions } from "@testing-library/react";
+import { AppContextType } from "@/contexts/AppContext";
+import { ChatContextType } from "@/contexts/ChatContext";
+import { AccessibilitySettings } from "@/utils/storage";
+import { AgenticMode } from "@/types/routing";
 
 // Create mock contexts with proper typing
 const MockAppContext = createContext<AppContextType | undefined>(undefined);
 const MockChatContext = createContext<ChatContextType | undefined>(undefined);
 
 // Mock react-markdown
-jest.mock('react-markdown', () => {
+jest.mock("react-markdown", () => {
   return {
     __esModule: true,
-    default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
+    default: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
   };
 });
 
 // Mock heroicons
-jest.mock('@heroicons/react/24/outline', () => {
+jest.mock("@heroicons/react/24/outline", () => {
   const MockIcon = () => <svg data-testid="mock-icon" />;
   return {
     InformationCircleIcon: MockIcon,
@@ -40,30 +42,30 @@ jest.mock('@heroicons/react/24/outline', () => {
   };
 });
 
-const mockAgenticMode: AgenticMode = 'off';
+const mockAgenticMode: AgenticMode = "off";
 
 // Define the mock accessibility object that will be used consistently
 const mockAccessibility: AccessibilitySettings = {
   reducedMotion: false,
   highContrast: false,
-  fontSize: 'normal',
-  promptStyle: 'balanced',
-  knowledgeFocus: 'general',
+  fontSize: "normal",
+  promptStyle: "balanced",
+  knowledgeFocus: "general",
   citeSources: true,
-  responseTextColor: '#FFFFFF',
-  queryTextColor: '#FFFFFF',
-  responseBackgroundColor: '#111827',
-  queryBackgroundColor: '#1E3A8A'
+  responseTextColor: "#FFFFFF",
+  queryTextColor: "#FFFFFF",
+  responseBackgroundColor: "#111827",
+  queryBackgroundColor: "#1E3A8A",
 };
 
 // Mock the AppContext
-jest.mock('@/contexts/AppContext', () => {
+jest.mock("@/contexts/AppContext", () => {
   return {
     AppProvider: ({ children }: { children: React.ReactNode }) => {
       return (
         <MockAppContext.Provider
           value={{
-            theme: 'dark',
+            theme: "dark",
             setTheme: jest.fn(),
             isMenuOpen: false,
             setMenuOpen: jest.fn(),
@@ -76,7 +78,7 @@ jest.mock('@/contexts/AppContext', () => {
             agenticMode: mockAgenticMode,
             setAgenticMode: jest.fn(),
             modeReady: true,
-            isOffline: false
+            isOffline: false,
           }}
         >
           {children}
@@ -84,7 +86,7 @@ jest.mock('@/contexts/AppContext', () => {
       );
     },
     useApp: () => ({
-      theme: 'dark',
+      theme: "dark",
       setTheme: jest.fn(),
       isMenuOpen: false,
       setMenuOpen: jest.fn(),
@@ -97,8 +99,8 @@ jest.mock('@/contexts/AppContext', () => {
       agenticMode: mockAgenticMode,
       setAgenticMode: jest.fn(),
       modeReady: true,
-      isOffline: false
-    })
+      isOffline: false,
+    }),
   };
 });
 
@@ -108,6 +110,11 @@ const mockChatContextValue: ChatContextType = {
     isLoading: false,
   },
   pendingConsent: null,
+  researchRun: null,
+  researchFailure: null,
+  stopResearch: jest.fn().mockResolvedValue(undefined),
+  retryResearch: jest.fn().mockResolvedValue(undefined),
+  answerDirectlyInstead: jest.fn().mockResolvedValue(undefined),
   sendMessage: jest.fn().mockResolvedValue(undefined),
   sendWithConsent: jest.fn().mockResolvedValue(undefined),
   editPendingMessage: jest.fn(),
@@ -119,7 +126,7 @@ const mockChatContextValue: ChatContextType = {
 };
 
 // Mock the ChatContext
-jest.mock('@/contexts/ChatContext', () => {
+jest.mock("@/contexts/ChatContext", () => {
   return {
     ChatProvider: ({ children }: { children: React.ReactNode }) => {
       return (
@@ -141,7 +148,7 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <MockAppContext.Provider
       value={{
-        theme: 'dark',
+        theme: "dark",
         setTheme: jest.fn(),
         isMenuOpen: false,
         setMenuOpen: jest.fn(),
@@ -154,7 +161,7 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
         agenticMode: mockAgenticMode,
         setAgenticMode: jest.fn(),
         modeReady: true,
-        isOffline: false
+        isOffline: false,
       }}
     >
       <MockChatContext.Provider value={mockChatContextValue}>
@@ -172,15 +179,15 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
  */
 const customRender = (
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
+  options?: Omit<RenderOptions, "wrapper">,
 ) => render(ui, { wrapper: AllTheProviders, ...options });
 
 // Re-export everything from testing-library
-export * from '@testing-library/react';
+export * from "@testing-library/react";
 
 // Export mock hooks for tests to use directly
 export const useApp = () => ({
-  theme: 'dark',
+  theme: "dark",
   setTheme: jest.fn(),
   isMenuOpen: false,
   setMenuOpen: jest.fn(),
@@ -193,11 +200,11 @@ export const useApp = () => ({
   agenticMode: mockAgenticMode,
   setAgenticMode: jest.fn(),
   modeReady: true,
-  isOffline: false
+  isOffline: false,
 });
 
 export const useChat = () => mockChatContextValue;
 
 // Override render method
 export { customRender as render };
-export { mockAccessibility }; 
+export { mockAccessibility };

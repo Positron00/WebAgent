@@ -274,5 +274,3 @@ class TestLangGraphWorkflow:
         assert "content" in result_state.final_report
         assert result_state.final_report["content"] == team_manager_output["summary"]
 
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__]) 

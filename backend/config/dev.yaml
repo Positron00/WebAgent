@@ -5,7 +5,8 @@ api:
   version: "v1"
   prefix: "/api/v1"
   debug_mode: true
-  host: "0.0.0.0"
+  # Loopback only: dev runs with API keys off (WEBAGENT_ALLOW_OPEN_DEV=true overrides the check).
+  host: "127.0.0.1"
   port: 8000
 
 # CORS settings
@@ -24,13 +25,6 @@ database:
     path: ""  # Will use settings.VECTOR_DB_PATH
     embedding_dimension: 1536
     distance_metric: "cosine"
-  redis:
-    host: "localhost"
-    port: 6379
-    db: 0
-    password: null
-    key_prefix: "webagent:dev:"
-
 # LLM settings
 llm:
   # Provider options: "openai", "together", "self"
@@ -101,11 +95,6 @@ agents:
   document_extraction:
     model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.2
-    lda_num_topics: 10
-    lda_passes: 15
-    lda_iterations: 50
-    lda_chunksize: 100
-    lda_random_state: 42
 
 # Agentic security guard (shadow in dev; collects decisions for review)
 security_guard:

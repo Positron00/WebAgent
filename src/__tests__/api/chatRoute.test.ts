@@ -1,12 +1,17 @@
 /**
  * @jest-environment node
  */
-jest.mock('@/utils/logger', () => ({
-  logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+jest.mock("@/utils/logger", () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
-jest.mock('@/app/api/guard/client', () => ({
-  callGuard: jest.fn().mockResolvedValue({ kind: 'ok', outcome: 'allow' }),
+jest.mock("@/app/api/guard/client", () => ({
+  callGuard: jest.fn().mockResolvedValue({ kind: "ok", outcome: "allow" }),
 }));
 
 export {};
@@ -16,106 +21,253 @@ let postChat: (req: Request) => Promise<Response>;
 
 beforeAll(async () => {
   // config/env.ts validates the key when the module loads
-  process.env.TOGETHER_API_KEY = 'test-key-0123456789abcdef0123456789abcdef';
+  process.env.TOGETHER_API_KEY = "test-key-0123456789abcdef0123456789abcdef";
   delete process.env.WEBAGENT_LLM_DEFAULT_MODEL;
   delete process.env.TOGETHER_MODEL;
-  ({ POST: postChat } = await import('@/app/api/chat/route'));
+  ({ POST: postChat } = await import("@/app/api/chat/route"));
 });
 
 beforeEach(() => {
   fetchMock.mockReset();
   global.fetch = fetchMock as unknown as typeof fetch;
-  jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  jest.spyOn(console, "error").mockImplementation(() => undefined);
 });
 
 afterEach(() => jest.restoreAllMocks());
 
 const chatRequest = (body: unknown) =>
-  new Request('http://localhost/api/chat', { method: 'POST', body: JSON.stringify(body) });
+  new Request("http://localhost/api/chat", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 
-const userMessage = { messages: [{ role: 'user', content: 'Hello' }] };
+const userMessage = { messages: [{ role: "user", content: "Hello" }] };
 
-describe('/api/chat', () => {
-  it('rejects messages in the wrong format', async () => {
-    const response = await postChat(chatRequest({ messages: [{ text: 'no role' }] }));
+describe("/api/chat", () => {
+  it("rejects messages in the wrong format", async () => {
+    const response = await postChat(
+      chatRequest({ messages: [{ text: "no role" }] }),
+    );
 
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: { message: 'Invalid message format' } });
+    expect(await response.json()).toEqual({
+      error: { message: "Invalid message format" },
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('sends a system prompt plus the conversation to Together with the server key', async () => {
+  it("sends a system prompt plus the conversation to Together with the server key", async () => {
     fetchMock.mockResolvedValue(
       new Response(
-        JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'Hi!' }, finish_reason: 'stop' }] }),
-        { status: 200 }
-      )
+        JSON.stringify({
+          choices: [
+            {
+              message: { role: "assistant", content: "Hi!" },
+              finish_reason: "stop",
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
     );
 
     const response = await postChat(chatRequest(userMessage));
 
     const [url, init] = fetchMock.mock.calls[0];
     const sent = JSON.parse(init.body);
-    expect(url).toBe('https://api.together.xyz/v1/chat/completions');
-    expect(init.headers.Authorization).toBe(`Bearer ${process.env.TOGETHER_API_KEY}`);
-    expect(sent.model).toBe('meta-models/Muse-Glimmer-30B');
-    expect(sent.messages[0].role).toBe('system');
-    expect(sent.messages[1]).toEqual({ role: 'user', content: 'Hello' });
+    expect(url).toBe("https://api.together.xyz/v1/chat/completions");
+    expect(init.headers.Authorization).toBe(
+      `Bearer ${process.env.TOGETHER_API_KEY}`,
+    );
+    expect(sent.model).toBe("meta-models/Muse-Glimmer-30B");
+    expect(sent.messages[0].role).toBe("system");
+    expect(sent.messages[1]).toEqual({ role: "user", content: "Hello" });
     expect(response.status).toBe(200);
-    expect((await response.json()).choices[0].message.content).toBe('Hi!');
+    expect((await response.json()).choices[0].message.content).toBe("Hi!");
   });
 
-  it('sends an attached image in the OpenAI-style format Together accepts', async () => {
+  it("sends an attached image in the OpenAI-style format Together accepts", async () => {
     // A bare string for image_url was rejected by Together with "did not match any variant
     // of untagged enum MessageContent" (found in the 3.1.0 manual test).
     fetchMock.mockResolvedValue(
       new Response(
-        JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'Red' }, finish_reason: 'stop' }] }),
-        { status: 200 }
-      )
+        JSON.stringify({
+          choices: [
+            {
+              message: { role: "assistant", content: "Red" },
+              finish_reason: "stop",
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
     );
 
-    await postChat(chatRequest({ ...userMessage, image: 'data:image/png;base64,AAAA' }));
+    await postChat(
+      chatRequest({ ...userMessage, image: "data:image/png;base64,AAAA" }),
+    );
 
     const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(sent.messages[sent.messages.length - 1].content).toEqual([
-      { type: 'text', text: 'Hello' },
-      { type: 'image_url', image_url: { url: 'data:image/png;base64,AAAA' } },
+      { type: "text", text: "Hello" },
+      { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } },
     ]);
   });
 
   it("passes Together's error status and message through", async () => {
     fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({ error: { message: 'Unable to access non-serverless model' } }), {
-        status: 400,
-      })
+      new Response(
+        JSON.stringify({
+          error: { message: "Unable to access non-serverless model" },
+        }),
+        {
+          status: 400,
+        },
+      ),
     );
 
     const response = await postChat(chatRequest(userMessage));
 
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: { message: 'Unable to access non-serverless model' } });
+    expect(await response.json()).toEqual({
+      error: { message: "Unable to access non-serverless model" },
+    });
   });
 
-  it('returns 503 when Together cannot be reached', async () => {
-    fetchMock.mockRejectedValue(new TypeError('fetch failed'));
+  it("returns 503 when Together cannot be reached", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
 
     const response = await postChat(chatRequest(userMessage));
 
     expect(response.status).toBe(503);
-    expect((await response.json()).error.message).toContain('Unable to reach LLM API');
+    expect((await response.json()).error.message).toContain(
+      "Unable to reach LLM API",
+    );
   });
 
-  it('adds a notice when answering as a fallback for the multi-agent system', async () => {
+  it("adds a notice when answering as a fallback for the multi-agent system", async () => {
     fetchMock.mockResolvedValue(
       new Response(
-        JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'Answer.' }, finish_reason: 'stop' }] }),
-        { status: 200 }
-      )
+        JSON.stringify({
+          choices: [
+            {
+              message: { role: "assistant", content: "Answer." },
+              finish_reason: "stop",
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
     );
 
-    const response = await postChat(chatRequest({ ...userMessage, requestType: 'multi-agent-fallback' }));
+    const response = await postChat(
+      chatRequest({ ...userMessage, requestType: "multi-agent-fallback" }),
+    );
 
-    expect((await response.json()).choices[0].message.content).toMatch(/^I'm currently operating in fallback mode/);
+    expect((await response.json()).choices[0].message.content).toMatch(
+      /^I'm currently operating in fallback mode/,
+    );
+  });
+
+  describe("request checks", () => {
+    beforeEach(async () => {
+      const { rateLimiter } = await import("@/utils/rateLimiter");
+      rateLimiter.clear();
+    });
+
+    const expect400 = async (body: unknown, message: string) => {
+      const response = await postChat(chatRequest(body));
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: { message } });
+      expect(fetchMock).not.toHaveBeenCalled();
+    };
+
+    it("rejects an empty messages array", async () => {
+      await expect400({ messages: [] }, "No messages to answer");
+    });
+
+    it("rejects a missing messages array", async () => {
+      await expect400({}, "Invalid message format");
+    });
+
+    it("rejects an image that is not a string", async () => {
+      await expect400(
+        { ...userMessage, image: { url: "x" } },
+        "Image must be a data URL",
+      );
+    });
+
+    it.each([
+      "https://example.com/cat.png",
+      "data:image/svg+xml;base64,PHN2Zz4=",
+      "data:text/html;base64,PGh0bWw+",
+      "data:image/png,AAAA",
+      "data:image/png;base64,not base64!",
+    ])("rejects the image %p", async (image) => {
+      await expect400(
+        { ...userMessage, image },
+        "Only PNG, JPEG, GIF or WebP images are accepted",
+      );
+    });
+
+    it("rejects an image larger than 5 MB after decoding", async () => {
+      const tooBig = "A".repeat(Math.ceil((5 * 1024 * 1024 * 4) / 3) + 4);
+      await expect400(
+        { ...userMessage, image: `data:image/jpeg;base64,${tooBig}` },
+        "Image is larger than 5 MB",
+      );
+    });
+  });
+
+  describe("rate limit per session", () => {
+    const fromSession = (sid: string) =>
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        body: JSON.stringify(userMessage),
+        headers: { "x-webagent-session": sid },
+      });
+
+    beforeEach(async () => {
+      const { rateLimiter } = await import("@/utils/rateLimiter");
+      rateLimiter.clear();
+      fetchMock.mockImplementation(
+        async () =>
+          new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  message: { role: "assistant", content: "ok" },
+                  finish_reason: "stop",
+                },
+              ],
+            }),
+            { status: 200 },
+          ),
+      );
+    });
+
+    it("answers 429 to the 11th request from one session, while another session still passes", async () => {
+      for (let i = 0; i < 10; i++) {
+        expect((await postChat(fromSession("A"))).status).toBe(200);
+      }
+
+      const limited = await postChat(fromSession("A"));
+      expect(limited.status).toBe(429);
+      expect((await limited.json()).error.message).toMatch(
+        /Rate limit exceeded/,
+      );
+
+      expect((await postChat(fromSession("B"))).status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledTimes(11);
+    });
+
+    it("puts requests without a session in one shared bucket", async () => {
+      for (let i = 0; i < 10; i++) {
+        await postChat(chatRequest(userMessage));
+      }
+
+      expect((await postChat(chatRequest(userMessage))).status).toBe(429);
+      expect((await postChat(fromSession("A"))).status).toBe(200);
+    });
   });
 });

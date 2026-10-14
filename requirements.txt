@@ -1,4 +1,4 @@
-# WebAgent Python dependencies live in one place: backend/requirements.txt.
+# WebAgent Python dependencies: runtime plus dev/CI tools.
 # Exact known-good versions are pinned in backend/constraints.txt.
--r backend/requirements.txt
+-r backend/requirements-dev.txt
 -c backend/constraints.txt

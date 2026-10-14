@@ -63,8 +63,9 @@ def test_rate_limited_response_says_when_to_retry(monkeypatch):
     assert limited.headers["Retry-After"] == str(settings.RATE_LIMIT_WINDOW_SIZE)
 
 
-def test_caller_behind_trusted_proxy_is_identified_by_forwarded_address():
-    assert security.client_identifier(_request("127.0.0.1", "203.0.113.7, 10.0.0.1")) == "203.0.113.7"
+def test_caller_behind_trusted_proxy_is_identified_by_nearest_forwarded_address():
+    # The right-most hop is the one our proxy added; earlier hops are caller-controlled.
+    assert security.client_identifier(_request("127.0.0.1", "198.51.100.9, 203.0.113.7")) == "203.0.113.7"
 
 
 def test_forwarded_header_from_untrusted_client_is_ignored():

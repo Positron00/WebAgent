@@ -78,6 +78,8 @@ backend/data/security/escalations/
 backend/data/security/tokens/
 backend/demos/logs/
 backend/demos/results/
+backend/demos/demo_outputs/
+backend/diagnostics_results.json
 
 # Backup files
 *.bak

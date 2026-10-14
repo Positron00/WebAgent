@@ -1,99 +1,75 @@
-import { CHAT_SETTINGS } from '@/config/chat';
-import { logger } from '@/utils/logger';
+import { CHAT_SETTINGS } from "@/config/chat";
+import { logger } from "@/utils/logger";
 
-class RateLimiter {
-  private timestamps: number[] = [];
-  private readonly windowMs = CHAT_SETTINGS.rateLimitWindowMs;
-  private readonly maxRequestsPerWindow = CHAT_SETTINGS.rateLimitPerMinute;
-  private backoffMultiplier = 1;
+const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 
-  isRateLimited(): boolean {
+/** Fixed-window limiter with one bucket of request times per key (a session ID, or 'shared'). */
+export class RateLimiter {
+  private buckets = new Map<string, number[]>();
+  private lastSweep = Date.now();
+
+  constructor(
+    private readonly windowMs: number = CHAT_SETTINGS.rateLimitWindowMs,
+    private readonly maxRequestsPerWindow: number = CHAT_SETTINGS.rateLimitPerMinute,
+  ) {}
+
+  private recent(key: string, now: number): number[] {
+    const windowStart = now - this.windowMs;
+    const kept = (this.buckets.get(key) ?? []).filter((t) => t > windowStart);
+    if (kept.length > 0) {
+      this.buckets.set(key, kept);
+    } else {
+      this.buckets.delete(key);
+    }
+    return kept;
+  }
+
+  private sweep(now: number): void {
+    if (now - this.lastSweep < SWEEP_INTERVAL_MS) return;
+    this.lastSweep = now;
+    Array.from(this.buckets.keys()).forEach((key) => this.recent(key, now));
+  }
+
+  isRateLimited(key: string): boolean {
     const now = Date.now();
-    const windowStart = now - (this.windowMs * this.backoffMultiplier);
-    
-    // Remove timestamps older than the window
-    this.timestamps = this.timestamps.filter(t => t > windowStart);
-    
-    // Check if we're over the limit
-    const isLimited = this.timestamps.length >= this.maxRequestsPerWindow;
-    
-    if (isLimited) {
-      logger.warn('Rate limit reached', {
-        currentRequests: this.timestamps.length,
+    this.sweep(now);
+    const limited = this.recent(key, now).length >= this.maxRequestsPerWindow;
+    if (limited) {
+      logger.warn("Rate limit reached", {
         maxRequests: this.maxRequestsPerWindow,
         windowMs: this.windowMs,
-        backoffMultiplier: this.backoffMultiplier
       });
-      // Increase backoff if we're hitting limits frequently
-      this.backoffMultiplier = Math.min(this.backoffMultiplier * 1.5, 4);
-    } else {
-      // Gradually reduce backoff when we're under limit
-      this.backoffMultiplier = Math.max(1, this.backoffMultiplier * 0.9);
     }
-
-    return isLimited;
+    return limited;
   }
 
-  addRequest(): void {
+  addRequest(key: string): void {
     const now = Date.now();
-    this.timestamps.push(now);
-    
-    // Keep only the most recent timestamps within our window
-    const windowStart = now - (this.windowMs * this.backoffMultiplier);
-    this.timestamps = this.timestamps.filter(t => t > windowStart);
-    
-    logger.debug('Added request to rate limiter', {
-      currentRequests: this.timestamps.length,
-      maxRequests: this.maxRequestsPerWindow,
-      remainingRequests: this.getRemainingRequests()
-    });
+    this.buckets.set(key, [...this.recent(key, now), now]);
   }
 
-  getTimeUntilNextAllowed(): number {
-    if (this.timestamps.length === 0) return 0;
-    if (this.timestamps.length < this.maxRequestsPerWindow) return 0;
-    
+  getTimeUntilNextAllowed(key: string): number {
     const now = Date.now();
-    const windowStart = now - (this.windowMs * this.backoffMultiplier);
-    const sortedTimestamps = [...this.timestamps].sort((a, b) => a - b);
-    const oldestRelevantTimestamp = sortedTimestamps[
-      Math.max(0, sortedTimestamps.length - this.maxRequestsPerWindow)
-    ];
-    
-    const timeUntilExpiry = (oldestRelevantTimestamp + (this.windowMs * this.backoffMultiplier)) - now;
-    const waitTime = Math.max(0, timeUntilExpiry);
-    
-    logger.debug('Calculated wait time', {
-      waitTime,
-      currentRequests: this.timestamps.length,
-      oldestTimestamp: new Date(oldestRelevantTimestamp).toISOString()
-    });
-    
-    return waitTime;
+    const times = this.recent(key, now);
+    if (times.length < this.maxRequestsPerWindow) return 0;
+    const oldestCounted = times[times.length - this.maxRequestsPerWindow];
+    return Math.max(0, oldestCounted + this.windowMs - now);
   }
 
-  getRemainingRequests(): number {
-    const now = Date.now();
-    const windowStart = now - (this.windowMs * this.backoffMultiplier);
-    this.timestamps = this.timestamps.filter(t => t > windowStart);
-    return Math.max(0, this.maxRequestsPerWindow - this.timestamps.length);
+  getRemainingRequests(key: string): number {
+    return Math.max(
+      0,
+      this.maxRequestsPerWindow - this.recent(key, Date.now()).length,
+    );
   }
 
-  handleRateLimitError(): void {
-    // Increase backoff when we hit an actual rate limit error
-    this.backoffMultiplier = Math.min(this.backoffMultiplier * 2, 8);
-    logger.warn('Rate limit error occurred, increasing backoff', {
-      newBackoffMultiplier: this.backoffMultiplier,
-      windowMs: this.windowMs * this.backoffMultiplier
-    });
+  bucketCount(): number {
+    return this.buckets.size;
   }
 
   clear(): void {
-    this.timestamps = [];
-    this.backoffMultiplier = 1;
-    logger.info('Rate limiter cleared');
+    this.buckets.clear();
   }
 }
 
-// Create a singleton instance
-export const rateLimiter = new RateLimiter(); 
+export const rateLimiter = new RateLimiter();

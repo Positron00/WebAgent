@@ -5,7 +5,7 @@ metadata:
   namespace: default
   labels:
     app: webagent-backend
-    version: "3.2.6"
+    version: "3.5.0"
 spec:
   # One replica: task status, results and the security/triage collection live in /app/data,
   # a ReadWriteOnce volume. To run more replicas, use a shared ReadWriteMany volume instead.
@@ -20,7 +20,7 @@ spec:
     metadata:
       labels:
         app: webagent-backend
-        version: "3.2.6"
+        version: "3.5.0"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
@@ -34,7 +34,7 @@ spec:
       containers:
       - name: webagent-backend
         # deploy.sh sets the registry with -r (default: webagent/backend).
-        image: webagent/backend:3.2.6
+        image: webagent/backend:3.5.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
@@ -165,6 +165,9 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # Public ingress must not expose Prometheus metrics (NetworkPolicy is port-wide).
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location = /metrics { return 404; }
 spec:
   tls:
   - hosts:

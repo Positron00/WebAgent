@@ -368,10 +368,10 @@ Environment overrides: `WEBAGENT_GUARD_ENABLED`, `WEBAGENT_GUARD_INPUT_MODE`, `W
 | `tests/test_user_turn_judge.py` | The judge for borderline user turns: flag, clear, consented, failures, judge off, shadow, cache (SEC-035a) |
 | `tests/test_security_tool_guard.py` | Every call site, each check, alignment, judge, outcomes, counter (SEC-040–SEC-047) |
 | `tests/test_security_code_checks.py` | AST findings table (SEC-043) |
-| `tests/test_security_tokens.py` | Sign, expiry, binding, reuse across two stores, tamper (SEC-050–SEC-053) |
+| `tests/test_security_review_fixes.py` | Tokens: sign, expiry, binding, reuse across two stores, tamper (`test_token_round_trip_binding_expiry_reuse_and_tamper`, SEC-050–SEC-053) |
 | `tests/test_guard_endpoint.py` | Contract, auth, statuses, consent round trip (SEC-034) |
 | `tests/test_task_guard.py` | User turn before task; 409/403; approval re-run; escalation fails the task; `security` block (SEC-033, SEC-046, SEC-051, SEC-082) |
 | `tests/test_security_records.py` | Collection on/off, escalation lines, cleanup, no text outside dev (SEC-060, SEC-064, SEC-081) |
 | `tests/test_train_context_defender.py` | Training smoke test with a fake encoder; gate exit codes; `--check-data` |
 | `tests/redteam/` | Poisoned pages, hidden-text documents, forged history, code asking for the network: end-to-end with fakes (SNFR-03) |
-| `tests/test_security_benign.py` | Benign regression set through both checkpoints (SNFR-04) |
+| `scripts/eval_context_defender.py` | Benign regression set (SNFR-04): measured by the release gate's false-positive checks on benign pages and ordinary questions, not by a pytest file |

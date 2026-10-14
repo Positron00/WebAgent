@@ -159,11 +159,6 @@ class DocumentExtractionAgent(BaseAgent):
                 "extraction_timestamp": time.time()
             }
             
-            # Route to Team Manager if requested
-            if route_to_team_manager:
-                logger.info("Routing extraction results to Team Manager Agent")
-                self._route_to_team_manager(extraction_result)
-            
             return extraction_result
             
         except Exception as e:
@@ -236,11 +231,23 @@ class DocumentExtractionAgent(BaseAgent):
             Extracted topics and key information
         """
         logger.info("Extracting information using LDA")
+
+        if len(text) > settings.LDA_MAX_CHARS:
+            return {
+                "topics": [],
+                "topics_skipped": "document too large",
+                "coherence_score": 0,
+                "important_sentences": [],
+                "sentence_count": 0,
+                "dominant_topics": [],
+                "extraction_type": "lda",
+            }
         
         # Update LDA parameters with any provided overrides
         lda_params = self.lda_params.copy()
         if params:
             lda_params.update(params.get("lda_params", {}))
+        lda_params["passes"] = min(int(lda_params["passes"]), 5)
         
         # Preprocess text
         sentences, tokenized_sentences = self._preprocess_text(text)
@@ -632,25 +639,6 @@ class DocumentExtractionAgent(BaseAgent):
         
         return combined_result
     
-    def _route_to_team_manager(self, extraction_result: Dict[str, Any]) -> None:
-        """
-        Route extraction results to the Team Manager Agent.
-        
-        Args:
-            extraction_result: Results from document extraction
-        """
-        # This would call the Team Manager Agent's API
-        # For now, just log that this would happen
-        logger.info("Would route results to Team Manager Agent")
-        
-        # In a real implementation, this might be:
-        # response = requests.post(
-        #     f"{settings.team_manager_url}/summarize",
-        #     json={"extraction_result": extraction_result}
-        # )
-        
-        # Return handling would be implemented as needed 
-
     async def run(self, state: WorkflowState) -> WorkflowState:
         """
         Run the document extraction agent on the given workflow state.
@@ -718,10 +706,6 @@ class DocumentExtractionAgent(BaseAgent):
                 }
             )
 
-            # Route to team manager if requested
-            if state.inputs.get("route_to_team_manager", False):
-                self._route_to_team_manager(extraction_result)
-                
             return state
         except Exception as e:
             state.error = f"Error retrieving document: {str(e)}"

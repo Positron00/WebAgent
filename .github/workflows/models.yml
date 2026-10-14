@@ -1,0 +1,27 @@
+name: models
+
+# Tests that need the real Git LFS weights and data. Weekly, so LFS bandwidth stays low.
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  models:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-ids
+      # The weights are downloaded only when an LFS object id changes.
+      - uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-ids') }}
+      - run: git lfs pull
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/constraints.txt
+      - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+      - run: python -m pytest backend/tests -q -m "needs_lfs or real_triage_model"

@@ -301,6 +301,3 @@ async def run_tests():
     
     return all_passed, results
 
-if __name__ == "__main__":
-    success, detailed_results = asyncio.run(run_tests())
-    sys.exit(0 if success else 1) 

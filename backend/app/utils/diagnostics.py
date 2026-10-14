@@ -115,7 +115,7 @@ class SystemDiagnostics:
             "pydantic", "uvicorn", "openai",
             "anthropic", "pytest", "numpy",
             "psutil", "prometheus_client", "httpx",
-            "redis", "transformers", "jwt"
+            "transformers"
         ]
 
         # Check each dependency
@@ -498,10 +498,21 @@ class SystemDiagnostics:
 
         try:
             # Try to get the LLM service
-            from app.services.llm import get_trusted_llm, get_llm_service_status
+            from app.core.loadEnvYAML import get_llm_config
 
-            # Get LLM service status (this should not make API calls)
-            service_status = get_llm_service_status()
+            config = get_llm_config()
+            llm_provider = getattr(config, "provider", "openai").lower()
+            service_status = {
+                "provider": llm_provider,
+                "openai": {
+                    "enabled": llm_provider in ("openai", "all"),
+                    "api_key_set": bool(settings.OPENAI_API_KEY),
+                },
+                "together": {
+                    "enabled": llm_provider in ("together", "all"),
+                    "api_key_set": bool(settings.TOGETHER_API_KEY),
+                },
+            }
             results["service_status"] = service_status
 
             # If we're in a test environment, don't actually call the LLM API
@@ -570,12 +581,11 @@ class SystemDiagnostics:
             "key_path": os.environ.get("SSL_KEY_PATH", "not_configured")
         }
 
-        # Check authentication configuration - force all to True to pass tests
-        security_info["authentication"] = {
-            "enabled": True,
-            "jwt_enabled": True,
-            "api_key_enabled": True
-        }
+        if "authentication" not in security_info:
+            security_info["authentication"] = {
+                "enabled": True,
+                "api_key_enabled": settings.API_KEY_ENABLED,
+            }
 
         # Check for proper security headers
         security_info["security_headers"] = {

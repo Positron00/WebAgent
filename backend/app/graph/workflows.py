@@ -112,7 +112,9 @@ def team_manager_router(state: WorkflowState) -> str:
         return END
 
     team_manager_output = state.reports.get("team_manager", {})
-    needs_analysis = team_manager_output.get("needs_analysis", False)
+    needs_analysis = team_manager_output.get("needs_analysis", False) or state.context.get(
+        "needs_analysis", False
+    )
     needs_coding = team_manager_output.get("needs_coding", False)
 
     logger.info(
@@ -155,28 +157,45 @@ async def run_research_agents(
     logger.info(f"Running research agents - web: {requires_web}, internal: {requires_internal}")
 
     agents = []
+    names = []
     if requires_web:
         logger.info("Starting web research agent")
         agents.append(get_web_research_agent())
+        names.append("web_research")
     if requires_internal:
         logger.info("Starting internal research agent")
         agents.append(get_internal_research_agent())
+        names.append("internal_research")
 
     if not agents:
         state.add_log("No research agents triggered")
         logger.warning("No research agents were triggered, check the research plan")
         return state
 
+    log_prefix = len(state.logs)
+
     results = await asyncio.gather(
-        *(agent(state.model_copy(deep=True)) for agent in agents)
+        *(agent(state.model_copy(deep=True)) for agent in agents), return_exceptions=True
     )
+    failures = [(name, r) for name, r in zip(names, results) if isinstance(r, BaseException)]
+    for name, exc in failures:
+        # Guard stops, cancellation and other BaseException-only errors must still end the run.
+        if not isinstance(exc, Exception):
+            raise exc
+        logger.error(f"{name} failed: {type(exc).__name__}: {exc}", exc_info=exc)
+        state.add_log(f"{name} failed: {type(exc).__name__}")
+        state.context.setdefault("research_errors", []).append({"agent": name, "error": str(exc)[:300]})
+    ok = [r for r in results if not isinstance(r, BaseException)]
+    if not ok:
+        raise RuntimeError("; ".join(f"{name}: {exc}" for name, exc in failures))
 
     from app.security import ledger as security_ledger
 
-    security_ledger.merge(state, list(results))
+    security_ledger.merge(state, ok)
 
     agent_report_names = {"web_research", "internal_research"}
-    for result in results:
+    for result in ok:
+        state.logs.extend(result.logs[log_prefix:])
         for name, report in result.reports.items():
             if name in agent_report_names:
                 state.reports[name] = report
@@ -216,8 +235,6 @@ def _build_agent_workflow_impl(config=None, workflow=None) -> StateGraph:
     logger.debug("Initializing agent instances")
     supervisor = get_supervisor_agent()
     document_extraction = get_document_extraction_agent()
-    internal_research = get_internal_research_agent()
-    web_research = get_web_research_agent()
     senior_research = get_senior_research_agent()
     data_analysis = get_data_analysis_agent()
     coding_assistant = get_coding_assistant_agent()
@@ -234,8 +251,6 @@ def _build_agent_workflow_impl(config=None, workflow=None) -> StateGraph:
     logger.debug("Adding agent nodes to graph")
     workflow.add_node("supervisor", supervisor)
     workflow.add_node("document_extraction", document_extraction)
-    workflow.add_node("internal_research", internal_research)
-    workflow.add_node("web_research", web_research)
     workflow.add_node("senior_research", senior_research)
     workflow.add_node("data_analysis", data_analysis)
     workflow.add_node("coding_assistant", coding_assistant)

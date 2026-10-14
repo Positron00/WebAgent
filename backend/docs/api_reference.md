@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.2.6).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.5.0).
 
 ## Base URL
 
@@ -19,11 +19,12 @@ X-API-Key: <WEBAGENT_API_KEY>
 ```
 
 - Keys are required in uat and prod (`api_key_enabled: true` in their YAML config); the server refuses to start there without `WEBAGENT_API_KEY`.
-- In dev, keys are off by default (`WEBAGENT_SECURITY_API_KEY_ENABLED=true` turns them on); when on, the built-in dev keys are also accepted.
+- In dev, keys are off by default (`WEBAGENT_SECURITY_API_KEY_ENABLED=true` turns them on); when on, `WEBAGENT_API_KEY` is the only valid key.
 - The web app never sends the key from the browser: its `/api/task` route adds it on the server.
-- `GET /health`, `GET /api/v1/health/…` and `GET /metrics` never need a key.
+- `GET /health`, `GET /api/v1/health/` and `GET /metrics` never need a key; `GET /api/v1/health/detailed` does.
+- In uat and prod the OpenAPI pages (`/api/v1/docs`, `/api/v1/redoc`, `/api/v1/openapi.json`) are off.
 
-A missing or wrong key returns `401` with `{"detail": "API key required"}` or `{"detail": "Invalid API key"}`.
+A missing or wrong key returns `401` with `{"error": {"code": "unauthorized", "message": "API key required"}, "detail": "API key required"}` (or "Invalid API key").
 
 ## Common Response Codes
 
@@ -35,6 +36,10 @@ A missing or wrong key returns `401` with `{"detail": "API key required"}` or `{
 | 401  | Unauthorized (missing or invalid API key) |
 | 403  | Forbidden (insufficient permissions) |
 | 404  | Not Found (resource not found) |
+| 409  | Conflict (for example, cancelling a task that already finished; or the intake guard needs consent) |
+| 413  | Request too large (`WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT`, 10 MB) |
+| 415  | Unsupported file type on document upload |
+| 422  | Validation error (for example, a question over 20,000 characters) |
 | 429  | Too Many Requests (rate limit exceeded) |
 | 500  | Internal Server Error |
 
@@ -42,11 +47,11 @@ A missing or wrong key returns `401` with `{"detail": "API key required"}` or `{
 
 Each caller may make 60 requests per minute (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS` per `WEBAGENT_SECURITY_RATE_LIMIT_WINDOW_SIZE` seconds; uat/prod YAML can change them).
 
-- The caller is the client's IP address. When the request comes from a trusted proxy (`WEBAGENT_TRUSTED_PROXIES`, default localhost, which covers the web app's `/api/task` route), the first address in `X-Forwarded-For` is used instead, so each end user has their own budget.
+- The caller is the client's IP address. A request from a trusted proxy (`WEBAGENT_TRUSTED_PROXIES`, default localhost) or one carrying a valid `X-API-Key` (the web app, also on Vercel) may name its user in `X-WebAgent-Client` (`s:<session id>`), so each signed-in user has their own budget. From a trusted proxy without that header, the right-most `X-Forwarded-For` address that isn't a trusted proxy is used.
 - Health checks and `/metrics` are never limited.
 - Limits are counted per server worker, so with N workers a caller can make up to N × the limit.
 
-When rate limited, you receive `429 Too Many Requests` with `{"error": "Too many requests"}` and a `Retry-After` header giving the window length in seconds.
+When rate limited, you receive `429 Too Many Requests` with `{"error": {"code": "rate_limited", "message": "Too many requests"}}` and a `Retry-After` header giving the window length in seconds.
 
 ## Chat API
 
@@ -225,7 +230,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.2.6",
+  "version": "3.5.0",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -263,7 +268,7 @@ These are the endpoints the web app uses. Both need `X-API-Key` when API-key aut
 
 | Field | Meaning |
 |---|---|
-| `query` | The question |
+| `query` | The question, at most 20,000 characters |
 | `mode` | `off`: one direct model call. `always`: the research workflow. `auto`: the triage classifier picks one |
 | `agentic` | Older flag: `true` means `always`, `false` means `off`. `mode` wins if both are sent. **With neither, the task runs as `off`** |
 | `previous_messages` | Up to 8 earlier turns, oldest first, roles `user` or `assistant`. More than 8 is rejected with 422 |
@@ -271,7 +276,32 @@ These are the endpoints the web app uses. Both need `X-API-Key` when API-key aut
 | `image` | Accepted but not sent to the model on either path; the result then has `image_ignored: true` |
 | `document_id` | Document to extract from, if any |
 
-**Response:** `{"task_id": "...", "status": "processing"}`. Poll `GET /api/task/{task_id}`; the finished `result` includes `route` (`direct` or `agentic`), `decided_by` (`mode`, `rule`, `model`, `fallback`, `config` or `override`) and, when the classifier ran, `p_agentic`.
+**Response:** `{"task_id": "...", "status": "processing"}`. Poll `GET /api/task/{task_id}`; the finished `result` includes `route` (`direct` or `agentic`), `decided_by` (`mode`, `rule`, `model`, `fallback`, `config` or `override`), when the classifier ran `p_agentic`, and `tokens_used`.
+
+The intake guard checks the question first. A refusal answers 403 (declined) or 409 (consent needed, with a `consent_token` to send back) in its own flat shape: `{"code": "declined" | "consent_required", "outcome", "reason", "policy_id", "policy_ids"}`, plus `consent_token` on a 409.
+
+### Task Status
+
+**Endpoint:** `GET /api/task/{task_id}`
+
+```json
+{
+  "status": "processing",
+  "result": null,
+  "error": null,
+  "progress": {"step": "Web and internal research", "logs": ["..."], "updated_at": "2026-10-14T10:31:05"}
+}
+```
+
+- `status` is `processing`, `completed` or `failed`.
+- `progress` appears only while a research run is working: the last finished step in plain words and up to 5 recent log lines. Direct answers have none.
+- A failed task has `error` and `error_code`: `timeout` (the run passed `WEBAGENT_TASK_MAX_SECONDS`, 420 s), `budget` (it used `WEBAGENT_TASK_TOKEN_BUDGET`), `cancelled`, or `escalated` (the security guard stopped it).
+
+### Cancel a Task
+
+**Endpoint:** `POST /api/task/{task_id}/cancel`
+
+**Response:** `202 {"status": "cancelling"}`. The worker running the task stops it within a few seconds, and the task then reads `failed` with `error_code: cancelled`. A task that already finished answers 409; an unknown task answers 404.
 
 ### Triage a Question
 
@@ -293,9 +323,9 @@ These are the endpoints the web app uses. Both need `X-API-Key` when API-key aut
 
 ### List Tasks
 
-Lists all active and completed tasks.
+Lists saved tasks from the results folder, newest first, so every worker gives the same answer. Each task shows its question's length, not its text.
 
-**Endpoint:** `GET /tasks`
+**Endpoint:** `GET /tasks?limit=20&offset=0` (`limit` 1–100, default 20)
 
 **Response:**
 
@@ -305,24 +335,17 @@ Lists all active and completed tasks.
     {
       "task_id": "550e8400-e29b-41d4-a716-446655440000",
       "status": "completed",
-      "created_at": "2025-03-09T10:30:00Z",
-      "completed_at": "2025-03-09T10:31:05Z",
-      "message": "Task complete",
-      "query": "What is the capital of France?",
-      "current_step": null
-    },
-    {
-      "task_id": "550e8400-e29b-41d4-a716-446655440001",
-      "status": "processing",
-      "created_at": "2025-03-09T10:35:00Z",
-      "completed_at": null,
-      "message": "Task in progress",
-      "query": "Explain quantum computing",
-      "current_step": "web_research"
+      "created_at": "2026-10-14T10:30:00",
+      "completed_at": "2026-10-14T10:31:05",
+      "query": "30 chars"
     }
-  ]
+  ],
+  "limit": 20,
+  "offset": 0
 }
 ```
+
+Saved tasks are deleted after `WEBAGENT_RESULTS_RETENTION_DAYS` (30 days).
 
 ### Get Task Details
 
@@ -378,7 +401,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.2.6"
+  "version": "3.5.0"
 }
 ```
 
@@ -391,7 +414,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.2.6",
+  "version": "3.5.0",
   "environment": "prod"
 }
 ```
@@ -408,7 +431,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.2.6"
+    "version": "3.5.0"
   },
   "llm_service": {
     "status": "ok",
@@ -432,17 +455,31 @@ Prometheus metrics endpoint. No API key needed, not rate-limited.
 **Response:**
 Plain text Prometheus metrics format
 
+## Observability API
+
+Needs `X-API-Key`. Prometheus `/metrics` and LangSmith tracing are separate and unchanged; [docs/RUNBOOK.md](../../docs/RUNBOOK.md) explains how they relate.
+
+| Endpoint | What it returns |
+|---|---|
+| `GET /observability/metrics` | Observability registries: model latency and token use, document processing |
+| `GET /observability/drift` | Drift statistics for model calls and document processing |
+| `GET /observability/alerts` | Current alerts derived from those metrics |
+| `GET /observability/health` | Health summary from the same metrics |
+| `POST /observability/llm/reset_baseline` | Reset the model drift baseline |
+| `POST /observability/doc/reset_baseline` | Reset the document drift baseline |
+
 ## Errors
 
-Errors are returned as JSON objects with the following structure:
+Error responses carry an `error` object:
 
 ```json
-{
-  "error": "Error Type",
-  "message": "Detailed error message",
-  "error_id": "unique-error-id-for-tracking"
-}
+{"error": {"code": "not_found", "message": "Task not found"}, "detail": "Task not found"}
 ```
+
+- `code` follows the status: `bad_request`, `unauthorized`, `forbidden`, `not_found`, `conflict`, `too_large`, `unsupported_media_type`, `validation_error`, `rate_limited`, `internal_error`.
+- Errors raised as `HTTPException`, and validation errors (422), also keep FastAPI's `detail` field, as before 3.4.0.
+- A 500 adds `error_id` and `timestamp`; the message is generic outside debug mode.
+- Intake-guard refusals (403, 409 from `/api/task` and `/api/v1/chat/completions`) keep their own flat shape, described under [Start a Task](#start-a-task).
 
 ## Support
 

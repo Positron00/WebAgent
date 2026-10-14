@@ -1,14 +1,23 @@
-'use client';
+"use client";
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { MicrophoneIcon, PaperClipIcon, ComputerDesktopIcon, SparklesIcon, PaperAirplaneIcon, Cog6ToothIcon, XMarkIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
-import { useApp } from '@/contexts/AppContext';
-import { useDismiss } from '@/hooks/useDismiss';
-import { AgenticModeToggle } from './AgenticModeToggle';
-import path from 'path';
-import { saveAs } from 'file-saver';
-import Image from 'next/image';
-import { CHAT_THEME } from '@/config/chatTheme';
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import {
+  MicrophoneIcon,
+  PaperClipIcon,
+  ComputerDesktopIcon,
+  SparklesIcon,
+  PaperAirplaneIcon,
+  Cog6ToothIcon,
+  XMarkIcon,
+  PencilSquareIcon,
+} from "@heroicons/react/24/outline";
+import { useApp } from "@/contexts/AppContext";
+import { useDismiss } from "@/hooks/useDismiss";
+import { AgenticModeToggle } from "./AgenticModeToggle";
+import path from "path";
+import { saveAs } from "file-saver";
+import Image from "next/image";
+import { CHAT_THEME } from "@/config/chatTheme";
 
 interface MessageInputProps {
   value: string;
@@ -23,49 +32,54 @@ interface MessageInputProps {
   imagePreviewUrl?: string | null;
 }
 
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_FILE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
 
 const PROMPT_STYLES = {
-  balanced: 'Balanced',
-  creative: 'Creative',
-  precise: 'Precise',
-  helpful: 'Helpful',
-  verbose: 'Verbose',
-  concise: 'Concise'
+  balanced: "Balanced",
+  creative: "Creative",
+  precise: "Precise",
+  helpful: "Helpful",
+  verbose: "Verbose",
+  concise: "Concise",
 };
 
 // Text colour of the current style on the toolbar (the hues of the old style pills, lightened for text)
 const PROMPT_STYLE_TEXT_COLORS = {
-  balanced: 'text-indigo-400',
-  creative: 'text-purple-400',
-  precise: 'text-blue-400',
-  helpful: 'text-green-400',
-  verbose: 'text-amber-400',
-  concise: 'text-rose-400'
+  balanced: "text-indigo-400",
+  creative: "text-purple-400",
+  precise: "text-blue-400",
+  helpful: "text-green-400",
+  verbose: "text-amber-400",
+  concise: "text-rose-400",
 };
 
 // Define knowledge focus areas
 const KNOWLEDGE_FOCUS = {
-  general: 'General',
-  medical: 'Medical',
-  legal: 'Legal',
-  science: 'Science',
-  technology: 'Technology',
-  business: 'Business',
-  history: 'History',
-  nature: 'Nature'
+  general: "General",
+  medical: "Medical",
+  legal: "Legal",
+  science: "Science",
+  technology: "Technology",
+  business: "Business",
+  history: "History",
+  nature: "Nature",
 };
 
 // Text colour of the current focus on the toolbar (the hues of the old focus pills, lightened for text)
 const KNOWLEDGE_FOCUS_TEXT_COLORS = {
-  general: 'text-gray-400',
-  medical: 'text-red-400',
-  legal: 'text-yellow-400',
-  science: 'text-teal-400',
-  technology: 'text-cyan-400',
-  business: 'text-amber-400',
-  history: 'text-orange-400',
-  nature: 'text-green-400'
+  general: "text-gray-400",
+  medical: "text-red-400",
+  legal: "text-yellow-400",
+  science: "text-teal-400",
+  technology: "text-cyan-400",
+  business: "text-amber-400",
+  history: "text-orange-400",
+  nature: "text-green-400",
 };
 
 // Define Speech Recognition type for TypeScript
@@ -76,8 +90,14 @@ interface SpeechRecognition extends EventTarget {
   start: () => void;
   stop: () => void;
   abort: () => void;
-  addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
-  removeEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  addEventListener: (
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+  ) => void;
+  removeEventListener: (
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+  ) => void;
 }
 
 interface SpeechRecognitionResult {
@@ -111,17 +131,24 @@ export function MessageInput({
   onNewChat,
   screenshotActive = false,
   onClearScreenshot,
-  imagePreviewUrl
+  imagePreviewUrl,
 }: MessageInputProps) {
-  const { isOffline, accessibility, setAccessibility, agenticMode, setAgenticMode, modeReady } =
-    useApp();
+  const {
+    isOffline,
+    accessibility,
+    setAccessibility,
+    agenticMode,
+    setAgenticMode,
+    modeReady,
+  } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showFocusDropdown, setShowFocusDropdown] = useState(false);
   const [showStyleDropdown, setShowStyleDropdown] = useState(false);
   const [isCapturingScreen, setIsCapturingScreen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [speechRecognition, setSpeechRecognition] = useState<SpeechRecognition | null>(null);
+  const [speechRecognition, setSpeechRecognition] =
+    useState<SpeechRecognition | null>(null);
   const [showFocus, setShowFocus] = useState(false);
   const [showStyle, setShowStyle] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -151,78 +178,72 @@ export function MessageInput({
 
   // Initialize speech recognition
   useEffect(() => {
-    console.log('Initializing speech recognition');
     // Check if browser supports speech recognition
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      
+      recognition.lang = "en-US";
+
       setSpeechRecognition(recognition);
     } else {
-      console.warn('Speech recognition is not supported in this browser');
+      console.warn("Speech recognition is not supported in this browser");
     }
-    
+
     return () => {
       // No cleanup needed for initialization
     };
-  }, []);  // Empty dependency array since this only needs to run once
+  }, []); // Empty dependency array since this only needs to run once
 
   // Set up event listeners for speech recognition
   useEffect(() => {
     if (!speechRecognition) return;
-    
-    console.log('Setting up speech recognition event listeners');
-    
+
     // Handle speech recognition results
     const handleSpeechResult = (event: any) => {
-      console.log('Speech recognition result received', event.results);
       const results = event.results;
-      
+
       if (results.length > 0) {
         // Get the latest result
         const latest = results[results.length - 1];
-        
+
         // Extract transcript
         const transcript = latest[0].transcript;
-        console.log('Transcript:', transcript, 'Final:', latest.isFinal);
-        
+
         if (latest.isFinal) {
-          console.log('Updating input with final transcript:', transcript);
           // Add space only if there's existing text
           const newValue = value ? `${value} ${transcript}` : transcript;
           onChange(newValue);
         }
       }
     };
-    
+
     // Handle speech recognition errors
     const handleSpeechError = (error: any) => {
-      console.error('Speech recognition error:', error);
+      console.error("Speech recognition error:", error);
       setIsRecording(false);
     };
-    
+
     // Handle speech recognition end
     const handleSpeechEnd = () => {
-      console.log('Speech recognition ended');
       setIsRecording(false);
     };
-    
+
     // Configure event listeners
-    speechRecognition.addEventListener('result', handleSpeechResult);
-    speechRecognition.addEventListener('error', handleSpeechError);
-    speechRecognition.addEventListener('end', handleSpeechEnd);
-    
+    speechRecognition.addEventListener("result", handleSpeechResult);
+    speechRecognition.addEventListener("error", handleSpeechError);
+    speechRecognition.addEventListener("end", handleSpeechEnd);
+
     // Clean up event listeners
     return () => {
-      console.log('Cleaning up speech recognition event listeners');
-      speechRecognition.removeEventListener('result', handleSpeechResult);
-      speechRecognition.removeEventListener('error', handleSpeechError);
-      speechRecognition.removeEventListener('end', handleSpeechEnd);
-      
+      speechRecognition.removeEventListener("result", handleSpeechResult);
+      speechRecognition.removeEventListener("error", handleSpeechError);
+      speechRecognition.removeEventListener("end", handleSpeechEnd);
+
       if (isRecording) {
         speechRecognition.stop();
       }
@@ -231,24 +252,23 @@ export function MessageInput({
 
   // Toggle voice recording
   const toggleVoiceRecording = () => {
-    console.log('Toggle voice recording, current state:', isRecording);
     if (!speechRecognition) {
-      alert('Speech recognition is not supported in your browser. Please try using Chrome, Edge, or Safari.');
+      alert(
+        "Speech recognition is not supported in your browser. Please try using Chrome, Edge, or Safari.",
+      );
       return;
     }
-    
+
     if (isRecording) {
-      console.log('Stopping speech recognition');
       speechRecognition.stop();
       setIsRecording(false);
     } else {
       try {
-        console.log('Starting speech recognition');
         speechRecognition.start();
         setIsRecording(true);
       } catch (error) {
-        console.error('Failed to start speech recognition:', error);
-        alert('Failed to start speech recognition. Please try again.');
+        console.error("Failed to start speech recognition:", error);
+        alert("Failed to start speech recognition. Please try again.");
       }
     }
   };
@@ -262,28 +282,46 @@ export function MessageInput({
   const toggleHighContrast = () => {
     setAccessibility({
       ...accessibility,
-      highContrast: !accessibility.highContrast
+      highContrast: !accessibility.highContrast,
     });
   };
 
   const toggleCiteSources = () => {
     setAccessibility({
       ...accessibility,
-      citeSources: !accessibility.citeSources
+      citeSources: !accessibility.citeSources,
     });
   };
 
-  const changePromptStyle = (style: 'balanced' | 'creative' | 'precise' | 'helpful' | 'verbose' | 'concise') => {
+  const changePromptStyle = (
+    style:
+      | "balanced"
+      | "creative"
+      | "precise"
+      | "helpful"
+      | "verbose"
+      | "concise",
+  ) => {
     setAccessibility({
       ...accessibility,
-      promptStyle: style
+      promptStyle: style,
     });
   };
 
-  const changeKnowledgeFocus = (focus: 'general' | 'medical' | 'legal' | 'science' | 'technology' | 'business' | 'history' | 'nature') => {
+  const changeKnowledgeFocus = (
+    focus:
+      | "general"
+      | "medical"
+      | "legal"
+      | "science"
+      | "technology"
+      | "business"
+      | "history"
+      | "nature",
+  ) => {
     setAccessibility({
       ...accessibility,
-      knowledgeFocus: focus
+      knowledgeFocus: focus,
     });
     setShowFocusDropdown(false);
   };
@@ -291,17 +329,17 @@ export function MessageInput({
   const captureScreen = async () => {
     try {
       setIsCapturingScreen(true);
-      
+
       // Request screen capture permission and stream
       const mediaStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: false,
       });
-      
+
       // Create video element to capture the stream
-      const video = document.createElement('video');
+      const video = document.createElement("video");
       video.srcObject = mediaStream;
-      
+
       // Wait for video metadata to load
       await new Promise<void>((resolve) => {
         video.onloadedmetadata = () => {
@@ -309,43 +347,44 @@ export function MessageInput({
           resolve();
         };
       });
-      
+
       // Create canvas to draw the captured frame
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       // Draw the video frame to canvas
-      const context = canvas.getContext('2d');
+      const context = canvas.getContext("2d");
       context?.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
+
       // Stop all tracks in the stream
-      mediaStream.getTracks().forEach(track => track.stop());
-      
+      mediaStream.getTracks().forEach((track) => track.stop());
+
       // Convert canvas to blob
       const blob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((blob) => {
           if (blob) resolve(blob);
-          else throw new Error('Failed to create screenshot blob');
-        }, 'image/png');
+          else throw new Error("Failed to create screenshot blob");
+        }, "image/png");
       });
-      
+
       // Create file with timestamp
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const fileName = `screenshot-${timestamp}.png`;
-      
+
       // Create a File object
-      const file = new File([blob], fileName, { type: 'image/png' });
-      
+      const file = new File([blob], fileName, { type: "image/png" });
+
       // Save the file
       saveAs(blob, fileName);
-      
+
       // Use the existing onFileSelect handler to add the screenshot to the chat
       onFileSelect(file);
-      
     } catch (error) {
-      console.error('Error capturing screen:', error);
-      alert('Failed to capture screen. Please ensure you have granted screen capture permissions.');
+      console.error("Error capturing screen:", error);
+      alert(
+        "Failed to capture screen. Please ensure you have granted screen capture permissions.",
+      );
     } finally {
       setIsCapturingScreen(false);
     }
@@ -357,10 +396,17 @@ export function MessageInput({
   };
 
   // Functions to update color settings
-  const updateColorSetting = (setting: 'responseTextColor' | 'queryTextColor' | 'responseBackgroundColor' | 'queryBackgroundColor', color: string) => {
-    const newSettings = { 
-      ...accessibility, 
-      [setting]: color 
+  const updateColorSetting = (
+    setting:
+      | "responseTextColor"
+      | "queryTextColor"
+      | "responseBackgroundColor"
+      | "queryBackgroundColor",
+    color: string,
+  ) => {
+    const newSettings = {
+      ...accessibility,
+      [setting]: color,
     };
     setAccessibility(newSettings);
   };
@@ -374,9 +420,9 @@ export function MessageInput({
         {imagePreviewUrl && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex items-center">
             <div className="relative">
-              <Image 
-                src={imagePreviewUrl} 
-                alt="Attached image" 
+              <Image
+                src={imagePreviewUrl}
+                alt="Attached image"
                 className="w-8 h-8 object-cover rounded"
                 width={32}
                 height={32}
@@ -393,14 +439,14 @@ export function MessageInput({
             </div>
           </div>
         )}
-        
+
         {/* Input field with adjusted padding if image is present */}
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Ask anything..."
           className={`w-full py-3.5 pr-48 rounded-full border outline-none font-sans text-[15px] leading-normal antialiased disabled:opacity-50 transition-all placeholder:text-[#8e8e8e] ${
-            imagePreviewUrl ? 'pl-14' : 'pl-5'
+            imagePreviewUrl ? "pl-14" : "pl-5"
           }`}
           style={{
             color: CHAT_THEME.textPrimary,
@@ -408,7 +454,7 @@ export function MessageInput({
             borderColor: CHAT_THEME.borderSubtle,
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !inputDisabled) {
+            if (e.key === "Enter" && !e.shiftKey && !inputDisabled) {
               e.preventDefault();
               onSubmit();
             }
@@ -420,7 +466,9 @@ export function MessageInput({
         <button
           type="submit"
           className="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 hover:bg-emerald-400 text-black font-medium rounded-full p-2 disabled:opacity-50 disabled:pointer-events-none"
-          disabled={!value.trim() && !imagePreviewUrl || isLoading || inputDisabled}
+          disabled={
+            (!value.trim() && !imagePreviewUrl) || isLoading || inputDisabled
+          }
           onClick={onSubmit}
           aria-label="Submit message"
         >
@@ -445,30 +493,42 @@ export function MessageInput({
           <button
             type="button"
             onClick={toggleVoiceRecording}
-            className={`p-1 hover:bg-white/5 rounded transition-colors flex items-center gap-0.5 text-[10px] ${isRecording ? 'bg-red-600 text-white' : ''}`}
+            className={`p-1 hover:bg-white/5 rounded transition-colors flex items-center gap-0.5 text-[10px] ${isRecording ? "bg-red-600 text-white" : ""}`}
             disabled={isOffline}
-            aria-label={isRecording ? "Stop recording" : "Start voice recording"}
+            aria-label={
+              isRecording ? "Stop recording" : "Start voice recording"
+            }
           >
-            <MicrophoneIcon className={`w-3 h-3 ${isRecording ? 'text-white animate-pulse' : 'text-gray-300'}`} />
-            <span className={`text-xs ${isRecording ? 'text-white' : 'text-gray-300'}`}>
-              {isRecording ? 'Recording...' : 'Voice'}
+            <MicrophoneIcon
+              className={`w-3 h-3 ${isRecording ? "text-white animate-pulse" : "text-gray-300"}`}
+            />
+            <span
+              className={`text-xs ${isRecording ? "text-white" : "text-gray-300"}`}
+            >
+              {isRecording ? "Recording..." : "Voice"}
             </span>
           </button>
 
           <button
             type="button"
-            className={`p-1 hover:bg-white/5 rounded transition-colors flex items-center gap-0.5 text-[10px] ${screenshotActive ? 'bg-white/10' : ''}`}
+            className={`p-1 hover:bg-white/5 rounded transition-colors flex items-center gap-0.5 text-[10px] ${screenshotActive ? "bg-white/10" : ""}`}
             onClick={screenshotActive ? onClearScreenshot : captureScreen}
             disabled={isCapturingScreen || isOffline}
-            aria-label={screenshotActive ? "Clear screenshot" : "Capture screenshot"}
+            aria-label={
+              screenshotActive ? "Clear screenshot" : "Capture screenshot"
+            }
           >
             <ComputerDesktopIcon className="w-3 h-3 text-gray-300" />
             <span className="text-xs text-gray-300">
-              {isCapturingScreen ? 'Capturing...' : screenshotActive ? 'Clear Screen' : 'Screen'}
+              {isCapturingScreen
+                ? "Capturing..."
+                : screenshotActive
+                  ? "Clear Screen"
+                  : "Screen"}
             </span>
           </button>
         </div>
-        
+
         {/* Right side buttons */}
         <div className="flex items-center gap-2">
           <AgenticModeToggle
@@ -476,7 +536,7 @@ export function MessageInput({
             onChange={setAgenticMode}
             disabled={!modeReady}
           />
-          
+
           {/* Style button and dropdown */}
           <div className="relative" ref={styleMenuRef}>
             <button
@@ -488,18 +548,27 @@ export function MessageInput({
               aria-haspopup="true"
               aria-label={`AI style: ${PROMPT_STYLES[accessibility.promptStyle]}`}
             >
-              <PencilSquareIcon className="w-3 h-3 text-gray-300" aria-hidden="true" />
+              <PencilSquareIcon
+                className="w-3 h-3 text-gray-300"
+                aria-hidden="true"
+              />
               <span className="text-xs text-gray-300">Style</span>
-              <span className="text-xs text-gray-500 px-0.5" aria-hidden="true">·</span>
-              <span className={`text-xs ${PROMPT_STYLE_TEXT_COLORS[accessibility.promptStyle]}`}>
+              <span className="text-xs text-gray-500 px-0.5" aria-hidden="true">
+                ·
+              </span>
+              <span
+                className={`text-xs ${PROMPT_STYLE_TEXT_COLORS[accessibility.promptStyle]}`}
+              >
                 {PROMPT_STYLES[accessibility.promptStyle]}
               </span>
             </button>
-            
+
             {/* Style Dropdown */}
             {showStyleDropdown && (
               <div className="absolute bottom-8 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 min-w-[200px] z-10">
-                <h4 className="text-white text-sm font-medium mb-2">AI Response Style</h4>
+                <h4 className="text-white text-sm font-medium mb-2">
+                  AI Response Style
+                </h4>
                 <div className="space-y-2">
                   {Object.entries(PROMPT_STYLES).map(([style, label]) => (
                     <div key={style} className="flex items-center">
@@ -514,7 +583,10 @@ export function MessageInput({
                           setShowStyleDropdown(false);
                         }}
                       />
-                      <label htmlFor={`style-dropdown-${style}`} className="ml-2 text-xs font-medium text-gray-300">
+                      <label
+                        htmlFor={`style-dropdown-${style}`}
+                        className="ml-2 text-xs font-medium text-gray-300"
+                      >
                         {label}
                       </label>
                     </div>
@@ -526,7 +598,7 @@ export function MessageInput({
               </div>
             )}
           </div>
-          
+
           {/* Focus button and dropdown */}
           <div className="relative" ref={focusMenuRef}>
             <button
@@ -538,18 +610,27 @@ export function MessageInput({
               aria-haspopup="true"
               aria-label={`Knowledge focus: ${KNOWLEDGE_FOCUS[accessibility.knowledgeFocus]}`}
             >
-              <SparklesIcon className="w-3 h-3 text-gray-300" aria-hidden="true" />
+              <SparklesIcon
+                className="w-3 h-3 text-gray-300"
+                aria-hidden="true"
+              />
               <span className="text-xs text-gray-300">Focus</span>
-              <span className="text-xs text-gray-500 px-0.5" aria-hidden="true">·</span>
-              <span className={`text-xs ${KNOWLEDGE_FOCUS_TEXT_COLORS[accessibility.knowledgeFocus]}`}>
+              <span className="text-xs text-gray-500 px-0.5" aria-hidden="true">
+                ·
+              </span>
+              <span
+                className={`text-xs ${KNOWLEDGE_FOCUS_TEXT_COLORS[accessibility.knowledgeFocus]}`}
+              >
                 {KNOWLEDGE_FOCUS[accessibility.knowledgeFocus]}
               </span>
             </button>
-            
+
             {/* Focus Dropdown */}
             {showFocusDropdown && (
               <div className="absolute bottom-8 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 min-w-[200px] z-10">
-                <h4 className="text-white text-sm font-medium mb-2">Knowledge Focus</h4>
+                <h4 className="text-white text-sm font-medium mb-2">
+                  Knowledge Focus
+                </h4>
                 <div className="space-y-2">
                   {Object.entries(KNOWLEDGE_FOCUS).map(([focus, label]) => (
                     <div key={focus} className="flex items-center">
@@ -561,7 +642,10 @@ export function MessageInput({
                         checked={accessibility.knowledgeFocus === focus}
                         onChange={() => changeKnowledgeFocus(focus as any)}
                       />
-                      <label htmlFor={`focus-${focus}`} className="ml-2 text-xs font-medium text-gray-300">
+                      <label
+                        htmlFor={`focus-${focus}`}
+                        className="ml-2 text-xs font-medium text-gray-300"
+                      >
                         {label}
                       </label>
                     </div>
@@ -573,7 +657,7 @@ export function MessageInput({
               </div>
             )}
           </div>
-          
+
           {/* Settings Button */}
           <div className="relative" ref={settingsMenuRef}>
             <button
@@ -588,37 +672,47 @@ export function MessageInput({
               <Cog6ToothIcon className="w-3 h-3 text-gray-300" />
               <span className="text-xs text-gray-300">Settings</span>
             </button>
-            
+
             {/* Settings Dropdown */}
             {showSettings && (
               <div className="absolute bottom-8 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 min-w-[200px] z-10">
                 {/* High Contrast Setting */}
                 <div className="p-2 border-b border-gray-700">
-                  <h4 className="text-white text-sm font-medium mb-2">Appearance</h4>
+                  <h4 className="text-white text-sm font-medium mb-2">
+                    Appearance
+                  </h4>
                   <div className="flex items-center justify-between">
-                    <label htmlFor="high-contrast-toggle" className="text-gray-300 text-xs">
+                    <label
+                      htmlFor="high-contrast-toggle"
+                      className="text-gray-300 text-xs"
+                    >
                       High Contrast
                     </label>
                     <button
                       id="high-contrast-toggle"
                       onClick={toggleHighContrast}
                       className={`relative inline-flex h-5 w-10 items-center rounded-full ${
-                        accessibility.highContrast ? 'bg-blue-600' : 'bg-gray-600'
+                        accessibility.highContrast
+                          ? "bg-blue-600"
+                          : "bg-gray-600"
                       }`}
                       aria-pressed={accessibility.highContrast}
                       aria-label="Toggle high contrast mode"
                     >
                       <span
                         className={`${
-                          accessibility.highContrast ? 'translate-x-5' : 'translate-x-1'
+                          accessibility.highContrast
+                            ? "translate-x-5"
+                            : "translate-x-1"
                         } inline-block h-3 w-3 transform rounded-full bg-white transition`}
                       />
                     </button>
                   </div>
                   <p className="text-gray-400 text-xs mt-1">
-                    Changes the background color of message bubbles for better readability
+                    Changes the background color of message bubbles for better
+                    readability
                   </p>
-                  
+
                   {/* Advanced Button */}
                   <div className="mt-3">
                     <button
@@ -630,79 +724,117 @@ export function MessageInput({
                     </button>
                   </div>
                 </div>
-                
+
                 {/* Advanced Settings Dropdown (conditionally shown) */}
                 {showAdvanced && (
                   <div className="p-3 border-b border-gray-700">
-                    <h4 className="text-white text-sm font-medium mb-3">Advanced Color Settings</h4>
-                    
+                    <h4 className="text-white text-sm font-medium mb-3">
+                      Advanced Color Settings
+                    </h4>
+
                     {/* Response Text Color */}
                     <div className="mb-3">
-                      <label className="block text-gray-300 text-xs mb-1">Response Text Color</label>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Response Text Color
+                      </label>
                       <div className="flex items-center">
-                        <input 
-                          type="color" 
+                        <input
+                          type="color"
                           value={accessibility.responseTextColor}
-                          onChange={(e) => updateColorSetting('responseTextColor', e.target.value)}
+                          onChange={(e) =>
+                            updateColorSetting(
+                              "responseTextColor",
+                              e.target.value,
+                            )
+                          }
                           className="w-8 h-8 rounded mr-2 border border-gray-600"
                           aria-label="Choose response text color"
                         />
-                        <span className="text-xs text-gray-400">{accessibility.responseTextColor}</span>
+                        <span className="text-xs text-gray-400">
+                          {accessibility.responseTextColor}
+                        </span>
                       </div>
                     </div>
-                    
+
                     {/* Response Background Color */}
                     <div className="mb-3">
-                      <label className="block text-gray-300 text-xs mb-1">Response Background</label>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Response Background
+                      </label>
                       <div className="flex items-center">
-                        <input 
-                          type="color" 
-                          value={accessibility.responseBackgroundColor} 
-                          onChange={(e) => updateColorSetting('responseBackgroundColor', e.target.value)}
+                        <input
+                          type="color"
+                          value={accessibility.responseBackgroundColor}
+                          onChange={(e) =>
+                            updateColorSetting(
+                              "responseBackgroundColor",
+                              e.target.value,
+                            )
+                          }
                           className="w-8 h-8 rounded mr-2 border border-gray-600"
                           aria-label="Choose response background color"
                         />
-                        <span className="text-xs text-gray-400">{accessibility.responseBackgroundColor}</span>
+                        <span className="text-xs text-gray-400">
+                          {accessibility.responseBackgroundColor}
+                        </span>
                       </div>
                     </div>
-                    
+
                     {/* Query Text Color */}
                     <div className="mb-3">
-                      <label className="block text-gray-300 text-xs mb-1">Query Text Color</label>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Query Text Color
+                      </label>
                       <div className="flex items-center">
-                        <input 
-                          type="color" 
+                        <input
+                          type="color"
                           value={accessibility.queryTextColor}
-                          onChange={(e) => updateColorSetting('queryTextColor', e.target.value)}
+                          onChange={(e) =>
+                            updateColorSetting("queryTextColor", e.target.value)
+                          }
                           className="w-8 h-8 rounded mr-2 border border-gray-600"
                           aria-label="Choose query text color"
                         />
-                        <span className="text-xs text-gray-400">{accessibility.queryTextColor}</span>
+                        <span className="text-xs text-gray-400">
+                          {accessibility.queryTextColor}
+                        </span>
                       </div>
                     </div>
-                    
+
                     {/* Query Background Color */}
                     <div className="mb-3">
-                      <label className="block text-gray-300 text-xs mb-1">Query Background</label>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Query Background
+                      </label>
                       <div className="flex items-center">
-                        <input 
-                          type="color" 
+                        <input
+                          type="color"
                           value={accessibility.queryBackgroundColor}
-                          onChange={(e) => updateColorSetting('queryBackgroundColor', e.target.value)}
+                          onChange={(e) =>
+                            updateColorSetting(
+                              "queryBackgroundColor",
+                              e.target.value,
+                            )
+                          }
                           className="w-8 h-8 rounded mr-2 border border-gray-600"
                           aria-label="Choose query background color"
                         />
-                        <span className="text-xs text-gray-400">{accessibility.queryBackgroundColor}</span>
+                        <span className="text-xs text-gray-400">
+                          {accessibility.queryBackgroundColor}
+                        </span>
                       </div>
                     </div>
-                    
+
                     {/* Reset Button */}
                     <button
                       onClick={() => {
-                        updateColorSetting('responseTextColor', '#FFFFFF');
-                        updateColorSetting('queryTextColor', '#FFFFFF');
-                        updateColorSetting('responseBackgroundColor', '#111827');
-                        updateColorSetting('queryBackgroundColor', '#1E3A8A');
+                        updateColorSetting("responseTextColor", "#FFFFFF");
+                        updateColorSetting("queryTextColor", "#FFFFFF");
+                        updateColorSetting(
+                          "responseBackgroundColor",
+                          "#111827",
+                        );
+                        updateColorSetting("queryBackgroundColor", "#1E3A8A");
                       }}
                       className="w-full mt-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 transition-colors"
                       aria-label="Reset colors to default"
@@ -711,26 +843,35 @@ export function MessageInput({
                     </button>
                   </div>
                 )}
-                
+
                 {/* Cite Sources Setting */}
                 <div className="p-2">
-                  <h4 className="text-white text-sm font-medium mb-2">Sources</h4>
+                  <h4 className="text-white text-sm font-medium mb-2">
+                    Sources
+                  </h4>
                   <div className="flex items-center justify-between">
-                    <label htmlFor="cite-sources-toggle" className="text-gray-300 text-xs">
+                    <label
+                      htmlFor="cite-sources-toggle"
+                      className="text-gray-300 text-xs"
+                    >
                       Cite Sources
                     </label>
                     <button
                       id="cite-sources-toggle"
                       onClick={toggleCiteSources}
                       className={`relative inline-flex h-5 w-10 items-center rounded-full ${
-                        accessibility.citeSources ? 'bg-blue-600' : 'bg-gray-600'
+                        accessibility.citeSources
+                          ? "bg-blue-600"
+                          : "bg-gray-600"
                       }`}
                       aria-pressed={accessibility.citeSources}
                       aria-label="Toggle source citations"
                     >
                       <span
                         className={`${
-                          accessibility.citeSources ? 'translate-x-5' : 'translate-x-1'
+                          accessibility.citeSources
+                            ? "translate-x-5"
+                            : "translate-x-1"
                         } inline-block h-3 w-3 transform rounded-full bg-white transition`}
                       />
                     </button>
@@ -742,7 +883,7 @@ export function MessageInput({
               </div>
             )}
           </div>
-          
+
           {onNewChat && (
             <button
               type="button"
@@ -756,7 +897,7 @@ export function MessageInput({
         </div>
       </div>
 
-      {agenticMode === 'always' && imagePreviewUrl && (
+      {agenticMode === "always" && imagePreviewUrl && (
         <p className="mt-1 text-[10px] text-gray-500 px-1">
           Images are only used by direct answers
         </p>
@@ -765,7 +906,7 @@ export function MessageInput({
       {/* Hidden File Input */}
       <input
         type="file"
-        accept={ALLOWED_FILE_TYPES.join(',')}
+        accept={ALLOWED_FILE_TYPES.join(",")}
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
@@ -774,4 +915,4 @@ export function MessageInput({
       />
     </div>
   );
-} 
+}

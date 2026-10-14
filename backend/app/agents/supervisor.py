@@ -30,6 +30,7 @@ from langchain.schema.output_parser import StrOutputParser
 
 # Import local modules
 from app.core.config import settings
+from app.core.log_context import describe_text
 from app.agents.base_agent import BaseAgent
 from app.agents.document_extraction_agent import DocumentExtractionAgent
 from app.services.llm import get_agent_llm
@@ -190,7 +191,9 @@ class SupervisorAgent(BaseAgent):
         Returns:
             Updated workflow state with research plan
         """
-        logger.info(f"Supervisor Agent analyzing query: {state.query}")
+        logger.info(f"Supervisor Agent analyzing query ({describe_text(state.query)})")
+        if settings.WEBAGENT_ENV == "dev":
+            logger.debug("Query: %s", state.query)
         state.current_step = "supervisor"
 
         if not state.context.get("agentic_toggle", False):

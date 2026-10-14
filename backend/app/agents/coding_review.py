@@ -26,6 +26,7 @@ from app.agents.base_agent import BaseAgent
 from app.core.loadEnvYAML import get_agents_config
 from app.utils.code_sandbox import run_python_file
 from app.core.config import settings
+from app.core.log_context import describe_text
 from app.security.tool_guard import guard_tool
 from app.security.guarded_llm import register_template
 
@@ -110,7 +111,9 @@ class CodingReviewAgent(BaseAgent):
             Updated workflow state with code review and fixes
         """
         try:
-            logger.info(f"Coding Review Agent processing query: {state.query}")
+            logger.info(f"Coding Review Agent processing query ({describe_text(state.query)})")
+            if settings.WEBAGENT_ENV == "dev":
+                logger.debug("Query: %s", state.query)
             
             # Extract code from the coding_assistant report
             coding_report = state.reports.get("coding_assistant", {})
@@ -324,8 +327,8 @@ except Exception as e:
                 # Clean up the temporary file
                 try:
                     os.remove(temp_file_path)
-                except:
-                    pass
+                except OSError as e:
+                    logger.warning(f"Could not remove temporary file: {e}")
                 
                 # Check for errors
                 if result.returncode != 0:
@@ -342,8 +345,8 @@ except Exception as e:
                 # Clean up on timeout
                 try:
                     os.remove(temp_file_path)
-                except:
-                    pass
+                except OSError as e:
+                    logger.warning(f"Could not remove temporary file: {e}")
                 return False, f"Execution timed out after {self.timeout_seconds} seconds"
                 
         except Exception as e:

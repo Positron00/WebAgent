@@ -7,9 +7,11 @@ import asyncio
 import os
 import sys
 import uuid
+from contextlib import asynccontextmanager
+
 import uvicorn
-from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from datetime import datetime
 
@@ -21,21 +23,28 @@ if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
 # Now import application modules
+from app.api.http_errors import http_exception_body
+from app.core.api_errors import error_body, error_code_for_status
 from app.api.router import api_router, health_router
 from app.api.endpoints.task import router as task_router
 from app.api.endpoints.guard import router as guard_router
 from app.api.endpoints.triage import router as triage_router
 from starlette.concurrency import run_in_threadpool
-from app.services import triage_collect
+from app.services import result_store, triage_collect
 from app.security import records as security_records
 from app.security.decision import get_engine
 from app.security.context_defender import warm_up as warm_up_context_defender
 from app.services.triage_model import warm_up
 from app.core.config import settings
-from app.core.middleware import setup_middlewares, LimitSizeMiddleware, SecurityHeadersMiddleware
+from app.core.middleware import setup_middlewares
 from app.core.logger import logger
-from app.core.metrics import setup_metrics, PrometheusMiddleware, ERROR_COUNT
-from app.core.startup_checks import check_production_settings, server_code_execution_enabled
+from app.core.metrics import setup_metrics, mark_worker_dead, PrometheusMiddleware, ERROR_COUNT
+from app.core.startup_checks import (
+    check_dev_exposure,
+    check_production_settings,
+    check_task_timeouts,
+    server_code_execution_enabled,
+)
 from app.core.security import (
     setup_security,
     require_api_key,
@@ -43,59 +52,11 @@ from app.core.security import (
 )
 from fastapi import Depends
 
-# Create FastAPI app with OpenAPI documentation
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    description=settings.PROJECT_DESCRIPTION,
-    version=settings.VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc",
-    openapi_tags=[
-        {"name": "health", "description": "Health check endpoints"},
-        {"name": "chat", "description": "Chat API endpoints"},
-        {"name": "tasks", "description": "Task management endpoints"},
-        {"name": "frontend", "description": "Frontend compatibility endpoints"},
-    ]
-)
 
-# First add the metrics middleware to ensure all requests are tracked
-app.add_middleware(PrometheusMiddleware)
-
-# Set up middleware in correct order
-# 1. Security headers should be first to ensure all responses have correct headers
-app.add_middleware(SecurityHeadersMiddleware)
-
-# 2. Request size limiting should happen early to prevent DoS
-app.add_middleware(
-    LimitSizeMiddleware, 
-    max_content_length=settings.REQUEST_SIZE_LIMIT
-)
-
-# 3. Set up other middlewares with the app
-setup_middlewares(app)
-
-# Add CORS middleware last since it's not critical for security
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Set up metrics endpoints
-setup_metrics(app)
-setup_security(app)
-
-# Model-written code must not run inside the API server unless explicitly enabled.
-settings.ENABLE_CODE_EXECUTION = server_code_execution_enabled()
-
-
-@app.on_event("startup")
-async def validate_production_settings() -> None:
+async def _startup(app: FastAPI) -> None:
     # Also run before uvicorn starts in the Docker image (see app/core/startup_checks.py).
     check_production_settings(settings.ENABLE_CODE_EXECUTION)
+    check_task_timeouts()
     cfg = getattr(settings, "TRIAGE", None)
     if cfg and cfg.enabled:
         await run_in_threadpool(warm_up)
@@ -108,16 +69,57 @@ async def validate_production_settings() -> None:
     security_records.cleanup()
     app.state.triage_cleanup_task = asyncio.create_task(triage_collect.cleanup_daily())
     app.state.security_cleanup_task = asyncio.create_task(security_records.cleanup_daily())
+    app.state.results_cleanup_task = asyncio.create_task(result_store.cleanup_daily())
 
 
-@app.on_event("shutdown")
-async def stop_triage_cleanup() -> None:
-    task = getattr(app.state, "triage_cleanup_task", None)
-    if task is not None:
-        task.cancel()
-    sec_task = getattr(app.state, "security_cleanup_task", None)
-    if sec_task is not None:
-        sec_task.cancel()
+def _shutdown(app: FastAPI) -> None:
+    for name in ("triage_cleanup_task", "security_cleanup_task", "results_cleanup_task"):
+        task = getattr(app.state, name, None)
+        if task is not None:
+            task.cancel()
+    mark_worker_dead()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await _startup(app)
+    try:
+        yield
+    finally:
+        _shutdown(app)
+
+
+# Create FastAPI app with OpenAPI documentation
+_docs_off = settings.WEBAGENT_ENV in ("uat", "prod")
+
+app = FastAPI(
+    lifespan=lifespan,
+    title=settings.PROJECT_NAME,
+    description=settings.PROJECT_DESCRIPTION,
+    version=settings.VERSION,
+    openapi_url=None if _docs_off else f"{settings.API_V1_STR}/openapi.json",
+    docs_url=None if _docs_off else f"{settings.API_V1_STR}/docs",
+    redoc_url=None if _docs_off else f"{settings.API_V1_STR}/redoc",
+    openapi_tags=[
+        {"name": "health", "description": "Health check endpoints"},
+        {"name": "chat", "description": "Chat API endpoints"},
+        {"name": "tasks", "description": "Task management endpoints"},
+        {"name": "frontend", "description": "Frontend compatibility endpoints"},
+    ]
+)
+
+# First add the metrics middleware to ensure all requests are tracked
+app.add_middleware(PrometheusMiddleware)
+
+# CORS, security headers, request logging and the request size limit, each added once.
+setup_middlewares(app)
+
+# Set up metrics endpoints
+setup_metrics(app)
+setup_security(app)
+
+# Model-written code must not run inside the API server unless explicitly enabled.
+settings.ENABLE_CODE_EXECUTION = server_code_execution_enabled()
 
 
 # Include API router
@@ -141,6 +143,23 @@ app.include_router(
     tags=["guard"],
     dependencies=[Depends(require_api_key)],
 )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(status_code=exc.status_code, content=http_exception_body(exc))
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=error_body(
+            "validation_error",
+            "Request validation failed",
+            exc.errors(),
+        ),
+    )
+
 
 # Global exception handler
 @app.exception_handler(Exception)
@@ -173,15 +192,15 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
     
     # Return a JSON response with appropriate error details
+    message = (
+        sanitize_error_message(exception_msg)
+        if settings.DEBUG_MODE
+        else "An unexpected error occurred"
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
-            "error": "Internal Server Error",
-            "message": (
-                sanitize_error_message(exception_msg)
-                if settings.DEBUG_MODE
-                else "An unexpected error occurred"
-            ),
+            **error_body(error_code_for_status(500), message),
             "error_id": error_id,
             "timestamp": datetime.now().isoformat(),
         },
@@ -212,6 +231,7 @@ logger.info(f"Debug mode: {settings.DEBUG_MODE}")
 logger.info(f"API base URL: {settings.API_V1_STR}")
 
 if __name__ == "__main__":
+    check_dev_exposure(settings.HOST)
     uvicorn.run(
         "main:app",
         host=settings.HOST,

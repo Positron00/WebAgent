@@ -1,51 +1,54 @@
 module.exports = {
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  testEnvironment: "jsdom",
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testPathIgnorePatterns: [
-    '<rootDir>/node_modules/', 
-    '<rootDir>/.next/',
-    '<rootDir>/src/__tests__/utils/test-utils.tsx',
-    '<rootDir>/scripts/test.js'
+    "<rootDir>/node_modules/",
+    "<rootDir>/.next/",
+    "<rootDir>/src/__tests__/utils/test-utils.tsx",
+    "<rootDir>/scripts/test.js",
   ],
-  testRegex: '(/__tests__/.*|\\.(test|spec))\\.[jt]sx?$',
+  testRegex: "(/__tests__/.*|\\.(test|spec))\\.[jt]sx?$",
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { configFile: './babel-test.config.js' }],
-    '^.+\\.node_modules\\.(js|jsx|ts|tsx)$': '<rootDir>/src/__mocks__/transformers/babelTransformer.js',
+    "^.+\\.(js|jsx|ts|tsx)$": [
+      "babel-jest",
+      { configFile: "./babel-test.config.js" },
+    ],
+    "^.+\\.node_modules\\.(js|jsx|ts|tsx)$":
+      "<rootDir>/src/__mocks__/transformers/babelTransformer.js",
   },
   transformIgnorePatterns: [
     // Transform ESM modules that need to be processed
-    '/node_modules/(?!react-markdown|micromark|decode-named-character-reference|character-entities|property-information|space-separated-tokens|comma-separated-tokens|hast-util-whitespace|remark-parse|remark-rehype|unified|bail|is-plain-obj|trough|vfile|vfile-message|unist-util-stringify-position|mdast-util-from-markdown|mdast-util-to-string|micromark-util-.*|mdast-util-.*|unist-util-.*|hast-util-.*|hastscript|web-namespaces)/',
+    "/node_modules/(?!react-markdown|micromark|decode-named-character-reference|character-entities|property-information|space-separated-tokens|comma-separated-tokens|hast-util-whitespace|remark-parse|remark-rehype|unified|bail|is-plain-obj|trough|vfile|vfile-message|unist-util-stringify-position|mdast-util-from-markdown|mdast-util-to-string|micromark-util-.*|mdast-util-.*|unist-util-.*|hast-util-.*|hastscript|web-namespaces)/",
   ],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    "^@/(.*)$": "<rootDir>/src/$1",
+    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
     // Mock SVG files
-    '\\.svg$': '<rootDir>/src/__mocks__/svg.js',
+    "\\.svg$": "<rootDir>/src/__mocks__/svg.js",
   },
   collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/_*.{js,jsx,ts,tsx}',
-    '!src/**/index.{js,jsx,ts,tsx}',
+    "src/**/*.{js,jsx,ts,tsx}",
+    "!src/**/*.d.ts",
+    "!src/**/_*.{js,jsx,ts,tsx}",
+    "!src/**/index.{js,jsx,ts,tsx}",
   ],
   // Floor just below current coverage, so it can't silently drop. Raise it as tests are added.
   coverageThreshold: {
     global: {
-      branches: 38,
-      functions: 34,
-      lines: 46,
-      statements: 45,
+      branches: 43,
+      functions: 39,
+      lines: 51,
+      statements: 50,
     },
   },
   watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
+    "jest-watch-typeahead/filename",
+    "jest-watch-typeahead/testname",
   ],
   // Increase timeouts and isolate tests for more reliable test runs
   testTimeout: 20000,
-  maxWorkers: '50%',
+  maxWorkers: "50%",
   bail: 1,
   // Improve error reporting
   verbose: true,
-  forceExit: true,
-}; 
+};
