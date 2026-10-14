@@ -31,7 +31,6 @@ from flask import Flask, request, jsonify, Response, current_app
 from pydantic import BaseModel, Field, ValidationError
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
 from threading import Thread, Event
-from app.core.config import settings
 
 # Configure logging
 logging.basicConfig(
@@ -91,10 +90,11 @@ def setup_mlflow(tracking_uri: str, experiment_name: str):
         # Create the experiment if it doesn't exist
         experiment = mlflow.get_experiment_by_name(experiment_name)
         if experiment is None:
-            # Always use settings.MLFLOW_ARTIFACT_LOCATION for artifacts
+            # Standalone script: it runs in its own image without the backend package, so
+            # the artifact location comes from the environment (unset = MLflow's default).
             mlflow.create_experiment(
                 experiment_name,
-                artifact_location=settings.MLFLOW_ARTIFACT_LOCATION
+                artifact_location=os.getenv("MLFLOW_ARTIFACT_LOCATION") or None
             )
         
         mlflow.set_experiment(experiment_name)

@@ -67,7 +67,7 @@ beautifulsoup4>=4.12.3
 
 # Graph database
 networkx>=3.2.1
-neo4j>=5.16.0
+neo4j>=5.16.0,<6  # 6.x is a new major version; pinned in constraints.txt
 
 # Monitoring and logging
 psutil>=5.9.0

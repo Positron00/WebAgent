@@ -10,7 +10,7 @@ WebAgent is a sophisticated AI system built as a microservice architecture that 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WebAgent Platform v3.2.7                          │
+│                           WebAgent Platform v3.5.0                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌────────────────┐                         ┌─────────────────────────────┐ │
@@ -105,7 +105,7 @@ The backend API layer handles all incoming requests and provides endpoints for t
   - FastAPI for high-performance async API
   - Middleware components for security and metrics
   - Pydantic for request/response validation
-  - JWT for authentication
+  - API keys (`X-API-Key`) for authentication; the web app adds its own shared access code
 
 - **Key Components**:
   - API router for endpoint organization
@@ -358,10 +358,10 @@ The system uses a hierarchical configuration system:
 The system implements multiple security measures:
 
 - **API Security**:
-  - Rate limiting to prevent abuse
-  - JWT token-based authentication
+  - Rate limiting per caller (per sign-in session through the web app)
+  - API key authentication (`X-API-Key`; required in uat and prod)
   - Request size limiting
-  - Secure password hashing
+  - Signed, single-use consent and approval tokens for the security guard
 
 - **HTTP Security**:
   - Security headers middleware

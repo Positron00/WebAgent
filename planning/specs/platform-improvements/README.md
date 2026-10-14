@@ -1,6 +1,6 @@
 # Spec: platform improvements (3.2.7 – 3.5.0)
 
-Status: draft v1 · Source plan: [`planning/improvement-plan.md`](../../improvement-plan.md) · Base: `main` at v3.2.6 (`741368a`) · 2026-10-14
+Status: implemented in 3.2.7–3.5.0, with manual checks still open (see [`tasks.md`](tasks.md#implementation-status-2026-10-14)) · Source plan: [`planning/improvement-plan.md`](../../improvement-plan.md) · Base: `main` at v3.2.6 (`741368a`) · 2026-10-14
 
 ## What this work does
 

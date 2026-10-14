@@ -87,6 +87,28 @@ python backend/standalone/llm_server.py --model_path "/path/to/your/model" --por
 python backend/standalone/llm_server.py --model_path "/path/to/your/model" --port 8080 --load_in_4bit
 ```
 
+### In Docker
+
+Two images run the same server as a non-root user (`llm`, uid 10001). Build them with
+`backend/` as the context (it has a `.dockerignore`, so local data and logs stay out), and
+mount the model at `/models`:
+
+```bash
+# Plain server
+docker build -f backend/app/services/Dockerfile.llm -t webagent/llm backend
+docker run --gpus all -p 8080:8080 -v /path/to/model:/models/llama-3 webagent/llm
+
+# With MLflow tracking (MLFLOW_TRACKING_URI defaults to http://mlflow:5000)
+docker build -f backend/app/services/Dockerfile.llm-mlflow -t webagent/llm-mlflow backend
+docker run --gpus all -p 8080:8080 -v /path/to/model:/models/llama-3 \
+  -e MLFLOW_TRACKING_URI=http://your-mlflow:5000 webagent/llm-mlflow
+```
+
+`MODEL_PATH`, `HOST` and `PORT` (and, in the MLflow image, `MLFLOW_TRACKING_URI`,
+`MLFLOW_EXPERIMENT_NAME` and `MLFLOW_ARTIFACT_LOCATION`) are environment variables. The
+server is standalone: it doesn't import the WebAgent backend, so it runs in these images or
+from a checkout with only `backend/requirements-llm.txt` installed.
+
 ### Available Command-Line Arguments
 
 | Argument | Description | Default |

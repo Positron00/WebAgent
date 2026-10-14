@@ -234,9 +234,8 @@ class Settings(BaseSettings):
     )
     
     # Security
+    # Signs the guard's consent and approval tokens (app/security/tokens.py); required in uat/prod.
     SECRET_KEY: str = os.getenv("WEBAGENT_SECURITY_SECRET_KEY", "insecure_key_for_dev_only_change_in_production")
-    ALGORITHM: str = os.getenv("WEBAGENT_SECURITY_ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("WEBAGENT_SECURITY_TOKEN_EXPIRE_MINUTES", "30"))
     
     # Rate limiting settings
     RATE_LIMIT_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_RATE_LIMIT_ENABLED", "True").lower() == "true"

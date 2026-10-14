@@ -127,6 +127,30 @@ phase 4 about 24 h (3 d).
 | 4.5 | Self-hosted LLM Docker entrypoint and README aligned with repaired stack | IMP-128 | 4.1 | `docker run … id -u` non-root; health check passes | 2 h |
 | 4.6 | CHANGELOG; version 3.5.0 | IMP-NFR-08 | 4.1–4.5 | Reviewed | 1 h |
 
+## Implementation status (2026-10-14)
+
+Releases 3.2.7, 3.3.0, 3.4.0 and 3.5.0 are implemented on `release/3.5.0` (not yet merged to
+`main` or tagged). An alignment review on 2026-10-14 checked every requirement against the
+code: all automated checks pass (backend pytest, `ruff`, Jest with coverage floors,
+`check-types`, `lint`, `next build`), and every test file the tasks name exists. The review's
+fixes are listed under 3.5.0 in `CHANGELOG.md`.
+
+Still open: these need a person, a uat environment or an external account, so they can't be
+done in code.
+
+| Task | What is left | Requirement |
+|---|---|---|
+| 1.3 | Turn on branch protection for `main` (both CI jobs required) and try one failing PR | IMP-001 |
+| 1.11 | Set the Together AI and Tavily spending caps and fill in the table in `PRODUCTION_READINESS.md` (still "not set yet") | IMP-013 |
+| 1.18 | Before/after answer comparison in uat (5 research, 5 routine questions) for the per-agent temperatures | IMP-NFR-07 |
+| 1.26 | Release check: sign in on `next start` and a Vercel preview; two sessions with separate limits; production build without a code answers 503 | IMP-010–IMP-012 |
+| 2.10 | Measure `tokens_used` on 10 agentic runs and set `WEBAGENT_TASK_TOKEN_BUDGET` (it ships as 0, off) | IMP-042 |
+| 2.17 | Apply the manifests in a uat cluster and check `/metrics` from outside (404) and from Prometheus (scraped); there is no uat cluster yet | IMP-063 |
+| 2.18 | One restore drill in uat, with its date recorded in `docs/RUNBOOK.md` | IMP-073 |
+| 2.24 | Timing run of the 5 research questions on the new release | IMP-NFR-04 |
+| 3.14 | `npm run stack:up` and check the Grafana dashboards render on Grafana 11.4 | IMP-102 |
+| 3.20 | Playwright browser-to-backend test and `e2e.yml` (IMP-113, a *should*): not built; moves to the next release | IMP-113 |
+
 ## Requirement coverage
 
 | Requirement | Tasks |

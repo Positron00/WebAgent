@@ -4,8 +4,9 @@ from typing import Any, Dict, List, Literal, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from starlette.concurrency import run_in_threadpool
 
 from app.api.intake import GuardRefused, refusal_body, run_intake_guard  # noqa: F401 (refusal_body: guard.py)
@@ -120,6 +121,25 @@ async def create_task(req: TaskRequest):
     task_manager.register_pending(task_id, req.query)
     task_manager.start(task_id, req.query, context, direct=use_direct)
     return {"task_id": task_id, "status": "processing"}
+
+
+async def start_legacy_task(query: Any, context: Any = None):
+    """Start a task for the deprecated POST /api/v1/chat/ and /api/v1/tasks/create routes.
+
+    They take the same path as /api/task in Always mode: intake guard, length limit, run
+    supervisor. Caller context is not trusted (it could claim consent or approved tools);
+    only a document ID is kept. Returns create_task's reply: a dict, or the refusal response.
+    """
+    document_id = context.get("document_id") if isinstance(context, dict) else None
+    try:
+        req = TaskRequest(
+            query=query,
+            mode="always",
+            document_id=str(document_id) if document_id else None,
+        )
+    except ValidationError as exc:
+        raise RequestValidationError(exc.errors()) from exc
+    return await create_task(req)
 
 
 @router.get("/{task_id}")

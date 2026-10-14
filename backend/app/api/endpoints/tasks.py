@@ -3,9 +3,11 @@ Task management endpoints for the WebAgent backend.
 """
 from typing import Dict, List, Any, Optional
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse
 import uuid
 import logging
 
+from app.api.endpoints.task import start_legacy_task
 from app.models.task import TaskInfo
 from app.services import result_store
 from app.services.task_manager import TaskManager
@@ -81,25 +83,18 @@ async def get_task_error(task_id: str):
 @timing_decorator
 async def create_task(request: Dict[str, Any]):
     """
-    Create a new task to be processed asynchronously.
+    Create a research task (deprecated; use POST /api/task).
+    Same path as /api/task in Always mode: intake guard, length limit, run supervisor.
     """
     if "query" not in request:
         raise HTTPException(status_code=400, detail="Query is required")
-    
-    query = request["query"]
-    context = request.get("context", {})
-    
-    # Generate a task ID
-    task_id = str(uuid.uuid4())
-    
-    # Start processing in the background, under the run supervisor (time limit and cancel)
-    task_manager.register_pending(task_id, query)
-    task_manager.start(task_id, query, context, direct=False)
 
-    logger.info(f"Created new task {task_id} ({describe_text(query)})")
-    
+    started = await start_legacy_task(request["query"], request.get("context"))
+    if isinstance(started, JSONResponse):  # the intake guard refused it (403 or 409)
+        return started
+    logger.info(f"Created new task {started['task_id']} ({describe_text(str(request['query']))})")
     return {
-        "task_id": task_id, 
+        "task_id": started["task_id"],
         "status": "processing",
         "message": "Task created and processing started"
     }

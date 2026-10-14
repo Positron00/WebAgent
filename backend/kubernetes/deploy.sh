@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 # Default values
 ENVIRONMENT="prod"
 NAMESPACE="default"
-VERSION="3.3.0"
+VERSION="3.5.0"
 REGISTRY="webagent/backend"
 HOST="api.webagent.example.com"
 INGRESS_NAMESPACE="ingress-nginx"
@@ -25,8 +25,8 @@ function print_usage {
   echo "Options:"
   echo "  -e, --environment   prod or uat: sets WEBAGENT_ENV, so the pod uses config/<env>.yaml (default: prod)"
   echo "  -n, --namespace     Kubernetes namespace (default: default)"
-  echo "  -v, --version       Image tag to deploy (default: 3.3.0)"
-  echo "  -i, --ingress-ns    Namespace of the nginx ingress controller (default: ingress-nginx)"
+  echo "  -v, --version       Image tag to deploy (default: 3.5.0)"
+  echo "  -i, --ingress-ns    Namespace of the nginx ingress controller (default: ingress-nginx; also --ingress-namespace)"
   echo "  -r, --registry      Image repository the cluster pulls from (default: webagent/backend)"
   echo "  -H, --host          Public host name for the ingress (default: api.webagent.example.com)"
   echo "  -h, --help          Show this help message"
@@ -72,7 +72,7 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    -i|--ingress-ns)
+    -i|--ingress-ns|--ingress-namespace)
       INGRESS_NAMESPACE="$2"
       shift
       shift

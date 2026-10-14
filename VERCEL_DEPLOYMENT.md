@@ -1,6 +1,6 @@
 # Deploying WebAgent to Vercel
 
-[![version](https://img.shields.io/badge/version-3.2.7-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.5.0-blue.svg)](https://semver.org)
 
 This guide explains how to deploy the WebAgent web app (Next.js) to Vercel. Vercel runs only the web app; the multi-agent FastAPI backend runs on a server you control, and the web app reaches it through `/api/task`.
 
@@ -24,6 +24,7 @@ Before deployment, you need to set up the following environment variables in you
 - `WEBAGENT_API_KEY`: API key the FastAPI backend expects when API-key auth is on (sent server-side only)
 - `WEBAGENT_DEFAULT_AGENTIC_MODE` (optional): Agentic mode for people who haven't picked one: `off` (default), `auto` or `always`. Vercel has no `.env.local` on disk, so a change needs a redeploy
 - `WEBAGENT_LLM_DEFAULT_MODEL` (optional): Together model for `/api/chat`; defaults to `meta-models/Muse-Glimmer-30B`
+- `WEBAGENT_IMAGE_HOSTS` (optional): comma-separated hosts `next/image` may load remote images from; empty (the default) means none. The page's Content Security Policy allows connections to the app's own origin only, so the browser never calls the backend or any other host directly
 
 You can add these in the Vercel dashboard under Project Settings > Environment Variables.
 `vercel.json` no longer references `@secret` names; set the variables directly in project settings.

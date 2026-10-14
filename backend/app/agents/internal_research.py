@@ -1019,7 +1019,7 @@ class InternalResearchAgent(BaseAgent):
                 questions = feedback.get("research_questions", [])[1:]  # Get remaining questions
                 
                 for i, question in enumerate(questions[:2]):  # Limit to 2 additional questions
-                    logger.info(f"Performing additional document retrieval for: {question}")
+                    logger.info(f"Performing additional document retrieval ({describe_text(question)})")
                     if not await guard_tool(
                         "tool::internal_retrieve",
                         {"query": question},

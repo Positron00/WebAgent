@@ -23,6 +23,14 @@ class _CollectHandler(logging.Handler):
         self.messages.append(record.getMessage())
 
 
+# Variables that hold the user's question or text derived from it (follow-up questions,
+# rewritten search queries). The 3.5.0 review found `{question}` logged by internal research.
+RAW_TEXT_NAMES = (
+    "query", "search_query", "question", "user_query", "sanitized_query", "simplified_query",
+    "enhanced_query", "standalone_query", "transcript",
+)
+
+
 def _forbidden_query_log_snippets() -> list[str]:
     """Static scan: logger calls that still embed state.query or raw query variables."""
     app_dir = Path(__file__).resolve().parents[1] / "app"
@@ -48,7 +56,7 @@ def _forbidden_query_log_snippets() -> list[str]:
                             src = ast.get_source_segment(source, part.value) or ""
                             if "describe_text" in src:
                                 continue
-                            if "state.query" in src or src.strip() in ("query", "search_query"):
+                            if src.endswith(".query") or src.strip() in RAW_TEXT_NAMES:
                                 bad.append(f"{path.relative_to(app_dir.parent)}:{node.lineno}")
     return bad
 

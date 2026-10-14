@@ -147,7 +147,11 @@ class WebSearchService:
             if hasattr(e, 'response') and getattr(e, 'response', None) is not None:
                 response = getattr(e, 'response')
                 if hasattr(response, 'text'):
-                    logger.error(f"Response text: {response.text}")
+                    # The body can echo the query, which only dev may log (IMP-070).
+                    if settings.WEBAGENT_ENV == "dev":
+                        logger.debug(f"Response text: {response.text}")
+                    else:
+                        logger.error(f"Response text ({describe_text(response.text)})")
                 if hasattr(response, 'status_code'):
                     logger.error(f"Status code: {response.status_code}")
 

@@ -1,49 +1,32 @@
 """
 Chat endpoints for the WebAgent backend.
 """
-from typing import Dict, Optional
-from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 
 from app.models.chat import ChatRequest, ChatResponse
-from app.graph.workflows import get_agent_workflow
 from app.services.task_manager import TaskManager
-from app.api.http_errors import raise_safe_http_exception
+from app.api.endpoints.task import start_legacy_task
 
 router = APIRouter()
 task_manager = TaskManager()
 
 @router.post("/", response_model=ChatResponse, deprecated=True)
-async def create_chat(
-    request: ChatRequest, 
-    background_tasks: BackgroundTasks
-):
+async def create_chat(request: ChatRequest):
     """
-    Start a new chat workflow with the multi-agent system.
+    Start a research run (deprecated; use POST /api/task).
+    Same path as /api/task in Always mode: intake guard, length limit, run supervisor.
     Returns a task ID that can be used to check progress and get results.
     """
-    try:
-        # Generate a unique task ID
-        task_id = str(uuid4())
-        task_manager.register_pending(task_id, request.message)
-
-        # Start the workflow in the background
-        background_tasks.add_task(
-            task_manager.run_workflow,
-            task_id=task_id,
-            message=request.message,
-            context=request.context or {}
-        )
-        
-        # Return a response with the task ID
-        return ChatResponse(
-            task_id=task_id,
-            status="processing",
-            message="Your request is being processed. Check the status using the task ID."
-        )
-    except Exception as e:
-        raise_safe_http_exception(500, e, public_message="Chat request failed")
+    started = await start_legacy_task(request.message, request.context)
+    if isinstance(started, JSONResponse):  # the intake guard refused it (403 or 409)
+        return started
+    return ChatResponse(
+        task_id=started["task_id"],
+        status="processing",
+        message="Your request is being processed. Check the status using the task ID."
+    )
 
 @router.get("/{task_id}", response_model=ChatResponse)
 async def get_chat_status(task_id: str):

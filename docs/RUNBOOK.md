@@ -5,20 +5,25 @@ Short procedures for production and uat.
 ## Deploy (Kubernetes)
 
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
-2. From the repo root:
+2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
+   ```bash
+   docker build --build-arg APP_VERSION=3.5.0 -t <registry>/webagent-backend:3.5.0 backend/
+   docker push <registry>/webagent-backend:3.5.0
+   ```
+3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh --namespace <ns> --ingress-namespace ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.5.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
-3. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
-4. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
+4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
+5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
 
 **Docker Compose (local stack):** `npm run stack:up` from the repo root (requires `APP_VERSION` from `package.json`, set by the script). Backend memory is capped at 3 GiB in Compose.
 
 ## Roll back
 
 1. Note the previous image tag or git tag that last worked.
-2. `kubectl set image deployment/webagent-backend webagent-backend=webagent/backend:<previous-tag> -n <ns>`
+2. `kubectl set image deployment/webagent-backend webagent-backend=<registry>/webagent-backend:<previous-tag> -n <ns>` (or re-run `deploy.sh` with `-v <previous-tag>`)
 3. Wait for the rollout: `kubectl rollout status deployment/webagent-backend -n <ns>`
 4. If the rollback involves data schema changes, restore `/app/data` from backup before scaling up (see below).
 5. Verify `/health` and one known `GET /api/task/{id}`.
@@ -27,7 +32,7 @@ Short procedures for production and uat.
 
 | Secret | Where | Steps |
 |--------|--------|--------|
-| `WEBAGENT_API_KEY` | Backend env / K8s Secret | Generate a new key, update the Secret, rolling restart the Deployment, update the web app's `WEBAGENT_API_KEY` (Vercel or `.env.local`), smoke-test one agentic task. |
+| `WEBAGENT_API_KEY` | Backend env / K8s Secret | Generate a new key, update the Secret, restart the Deployment (`kubectl rollout restart`; one replica with `Recreate`, so expect a short gap), update the web app's `WEBAGENT_API_KEY` (Vercel or `.env.local`), smoke-test one agentic task. |
 | `WEBAGENT_SECURITY_SECRET_KEY` | Backend env | Rotate in Secret; restart backend; invalidates signed tokens tied to the old key. |
 | Web access code | `WEBAGENT_ACCESS_CODE` (web app) | Set a new value in the hosting env; share with users; old sessions expire per session TTL. |
 | Session signing | `SESSION_SECRET` or platform equivalent | Rotate in the web app env; users sign in again. |

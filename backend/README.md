@@ -194,19 +194,25 @@ The WebAgent backend exposes several API endpoints:
 No API key needed:
 
 - **GET /health**: Liveness/readiness probe (not rate-limited)
-- **GET /api/v1/health/**, **GET /api/v1/health/detailed**: Health and detailed diagnostics
+- **GET /api/v1/health/**: Basic health
 - **GET /metrics** (also **/api/v1/metrics**): Prometheus metrics (not rate-limited)
 
 Require `X-API-Key` when API-key auth is on (always in uat/prod):
 
 - **POST /api/task**: Start a task (`{"query": "...", "mode": "off" | "auto" | "always"}`); returns a `task_id`. See [Agentic triage](#agentic-triage) for modes
-- **GET /api/task/{task_id}**: Task status (`processing`, `completed`, `failed`) and report, with `route`, `decided_by` and (when the classifier ran) `p_agentic`. Any worker can answer, and finished reports survive a restart
+- **GET /api/task/{task_id}**: Task status (`processing`, `completed`, `failed`) and report, with `route`, `decided_by` and (when the classifier ran) `p_agentic`. While a research run works, `progress` holds its current step and last log lines; a failed run has `error_code` (`timeout`, `budget`, `cancelled`, `escalated`, …); every finished report has `tokens_used`. Any worker can answer, and finished reports survive a restart
+- **POST /api/task/{task_id}/cancel**: Stop a running task (202 `{"status": "cancelling"}`; 409 if it already finished, 404 if unknown). The worker running it stops within a few seconds and saves `error_code: cancelled`
 - **POST /api/triage**: Decide whether a question needs the research agents (`{"query", "previous_user_question", "has_image"}` → `{"route", "p_agentic", "decided_by", "reason", "classifier_version"}`)
 - **POST /api/v1/chat/completions**, **GET /api/v1/chat/status/{task_id}**: OpenAI-style chat request and its status; accepts `mode` like `/api/task`
-- **POST /api/v1/chat/** (deprecated), **GET /api/v1/chat/{task_id}**: Start a chat workflow and read its result
-- **POST /api/v1/tasks/create** (deprecated), **GET /api/v1/tasks/**, **GET /api/v1/tasks/{task_id}** (plus `/result`, `/error`), **DELETE /api/v1/tasks/{task_id}**: Task management
-- **POST /api/v1/documents/upload**, **POST /api/v1/documents/search**, **GET /api/v1/documents/document/{document_id}**, **GET /api/v1/documents/related/{document_id}**: Documents
+- **POST /api/v1/chat/** and **POST /api/v1/tasks/create** (both deprecated; use `/api/task`): start a research run, through the same intake guard, limits and run supervisor as `/api/task` in Always mode. Only `context.document_id` is used from the request's context
+- **GET /api/v1/chat/{task_id}**, **GET /api/v1/tasks/{task_id}** (plus `/result`, `/error`): a task's status and result
+- **GET /api/v1/tasks/?limit=20&offset=0**: Saved tasks, newest first (`limit` 1–100); each shows its question's length, not its text. **DELETE /api/v1/tasks/{task_id}** deletes the task and its saved file
+- **POST /api/v1/documents/upload** (415 for an unsupported file type), **POST /api/v1/documents/search**, **GET /api/v1/documents/document/{document_id}**, **GET /api/v1/documents/related/{document_id}**: Documents (IDs are UUIDs)
 - **GET /api/v1/status**: LLM and service status
+- **GET /api/v1/health/detailed**: Detailed service health
+- **GET /api/v1/observability/metrics**, **/drift**, **/alerts**, **/health**; **POST /api/v1/observability/llm/reset_baseline**, **/doc/reset_baseline**: model and document drift, alerts and observability metrics (see [docs/RUNBOOK.md](../docs/RUNBOOK.md))
+
+Errors carry `"error": {"code": "...", "message": "..."}`; `HTTPException` and validation errors also keep FastAPI's `detail`. Intake-guard refusals (403, 409) keep their own flat shape, which the web app reads.
 
 Requests are rate-limited per caller (60 per minute by default). Behind the Next.js proxy the caller is the user's sign-in session, sent as `X-WebAgent-Client`; the backend accepts that header only from `WEBAGENT_TRUSTED_PROXIES` or from a caller holding the API key. Other proxies' callers are taken from the right-most untrusted `X-Forwarded-For` address.
 
@@ -390,7 +396,7 @@ Key environment variables used by the application:
 | LANGSMITH_PROJECT_NAME | LangSmith project | webagent-research |
 | LANGSMITH_TRACING_ENABLED | Set `false` to turn tracing off | true |
 | WEBAGENT_API_KEY | Key clients send as `X-API-Key` (required in uat/prod) | |
-| WEBAGENT_SECURITY_SECRET_KEY | JWT signing secret (required in uat/prod) | insecure dev default |
+| WEBAGENT_SECURITY_SECRET_KEY | Signs the security guard's consent and approval tokens (required in uat/prod) | insecure dev default |
 | WEBAGENT_SECURITY_API_KEY_ENABLED | Require `X-API-Key` | false (true in uat/prod YAML) |
 | WEBAGENT_ENABLE_CODE_EXECUTION | Let agents run generated code in the API server | false |
 | WEBAGENT_CODE_SANDBOX | `local` (no secrets, CPU/memory limits) or `docker` (isolated; required in uat/prod) | local |
