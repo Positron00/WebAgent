@@ -5,7 +5,7 @@ import time
 import pytest
 
 from app.core.config import settings
-from app.services.web_search import WebSearchService
+from app.services.web_search import SearchError, WebSearchService
 
 
 class _FakeTavily:
@@ -58,15 +58,43 @@ def _service(client):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("fail_first", [False, True], ids=["first call", "retry"])
-async def test_slow_search_times_out_with_a_warning_and_no_results(fail_first, monkeypatch, caplog):
+async def test_slow_search_times_out_with_a_search_error(fail_first, monkeypatch, caplog):
     monkeypatch.setattr(settings, "SEARCH_TIMEOUT_SECONDS", 0.05)
     client = _SlowTavily(fail_first=fail_first)
 
     started = time.monotonic()
-    with caplog.at_level("WARNING"):
-        results = await _service(client).search("one two three four five six seven")
+    with caplog.at_level("WARNING"), pytest.raises(SearchError, match="timed out after 0.05 s"):
+        await _service(client).search("one two three four five six seven")
 
-    assert results == []
     assert time.monotonic() - started < 0.4
     assert client.calls == (2 if fail_first else 1)
     assert "timed out after 0.05 s" in caplog.text
+
+
+class _BrokenTavily:
+    def search(self, **kwargs):
+        raise RuntimeError("401 Unauthorized")
+
+
+@pytest.mark.asyncio
+async def test_failed_search_raises_instead_of_returning_nothing():
+    with pytest.raises(SearchError, match="401 Unauthorized"):
+        await _service(_BrokenTavily()).search("anything")
+
+
+@pytest.mark.asyncio
+async def test_search_without_a_client_raises(monkeypatch):
+    service = WebSearchService()
+    monkeypatch.setattr(service, "tavily_client", None)
+    monkeypatch.setattr(service, "initialized", False)
+    with pytest.raises(SearchError, match="not configured"):
+        await service.search("anything")
+
+
+@pytest.mark.asyncio
+async def test_query_text_is_not_logged_outside_dev(monkeypatch, caplog):
+    monkeypatch.setattr(settings, "WEBAGENT_ENV", "prod")
+    with caplog.at_level("DEBUG"):
+        await _service(_FakeTavily()).search("secret marker question here today and more")
+    assert "marker" not in caplog.text
+    assert "chars" in caplog.text

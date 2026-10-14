@@ -370,8 +370,8 @@ class SystemDiagnostics:
                                 edges = workflow.get_out_edges(node)
                                 if edges:
                                     total_edges += len(edges)
-                            except:
-                                pass
+                            except Exception as e:
+                                logger.debug(f"Could not count edges for node {node}: {e}")
                         result["edge_count"] = total_edges
                     else:
                         # Default fallback

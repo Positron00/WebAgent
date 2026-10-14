@@ -2,6 +2,34 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.3.0 - 2026-10-14
+
+Hardening, privacy in logs, cancellable long runs with live progress, token budgets, and ops manifests.
+
+### Upgrade notes
+- **Stop a run:** `POST /api/task/{task_id}/cancel` (and the web app **Stop** button). A cancelled run finishes with `error_code: cancelled`; progress and failure panels replace the old silent fallback to `/api/chat`.
+- **Token budget:** `WEBAGENT_TASK_TOKEN_BUDGET` defaults to `0` (off). When set, Together usage for a run is counted across parallel agents; overages save `error_code: budget`. Every finished task record includes `tokens_used`.
+- **Result retention:** Files under `results/` older than `WEBAGENT_RESULTS_RETENTION_DAYS` (default 30) are removed by a daily cleanup loop started with the server. `DELETE` on a task removes its on-disk record.
+- **Logs in uat/prod:** User questions are logged only as lengths (`describe_text`), not full text. Dev still logs the query at DEBUG on agent entry.
+- **Kubernetes:** `deploy.sh` applies `networkpolicy.yaml` (ingress from your nginx namespace and from `monitoring`). The Ingress returns 404 for `/metrics` on the public host. Optional `backup-cronjob.yaml` archives `/app/data` when snapshots are unavailable (see `docs/RUNBOOK.md`).
+- **OpenAPI:** `/api/v1/docs` and `/redoc` stay disabled in uat and prod (`test_docs_off.py`).
+
+### Added
+- `result_store`: cancel markers, `save_progress`, `list_results`, `cleanup` / `cleanup_daily`; paginated `GET /api/v1/tasks`
+- `progress.py` and LangGraph `astream(["updates", "values"])` so status replies include `progress`
+- `task_budget.py` and usage accounting in `TogetherWithUsage`
+- `SearchError` and `search_errors` on web research reports
+- Web: `taskPolling.ts`, `useResearchRun`, `ResearchStatus`, `ResearchFailed`, cancel proxy route, CSP/image checks, `safeUrl`, `/api/ping` and `/api/health`
+- `SECURITY.md`; backend `ruff` lint in CI; `test_hardening.py`, `test_task_progress.py`, `test_task_budget.py`, `test_no_question_in_logs.py`
+
+### Changed
+- Removed `DEV_API_KEYS`, JWT helpers, and the unused `redis` dependency
+- Self-hosted LLM Dockerfiles run as non-root user `llm` (uid 10001)
+- `PRODUCTION_READINESS.md` and the Kubernetes README note per-worker rate limits, retention, and backup options
+
+### Fixed
+- Detailed health (`/api/v1/health/detailed`) requires the API key; basic `/health` stays open
+
 ## 3.2.7 - 2026-10-14
 
 First release of the platform-improvements spec (`planning/specs/platform-improvements/`): a safety net, the open doors closed, and limits on runs.

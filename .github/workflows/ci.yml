@@ -41,4 +41,5 @@ jobs:
           cache-dependency-path: backend/constraints.txt
       # The CPU wheel index keeps torch to the small CPU build.
       - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+      - run: ruff check backend
       - run: python -m pytest backend/tests -q -m "not needs_lfs and not real_triage_model"

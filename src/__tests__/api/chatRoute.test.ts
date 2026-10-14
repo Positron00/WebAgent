@@ -169,6 +169,56 @@ describe("/api/chat", () => {
     );
   });
 
+  describe("request checks", () => {
+    beforeEach(async () => {
+      const { rateLimiter } = await import("@/utils/rateLimiter");
+      rateLimiter.clear();
+    });
+
+    const expect400 = async (body: unknown, message: string) => {
+      const response = await postChat(chatRequest(body));
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: { message } });
+      expect(fetchMock).not.toHaveBeenCalled();
+    };
+
+    it("rejects an empty messages array", async () => {
+      await expect400({ messages: [] }, "No messages to answer");
+    });
+
+    it("rejects a missing messages array", async () => {
+      await expect400({}, "Invalid message format");
+    });
+
+    it("rejects an image that is not a string", async () => {
+      await expect400(
+        { ...userMessage, image: { url: "x" } },
+        "Image must be a data URL",
+      );
+    });
+
+    it.each([
+      "https://example.com/cat.png",
+      "data:image/svg+xml;base64,PHN2Zz4=",
+      "data:text/html;base64,PGh0bWw+",
+      "data:image/png,AAAA",
+      "data:image/png;base64,not base64!",
+    ])("rejects the image %p", async (image) => {
+      await expect400(
+        { ...userMessage, image },
+        "Only PNG, JPEG, GIF or WebP images are accepted",
+      );
+    });
+
+    it("rejects an image larger than 5 MB after decoding", async () => {
+      const tooBig = "A".repeat(Math.ceil((5 * 1024 * 1024 * 4) / 3) + 4);
+      await expect400(
+        { ...userMessage, image: `data:image/jpeg;base64,${tooBig}` },
+        "Image is larger than 5 MB",
+      );
+    });
+  });
+
   describe("rate limit per session", () => {
     const fromSession = (sid: string) =>
       new Request("http://localhost/api/chat", {

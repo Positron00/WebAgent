@@ -13,6 +13,7 @@ import {
 } from "@/types/api";
 import { rateLimiter } from "@/utils/rateLimiter";
 import { SESSION_HEADER } from "@/utils/session";
+import { imageError } from "@/utils/imageCheck";
 import { logger } from "@/utils/logger";
 import { clientConfig } from "@/config/clientConfig";
 import { ApiError } from "@/utils/errors";
@@ -65,6 +66,13 @@ export async function POST(req: Request) {
 
     if (!validateRequest(messages)) {
       throw new ApiError(400, "Invalid message format");
+    }
+    if (messages.length === 0) {
+      throw new ApiError(400, "No messages to answer");
+    }
+    const badImage = imageError(image);
+    if (badImage) {
+      throw new ApiError(400, badImage);
     }
 
     // Log the request parameters including agentic mode

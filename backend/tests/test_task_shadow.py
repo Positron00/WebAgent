@@ -8,11 +8,12 @@ from app.core.config import settings
 from app.services import triage_model
 from main import app
 from tests.fakes.triage import FakeTriageModel
+from tests.fakes.workflow import StreamingFakeWorkflow
 
 client = TestClient(app)
 
 
-class FakeWorkflow:
+class FakeWorkflow(StreamingFakeWorkflow):
     async def ainvoke(self, state):
         return {"query": state.query, "context": state.context, "final_report": {"title": "R", "content": "done"}}
 

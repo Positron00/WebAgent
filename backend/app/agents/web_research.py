@@ -14,15 +14,23 @@ from langchain.schema.output_parser import StrOutputParser
 from app.models.task import WorkflowState
 from app.models.research_plan import research_query
 from app.services.llm import get_agent_llm
-from app.services.web_search import perform_web_search
+from app.services.web_search import SearchError, perform_web_search
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
+from app.core.log_context import describe_text
 from app.core.loadEnvYAML import get_agents_config
 from app.security.tool_guard import guard_tool
 from app.security.guarded_llm import register_template
 from app.security.hop_integration import format_web_items, run_with_hop, web_result_items
 from app.utils.reasoning import strip_reasoning
 logger = logging.getLogger(__name__)
+
+
+def _log_text(action: str, text: str) -> None:
+    """Log user or search text by length; the text itself only at DEBUG in dev (IMP-070)."""
+    logger.info(f"{action} ({describe_text(text)})")
+    if settings.WEBAGENT_ENV == "dev":
+        logger.debug(f"{action}: {text}")
 
 # Prompt for the Web Research Agent. Filled with str.format() and sent as one completion
 # prompt; it ends with "ANALYSIS:" so the model writes the answer there and stops.
@@ -126,7 +134,7 @@ class WebResearchAgent(BaseAgent):
         """Execute the Web Research Agent to search and analyze information."""
         # A follow-up like "what about Europe?" is searched as the supervisor's standalone rewrite.
         query = research_query(state)
-        logger.info(f"Processing query: {query}")
+        _log_text("Processing query", query)
 
         # Update workflow state with current step
         state.current_step = "web_research"
@@ -159,12 +167,24 @@ class WebResearchAgent(BaseAgent):
             questions = feedback.get("research_questions", [])
             if questions and isinstance(questions, list) and len(questions) > 0:
                 search_query = questions[0]
-                logger.info(f"Using feedback question for search: {search_query}")
+                _log_text("Using feedback question for search", search_query)
             else:
                 search_query = feedback.get("search_query", query)
-                logger.info(f"Using feedback search query: {search_query}")
+                _log_text("Using feedback search query", search_query)
                 
         searches_made = 0
+        search_errors: List[Dict[str, Any]] = []
+
+        def record_search_error(search_text: str, error: SearchError) -> None:
+            """A failed search is reported, so "search broken" differs from "nothing found" (IMP-055)."""
+            search_errors.append({"query_chars": len(search_text), "error": str(error)})
+            logger.warning(f"Web search failed ({describe_text(search_text)}): {error}")
+            state.add_log(f"Web search failed: {error}")
+
+        def with_errors(report: Dict[str, Any]) -> Dict[str, Any]:
+            if search_errors:
+                report["search_errors"] = list(search_errors)
+            return report
 
         async def capped_search(**kwargs) -> List[Dict[str, Any]]:
             """perform_web_search, until this pass has made max_searches_per_task searches."""
@@ -197,30 +217,37 @@ class WebResearchAgent(BaseAgent):
             ):
                 search_results = []
             else:
-                search_results = await capped_search(
-                    query=search_query,
-                    search_depth=depth,
-                    max_results=5  # Reduced from 7 to avoid overloading
-                )
-            
-            # If we couldn't get results, try a simplified query
-            if not search_results:
-                logger.warning(f"No results for query: '{search_query}'. Trying simplified query.")
+                try:
+                    search_results = await capped_search(
+                        query=search_query,
+                        search_depth=depth,
+                        max_results=5  # Reduced from 7 to avoid overloading
+                    )
+                except SearchError as e:
+                    record_search_error(search_query, e)
+                    search_results = []
+
+            # If the search worked but found nothing, try a simplified query
+            if not search_results and not search_errors:
+                logger.warning(f"No results for the query ({describe_text(search_query)}). Trying a simplified query.")
                 # Extract just main keywords for a simpler query
                 simplified_query = " ".join(search_query.split()[:6])
-                logger.info(f"Simplified query: {simplified_query}")
-                
+                _log_text("Simplified query", simplified_query)
+
                 if await guard_tool(
                     "tool::web_search",
                     {"query": simplified_query},
                     state,
                     principal="web_research",
                 ):
-                    search_results = await capped_search(
-                        query=simplified_query,
-                        search_depth="basic",  # Always use basic for fallback
-                        max_results=3
-                    )
+                    try:
+                        search_results = await capped_search(
+                            query=simplified_query,
+                            search_depth="basic",  # Always use basic for fallback
+                            max_results=3
+                        )
+                    except SearchError as e:
+                        record_search_error(simplified_query, e)
         except Exception as search_error:
             logger.error(f"Error during web search: {str(search_error)}")
             # Create empty results to continue with
@@ -232,7 +259,7 @@ class WebResearchAgent(BaseAgent):
             questions = feedback.get("research_questions", [])[1:2]  # Get next question if there are more
             
             for question in questions:
-                logger.info(f"Performing additional search for: {question}")
+                _log_text("Performing additional search", question)
                 try:
                     if await guard_tool(
                         "tool::web_search",
@@ -246,16 +273,22 @@ class WebResearchAgent(BaseAgent):
                             max_results=3
                         )
                         search_results.extend(additional_results)
+                except SearchError as e:
+                    record_search_error(question, e)
                 except Exception as additional_error:
                     logger.error(f"Error during additional search: {str(additional_error)}")
         
         # Handle the case where no search results are found
         if not search_results:
             logger.warning("No relevant search results found")
-            empty = {
-                "analysis": "No relevant information found on the web for this query.",
+            empty = with_errors({
+                "analysis": (
+                    "Web search failed, so no web information is available for this query."
+                    if search_errors
+                    else "No relevant information found on the web for this query."
+                ),
                 "sources": []
-            }
+            })
             state.context["web_search_results"] = []
             state.context["web_research_results"] = empty
             state.update_with_agent_output("web_research", empty)
@@ -324,6 +357,7 @@ class WebResearchAgent(BaseAgent):
                 })
             
             parsed_response["sources"] = sources
+            with_errors(parsed_response)
             
             # Log the final response for debugging
             logger.debug(f"Final response structure: {list(parsed_response.keys())}")
@@ -363,10 +397,10 @@ class WebResearchAgent(BaseAgent):
                 })
             
             # Create response with fallback analysis
-            parsed_response = {
+            parsed_response = with_errors({
                 "analysis": fallback_analysis,
                 "sources": sources
-            }
+            })
             
             state.context["web_search_results"] = search_results
             state.context["web_research_results"] = parsed_response

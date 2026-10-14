@@ -3,9 +3,10 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from main import app
+from tests.fakes.workflow import StreamingFakeWorkflow
 
 
-class CaptureWorkflow:
+class CaptureWorkflow(StreamingFakeWorkflow):
     def __init__(self):
         self.last_state = None
 

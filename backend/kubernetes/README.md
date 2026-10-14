@@ -5,6 +5,8 @@ This directory contains Kubernetes manifests and scripts for deploying the WebAg
 ## Directory Structure
 
 - `deployment.yaml`: the backend's Deployment, Service, Ingress and data volume (the Secret is created by `deploy.sh`)
+- `networkpolicy.yaml`: limits port 8000 to the ingress controller and Prometheus (`deploy.sh` applies it; use `-i` for your ingress namespace)
+- `backup-cronjob.yaml`: optional daily tar of `webagent-data` when volume snapshots are unavailable (see `docs/RUNBOOK.md`)
 - `monitoring/`: Manifests for setting up Prometheus and Grafana monitoring
 - `deploy.sh`: Deployment script to simplify the deployment process
 

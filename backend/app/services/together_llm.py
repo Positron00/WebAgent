@@ -14,6 +14,8 @@ from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackMana
 from langchain_core.outputs import Generation, LLMResult
 from langchain_together import Together
 
+from app.services import task_budget
+
 logger = logging.getLogger(__name__)
 
 USAGE_KEYS = ("prompt_tokens", "completion_tokens", "total_tokens")
@@ -42,11 +44,13 @@ def _warn_if_cut_off(data: Dict[str, Any], model: str, max_tokens: Any) -> None:
 
 
 def _add_usage(total: Dict[str, int], data: Dict[str, Any]) -> None:
+    """Add one reply's usage to `total` and to the run's token budget."""
     usage = data.get("usage") or {}
     for key in USAGE_KEYS:
         value = usage.get(key)
         if isinstance(value, int):
             total[key] = total.get(key, 0) + value
+    task_budget.add(usage.get("total_tokens", 0))
 
 
 class TogetherWithUsage(Together):
@@ -77,6 +81,7 @@ class TogetherWithUsage(Together):
     ) -> LLMResult:
         texts, usage = [], {}
         for prompt in prompts:
+            task_budget.check()
             headers, payload = self._request_parts(prompt, stop, kwargs)
             response = requests.post(
                 self.base_url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
@@ -98,6 +103,7 @@ class TogetherWithUsage(Together):
         texts, usage = [], {}
         async with ClientSession(timeout=ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)) as session:
             for prompt in prompts:
+                task_budget.check()
                 headers, payload = self._request_parts(prompt, stop, kwargs)
                 async with session.post(self.base_url, json=payload, headers=headers) as response:
                     _check_status(response.status, await response.text())

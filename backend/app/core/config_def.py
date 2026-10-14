@@ -42,15 +42,6 @@ class VectorDBConfig(BaseModel):
     document_chunk_overlap: int = Field(default=200, description="Overlap between document chunks")
 
 
-class RedisConfig(BaseModel):
-    """Redis configuration."""
-    host: str = Field(default="localhost")
-    port: int = Field(default=6379)
-    db: int = Field(default=0)
-    password: Optional[str] = Field(default=None)
-    key_prefix: str = Field(default="webagent:")
-
-
 class ArtifactsConfig(BaseModel):
     """Artifacts storage configuration."""
     path: str = Field(default="")  # Will be set from settings.ARTIFACTS_PATH
@@ -61,7 +52,6 @@ class ArtifactsConfig(BaseModel):
 class DatabaseConfig(BaseModel):
     """Database configuration."""
     vector_db: VectorDBConfig = Field(default_factory=VectorDBConfig)
-    redis: RedisConfig = Field(default_factory=RedisConfig)
     artifacts: ArtifactsConfig = Field(default_factory=ArtifactsConfig)
     graph_db_url: Optional[str] = Field(default=None)
 

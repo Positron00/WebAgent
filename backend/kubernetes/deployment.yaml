@@ -165,6 +165,9 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # Public ingress must not expose Prometheus metrics (NetworkPolicy is port-wide).
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location = /metrics { return 404; }
 spec:
   tls:
   - hosts:

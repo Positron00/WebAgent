@@ -13,9 +13,10 @@ NC='\033[0m' # No Color
 # Default values
 ENVIRONMENT="prod"
 NAMESPACE="default"
-VERSION="3.2.7"
+VERSION="3.3.0"
 REGISTRY="webagent/backend"
 HOST="api.webagent.example.com"
+INGRESS_NAMESPACE="ingress-nginx"
 
 # Print usage information
 function print_usage {
@@ -24,7 +25,8 @@ function print_usage {
   echo "Options:"
   echo "  -e, --environment   prod or uat: sets WEBAGENT_ENV, so the pod uses config/<env>.yaml (default: prod)"
   echo "  -n, --namespace     Kubernetes namespace (default: default)"
-  echo "  -v, --version       Image tag to deploy (default: 3.2.7)"
+  echo "  -v, --version       Image tag to deploy (default: 3.3.0)"
+  echo "  -i, --ingress-ns    Namespace of the nginx ingress controller (default: ingress-nginx)"
   echo "  -r, --registry      Image repository the cluster pulls from (default: webagent/backend)"
   echo "  -H, --host          Public host name for the ingress (default: api.webagent.example.com)"
   echo "  -h, --help          Show this help message"
@@ -67,6 +69,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     -H|--host)
       HOST="$2"
+      shift
+      shift
+      ;;
+    -i|--ingress-ns)
+      INGRESS_NAMESPACE="$2"
       shift
       shift
       ;;
@@ -167,7 +174,8 @@ kubectl create secret generic webagent-secrets -n "$NAMESPACE" \
 # Process the deployment template (no secrets in it)
 echo -e "${YELLOW}Generating deployment manifest...${NC}"
 MANIFEST="$(mktemp)"
-trap 'rm -f "$MANIFEST"' EXIT
+POLICY="$(mktemp)"
+trap 'rm -f "$MANIFEST" "$POLICY"' EXIT
 sed -e "s|^\( *image: \).*|\1$REGISTRY:$VERSION|" \
     -e "s|version: \"[^\"]*\"|version: \"$VERSION\"|g" \
     -e "/name: WEBAGENT_ENV/{n;s|value: \"prod\"|value: \"$ENVIRONMENT\"|;}" \
@@ -178,6 +186,12 @@ sed -e "s|^\( *image: \).*|\1$REGISTRY:$VERSION|" \
 # Apply the deployment
 echo -e "${YELLOW}Deploying WebAgent backend ($ENVIRONMENT) to namespace $NAMESPACE...${NC}"
 kubectl apply -f "$MANIFEST"
+
+echo -e "${YELLOW}Applying NetworkPolicy (ingress from ${INGRESS_NAMESPACE} and monitoring)...${NC}"
+sed -e "s|kubernetes.io/metadata.name: ingress-nginx|kubernetes.io/metadata.name: ${INGRESS_NAMESPACE}|" \
+    -e "s|namespace: default|namespace: $NAMESPACE|g" \
+    networkpolicy.yaml > "$POLICY"
+kubectl apply -f "$POLICY"
 
 echo -e "${GREEN}Deployment completed successfully!${NC}"
 echo -e "${YELLOW}Checking deployment status...${NC}"

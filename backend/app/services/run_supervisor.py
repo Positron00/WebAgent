@@ -1,18 +1,19 @@
-"""Run each task as an asyncio.Task and stop it when it runs too long (IMP-041).
+"""Run each task as an asyncio.Task and stop it when it runs too long or is cancelled.
 
 One supervisor per worker process. A watch loop checks each run every POLL_SECONDS;
-`_stop_reason` decides whether to stop it (3.3.0 adds the cancel marker there). The stop
-record goes through `result_store.save_final`, so whichever of "stopped" and "finished"
-is written first stays final.
+`_stop_reason` decides whether to stop it: the cancel marker (IMP-050, written by any
+worker) or the deadline (IMP-041). The stop record goes through `result_store.save_final`,
+so whichever of "stopped" and "finished" is written first stays final.
 """
 import asyncio
+import contextvars
 import logging
 import time
 from datetime import datetime
 from typing import Awaitable, Callable, Dict, Optional, Set, Tuple
 
 from app.core.config import settings
-from app.services import result_store
+from app.services import result_store, task_budget
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ POLL_SECONDS = 2.0
 # How long a stopped run gets to unwind after cancel() before the watcher stops waiting.
 STOP_GRACE_SECONDS = 5.0
 TIMEOUT_MESSAGE = "The research took too long and was stopped."
+CANCEL_MESSAGE = "Research stopped."
 
 # Called with (task_id, error_code, message) after a stop record is saved.
 OnStop = Callable[[str, str, str], None]
@@ -35,7 +37,7 @@ def _log_crash(run: asyncio.Task) -> None:
 
 
 class RunSupervisor:
-    """Starts runs in the background and enforces settings.TASK_MAX_SECONDS."""
+    """Starts runs in the background and stops them on timeout or cancel."""
 
     def __init__(self, on_stop: Optional[OnStop] = None):
         self._runs: Dict[str, asyncio.Task] = {}
@@ -45,10 +47,12 @@ class RunSupervisor:
 
     def start(self, task_id: str, coro: Awaitable[None]) -> None:
         """Run `coro` as a task and watch it; returns at once. Needs a running event loop."""
-        run = asyncio.create_task(coro, name=f"run-{task_id}")
+        # The run gets its own context so the watcher can read the run's token count on a stop.
+        context = contextvars.copy_context()
+        run = asyncio.create_task(coro, name=f"run-{task_id}", context=context)
         run.add_done_callback(_log_crash)
         self._runs[task_id] = run
-        watcher = asyncio.create_task(self._watch(task_id, run), name=f"watch-{task_id}")
+        watcher = asyncio.create_task(self._watch(task_id, run, context), name=f"watch-{task_id}")
         self._watchers.add(watcher)
         watcher.add_done_callback(self._watchers.discard)
 
@@ -56,7 +60,7 @@ class RunSupervisor:
         run = self._runs.get(task_id)
         return run is not None and not run.done()
 
-    async def _watch(self, task_id: str, run: asyncio.Task) -> None:
+    async def _watch(self, task_id: str, run: asyncio.Task, context: contextvars.Context) -> None:
         deadline = time.monotonic() + settings.TASK_MAX_SECONDS
         try:
             while not run.done():
@@ -65,7 +69,7 @@ class RunSupervisor:
                     break
                 reason = self._stop_reason(task_id, deadline)
                 if reason is not None:
-                    await self._stop(task_id, run, *reason)
+                    await self._stop(task_id, run, context.run(task_budget.used), *reason)
                     break
         except Exception:
             logger.exception(f"Watcher for task {task_id} failed; the run continues unwatched")
@@ -74,11 +78,13 @@ class RunSupervisor:
 
     def _stop_reason(self, task_id: str, deadline: float) -> Optional[Tuple[str, str]]:
         """(error_code, message) if the run should stop now, else None."""
+        if result_store.cancel_requested(task_id):
+            return "cancelled", CANCEL_MESSAGE
         if time.monotonic() >= deadline:
             return "timeout", TIMEOUT_MESSAGE
         return None
 
-    async def _stop(self, task_id: str, run: asyncio.Task, code: str, message: str) -> None:
+    async def _stop(self, task_id: str, run: asyncio.Task, tokens_used: int, code: str, message: str) -> None:
         logger.warning(f"Stopping task {task_id}: {code}")
         run.cancel()
         # Saved before the run unwinds, so a late "completed" save from the run can't win.
@@ -89,6 +95,7 @@ class RunSupervisor:
             error=message,
             result={"error": message, "error_code": code},
             completed_at=datetime.now(),
+            tokens_used=tokens_used,
         )
         if self._on_stop is not None:
             try:

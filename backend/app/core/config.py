@@ -233,12 +233,6 @@ class Settings(BaseSettings):
         description="URL to the graph database (Neo4j)"
     )
     
-    # Redis
-    REDIS_HOST: str = os.getenv("WEBAGENT_DATABASE_REDIS_HOST", "localhost")
-    REDIS_PORT: int = int(os.getenv("WEBAGENT_DATABASE_REDIS_PORT", "6379"))
-    REDIS_DB: int = int(os.getenv("WEBAGENT_DATABASE_REDIS_DB", "0"))
-    REDIS_PASSWORD: Optional[str] = os.getenv("WEBAGENT_DATABASE_REDIS_PASSWORD")
-    
     # Security
     SECRET_KEY: str = os.getenv("WEBAGENT_SECURITY_SECRET_KEY", "insecure_key_for_dev_only_change_in_production")
     ALGORITHM: str = os.getenv("WEBAGENT_SECURITY_ALGORITHM", "HS256")
@@ -419,11 +413,6 @@ if app_config:
         
         # Database
         VECTOR_DB_PATH: str = db_config.vector_db.path if hasattr(db_config.vector_db, 'path') and db_config.vector_db.path else os.path.join(BACKEND_DIR, "data", "vectordb")
-        REDIS_HOST: str = db_config.redis.host
-        REDIS_PORT: int = db_config.redis.port
-        REDIS_DB: int = db_config.redis.db
-        REDIS_PASSWORD: Optional[str] = db_config.redis.password
-        
         # Security settings: a WEBAGENT_SECURITY_* environment variable wins over the YAML value.
         # (Their names differ from the field names, so pydantic doesn't apply them on its own.)
         RATE_LIMIT_ENABLED: bool = _security_setting("rate_limit_enabled", "WEBAGENT_SECURITY_RATE_LIMIT_ENABLED", True)

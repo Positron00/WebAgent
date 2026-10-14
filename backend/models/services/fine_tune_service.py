@@ -12,6 +12,7 @@ import tqdm
 import mlflow
 from typing import Dict, Any, List, Tuple, Optional
 from collections import defaultdict
+from fastapi import HTTPException
 
 from app.core.config import settings
 from .base_model_service import BaseModelService, ModelServiceConfig

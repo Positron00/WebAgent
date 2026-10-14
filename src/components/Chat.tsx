@@ -1,15 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useChat } from '@/contexts/ChatContext';
-import { useApp } from '@/contexts/AppContext';
-import { MessageInput } from './chat/MessageInput';
-import { MessageList, hasCodeBlocks, extractCodeBlocks } from './chat/MessageList';
-import { ConsentDialog } from './chat/ConsentDialog';
-import { SourceCanvas } from './chat/SourceCanvas';
-import { CodeCanvas } from './chat/CodeCanvas';
-import { XMarkIcon, PaperClipIcon, InformationCircleIcon, CodeBracketIcon } from '@heroicons/react/24/outline';
-import Image from 'next/image';
+import { useState, useEffect } from "react";
+import { useChat } from "@/contexts/ChatContext";
+import { useApp } from "@/contexts/AppContext";
+import { MessageInput } from "./chat/MessageInput";
+import {
+  MessageList,
+  hasCodeBlocks,
+  extractCodeBlocks,
+} from "./chat/MessageList";
+import { ConsentDialog } from "./chat/ConsentDialog";
+import { SourceCanvas } from "./chat/SourceCanvas";
+import { CodeCanvas } from "./chat/CodeCanvas";
+import {
+  XMarkIcon,
+  PaperClipIcon,
+  InformationCircleIcon,
+  CodeBracketIcon,
+} from "@heroicons/react/24/outline";
+import Image from "next/image";
+import { MAX_IMAGE_BYTES, IMAGE_TOO_LARGE } from "@/utils/imageCheck";
 
 export default function Chat() {
   const {
@@ -22,32 +32,39 @@ export default function Chat() {
     setEditPendingHandler,
   } = useChat();
   const { accessibility, showNotification, modeReady } = useApp();
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(
+    null,
+  );
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [showCanvas, setShowCanvas] = useState(false);
-  
+
   // Find the latest assistant message with sources
   const latestAssistantMessageWithSources = [...state.messages]
     .reverse()
-    .find(msg => msg.role === 'assistant' && msg.sources && msg.sources.length > 0);
+    .find(
+      (msg) =>
+        msg.role === "assistant" && msg.sources && msg.sources.length > 0,
+    );
 
   // Find the latest assistant message with code blocks
   const latestAssistantMessageWithCode = [...state.messages]
     .reverse()
-    .find(msg => msg.role === 'assistant' && hasCodeBlocks(msg.content));
-  
-  const codeBlocks = latestAssistantMessageWithCode 
+    .find((msg) => msg.role === "assistant" && hasCodeBlocks(msg.content));
+
+  const codeBlocks = latestAssistantMessageWithCode
     ? extractCodeBlocks(latestAssistantMessageWithCode.content)
     : [];
 
   // Determine if we should show the canvas toggle button
-  const hasSourcesOrCode = (latestAssistantMessageWithSources && accessibility.citeSources) || latestAssistantMessageWithCode;
-  
+  const hasSourcesOrCode =
+    (latestAssistantMessageWithSources && accessibility.citeSources) ||
+    latestAssistantMessageWithCode;
+
   // Determine the canvas type
-  const canvasType = latestAssistantMessageWithCode ? 'code' : 'sources';
+  const canvasType = latestAssistantMessageWithCode ? "code" : "sources";
 
   useEffect(() => {
     setEditPendingHandler((text) => setInput(text));
@@ -67,25 +84,35 @@ export default function Chat() {
   const handleSubmit = async () => {
     if (!input.trim() && !imageFile) return;
     await sendMessage(input, imageFile);
-    setInput('');
+    setInput("");
     setImageFile(null);
   };
 
   const handleFileSelect = (file: File) => {
     // Check if the file is a valid image type
-    const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    
+    const ALLOWED_FILE_TYPES = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       // Show error notification for invalid file type
       showNotification({
-        message: 'Please upload a valid image file (JPEG, PNG, GIF, or WebP)',
-        type: 'error'
+        message: "Please upload a valid image file (JPEG, PNG, GIF, or WebP)",
+        type: "error",
       });
       return;
     }
-    
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      showNotification({ message: IMAGE_TOO_LARGE, type: "error" });
+      return;
+    }
+
     // If it's a screenshot, store it and create preview URL
-    if (file.name.startsWith('screenshot-')) {
+    if (file.name.startsWith("screenshot-")) {
       const previewUrl = URL.createObjectURL(file);
       setScreenshotPreview(previewUrl);
       setScreenshotFile(file);
@@ -103,7 +130,7 @@ export default function Chat() {
       setScreenshotFile(null);
     }
   };
-  
+
   const attachScreenshotToQuery = () => {
     if (screenshotFile) {
       setImageFile(screenshotFile);
@@ -125,20 +152,24 @@ export default function Chat() {
             className="flex items-center text-sm text-gray-300 hover:text-white p-1 rounded"
             aria-label={showCanvas ? "Hide canvas" : "Show canvas"}
           >
-            {canvasType === 'code' ? (
+            {canvasType === "code" ? (
               <CodeBracketIcon className="w-5 h-5 mr-1" />
             ) : (
               <InformationCircleIcon className="w-5 h-5 mr-1" />
             )}
-            {showCanvas ? "Hide Canvas" : `Show ${canvasType === 'code' ? 'Code' : 'Sources'}`}
+            {showCanvas
+              ? "Hide Canvas"
+              : `Show ${canvasType === "code" ? "Code" : "Sources"}`}
           </button>
         )}
       </div>
-      
+
       {/* Main Chat Content with Responsive Layout */}
       <div className="w-full max-w-[95%] mx-auto flex flex-col lg:flex-row gap-4">
         {/* Response Area - Now in a flex container */}
-        <div className={`${showCanvas ? 'lg:w-[68%]' : 'w-full'} transition-all duration-300`}>
+        <div
+          className={`${showCanvas ? "lg:w-[68%]" : "w-full"} transition-all duration-300`}
+        >
           <MessageList
             messages={state.messages}
             isLoading={state.isLoading}
@@ -152,22 +183,21 @@ export default function Chat() {
             isLoading={state.isLoading}
             disabled={!modeReady}
             onNewChat={clearMessages}
-            screenshotActive={!!imageFile && imageFile.name.startsWith('screenshot-')}
+            screenshotActive={
+              !!imageFile && imageFile.name.startsWith("screenshot-")
+            }
             onClearScreenshot={() => setImageFile(null)}
             imagePreviewUrl={imagePreviewUrl}
           />
         </div>
-        
+
         {/* Canvas - Conditional Display */}
         {showCanvas && (
           <div className="lg:w-[32%] min-h-[50vh] max-h-[70vh] hidden lg:block">
-            {canvasType === 'code' ? (
-              <CodeCanvas 
-                codeBlocks={codeBlocks}
-                isVisible={true}
-              />
+            {canvasType === "code" ? (
+              <CodeCanvas codeBlocks={codeBlocks} isVisible={true} />
             ) : (
-              <SourceCanvas 
+              <SourceCanvas
                 sources={latestAssistantMessageWithSources?.sources || []}
                 isVisible={true}
               />
@@ -189,7 +219,9 @@ export default function Chat() {
         <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center p-4">
           <div className="bg-gray-950 border border-gray-800 rounded-lg overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center p-3 bg-gray-800 border-b border-gray-700">
-              <h3 className="text-lg font-medium text-white">Screenshot Preview</h3>
+              <h3 className="text-lg font-medium text-white">
+                Screenshot Preview
+              </h3>
               <button
                 onClick={clearScreenshotPreview}
                 className="text-gray-300 hover:text-white p-1 rounded-full hover:bg-gray-700"
@@ -199,13 +231,13 @@ export default function Chat() {
               </button>
             </div>
             <div className="p-3 overflow-auto flex-grow">
-              <Image 
-                src={screenshotPreview} 
-                alt="Screenshot preview" 
+              <Image
+                src={screenshotPreview}
+                alt="Screenshot preview"
                 className="max-w-full h-auto rounded"
                 width={800}
                 height={600}
-                style={{ width: 'auto', height: 'auto' }}
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
             <div className="flex justify-end gap-2 p-3 bg-gray-800 border-t border-gray-700">
@@ -228,4 +260,4 @@ export default function Chat() {
       )}
     </div>
   );
-} 
+}

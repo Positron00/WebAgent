@@ -42,6 +42,7 @@ from app.security.tool_guard import guard_tool
 from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
+from app.core.log_context import describe_text
 from app.core.loadEnvYAML import get_agents_config
 from app.utils.metrics import timing_decorator, log_memory_usage
 
@@ -1064,7 +1065,9 @@ class InternalResearchAgent(BaseAgent):
         Returns:
             Updated workflow state with internal research results
         """
-        logger.info(f"Internal Research Agent running for query: {state.query}")
+        logger.info(f"Internal Research Agent running for query ({describe_text(state.query)})")
+        if settings.WEBAGENT_ENV == "dev":
+            logger.debug("Query: %s", state.query)
         state.current_step = "internal_research"
         
         if TRACKING_ENABLED:
@@ -1104,7 +1107,7 @@ class InternalResearchAgent(BaseAgent):
                 # If there are specific questions, use them to enhance the query
                 if questions:
                     search_query = f"{research_query(state)} {questions[0]}"
-                    logger.info(f"Using enhanced query for search: {search_query}")
+                    logger.info(f"Using enhanced query for search ({describe_text(search_query)})")
             
             # 1. Retrieve documents using the RAG Retriever
             logger.info(f"Retrieving internal documents (iteration {iteration})")

@@ -4,40 +4,23 @@ Security related utilities for the WebAgent backend.
 import os
 import time
 import secrets
-from datetime import datetime, timedelta
-from typing import Dict, Optional, Tuple, List, Any, Union
+from typing import Dict, Optional, List, Any
 
-import jwt
-from fastapi import Depends, FastAPI, HTTPException, Security, status
+from fastapi import FastAPI, HTTPException, Security, status
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
-from pydantic import BaseModel, Field
+from fastapi.security import APIKeyHeader
 
 from app.core.config import settings
 
-# Security token handling
-security = HTTPBearer()
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-# Hard-coded API keys for development only - these would be stored in a secure 
-# database in production
-DEV_API_KEYS = {
-    "admin": {"key": "dev_admin_key", "scope": "admin"},
-    "user": {"key": "dev_user_key", "scope": "user"},
-}
 
 INSECURE_SECRET_DEFAULT = "insecure_key_for_dev_only_change_in_production"
 
 
 def _configured_api_keys() -> List[str]:
-    """Valid API keys. The hard-coded dev keys are accepted only in the dev environment."""
-    keys: List[str] = []
-    if settings.WEBAGENT_ENV == "dev":
-        keys.extend(data["key"] for data in DEV_API_KEYS.values())
+    """Valid API keys: only WEBAGENT_API_KEY, in every environment."""
     env_key = os.getenv("WEBAGENT_API_KEY")
-    if env_key:
-        keys.append(env_key)
-    return keys
+    return [env_key] if env_key else []
 
 
 async def require_api_key(api_key: Optional[str] = Security(api_key_header)) -> None:
@@ -110,74 +93,6 @@ def _is_rate_limit_exempt(path: str) -> bool:
         or path == f"{settings.API_V1_STR}/metrics"
         or path.startswith(f"{settings.API_V1_STR}/health")
     )
-
-
-def get_authorization_header(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
-    """Extract and validate the authorization token."""
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return credentials.credentials
-
-
-def validate_auth(auth_value: str) -> Dict[str, Any]:
-    """Validate either JWT token or API key."""
-    # Try to validate as JWT
-    if settings.JWT_ENABLED:
-        try:
-            payload = decode_jwt(auth_value)
-            return {"user_id": payload.get("sub"), "scope": payload.get("scope", "user")}
-        except Exception:
-            # Not a valid JWT, try API key next
-            pass
-    
-    # Try to validate as API key
-    if settings.API_KEY_ENABLED:
-        api_key = auth_value.split("Bearer ")[-1] if auth_value.startswith("Bearer ") else auth_value
-        if settings.WEBAGENT_ENV == "dev":
-            for user_id, data in DEV_API_KEYS.items():
-                if secrets.compare_digest(api_key, data["key"]):
-                    return {"user_id": user_id, "scope": data["scope"]}
-        env_key = os.getenv("WEBAGENT_API_KEY")
-        if env_key and secrets.compare_digest(api_key, env_key):
-            return {"user_id": "api_client", "scope": "user"}
-    
-    # If we reach here, auth failed
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid authentication credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-
-def create_jwt(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
-    """Create a new JWT token."""
-    to_encode = data.copy()
-    
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return encoded_jwt
-
-
-def decode_jwt(token: str) -> Dict[str, Any]:
-    """Decode and validate a JWT token."""
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        return payload
-    except jwt.PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 
 def _sweep_idle_identifiers(current_time: float) -> None:

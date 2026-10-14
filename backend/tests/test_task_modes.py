@@ -10,6 +10,7 @@ from app.services import triage_model
 from app.services.routing import resolve_mode
 from main import app
 from tests.fakes.triage import FakeTriageModel
+from tests.fakes.workflow import StreamingFakeWorkflow
 
 client = TestClient(app)
 
@@ -30,7 +31,7 @@ def test_resolve_mode_table(mode, legacy, expected):
     assert resolve_mode(mode, legacy) == expected
 
 
-class _Workflow:
+class _Workflow(StreamingFakeWorkflow):
     def __init__(self):
         self.called = False
 

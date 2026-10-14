@@ -22,7 +22,9 @@ from app.security.hop_guard import acheck_hop, kept_text, task_items
 from app.security.types import ContextItem
 from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
+from app.core.config import settings
 from app.core.loadEnvYAML import get_agents_config
+from app.core.log_context import describe_text
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +255,9 @@ class SeniorResearchAgent(BaseAgent):
             additional research requests
         """
         try:
-            logger.info(f"Senior Research Agent processing query: {state.query}")
+            logger.info(f"Senior Research Agent processing query ({describe_text(state.query)})")
+            if settings.WEBAGENT_ENV == "dev":
+                logger.debug("Query: %s", state.query)
             
             # Get the supervisor's requirements
             supervisor_output = state.reports.get("supervisor", {})

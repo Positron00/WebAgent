@@ -30,5 +30,8 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
 # Expose the port
 EXPOSE ${PORT}
 
+RUN useradd --create-home --uid 10001 llm && chown -R llm:llm /app /models
+USER llm
+
 # Run the service
 CMD ["sh", "-c", "python self_hosted_llm_service.py --model_path ${MODEL_PATH} --host ${HOST} --port ${PORT}"] 

@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, List, Literal, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
@@ -12,7 +12,7 @@ from app.api.intake import GuardRefused, refusal_body, run_intake_guard  # noqa:
 from app.core.config import settings
 from app.core.metrics import record_triage_decision
 from app.security import tokens
-from app.services import triage_collect
+from app.services import result_store, triage_collect
 from app.services.routing import choose_route, resolve_mode
 from app.services.task_manager import TaskManager
 from app.services.triage import TriageDecision, classify
@@ -131,4 +131,24 @@ async def task_status(task_id: str) -> Dict[str, Any]:
     body: Dict[str, Any] = {"status": client_status, "result": result, "error": (result or {}).get("error")}
     if isinstance(result, dict) and result.get("error_code"):
         body["error_code"] = result["error_code"]  # e.g. "escalated" (SEC-046); final for the web app
+    if status == "processing":
+        # Read from the file: the run may be on another worker (IMP-052).
+        saved = result_store.load_result(task_id) or {}
+        if saved.get("progress"):
+            body["progress"] = saved["progress"]
     return body
+
+
+@router.post("/{task_id}/cancel", status_code=202)
+async def cancel_task(task_id: str) -> Dict[str, str]:
+    """Ask the worker running a task to stop it (IMP-050); it stops within a few seconds."""
+    saved = result_store.load_result(task_id)
+    if saved is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    # A stale "processing" record (its worker died) counts as finished too.
+    if TaskManager._status_from_saved(saved)[0] != "processing":
+        raise HTTPException(status_code=409, detail="Task already finished")
+    if not result_store.request_cancel(task_id):
+        raise HTTPException(status_code=500, detail="Could not request the cancel")
+    logger.info(f"Cancel requested for task {task_id}")
+    return {"status": "cancelling"}

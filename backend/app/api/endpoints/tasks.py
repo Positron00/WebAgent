@@ -2,12 +2,14 @@
 Task management endpoints for the WebAgent backend.
 """
 from typing import Dict, List, Any, Optional
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Query
 import uuid
 import logging
 
-from app.models.task import TaskInfo, TaskList
+from app.models.task import TaskInfo
+from app.services import result_store
 from app.services.task_manager import TaskManager
+from app.core.log_context import describe_text
 from app.core.metrics import timing_decorator
 
 # Configure logging
@@ -16,14 +18,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 task_manager = TaskManager()
 
-@router.get("/", response_model=TaskList)
+@router.get("/")
 @timing_decorator
-async def list_tasks():
+async def list_tasks(limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0)):
     """
-    List all active and completed tasks.
+    List saved tasks from the result files (the same answer from every worker), newest first.
+    Each task's `query` is its length ("<n> chars"), never its text.
     """
-    tasks = task_manager.list_tasks()
-    return TaskList(tasks=tasks)
+    return {"tasks": result_store.list_results(limit=limit, offset=offset), "limit": limit, "offset": offset}
 
 @router.get("/{task_id}", response_model=TaskInfo)
 @timing_decorator
@@ -77,7 +79,7 @@ async def get_task_error(task_id: str):
 
 @router.post("/create", deprecated=True)
 @timing_decorator
-async def create_task(request: Dict[str, Any], background_tasks: BackgroundTasks):
+async def create_task(request: Dict[str, Any]):
     """
     Create a new task to be processed asynchronously.
     """
@@ -90,10 +92,11 @@ async def create_task(request: Dict[str, Any], background_tasks: BackgroundTasks
     # Generate a task ID
     task_id = str(uuid.uuid4())
     
-    # Start processing in the background
-    background_tasks.add_task(task_manager.run_workflow, task_id, query, context)
-    
-    logger.info(f"Created new task {task_id} for query: {query}")
+    # Start processing in the background, under the run supervisor (time limit and cancel)
+    task_manager.register_pending(task_id, query)
+    task_manager.start(task_id, query, context, direct=False)
+
+    logger.info(f"Created new task {task_id} ({describe_text(query)})")
     
     return {
         "task_id": task_id, 

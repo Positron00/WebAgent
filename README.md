@@ -414,6 +414,10 @@ WebAgent includes comprehensive testing and diagnostic tools.
    - A typical run takes 2.5–3.5 minutes; the backend stops a run after `WEBAGENT_TASK_MAX_SECONDS` (420 s), and the web app waits up to 8 minutes. Open the task's LangSmith trace and compare each model call's completion tokens with its limit: a call that stops exactly at the limit is running away, and the backend log says "stopped at the max_tokens limit"
    - Lower or raise that agent's `max_tokens` under `agents:` in `backend/config/{env}.yaml`, and check that agent's prompt
 
+## Security
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md). For production backup, metrics exposure, and spending caps, see [docs/RUNBOOK.md](docs/RUNBOOK.md).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

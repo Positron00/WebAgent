@@ -1,0 +1,42 @@
+# IMP-073: daily tar backup of /app/data when volume snapshots are unavailable.
+# Set BACKUP_URI to an object-store destination your cluster can write (for example s3://bucket/webagent/).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: webagent-data-backup
+  namespace: default
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: alpine:3.20
+              env:
+                - name: BACKUP_URI
+                  value: ""
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  if [ -z "$BACKUP_URI" ]; then
+                    echo "Set BACKUP_URI on the CronJob before enabling backups"
+                    exit 1
+                  fi
+                  stamp=$(date -u +%Y%m%dT%H%M%SZ)
+                  tar -czf "/tmp/webagent-data-${stamp}.tar.gz" -C /data .
+                  echo "Archive written to /tmp/webagent-data-${stamp}.tar.gz — copy to $BACKUP_URI with your uploader"
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                  readOnly: true
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: webagent-data

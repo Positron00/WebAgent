@@ -14,6 +14,7 @@ from langchain.schema.document import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from app.core.config import settings
+from app.core.log_context import describe_text
 from app.services.graphdb import get_graph_db_service
 from app.utils.metrics import timing_decorator
 from app.core.observability import (
@@ -183,7 +184,7 @@ class VectorDBService:
                 logger.debug(f"Vector search completed in {processing_time:.4f}s with {len(formatted_results)} results")
                 
                 if not formatted_results:
-                    logger.warning(f"No results found for query: '{query}'")
+                    logger.warning(f"No results found for query ({describe_text(query)})")
                     VECTORDB_QUERY_COUNT.labels(status="empty").inc()
                 
                 # Track successful query

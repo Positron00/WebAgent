@@ -27,7 +27,7 @@ from app.api.endpoints.task import router as task_router
 from app.api.endpoints.guard import router as guard_router
 from app.api.endpoints.triage import router as triage_router
 from starlette.concurrency import run_in_threadpool
-from app.services import triage_collect
+from app.services import result_store, triage_collect
 from app.security import records as security_records
 from app.security.decision import get_engine
 from app.security.context_defender import warm_up as warm_up_context_defender
@@ -66,10 +66,11 @@ async def _startup(app: FastAPI) -> None:
     security_records.cleanup()
     app.state.triage_cleanup_task = asyncio.create_task(triage_collect.cleanup_daily())
     app.state.security_cleanup_task = asyncio.create_task(security_records.cleanup_daily())
+    app.state.results_cleanup_task = asyncio.create_task(result_store.cleanup_daily())
 
 
 def _shutdown(app: FastAPI) -> None:
-    for name in ("triage_cleanup_task", "security_cleanup_task"):
+    for name in ("triage_cleanup_task", "security_cleanup_task", "results_cleanup_task"):
         task = getattr(app.state, name, None)
         if task is not None:
             task.cancel()
@@ -86,14 +87,16 @@ async def lifespan(app: FastAPI):
 
 
 # Create FastAPI app with OpenAPI documentation
+_docs_off = settings.WEBAGENT_ENV in ("uat", "prod")
+
 app = FastAPI(
     lifespan=lifespan,
     title=settings.PROJECT_NAME,
     description=settings.PROJECT_DESCRIPTION,
     version=settings.VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc",
+    openapi_url=None if _docs_off else f"{settings.API_V1_STR}/openapi.json",
+    docs_url=None if _docs_off else f"{settings.API_V1_STR}/docs",
+    redoc_url=None if _docs_off else f"{settings.API_V1_STR}/redoc",
     openapi_tags=[
         {"name": "health", "description": "Health check endpoints"},
         {"name": "chat", "description": "Chat API endpoints"},

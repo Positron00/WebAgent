@@ -20,6 +20,8 @@ from app.security.hop_guard import acheck_hop, kept_text, task_items
 from app.security.types import ContextItem
 from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
+from app.core.config import settings
+from app.core.log_context import describe_text
 from app.core.metrics import timing_decorator, track_task_completion
 
 logger = logging.getLogger(__name__)
@@ -183,7 +185,9 @@ class TeamManagerAgent(BaseAgent):
         task_id = f"team_manager_{start_time.timestamp()}"
         
         try:
-            logger.info(f"Team Manager Agent processing query: {state.query}")
+            logger.info(f"Team Manager Agent processing query ({describe_text(state.query)})")
+            if settings.WEBAGENT_ENV == "dev":
+                logger.debug("Query: %s", state.query)
             
             # Get reports from specialized agents
             senior_research_output = state.reports.get("senior_research", {})

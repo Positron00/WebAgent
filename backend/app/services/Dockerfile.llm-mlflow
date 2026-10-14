@@ -42,6 +42,9 @@ EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD curl -f http://localhost:${PORT}/health || exit 1
 
+RUN useradd --create-home --uid 10001 llm && chown -R llm:llm /app /models /app/mlflow-artifacts
+USER llm
+
 # Command to run the service
 CMD ["python", "self_hosted_llm_service.py", \
      "--model_path", "${MODEL_PATH}", \

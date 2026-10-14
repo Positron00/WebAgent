@@ -18,6 +18,10 @@ let getTask: (
   req: Request,
   ctx: { params: { taskId: string } },
 ) => Promise<Response>;
+let cancelTask: (
+  req: Request,
+  ctx: { params: { taskId: string } },
+) => Promise<Response>;
 
 beforeAll(async () => {
   // The proxy reads these when the module loads
@@ -25,6 +29,7 @@ beforeAll(async () => {
   process.env.WEBAGENT_API_KEY = "secret-key";
   ({ POST: postTask } = await import("@/app/api/task/route"));
   ({ GET: getTask } = await import("@/app/api/task/[taskId]/route"));
+  ({ POST: cancelTask } = await import("@/app/api/task/[taskId]/cancel/route"));
 });
 
 beforeEach(() => {
@@ -145,5 +150,34 @@ describe("/api/task proxy", () => {
     expect(await response.json()).toEqual({
       error: "Multi-agent backend unavailable",
     });
+  });
+
+  it("forwards a cancel with the API key and passes 202 and 409 through", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "cancelling" }), { status: 202 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: "finished" }), { status: 409 }),
+      );
+    const request = () =>
+      new Request("http://localhost/api/task/t1/cancel", {
+        method: "POST",
+        headers: { "x-webagent-session": "sid-A" },
+      });
+
+    const accepted = await cancelTask(request(), {
+      params: { taskId: "../t1" },
+    });
+    const finished = await cancelTask(request(), { params: { taskId: "t1" } });
+
+    const { url, init, headers } = forwarded();
+    expect(url).toBe("http://backend.test:9000/api/task/..%2Ft1/cancel");
+    expect(init.method).toBe("POST");
+    expect(headers.get("X-API-Key")).toBe("secret-key");
+    expect(headers.get("X-WebAgent-Client")).toBe("s:sid-A");
+    expect(accepted.status).toBe(202);
+    expect(await accepted.json()).toEqual({ status: "cancelling" });
+    expect(finished.status).toBe(409);
   });
 });

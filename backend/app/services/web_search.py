@@ -11,8 +11,20 @@ import re
 from tavily import TavilyClient
 
 from app.core.config import settings
+from app.core.log_context import describe_text
 
 logger = logging.getLogger(__name__)
+
+
+class SearchError(Exception):
+    """A search that failed or timed out (IMP-055), as opposed to one that found nothing."""
+
+
+def _log_text(action: str, text: str) -> None:
+    """Log a search query's length; the text itself only at DEBUG in dev (IMP-070)."""
+    logger.info(f"{action} ({describe_text(text)})")
+    if settings.WEBAGENT_ENV == "dev":
+        logger.debug(f"{action}: {text}")
 
 class WebSearchService:
     """
@@ -92,12 +104,12 @@ class WebSearchService:
         """
         if not self.initialized or not self.tavily_client:
             logger.warning("Tavily client not initialized")
-            return []
-            
+            raise SearchError("web search is not configured")
+
         # Sanitize query to prevent bad requests
         sanitized_query = self._sanitize_query(query)
         if not sanitized_query:
-            logger.warning(f"Empty query after sanitization: '{query}' - using default")
+            logger.warning(f"Empty query after sanitization ({describe_text(query)}); using default")
             sanitized_query = "general information"
             
         # Ensure search_depth is valid
@@ -112,9 +124,8 @@ class WebSearchService:
         elif max_results > 15:
             max_results = 15
 
+        _log_text("Searching", sanitized_query)
         try:
-            logger.info(f"Searching for: {sanitized_query}")
-            
             response = await self._tavily_search(
                 query=sanitized_query,
                 search_depth=search_depth,
@@ -126,12 +137,12 @@ class WebSearchService:
             logger.info(f"Found {len(results)} results")
             return results
         except asyncio.TimeoutError:
-            logger.warning(f"Search timed out after {settings.SEARCH_TIMEOUT_SECONDS} s; no results")
-            return []
+            logger.warning(f"Search timed out after {settings.SEARCH_TIMEOUT_SECONDS} s")
+            raise SearchError(f"timed out after {settings.SEARCH_TIMEOUT_SECONDS} s")
         except Exception as e:
             error_details = str(e)
             logger.error(f"Error during Tavily search: {error_details}")
-            
+
             # Log detailed error information for debugging
             if hasattr(e, 'response') and getattr(e, 'response', None) is not None:
                 response = getattr(e, 'response')
@@ -139,27 +150,27 @@ class WebSearchService:
                     logger.error(f"Response text: {response.text}")
                 if hasattr(response, 'status_code'):
                     logger.error(f"Status code: {response.status_code}")
-                    
+
             # Try one more time with a simplified query if the error was a 400
-            if "400" in error_details:
-                try:
-                    simplified_query = " ".join(sanitized_query.split()[:5])
-                    if simplified_query != sanitized_query:
-                        logger.info(f"Retrying with simplified query: {simplified_query}")
-                        response = await self._tavily_search(
-                            query=simplified_query,
-                            search_depth="basic",  # Always use basic for retry
-                            max_results=max(1, max_results - 2)  # Reduce result count
-                        )
-                        results = response.get("results", [])
-                        logger.info(f"Retry found {len(results)} results")
-                        return results
-                except asyncio.TimeoutError:
-                    logger.warning(f"Search retry timed out after {settings.SEARCH_TIMEOUT_SECONDS} s; no results")
-                except Exception as retry_error:
-                    logger.error(f"Retry also failed: {str(retry_error)}")
-                    
-            return []
+            simplified_query = " ".join(sanitized_query.split()[:5])
+            if "400" not in error_details or simplified_query == sanitized_query:
+                raise SearchError(error_details[:300]) from e
+            _log_text("Retrying with a simplified query", simplified_query)
+            try:
+                response = await self._tavily_search(
+                    query=simplified_query,
+                    search_depth="basic",  # Always use basic for retry
+                    max_results=max(1, max_results - 2)  # Reduce result count
+                )
+            except asyncio.TimeoutError:
+                logger.warning(f"Search retry timed out after {settings.SEARCH_TIMEOUT_SECONDS} s")
+                raise SearchError(f"retry timed out after {settings.SEARCH_TIMEOUT_SECONDS} s")
+            except Exception as retry_error:
+                logger.error(f"Retry also failed: {str(retry_error)}")
+                raise SearchError(str(retry_error)[:300]) from retry_error
+            results = response.get("results", [])
+            logger.info(f"Retry found {len(results)} results")
+            return results
 
 def get_web_search_service() -> WebSearchService:
     """

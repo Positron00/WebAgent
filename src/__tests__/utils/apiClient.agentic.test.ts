@@ -1,48 +1,75 @@
-import { ApiClient, buildPreviousMessages } from '@/utils/apiClient';
+import { ApiClient, buildPreviousMessages } from "@/utils/apiClient";
 
-jest.mock('@/config/clientConfig', () => ({
+jest.mock("@/config/clientConfig", () => ({
   clientConfig: {
-    environment: 'test',
-    version: 'test',
+    environment: "test",
+    version: "test",
     api: {
-      baseUrl: '',
-      endpoints: { chat: '/api/chat', task: '/api/task', ping: '/api/ping', health: '/api/health' },
+      baseUrl: "",
+      endpoints: {
+        chat: "/api/chat",
+        task: "/api/task",
+        ping: "/api/ping",
+        health: "/api/health",
+      },
       timeoutMs: 60000,
     },
-    together: { endpoint: '/api/chat', model: 'test-model' },
+    together: { endpoint: "/api/chat", model: "test-model" },
     features: { enableAgenticMode: true },
   },
 }));
 
-jest.mock('@/utils/logger', () => ({
-  logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+jest.mock("@/utils/logger", () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
-const jsonResponse = (body: unknown, status = 200, headers?: Record<string, string>) => ({
+const jsonResponse = (
+  body: unknown,
+  status = 200,
+  headers?: Record<string, string>,
+) => ({
   ok: status >= 200 && status < 300,
   status,
-  statusText: status === 200 ? 'OK' : 'Error',
+  statusText: status === 200 ? "OK" : "Error",
   headers: new Headers(headers),
   json: jest.fn().mockResolvedValue(body),
 });
 
 const chatReply = (content: string) =>
-  jsonResponse({ choices: [{ message: { role: 'assistant', content }, finish_reason: 'stop' }] });
+  jsonResponse({
+    choices: [
+      { message: { role: "assistant", content }, finish_reason: "stop" },
+    ],
+  });
 
 const conversation = [
-  { id: '1', role: 'user' as const, content: 'first question', timestamp: '' },
-  { id: '2', role: 'assistant' as const, content: 'first answer', timestamp: '' },
-  { id: '3', role: 'user' as const, content: 'second question', timestamp: '' },
+  { id: "1", role: "user" as const, content: "first question", timestamp: "" },
+  {
+    id: "2",
+    role: "assistant" as const,
+    content: "first answer",
+    timestamp: "",
+  },
+  { id: "3", role: "user" as const, content: "second question", timestamp: "" },
 ];
 
 const fetchMock = jest.fn();
 
 function requestTo(index: number) {
   const [url, init] = fetchMock.mock.calls[index];
-  return { url, method: init?.method, body: init?.body ? JSON.parse(init.body) : undefined };
+  return {
+    url,
+    method: init?.method,
+    body: init?.body ? JSON.parse(init.body) : undefined,
+  };
 }
 
-describe('ApiClient agentic mode', () => {
+describe("ApiClient agentic mode", () => {
   let client: ApiClient;
 
   beforeEach(() => {
@@ -53,166 +80,190 @@ describe('ApiClient agentic mode', () => {
     (client as any).delay = jest.fn().mockResolvedValue(undefined);
   });
 
-  it('sends only the latest question to /api/task with previous_messages in always mode', async () => {
+  it("sends only the latest question to /api/task with previous_messages in always mode", async () => {
     fetchMock
-      .mockResolvedValueOnce(jsonResponse({ task_id: 'task-1', status: 'processing' }))
-      .mockResolvedValueOnce(jsonResponse({ status: 'processing' }))
       .mockResolvedValueOnce(
-        jsonResponse({ status: 'completed', result: { content: '# Report', logs: ['Supervisor: planning'] } })
+        jsonResponse({ task_id: "task-1", status: "processing" }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ status: "processing" }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: "completed",
+          result: { content: "# Report", logs: ["Supervisor: planning"] },
+        }),
       );
 
     const response = await client.sendChatMessage(
       conversation,
       null,
-      'balanced',
-      'general',
+      "balanced",
+      "general",
       true,
-      'always'
+      "always",
     );
 
     expect(requestTo(0)).toEqual({
-      url: '/api/task',
-      method: 'POST',
+      url: "/api/task",
+      method: "POST",
       body: {
-        query: 'second question',
+        query: "second question",
         agentic: true,
         previous_messages: [
-          { role: 'user', content: 'first question' },
-          { role: 'assistant', content: 'first answer' },
+          { role: "user", content: "first question" },
+          { role: "assistant", content: "first answer" },
         ],
       },
     });
-    expect(requestTo(1).url).toBe('/api/task/task-1');
-    expect(response.choices[0].message.content).toBe('# Report');
-    expect(response.route?.route).toBe('agentic');
+    expect(requestTo(1).url).toBe("/api/task/task-1");
+    expect(response.choices[0].message.content).toBe("# Report");
+    expect(response.route?.route).toBe("agentic");
   });
 
-  it('includes triage_override when forceAgentic is set', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ task_id: 'task-ov', status: 'processing' }));
+  it("includes triage_override when forceAgentic is set", async () => {
     fetchMock.mockResolvedValueOnce(
-      jsonResponse({ status: 'completed', result: { content: 'deep' } })
+      jsonResponse({ task_id: "task-ov", status: "processing" }),
+    );
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ status: "completed", result: { content: "deep" } }),
     );
 
-    await client.sendChatMessage(conversation, null, 'balanced', 'general', true, 'auto', {
-      forceAgentic: true,
-    });
+    await client.sendChatMessage(
+      conversation,
+      null,
+      "balanced",
+      "general",
+      true,
+      "auto",
+      {
+        forceAgentic: true,
+      },
+    );
 
     expect(requestTo(0).body.triage_override).toBe(true);
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/task');
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/task");
   });
 
-  it('falls back to plain chat when the task fails', async () => {
+  it("reports a failed task as ResearchFailed and never calls /api/chat", async () => {
     fetchMock
-      .mockResolvedValueOnce(jsonResponse({ task_id: 'task-2', status: 'processing' }))
-      .mockResolvedValueOnce(jsonResponse({ status: 'failed', error: 'Together Server: Error 503' }))
-      .mockResolvedValueOnce(chatReply('fallback answer'));
+      .mockResolvedValueOnce(
+        jsonResponse({ task_id: "task-2", status: "processing" }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ status: "failed", error: "Together Server: Error 503" }),
+      );
 
-    const response = await client.sendChatMessage(
-      conversation,
-      null,
-      'balanced',
-      'general',
-      true,
-      'always'
-    );
+    await expect(
+      client.sendChatMessage(
+        conversation,
+        null,
+        "balanced",
+        "general",
+        true,
+        "always",
+      ),
+    ).rejects.toMatchObject({ name: "ResearchFailed", kind: "failed" });
 
-    const fallback = requestTo(2);
-    expect(fallback.url).toBe('/api/chat');
-    expect(fallback.body.requestType).toBe('multi-agent-fallback');
-    expect(response.choices[0].message.content).toBe('fallback answer');
-    expect(response.route).toEqual({
-      route: 'direct',
-      decidedBy: 'fallback',
-      reason: 'Research agents unavailable',
-    });
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      "/api/task",
+      "/api/task/task-2",
+    ]);
   });
 
-  it('calls only /api/chat when mode is off', async () => {
-    fetchMock.mockResolvedValueOnce(chatReply('direct answer'));
+  it("calls only /api/chat when mode is off", async () => {
+    fetchMock.mockResolvedValueOnce(chatReply("direct answer"));
 
     const response = await client.sendChatMessage(
       conversation,
       null,
-      'balanced',
-      'general',
+      "balanced",
+      "general",
       true,
-      'off'
+      "off",
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const request = requestTo(0);
-    expect(request.url).toBe('/api/chat');
+    expect(request.url).toBe("/api/chat");
     expect(request.body.agentic).toBe(false);
-    expect(response.route?.route).toBe('direct');
+    expect(response.route?.route).toBe("direct");
   });
 
-  it('always mode sends an image without text to /api/chat, not the research agents', async () => {
-    fetchMock.mockResolvedValueOnce(chatReply('I see a cat'));
+  it("always mode sends an image without text to /api/chat, not the research agents", async () => {
+    fetchMock.mockResolvedValueOnce(chatReply("I see a cat"));
 
     const response = await client.sendChatMessage(
-      [{ id: '1', role: 'user' as const, content: '', timestamp: '' }],
-      'data:image/png;base64,AAAA',
-      'balanced',
-      'general',
+      [{ id: "1", role: "user" as const, content: "", timestamp: "" }],
+      "data:image/png;base64,AAAA",
+      "balanced",
+      "general",
       true,
-      'always'
+      "always",
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(requestTo(0).url).toBe('/api/chat');
-    expect(requestTo(0).body.image).toBe('data:image/png;base64,AAAA');
+    expect(requestTo(0).url).toBe("/api/chat");
+    expect(requestTo(0).body.image).toBe("data:image/png;base64,AAAA");
     expect(response.route).toEqual({
-      route: 'direct',
-      decidedBy: 'rule',
-      reason: 'Image without a question',
+      route: "direct",
+      decidedBy: "rule",
+      reason: "Image without a question",
     });
   });
 
-  it('auto mode calls triage then routes to chat when triage picks direct', async () => {
+  it("auto mode calls triage then routes to chat when triage picks direct", async () => {
     fetchMock
       .mockResolvedValueOnce(
         jsonResponse({
-          route: 'direct',
+          route: "direct",
           p_agentic: 0.1,
-          decided_by: 'rule',
-          reason: 'simple',
-          classifier_version: 'v1',
-        })
+          decided_by: "rule",
+          reason: "simple",
+          classifier_version: "v1",
+        }),
       )
-      .mockResolvedValueOnce(chatReply('direct from auto'));
+      .mockResolvedValueOnce(chatReply("direct from auto"));
 
     const response = await client.sendChatMessage(
       conversation,
       null,
-      'balanced',
-      'general',
+      "balanced",
+      "general",
       true,
-      'auto'
+      "auto",
     );
 
-    expect(requestTo(0).url).toBe('/api/triage');
-    expect(requestTo(1).url).toBe('/api/chat');
+    expect(requestTo(0).url).toBe("/api/triage");
+    expect(requestTo(1).url).toBe("/api/chat");
     expect(response.route?.reason).toMatch(/^Auto ·/);
   });
 
-  it('rejects a request with no user message and no image', async () => {
-    const onlyAssistant = [{ id: '1', role: 'assistant' as const, content: 'hi', timestamp: '' }];
+  it("rejects a request with no user message and no image", async () => {
+    const onlyAssistant = [
+      { id: "1", role: "assistant" as const, content: "hi", timestamp: "" },
+    ];
     await expect(
-      client.sendChatMessage(onlyAssistant, null, 'balanced', 'general', true, 'always')
-    ).rejects.toThrow('No user message');
+      client.sendChatMessage(
+        onlyAssistant,
+        null,
+        "balanced",
+        "general",
+        true,
+        "always",
+      ),
+    ).rejects.toThrow("No user message");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
-describe('buildPreviousMessages', () => {
-  it('keeps up to eight trimmed user/assistant turns', () => {
+describe("buildPreviousMessages", () => {
+  it("keeps up to eight trimmed user/assistant turns", () => {
     const history = Array.from({ length: 10 }, (_, i) => ({
-      role: i % 2 === 0 ? 'user' : 'assistant',
+      role: i % 2 === 0 ? "user" : "assistant",
       content: `msg ${i}`,
-    })) as { role: 'user' | 'assistant'; content: string }[];
+    })) as { role: "user" | "assistant"; content: string }[];
 
     const built = buildPreviousMessages(history as any);
     expect(built).toHaveLength(8);
-    expect(built[0].content).toBe('msg 2');
+    expect(built[0].content).toBe("msg 2");
   });
 });

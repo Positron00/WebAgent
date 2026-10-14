@@ -5,10 +5,15 @@ import { CHAT_SETTINGS } from "@/config/chat";
 import { logger } from "@/utils/logger";
 import { clientConfig } from "@/config/clientConfig";
 import { routeQuestion } from "@/utils/routeQuestion";
-import { isGuardRefusal, normalizeSecuritySummary } from "@/types/security";
-import { RESEARCH_TIMEOUT_MESSAGE, ResearchFailed } from "@/types/research";
+import { isGuardRefusal } from "@/types/security";
+import {
+  RESEARCH_UNREACHABLE_MESSAGE,
+  ResearchFailed,
+  ResearchRunOptions,
+} from "@/types/research";
 import { fetchWithRetry } from "@/utils/fetchWithRetry";
 import { isSignInRequired, redirectToSignIn } from "@/utils/signIn";
+import { pollTask, stoppedError, TaskStatusReply } from "@/utils/taskPolling";
 
 const TRIAGE_ROUTING_FALLBACK_NOTICE =
   "I'm answering directly because research routing is temporarily unavailable.\n\n";
@@ -76,13 +81,21 @@ function extractErrorMessage(errorData: unknown): string | undefined {
   return undefined;
 }
 
-/** Errors that end a research request as they are: no further polling and no fallback to /api/chat. */
-function isFinalResearchError(error: unknown): boolean {
-  if (error instanceof ResearchFailed) return true;
-  return (
+/**
+ * Guard refusals and the sign-in redirect pass through unchanged; every other error of a
+ * research request becomes a ResearchFailed.
+ */
+function toResearchError(error: unknown, signal: AbortSignal): unknown {
+  if (error instanceof ResearchFailed) return error;
+  if (
     error instanceof ApiError &&
     (isGuardRefusal(error.data) || isSignInRequired(error.status, error.data))
-  );
+  ) {
+    return error;
+  }
+  if (signal.aborted) return stoppedError();
+  const message = error instanceof Error ? error.message : String(error);
+  return new ResearchFailed("failed", message);
 }
 
 /**
@@ -177,6 +190,10 @@ export class ApiClient {
   }
 
   private isRetryableError(error: any): boolean {
+    if (error instanceof ResearchFailed) {
+      return error.kind === "unreachable";
+    }
+
     // Network errors should be retried
     if (error instanceof TypeError && error.message.includes("network")) {
       return true;
@@ -289,6 +306,16 @@ export class ApiClient {
         readResponse: async (response, attempt) => {
           // Update metrics with status code
           this.updateMetrics(startTime, !response.ok, attempt, response.status);
+
+          if (
+            response.status === 503 &&
+            response.headers?.get("X-WebAgent-Proxy-Error") === "unreachable"
+          ) {
+            throw new ResearchFailed(
+              "unreachable",
+              RESEARCH_UNREACHABLE_MESSAGE,
+            );
+          }
 
           if (!response.ok) {
             let errorData;
@@ -418,6 +445,8 @@ export class ApiClient {
       forceAgentic?: boolean;
       consentToken?: string;
       approvalTokens?: string[];
+      /** Used only when the question goes to the research agents. */
+      research?: ResearchRunOptions;
     },
   ): Promise<ChatCompletionResponse> {
     const history = messages.slice(0, -1);
@@ -501,22 +530,15 @@ export class ApiClient {
         mode,
         decidedBy: routeInfo.decidedBy,
       });
-      const agenticResult = await this.sendMultiAgentRequest(
+      response = await this.sendMultiAgentRequest(
         query,
         image,
         buildPreviousMessages(history),
         options?.forceAgentic,
         options?.consentToken,
         options?.approvalTokens,
+        options?.research,
       );
-      response = agenticResult.response;
-      if (agenticResult.usedFallback) {
-        routeInfo = {
-          route: "direct",
-          decidedBy: "fallback",
-          reason: "Research agents unavailable",
-        };
-      }
     }
 
     return { ...response, route: routeInfo };
@@ -569,7 +591,7 @@ export class ApiClient {
     return response;
   }
 
-  // Method to handle multi-agent API requests
+  // Starts a research task, then polls it until it ends. Never falls back to /api/chat.
   private async sendMultiAgentRequest(
     query: string,
     image?: string | null,
@@ -577,14 +599,18 @@ export class ApiClient {
     triageOverride?: boolean,
     consentToken?: string,
     approvalTokens?: string[],
-  ): Promise<{ response: ChatCompletionResponse; usedFallback: boolean }> {
+    research?: ResearchRunOptions,
+  ): Promise<ChatCompletionResponse> {
     const requestId = this.generateRequestId();
-    const startTime = Date.now();
+    const signal = research?.signal ?? new AbortController().signal;
+    const taskUrl = clientConfig.api.endpoints.task;
 
     try {
-      logger.info("Sending multi-agent request", { requestId, query });
+      logger.info("Sending multi-agent request", {
+        requestId,
+        queryChars: query.length,
+      });
 
-      // Prepare the request payload
       const requestBody = {
         query,
         image: image || undefined,
@@ -595,223 +621,67 @@ export class ApiClient {
         ...(approvalTokens?.length ? { approval_tokens: approvalTokens } : {}),
       };
 
-      // Use the multi-agent API endpoint
-      const response = await this.fetchWithRetry<{
+      const started = await this.fetchWithRetry<{
         task_id?: string;
         status?: string;
-      }>(clientConfig.api.endpoints.task, {
+      }>(taskUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Request-ID": requestId,
         },
         body: JSON.stringify(requestBody),
+        signal,
       });
 
-      if (response.task_id) {
-        const polled = await this.pollTaskResult(response.task_id);
-        return { response: polled, usedFallback: false };
+      const taskId = started.task_id;
+      if (!taskId) {
+        throw new Error("the research service did not start a task");
       }
+      research?.onTaskId?.(taskId);
 
-      throw new Error("Multi-agent API did not return a task_id");
+      return await pollTask(taskId, {
+        signal,
+        onProgress: research?.onProgress,
+        getStatus: (id) => this.getTaskStatus(id, signal),
+      });
     } catch (error) {
-      if (isFinalResearchError(error)) {
-        throw error;
-      }
-      logger.error(
-        "Multi-agent request failed, falling back to Together AI LLM",
-        {
-          requestId,
-          error: error instanceof Error ? error.message : String(error),
-          query: query.substring(0, 100), // Only log the beginning of the query for privacy
-          fallback: "togetherlm",
-        },
-      );
-
-      // Fallback to Together AI LLM (with agentic=false)
-      try {
-        logger.info(
-          "Using Together AI fallback for failed multi-agent request",
-          { requestId },
-        );
-
-        // Create a simple message array with just the user query
-        const fallbackMessages = [
-          {
-            role: "system",
-            content:
-              "You are a helpful assistant. The multi-agent system is currently unavailable, so you are operating in fallback mode.",
-          },
-          {
-            role: "user",
-            content: query,
-          },
-        ];
-
-        // Send request to Together AI
-        const fallbackResponse =
-          await this.fetchWithRetry<ChatCompletionResponse>(
-            clientConfig.api.endpoints.chat,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Request-ID": `${requestId}_fallback`,
-              },
-              body: JSON.stringify({
-                messages: fallbackMessages,
-                model: clientConfig.together.model,
-                max_tokens: CHAT_SETTINGS.maxTokens,
-                temperature: CHAT_SETTINGS.temperature,
-                top_p: CHAT_SETTINGS.topP,
-                agentic: false, // Explicitly mark as non-agentic for the fallback
-                image: image || null,
-                requestType: "multi-agent-fallback", // Indicate this is a fallback request
-              }),
-            },
-          );
-
-        return { response: fallbackResponse, usedFallback: true };
-      } catch (fallbackError) {
-        logger.error("Fallback to Together AI also failed", {
-          requestId,
-          originalError: error instanceof Error ? error.message : String(error),
-          fallbackError:
-            fallbackError instanceof Error
-              ? fallbackError.message
-              : String(fallbackError),
-        });
-
-        // Create a generic error response for better user experience
-        return {
-          response: {
-            choices: [
-              {
-                message: {
-                  role: "assistant",
-                  content:
-                    "I apologize, but I encountered an error processing your request. Both the multi-agent system and the fallback service are currently unavailable. Please try again later.",
-                },
-                finish_reason: "stop",
-              },
-            ],
-            usage: {
-              prompt_tokens: 0,
-              completion_tokens: 0,
-              total_tokens: 0,
-            },
-          },
-          usedFallback: true,
-        };
-      }
+      throw toResearchError(error, signal);
     }
   }
 
-  /**
-   * Poll for task results when using the async multi-agent system
-   */
-  private async pollTaskResult(
+  /** GET /api/task/<id>; an escalated task becomes a guard refusal (403, code "escalated"). */
+  private async getTaskStatus(
     taskId: string,
-  ): Promise<ChatCompletionResponse> {
-    const deadlineMs = 8 * 60 * 1000;
-    const pollInterval = 1000;
-    const maxPollInterval = 5000;
-    const pollBackoffFactor = 1.5;
-
-    const started = Date.now();
-    let pollCount = 0;
-    let currentInterval = pollInterval;
-    let failureMessage: string | null = null;
-
-    while (Date.now() - started < deadlineMs) {
-      await this.delay(currentInterval);
-      pollCount++;
-
-      try {
-        const result = await this.fetchWithRetry<any>(
-          `${clientConfig.api.endpoints.task}/${taskId}`,
-          { method: "GET" },
-        );
-
-        if (result.status === "completed" && result.result) {
-          const security = normalizeSecuritySummary(
-            result.security ?? result.result?.security,
-          );
-          return {
-            choices: [
-              {
-                message: {
-                  role: "assistant",
-                  content:
-                    result.result.content || JSON.stringify(result.result),
-                  ...(result.result.logs && { logs: result.result.logs }),
-                },
-                finish_reason: "stop",
-              },
-            ],
-            usage: result.usage || {
-              prompt_tokens: 0,
-              completion_tokens: 0,
-              total_tokens: 0,
-            },
-            ...(security ? { security } : {}),
-          };
-        }
-
-        if (result.status === "failed") {
-          if (result.error_code === "escalated") {
-            throw new ApiError(
-              result.error || "Task escalated for review",
-              403,
-              {
-                code: "escalated",
-                reason: result.error || "Task escalated for review",
-              },
-              undefined,
-              `${clientConfig.api.endpoints.task}/${taskId}`,
-            );
-          }
-          if (result.error_code === "timeout") {
-            throw new ResearchFailed("timeout", RESEARCH_TIMEOUT_MESSAGE);
-          }
-          failureMessage = result.error || "Unknown error";
-          break;
-        }
-
-        // Increase polling interval with backoff
-        currentInterval = Math.min(
-          currentInterval * pollBackoffFactor,
-          maxPollInterval,
-        );
-
-        logger.info("Polling task", {
-          taskId,
-          pollCount,
-          status: result.status,
-          nextPollIn: currentInterval,
-        });
-      } catch (error) {
-        if (isFinalResearchError(error)) {
-          throw error;
-        }
-        logger.error("Error polling task", {
-          taskId,
-          pollCount,
-          error: error instanceof Error ? error.message : String(error),
-        });
-
-        // Increase polling interval on error
-        currentInterval = Math.min(currentInterval * 2, maxPollInterval);
-      }
+    signal: AbortSignal,
+  ): Promise<TaskStatusReply> {
+    const url = `${clientConfig.api.endpoints.task}/${taskId}`;
+    const reply = await this.fetchWithRetry<TaskStatusReply>(url, {
+      method: "GET",
+      signal,
+    });
+    if (reply.status === "failed" && reply.error_code === "escalated") {
+      const reason = reply.error || "Task escalated for review";
+      throw new ApiError(
+        reason,
+        403,
+        { code: "escalated", reason },
+        undefined,
+        url,
+      );
     }
+    return reply;
+  }
 
-    // If we've reached the maximum polling attempts, return a timeout error
-    if (failureMessage) {
-      throw new Error(`Task failed: ${failureMessage}`);
+  /** Asks the backend to stop a research task. A task that already finished (409) is fine. */
+  async cancelTask(taskId: string): Promise<void> {
+    const url = `${clientConfig.api.endpoints.task}/${encodeURIComponent(taskId)}/cancel`;
+    try {
+      await this.fetchWithRetry(url, { method: "POST" }, { maxRetries: 1 });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) return;
+      throw error;
     }
-    throw new Error(
-      "Task timed out while waiting for the workflow to complete",
-    );
   }
 
   /**

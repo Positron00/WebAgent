@@ -24,13 +24,6 @@ database:
     path: ""  # Will use settings.VECTOR_DB_PATH
     embedding_dimension: 1536
     distance_metric: "cosine"
-  redis:
-    host: "redis"
-    port: 6379
-    db: 0
-    password: null
-    key_prefix: "webagent:uat:"
-
 # LLM settings
 llm:
   provider: "together"

@@ -89,34 +89,25 @@ describe("ApiClient research failures and sign-in", () => {
     expect(calledUrls()).toEqual(["/api/task", "/api/task/t1", "/api/task/t1"]);
   });
 
-  it("still falls back to /api/chat for other failures (until 3.3.0)", async () => {
+  it("reports other failures as ResearchFailed without calling /api/chat", async () => {
     fetchMock
       .mockResolvedValueOnce(
         jsonResponse({ task_id: "t2", status: "processing" }),
       )
-      .mockResolvedValueOnce(jsonResponse({ status: "failed", error: "boom" }))
-      .mockResolvedValueOnce(
-        jsonResponse({
-          choices: [
-            {
-              message: { role: "assistant", content: "direct" },
-              finish_reason: "stop",
-            },
-          ],
-        }),
-      );
+      .mockResolvedValueOnce(jsonResponse({ status: "failed", error: "boom" }));
 
-    const response = await client.sendChatMessage(
-      question,
-      null,
-      "balanced",
-      "general",
-      true,
-      "always",
-    );
+    await expect(
+      client.sendChatMessage(
+        question,
+        null,
+        "balanced",
+        "general",
+        true,
+        "always",
+      ),
+    ).rejects.toMatchObject({ kind: "failed", message: "boom" });
 
-    expect(calledUrls()).toEqual(["/api/task", "/api/task/t2", "/api/chat"]);
-    expect(response.choices[0].message.content).toBe("direct");
+    expect(calledUrls()).toEqual(["/api/task", "/api/task/t2"]);
   });
 
   it("sends the browser to sign-in on 401 sign_in_required, without retry or fallback", async () => {

@@ -1,24 +1,15 @@
-import { NextResponse } from 'next/server';
-import { config } from '@/config/env';
+import { NextResponse } from "next/server";
 
-// Mark route as dynamic to be consistent with other API routes
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-// Simple ping endpoint for connectivity checks
+/** Open connectivity check: says the web app is up, and nothing about its config (IMP-063). */
 export async function GET() {
-  const diagnostics = {
-    status: 'ok',
+  return NextResponse.json({
+    status: "ok",
     timestamp: new Date().toISOString(),
-    api: {
-      togetherApiConfigured: !!config.together.apiKey,
-      apiKeyLength: config.together.apiKey ? config.together.apiKey.length : 0,
-      model: config.together.model
-    }
-  };
-
-  return NextResponse.json(diagnostics);
+  });
 }
 
 export async function HEAD() {
   return new NextResponse(null, { status: 200 });
-} 
+}
