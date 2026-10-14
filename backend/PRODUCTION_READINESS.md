@@ -100,7 +100,7 @@ Before exposing the backend:
    - Deployment with replicas
    - Service for internal access
    - Ingress for external access
-   - ConfigMap for configuration
+   - PersistentVolumeClaim for `/app/data`
    - Secrets for sensitive data
 
 2. **Docker Optimization**:

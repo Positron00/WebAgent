@@ -425,7 +425,7 @@ python scripts/eval_triage.py [--data data/triage/test.jsonl] [--model models/tr
 - The step after the copy only creates and chowns the writable folders (`/app/logs`, `/app/config`, `/app/data`). A recursive `chown -R`/`chmod -R /app` there stored a second copy of `/app`, encoder included, in its own layer.
 - 3.1.0 and 3.1.1 instead baked the base encoder into `/opt/models` (`SENTENCE_TRANSFORMERS_HOME`). That step was removed with `triage-2026-10-c`; a frozen classifier version would need it back.
 
-`HF_HOME` stays on `/app/data/hf-cache` for anything else. `kubernetes/deployment.yaml` already sets `WEB_CONCURRENCY=2`; its memory limit rose from 1 GiB to 1.5 GiB after task 2.9 measured 1.08 GiB with triage on. `docker-compose.yml` sets no worker count, so it picks up the new image default of 2.
+`HF_HOME` stays on `/app/data/hf-cache` for anything else; since 3.2.6 downloaded models go to `HF_HUB_CACHE=/opt/hf-hub` in the image, where the reranker is baked in. `kubernetes/deployment.yaml` already sets `WEB_CONCURRENCY=2`; its memory limit rose from 1 GiB to 1.5 GiB after task 2.9 measured 1.08 GiB with triage on. `docker-compose.yml` sets no worker count, so it picks up the new image default of 2.
 
 ## 12. Tests
 

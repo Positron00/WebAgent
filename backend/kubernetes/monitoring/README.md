@@ -6,7 +6,7 @@ This directory contains Kubernetes manifests for setting up monitoring for the W
 
 - **Prometheus**: Collects and stores metrics from the WebAgent backend and Kubernetes cluster
 - **Grafana**: Visualizes metrics with pre-configured dashboards
-- **ServiceMonitor**: Configures Prometheus to scrape metrics from WebAgent services
+- **ServiceMonitor** and alert rules (`prometheus-operator.yaml`): only for clusters running the Prometheus Operator; `deploy.sh` applies them when its CRDs exist. The plain Prometheus in `prometheus.yaml` scrapes the backend without them
 
 ## Deployment
 

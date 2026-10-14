@@ -73,6 +73,10 @@ data:
         kubernetes_sd_configs:
           - role: pod
         relabel_configs:
+          # The backend has its own job above; scraping it here too doubled every sum.
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: webagent-backend
+            action: drop
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
             regex: true
@@ -214,86 +218,3 @@ subjects:
   - kind: ServiceAccount
     name: prometheus
     namespace: monitoring
-
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: webagent-backend
-  namespace: monitoring
-  labels:
-    app: webagent
-    component: backend
-    release: prometheus
-spec:
-  selector:
-    matchLabels:
-      app: webagent
-      component: backend
-  namespaceSelector:
-    matchNames:
-      - webagent
-  endpoints:
-  - port: http
-    path: /api/v1/metrics
-    interval: 30s
-    scrapeTimeout: 10s
-    honorLabels: true
-    metricRelabelings:
-    - sourceLabels: [__name__]
-      regex: "go_.*"
-      action: drop
-  - port: http
-    path: /api/v1/health/metrics
-    interval: 30s
-    scrapeTimeout: 10s
-
----
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:
-  name: webagent-backend-alerts
-  namespace: monitoring
-  labels:
-    app: webagent
-    component: backend
-    release: prometheus
-spec:
-  groups:
-  - name: webagent-backend.rules
-    rules:
-    - alert: WebAgentBackendDown
-      expr: up{job="webagent-backend"} == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "WebAgent Backend is down"
-        description: "The WebAgent Backend service has been down for more than 1 minute."
-    
-    - alert: WebAgentHighErrorRate
-      expr: sum(rate(http_requests_total{job="webagent-backend", status_code=~"5.."}[5m])) / sum(rate(http_requests_total{job="webagent-backend"}[5m])) > 0.05
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: "High Error Rate"
-        description: "More than 5% of requests are failing with 5xx errors."
-    
-    - alert: WebAgentHighResponseTime
-      expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="webagent-backend"}[5m])) by (le)) > 1
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: "High Response Time"
-        description: "95th percentile of response time is above 1 second."
-    
-    - alert: WebAgentTooManyRequests
-      expr: sum(rate(http_requests_total{job="webagent-backend"}[1m])) > 100
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: "Too Many Requests"
-        description: "WebAgent Backend is receiving too many requests (> 100 per second)." 

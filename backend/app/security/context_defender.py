@@ -19,6 +19,7 @@ import numpy as np
 import yaml
 
 from app.core.config import BACKEND_DIR, settings
+from app.core.metrics import GUARD_CONTEXT_SCORE
 from app.core.model_lock import lock_for
 from app.security.patterns import scan
 
@@ -443,6 +444,9 @@ def score(items: Sequence[ContextItem]) -> List[ItemScores]:
             model_version=version,
         )
         _cache_put(cache_key, item_scores)
+        # Scores of freshly scored items (a cached repeat isn't counted twice)
+        for axis, value in axes_int.items():
+            GUARD_CONTEXT_SCORE.labels(axis=axis, source=item.source).observe(value)
         results.append(
             ItemScores(
                 axes=item_scores.axes,

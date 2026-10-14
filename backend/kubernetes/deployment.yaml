@@ -7,17 +7,15 @@ metadata:
     app: webagent-backend
     version: "3.2.5"
 spec:
-  # One replica: task status and results live in /app/data, which is per pod (emptyDir).
-  # To run more replicas, mount /app/data from a shared ReadWriteMany volume.
+  # One replica: task status, results and the security/triage collection live in /app/data,
+  # a ReadWriteOnce volume. To run more replicas, use a shared ReadWriteMany volume instead.
   replicas: 1
   selector:
     matchLabels:
       app: webagent-backend
+  # Recreate: a ReadWriteOnce volume can't be attached to the old and new pod at once.
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
   template:
     metadata:
       labels:
@@ -35,13 +33,14 @@ spec:
         fsGroup: 1000
       containers:
       - name: webagent-backend
+        # deploy.sh sets the registry with -r (default: webagent/backend).
         image: webagent/backend:3.2.5
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
           name: http
         env:
-        # Selects config/prod.yaml: API keys required, debug off, startup checks on.
+        # Selects config/<env>.yaml; deploy.sh sets it from -e (prod or uat).
         - name: WEBAGENT_ENV
           value: "prod"
         - name: LOG_LEVEL
@@ -83,13 +82,21 @@ spec:
               optional: true
         resources:
           limits:
-            cpu: "1"
+            # Two workers each score on their own CPU thread; one core throttled both.
+            cpu: "2"
             # 2 workers with triage + ContextDefender peaked at 1.81 GiB in the 3.2.4 simulated
             # shadow week (about 1.25 GiB RSS per worker); 3 GiB keeps 20% headroom (SNFR-05).
             memory: "3Gi"
           requests:
-            cpu: "500m"
+            cpu: "1"
             memory: "2Gi"
+        # Loading the encoders can be slow on a throttled node; liveness waits until this passes.
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          periodSeconds: 10
+          failureThreshold: 30
         livenessProbe:
           httpGet:
             path: /health
@@ -125,7 +132,8 @@ spec:
       - name: tmp
         emptyDir: {}
       - name: data
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: webagent-data
       - name: logs
         emptyDir: {}
 ---
@@ -175,15 +183,16 @@ spec:
               name: http
 ---
 apiVersion: v1
-kind: Secret
+kind: PersistentVolumeClaim
 metadata:
-  name: webagent-secrets
+  name: webagent-data
   namespace: default
-type: Opaque
-stringData:
-  openai-api-key: "${OPENAI_API_KEY}"
-  together-api-key: "${TOGETHER_API_KEY}"
-  security-secret-key: "${WEBAGENT_SECURITY_SECRET_KEY}"
-  api-key: "${WEBAGENT_API_KEY}"
-  tavily-api-key: "${TAVILY_API_KEY}"
-  langsmith-api-key: "${LANGSMITH_API_KEY}" 
+  labels:
+    app: webagent-backend
+spec:
+  # Survives pod restarts and redeploys: a shadow week's collection must not be lost.
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

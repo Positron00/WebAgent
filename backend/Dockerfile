@@ -34,6 +34,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     WEBAGENT_NLTK_AUTO_DOWNLOAD=false \
     NLTK_DATA=/usr/local/share/nltk_data \
     HF_HOME=/app/data/hf-cache \
+    HF_HUB_CACHE=/opt/hf-hub \
     SENTENCE_TRANSFORMERS_HOME=/opt/models \
     MLFLOW_TRACKING_URI=file:///app/data/mlruns \
     GIT_PYTHON_REFRESH=quiet \
@@ -61,6 +62,12 @@ RUN PYTHONUSERBASE=/home/webagent/.local python -m nltk.downloader -d /usr/local
 RUN mkdir -p /opt/models && PYTHONUSERBASE=/home/webagent/.local python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/opt/models')" \
     && chown -R webagent:webagent /opt/models
 
+# Internal research's reranker, baked in for the same reason: it used to download into
+# /app/data/hf-cache on the first research task, which needs Hugging Face access from the pod and
+# failed when that folder wasn't writable. HF_HUB_CACHE points model lookups here.
+RUN PYTHONUSERBASE=/home/webagent/.local python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cross-encoder/ms-marco-MiniLM-L12-v2')" \
+    && chown -R webagent:webagent /opt/hf-hub
+
 # Copy application code. This includes the fine-tuned triage encoder (models/triage/encoder/),
 # so startup never downloads a model.
 COPY --chown=webagent:webagent . .
@@ -68,7 +75,8 @@ COPY --chown=webagent:webagent . .
 # Create the writable folders. COPY --chown already set the owner of everything else; a recursive
 # chown/chmod here would store a second copy of /app (code and triage encoder) in a new layer.
 RUN mkdir -p /app/logs /app/config /app/data && \
-    chown webagent:webagent /app /app/logs /app/config /app/data
+    chown webagent:webagent /app /app/logs /app/config && \
+    chown -R webagent:webagent /app/data
 
 # Switch to non-root user
 USER webagent

@@ -4,7 +4,7 @@ This directory contains Kubernetes manifests and scripts for deploying the WebAg
 
 ## Directory Structure
 
-- `deployment.yaml`: Main deployment manifest for the WebAgent backend
+- `deployment.yaml`: the backend's Deployment, Service, Ingress and data volume (the Secret is created by `deploy.sh`)
 - `monitoring/`: Manifests for setting up Prometheus and Grafana monitoring
 - `deploy.sh`: Deployment script to simplify the deployment process
 
@@ -18,79 +18,55 @@ This directory contains Kubernetes manifests and scripts for deploying the WebAg
 
 ### Using the Deployment Script
 
-The easiest way to deploy is using the provided `deploy.sh` script:
+Build the image and push it to a registry the cluster can pull from, then run `deploy.sh`:
 
 ```bash
-# Set required environment variables
+git lfs pull   # the security encoder and dataset are LFS files
+docker build --build-arg APP_VERSION=3.2.5 -t <registry>/webagent-backend:3.2.5 backend/
+docker push <registry>/webagent-backend:3.2.5
+
+# Required
 export OPENAI_API_KEY="your-openai-api-key"
 export WEBAGENT_SECURITY_SECRET_KEY="$(openssl rand -hex 48)"
 export WEBAGENT_API_KEY="key-the-web-app-sends-as-X-API-Key"
 export GRAFANA_ADMIN_PASSWORD="choose-a-strong-password"
-# Or load them from the repo-root .env.local, where they already are:
-#   set -a; . ../../.env.local; set +a
-
-# Optional environment variables
+# Optional
 export TOGETHER_API_KEY="your-together-api-key"
 export TAVILY_API_KEY="your-tavily-api-key"
 export LANGSMITH_API_KEY="your-langsmith-api-key"
+# Or load them from the repo-root .env.local, where they already are:
+#   set -a; . ../../.env.local; set +a
 
-# Run the deployment script
-./deploy.sh
+cd backend/kubernetes
+./deploy.sh -e uat -n webagent-uat -v 3.2.5 -r <registry>/webagent-backend -H uat-api.your-domain
 ```
+
+Options:
+
+```
+-e, --environment  prod or uat: sets WEBAGENT_ENV, so the pod uses config/<env>.yaml (default: prod)
+-n, --namespace    Kubernetes namespace (default: default)
+-v, --version      Image tag (default: 3.2.5)
+-r, --registry     Image repository the cluster pulls from (default: webagent/backend)
+-H, --host         Public host name for the ingress (default: api.webagent.example.com)
+```
+
+What the script does:
+
+- Creates or updates the `webagent-secrets` Secret straight from your environment (`kubectl create secret ... | kubectl apply`); keys are never written to a file.
+- Fills the environment, image, host and namespace into `deployment.yaml` and applies it: the Deployment, a Service, an Ingress (nginx, TLS from cert-manager's `letsencrypt-prod` issuer) and a 5 GiB PersistentVolumeClaim for `/app/data`.
+- Sets up Prometheus and Grafana in the `monitoring` namespace the first time.
 
 What the deployment sets up:
 
-- `WEBAGENT_ENV=prod`, so the pod uses `config/prod.yaml`: API keys required, debug off. The app refuses to start without `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY`.
+- `WEBAGENT_ENV` from `-e`. In prod and uat the app refuses to start without `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY`.
+- Two uvicorn workers; CPU limit 2, request 1; memory limit 3 GiB, request 2 GiB.
 - Liveness and readiness probes call `/health`, which needs no API key.
-- The root filesystem is read-only; `/app/data` (task results, model registry) and `/app/logs` are `emptyDir` volumes.
-- One replica. Task status is shared between the pod's workers through `/app/data/results`, but not between pods. To run more replicas, mount `/app/data` from a shared ReadWriteMany volume.
+- The root filesystem is read-only. `/app/data` (task results, the security guard's and triage's collection, model registry) is the persistent volume, so it survives restarts and redeploys; `/app/logs` and `/tmp` are `emptyDir` volumes (the workers' metrics live in `/tmp`).
+- One replica, updated with the `Recreate` strategy (a ReadWriteOnce volume can't be attached to two pods at once, so a deploy has a short gap). To run more replicas, use a shared ReadWriteMany volume.
 - Generated-code execution stays off. If you turn it on (`WEBAGENT_ENABLE_CODE_EXECUTION=true`), you must also set `WEBAGENT_CODE_SANDBOX=docker` and give the pod access to a container runtime; the app refuses to start otherwise.
 
-#### Script Options
-
-```
-Usage: ./deploy.sh [OPTIONS]
-
-Options:
-  -h, --help         Show this help message and exit
-  -e, --environment  Environment to deploy (default: staging)
-  -v, --version      Version to deploy (default: 3.2.5)
-```
-
-### Manual Deployment
-
-If you prefer to deploy manually:
-
-1. Create the namespace if it doesn't exist:
-
-```bash
-kubectl create namespace default
-```
-
-2. Create the monitoring namespace and deploy monitoring resources:
-
-```bash
-kubectl apply -f monitoring/namespace.yaml
-kubectl apply -f monitoring/prometheus.yaml
-kubectl apply -f monitoring/grafana.yaml
-kubectl apply -f monitoring/grafana-datasource.yaml
-```
-
-3. Create the secrets:
-
-```bash
-kubectl create secret generic webagent-secrets \
-  --from-literal=openai-api-key="your-openai-api-key" \
-  --from-literal=together-api-key="your-together-api-key" \
-  --from-literal=jwt-secret="your-jwt-secret" \
-  --from-literal=langsmith-api-key="your-langsmith-api-key"
-```
-
-4. Deploy the WebAgent backend:
-
-```bash
-kubectl apply -f deployment.yaml
-```
+The web app isn't deployed here: run it on Vercel ([VERCEL_DEPLOYMENT.md](../../VERCEL_DEPLOYMENT.md)) or locally, with `WEBAGENT_BACKEND_URL` set to `https://<host>` and the same `WEBAGENT_API_KEY`.
 
 ## Monitoring
 
@@ -108,14 +84,7 @@ Then open http://localhost:3000 in your browser and log in with:
 
 ## Configuration
 
-The WebAgent backend is configured using a ConfigMap that contains the `production.yaml` configuration file. You can modify this configuration in the `deployment.yaml` file.
-
-Key configuration options:
-
-- **Rate Limiting**: Controls the number of requests per minute
-- **Request Size Limit**: Maximum size of incoming requests (10MB by default)
-- **LLM Providers**: Configuration for OpenAI and Together AI
-- **Logging**: Log level and format
+Settings come from `config/<env>.yaml` in the image (`prod.yaml` or `uat.yaml`), chosen by `-e`, plus the environment variables in `deployment.yaml`. Changing a YAML setting needs a new image; most settings can also be overridden with a `WEBAGENT_...` environment variable added to the Deployment.
 
 ## Security
 
@@ -149,9 +118,9 @@ kubectl logs -l app=webagent-backend
 kubectl get events --sort-by='.lastTimestamp'
 ```
 
-4. Verify the ConfigMap and Secrets exist:
+4. Verify the Secret and the data volume exist:
 
 ```bash
-kubectl get configmap webagent-config
 kubectl get secret webagent-secrets
+kubectl get pvc webagent-data
 ``` 
