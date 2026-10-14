@@ -213,7 +213,10 @@ Compose binds ports to `127.0.0.1` from 3.2.7. Every new variable goes into
   older than 30 days are deleted. Runs stop at the token budget.
 - 3.4.0: error bodies gain an `error` object (existing `detail` fields stay); the
   rate-limit, size-limit and server-error bodies change from `{"error": "..."}` to that
-  object. Unused packages are removed.
+  object. Orphan modules removed; requirements split; higher test coverage; contributor
+  docs. Advanced observability code is kept for 3.5.0 (IMP-128).
+- 3.5.0: drift and LLM-management APIs under `/api/v1/observability` (API key); document
+  drift merged into the main ingestion service.
 
 ## 7. Key decisions
 

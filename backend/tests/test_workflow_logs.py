@@ -280,5 +280,3 @@ class TestWorkflowLogs:
         assert "logs" not in non_agentic_result["state"].final_report, "Logs should not be in final report when agentic mode is OFF"
 
 
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__]) 

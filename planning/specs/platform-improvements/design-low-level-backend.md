@@ -484,12 +484,17 @@ kept as today), the rate limit (`rate_limited`), the size limit (`too_large`) an
 global handler (`internal_error`). No field that exists today is removed (IMP-NFR-06). Guard refusals keep their top-level body, which the web app
 reads (`src/utils/apiClient.ts`, `isGuardRefusal`).
 
-## 19. Cleanup (3.4.0)
+## 19. Cleanup (3.4.0) and observability (3.5.0)
 
-- **IMP-080:** delete the files listed in the requirement; remove the import in
-  `demos/internal_research_demo.py`; delete `get_llm_service_status` in `llm.py` if
-  nothing calls it. Then `rg "drift_detection|grafana_integration|metrics_registry|mlflow_integration|self_hosted_llm_service|lda_document_extractor|doc_ingestion_service|llm_service\b"`
-  must find nothing outside `CHANGELOG.md`.
+- **IMP-080 (3.4.0):** delete only orphans and true duplicates, for example
+  `services/lda_document_extractor.py` (unused; LDA is in `document_extraction_agent.py`).
+  Do not delete the advanced observability stack.
+- **IMP-128 (3.5.0):** repair imports on `drift_detection`, `grafana_integration`,
+  `metrics_registry`, `mlflow_integration`, `llm_service`, `api/routes/observability`, and
+  `self_hosted_llm_service`; merge `doc_ingestion_service` drift helpers into
+  `document_ingestion_service.py`; mount the observability router on `/api/v1`; document
+  how it relates to `/metrics` and LangSmith. Chat routing stays in `llm.py` only
+  (IMP-086).
 - **IMP-081:** remove `workflow.add_node("web_research", …)` and `("internal_research", …)`
   (`workflows.py:237-238`); remove `_route_to_team_manager` and Senior Research's
   `needs_analysis` branch (or wire it to `team_manager_router` with a test).

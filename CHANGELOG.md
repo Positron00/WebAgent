@@ -2,6 +2,32 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.4.0 - 2026-10-14
+
+Cleanup, reliability fixes, and contributor docs. Advanced observability code is kept for repair in 3.5.0 (IMP-128).
+
+### Upgrade notes
+- **API errors:** Most backend error JSON now includes `"error": {"code": "...", "message": "..."}`. `HTTPException` and validation responses still include `detail` when they did before. Rate limit (429), request too large (413), and the global 500 handler use the new shape instead of a plain `"error": "string"`.
+- **Embeddings:** `WEBAGENT_EMBEDDINGS_PROVIDER` (`openai` or `local`) selects the embedding implementation in `vectordb.py`. Rebuild or re-index the vector store if you switch providers.
+- **Python deps:** Root `requirements.txt` installs runtime plus dev tools via `backend/requirements-dev.txt`. Demo-only packages moved to `backend/requirements-demos.txt`.
+
+### Added
+- Unified `ApiError` and storage quota handling in the web app (`QuotaExceededError` trims oldest chat turns and retries)
+- `CONTRIBUTING.md`; expanded `docs/RUNBOOK.md` (deploy, rollback, rotation, disk full, probes)
+- Backend: `error_body` handlers (`test_error_envelope.py`), graph reachability test, vector search off the event loop, LDA size/pass caps, red-team guard cases, requirements split, CI coverage floors
+- `get_embeddings()` entry point and embedding-provider tests
+
+### Changed
+- Removed orphan `lda_document_extractor.py` and repo clutter (backup Babel configs, tracked demo outputs, duplicate tests)
+- `py2neo` replaced with the `neo4j` driver; PDF extraction uses `pypdf`
+- Grafana/Prometheus image versions in Compose and Kubernetes monitoring manifests
+- Jest: higher coverage floors, `forceExit` removed
+- Spec: IMP-080 narrowed to true duplicates; **IMP-128** schedules observability repair for **3.5.0**
+
+### Fixed
+- Unreachable LangGraph nodes removed; document extraction routing simplified
+- Duplicate test modules merged; diagnostics tests live under `backend/tests/diagnostics/`
+
 ## 3.3.0 - 2026-10-14
 
 Hardening, privacy in logs, cancellable long runs with live progress, token budgets, and ops manifests.

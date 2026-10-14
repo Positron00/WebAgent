@@ -172,5 +172,3 @@ class TestModelAPIGateway(AsyncTestCase):
         self.assertIn("/v1/completions", route_paths)
 
 
-if __name__ == "__main__":
-    unittest.main() 

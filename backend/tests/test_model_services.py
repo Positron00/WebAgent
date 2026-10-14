@@ -269,5 +269,3 @@ class TestTransformerModelService(AsyncTestCase):
         self.run_async(_test())
 
 
-if __name__ == "__main__":
-    unittest.main() 

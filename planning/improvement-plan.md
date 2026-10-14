@@ -3,7 +3,7 @@
 Version reviewed: 3.2.6 (commit `741368a`).
 Every file and line reference below was checked against the code on 2026-10-13.
 Decisions in section 4 were made on 2026-10-13, and the plan reflects them.
-Releases 3.2.7–3.4.0 are specified in
+Releases 3.2.7–3.5.0 are specified in
 [`planning/specs/platform-improvements/`](specs/platform-improvements/README.md); when the
 two disagree, the spec wins.
 
@@ -79,12 +79,12 @@ All five were chosen for the simplest option that stays reliable at the current 
    on the Vercel plan and doesn't cover self-hosting); user accounts (only needed for
    per-person history or quotas). Also set monthly spending caps in the Together and
    Tavily dashboards as a backstop.
-2. **Unused observability code (H1): delete it.** Everything in the H1 table except
-   `document_ingestion_service.py`, which is live. Git history keeps it if it is ever
-   needed. *Not chosen:* mounting it (its drift numbers come from fake services) or
-   moving it to an `experimental/` folder (still code to maintain). The separate
-   model-microservices framework in `backend/models/` is not part of this decision
-   (see H10).
+2. **Advanced observability (H1): superseded by spec IMP-128.** The platform-improvements
+   spec keeps the stack and schedules **repair and integrate in 3.5.0** (drift APIs, LLM
+   management surface, Grafana helpers). **3.4.0** removes only true duplicates and orphans
+   (for example unused `lda_document_extractor.py`). Production metrics stay on `/metrics`
+   and `app/core/observability.py`. The separate model-microservices framework in
+   `backend/models/` is unchanged (see H10).
 3. **Task state (C2): keep the JSON files, add retention.** They already survive
    restarts, are shared between workers and are tested. *Not chosen:* Redis, which
    adds a service that can fail. The only thing it would fix today is the per-worker
@@ -351,7 +351,8 @@ Every item in this plan is placed below.
 |---------|-------|-------|
 | 3.2.7 | Safety net, quick fixes, close the open doors | T1, T2, Q1–Q15, S1, S2, S3, S13, R10, Together and Tavily spending caps |
 | 3.3.0 | Hardening, privacy and long runs | S4–S12, S14, C1, C2, C5, T3, R1–R4, R8 (with T3's lint rule), R11, docs table and `PRODUCTION_READINESS.md` additions in section 11 |
-| 3.4.0 | Cleanup | H1–H4, H8–H10, repo clutter, R5–R7, R9, C4, D1–D5, T4–T7, CONTRIBUTING, RUNBOOK, CHANGELOG archive |
+| 3.4.0 | Cleanup | H1 narrowed (orphans only), H3–H4, H8–H10, repo clutter, R5–R7, R9, C4, D1–D5, T4–T7, CONTRIBUTING, RUNBOOK, CHANGELOG archive |
+| 3.5.0 | Observability | IMP-128: repair and integrate H1 stack (drift, `/api/v1/observability`, merge doc drift) |
 | Later | Larger work | C3, H5–H7, T8, P1–P4; guard and triage `act` modes per their own plans |
 
 C6 and C7 are dropped (decision 5); C6's limit is documented in 3.3.0.

@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Security, status
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 
+from app.core.api_errors import error_body
 from app.core.config import settings
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -204,7 +205,7 @@ def setup_security(app: FastAPI) -> None:
         ):
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                content={"error": "Too many requests"},
+                content=error_body("rate_limited", "Too many requests"),
                 headers={"Retry-After": str(settings.RATE_LIMIT_WINDOW_SIZE)},
             )
 
@@ -212,7 +213,7 @@ def setup_security(app: FastAPI) -> None:
         if content_length and int(content_length) > settings.REQUEST_SIZE_LIMIT:
             return JSONResponse(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                content={"error": "Request too large"},
+                content=error_body("too_large", "Request too large"),
             )
         
         # Continue processing the request

@@ -18,6 +18,7 @@ Rules for every task:
 flowchart LR
   P1[Phase 1 · 3.2.7<br/>CI, access code, limits,<br/>agent settings, run limit] --> P2[Phase 2 · 3.3.0<br/>cancel, progress, budget,<br/>privacy, hardening, docs]
   P2 --> P3[Phase 3 · 3.4.0<br/>cleanup, deps, tests, docs]
+  P3 --> P4[Phase 4 · 3.5.0<br/>observability repair<br/>and integrate]
 ```
 
 CI (tasks 1.1–1.3) goes first, so everything after it is checked automatically. Within a
@@ -90,7 +91,7 @@ Totals: phase 1 about 60 h (7.5 d), phase 2 about 62 h (8 d), phase 3 about 60 h
 
 | ID | Task | Covers | Depends | Done when | Est. |
 |---|---|---|---|---|---|
-| 3.1 | Delete the dead modules and their only users | IMP-080 | — | pytest passes; the grep in the backend design finds nothing | 3 h |
+| 3.1 | Remove true duplicate / orphan modules only (not the observability stack) | IMP-080 | — | pytest passes; import scan passes except IMP-128 pending set; grep finds no import of a removed module | 2 h |
 | 3.2 | Remove unreachable graph nodes; remove or wire `_route_to_team_manager` and `needs_analysis` | IMP-081 | — | `test_graph_reachable.py` passes | 2 h |
 | 3.3 | `error_body` and exception handlers | IMP-082 | — | `test_error_envelope.py` passes; web app guard tests unchanged | 4 h |
 | 3.4 | One `ApiError` class; one accessibility-settings type | IMP-083 | — | `check-types` passes; grep finds one of each | 2 h |
@@ -113,6 +114,17 @@ Totals: phase 1 about 60 h (7.5 d), phase 2 about 62 h (8 d), phase 3 about 60 h
 | 3.20 | Playwright test and `e2e.yml` | IMP-113 | 1.26, 2.7 | Job green on a PR to `release/*` | 6 h |
 | 3.21 | `CONTRIBUTING.md`; rest of `docs/RUNBOOK.md`; CHANGELOG and version-doc archives | IMP-121 | — | Reviewed; README links work | 4 h |
 | 3.22 | CHANGELOG; version 3.4.0 | IMP-NFR-08 | 3.1–3.21 | Reviewed | 1 h |
+
+## Phase 4: 3.5.0, advanced observability (~24 h)
+
+| ID | Task | Covers | Depends | Done when | Est. |
+|---|---|---|---|---|---|
+| 4.1 | Repair imports: align `llm_service`, `doc_ingestion_service` / document drift, and `observability` routes with `app.core.observability` | IMP-128 | 3.22 | `test_import_all_modules.py` has no `xfail` for the observability set | 6 h |
+| 4.2 | Merge document drift into `document_ingestion_service.py`; remove `doc_ingestion_service.py` | IMP-128 | 4.1 | Observability `/drift` and doc baseline routes still work | 4 h |
+| 4.3 | Mount `api/routes/observability` on `/api/v1` (API key); document vs `/metrics` and LangSmith | IMP-128 | 4.1 | `test_observability_api.py` passes | 3 h |
+| 4.4 | Wire drift hooks from production LLM calls where appropriate (no duplicate chat routing) | IMP-128 | 4.1 | pytest with fakes; RUNBOOK section | 4 h |
+| 4.5 | Self-hosted LLM Docker entrypoint and README aligned with repaired stack | IMP-128 | 4.1 | `docker run … id -u` non-root; health check passes | 2 h |
+| 4.6 | CHANGELOG; version 3.5.0 | IMP-NFR-08 | 4.1–4.5 | Reviewed | 1 h |
 
 ## Requirement coverage
 
@@ -159,6 +171,7 @@ Totals: phase 1 about 60 h (7.5 d), phase 2 about 62 h (8 d), phase 3 about 60 h
 | IMP-073 | 2.18 |
 | IMP-074 | 2.22 |
 | IMP-080 | 3.1 |
+| IMP-128 | 4.1, 4.2, 4.3, 4.4, 4.5 |
 | IMP-081 | 3.2 |
 | IMP-082 | 3.3 |
 | IMP-083 | 3.4 |
@@ -189,7 +202,7 @@ Totals: phase 1 about 60 h (7.5 d), phase 2 about 62 h (8 d), phase 3 about 60 h
 | IMP-NFR-05 | every task (review) |
 | IMP-NFR-06 | 1.13, 1.23, 2.3 (contract tests) |
 | IMP-NFR-07 | 1.18 |
-| IMP-NFR-08 | 1.25, 2.25, 3.22 |
+| IMP-NFR-08 | 1.25, 2.25, 3.22, 4.6 |
 
 ## Plan items and where they went
 
@@ -210,7 +223,8 @@ Totals: phase 1 about 60 h (7.5 d), phase 2 about 62 h (8 d), phase 3 about 60 h
 | Q7 | IMP-022 | C2 | IMP-071, IMP-072 |
 | Q8 | IMP-023 | C4 | IMP-095 |
 | Q9 | IMP-031 | C5 | IMP-073 |
-| Q10–Q14 | IMP-024 | H1 | IMP-080 |
+| Q10–Q14 | IMP-024 | H1 (orphans) | IMP-080 |
+| | | H1 (observability) | IMP-128 |
 | Q15 | IMP-030 | H2 | IMP-086 |
 | | | H3, H4 | IMP-081 |
 | S1 | IMP-014 | H8 | IMP-083 |

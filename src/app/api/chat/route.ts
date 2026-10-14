@@ -45,8 +45,8 @@ export async function POST(req: Request) {
     if (rateLimiter.isRateLimited(rateKey)) {
       const timeUntilNext = rateLimiter.getTimeUntilNextAllowed(rateKey);
       throw new ApiError(
-        429,
         `Rate limit exceeded. Please try again in ${Math.ceil(timeUntilNext / 1000)} seconds`,
+        429,
       );
     }
     rateLimiter.addRequest(rateKey);
@@ -65,14 +65,14 @@ export async function POST(req: Request) {
     } = body;
 
     if (!validateRequest(messages)) {
-      throw new ApiError(400, "Invalid message format");
+      throw new ApiError("Invalid message format", 400);
     }
     if (messages.length === 0) {
-      throw new ApiError(400, "No messages to answer");
+      throw new ApiError("No messages to answer", 400);
     }
     const badImage = imageError(image);
     if (badImage) {
-      throw new ApiError(400, badImage);
+      throw new ApiError(badImage, 400);
     }
 
     // Log the request parameters including agentic mode
@@ -200,8 +200,8 @@ export async function POST(req: Request) {
         error: (error as Error).message,
       });
       throw new ApiError(
-        503,
         `Unable to reach LLM API: ${(error as Error).message}`,
+        503,
       );
     }
 
@@ -214,14 +214,14 @@ export async function POST(req: Request) {
         message: errorMessage,
         errorData,
       });
-      throw new ApiError(response.status, errorMessage);
+      throw new ApiError(errorMessage, response.status);
     }
 
     const data = (await response.json()) as ChatCompletionResponse;
 
     if (!data.choices?.[0]?.message?.content) {
       logger.error("Invalid response format from Together AI API", { data });
-      throw new ApiError(500, "Invalid response format from API");
+      throw new ApiError("Invalid response format from API", 500);
     }
 
     // Log successful response
@@ -262,7 +262,7 @@ export async function POST(req: Request) {
     if (error instanceof ApiError) {
       return NextResponse.json(
         { error: { message: error.message } },
-        { status: error.statusCode },
+        { status: error.status },
       );
     }
 

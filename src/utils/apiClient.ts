@@ -14,6 +14,9 @@ import {
 import { fetchWithRetry } from "@/utils/fetchWithRetry";
 import { isSignInRequired, redirectToSignIn } from "@/utils/signIn";
 import { pollTask, stoppedError, TaskStatusReply } from "@/utils/taskPolling";
+import { ApiError } from "@/utils/errors";
+
+export { ApiError };
 
 const TRIAGE_ROUTING_FALLBACK_NOTICE =
   "I'm answering directly because research routing is temporarily unavailable.\n\n";
@@ -96,38 +99,6 @@ function toResearchError(error: unknown, signal: AbortSignal): unknown {
   if (signal.aborted) return stoppedError();
   const message = error instanceof Error ? error.message : String(error);
   return new ResearchFailed("failed", message);
-}
-
-/**
- * Enhanced error class with additional context for better debugging
- */
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-    public data?: any,
-    public requestId?: string,
-    public endpoint?: string,
-    public timestamp: number = Date.now(),
-  ) {
-    super(message);
-    this.name = "ApiError";
-
-    // Capture stack trace for better debugging
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ApiError);
-    }
-
-    // Log the error with context
-    logger.error("API Error", {
-      message,
-      status,
-      requestId,
-      endpoint,
-      timestamp: new Date(timestamp).toISOString(),
-      data: typeof data === "object" ? JSON.stringify(data) : data,
-    });
-  }
 }
 
 /**

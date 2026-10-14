@@ -63,5 +63,3 @@ class TestModelProcessInfo(unittest.TestCase):
         self.assertEqual(self.process_info.exit_code, 1)
 
 
-if __name__ == "__main__":
-    unittest.main() 

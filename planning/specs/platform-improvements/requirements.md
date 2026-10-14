@@ -2,8 +2,8 @@
 
 Each requirement has an ID, the plan item it comes from, a statement, acceptance
 criteria, and how it is checked. "Must" is required for its release; "should" can slip
-to the next one. The release tag (**3.2.7**, **3.3.0**, **3.4.0**) matches the phases in
-[`tasks.md`](tasks.md).
+to the next one. The release tag (**3.2.7**, **3.3.0**, **3.4.0**, **3.5.0**) matches the
+phases in [`tasks.md`](tasks.md).
 
 Terms used throughout:
 
@@ -337,16 +337,30 @@ workers the effective limit is up to twice the setting. The unused `redis` packa
 
 ## 9. Code health
 
-**IMP-080 Dead code removed (must, 3.4.0; plan H1, decision 2).** These are deleted:
-`core/grafana_integration.py`, `core/drift_detection.py`, `core/metrics_registry.py`,
-`core/mlflow_integration.py`, `services/self_hosted_llm_service.py`,
-`services/lda_document_extractor.py`, `services/doc_ingestion_service.py`,
-`services/llm_service.py`, `api/routes/observability.py`,
-`demos/ml_observability_demo.py`, `services/examples/model_fine_tuning.py`. The
-`doc_ingestion_service` import is removed from `demos/internal_research_demo.py`.
-`services/document_ingestion_service.py` stays.
-- Check: pytest passes; `python -c "import app.main"`-style import of every remaining
-  module passes; grep finds no import of a deleted module.
+**IMP-080 True duplicate / orphan code removed (must, 3.4.0; plan H1, narrowed).** Delete
+only modules that duplicate behaviour already used in production and have no unique callers:
+`services/lda_document_extractor.py` (LDA lives in `document_extraction_agent.py`; nothing
+imported this file), and any other orphans listed in the backend design's 3.4.0 cleanup table.
+Do **not** delete the advanced observability stack (`drift_detection`, `grafana_integration`,
+`metrics_registry`, `mlflow_integration`, `llm_service`, `api/routes/observability`,
+`self_hosted_llm_service`, demos that exercise them). `services/document_ingestion_service.py`
+is the production ingestion path; `doc_ingestion_service.py` is merged in IMP-128, not
+deleted here.
+- Check: pytest passes; import scan passes except modules marked pending repair in IMP-128;
+  grep finds no import of a deleted module.
+
+**IMP-128 Advanced observability repair and integrate (must, 3.5.0).** The stack above is
+repaired (imports, missing helpers on `app.core.observability`, drift detectors wired to real
+metrics) and integrated into the running product: `api/routes/observability` is mounted under
+`/api/v1` behind the API key; document drift moves from `doc_ingestion_service.py` into
+`document_ingestion_service.py` (then the thin duplicate is removed); optional self-hosted LLM
+Docker images keep a supported entrypoint; Grafana dashboard helpers and MLflow integration
+are documented in the runbook. Production agent runs continue to use `llm.py` for chat;
+`llm_service.py` feeds observability and drift APIs without duplicating routing logic.
+- Check: no `xfail` on the observability import set; `test_observability_api.py` (or
+  equivalent) hits `/api/v1/observability/metrics` with a key; drift and LLM management
+  endpoints return structured JSON; RUNBOOK describes how this relates to `/metrics` and
+  LangSmith.
 
 **IMP-081 Graph wiring (must, 3.4.0; plan H3, H4).** The graph has no nodes that no
 edge reaches. `_route_to_team_manager` and the unread `needs_analysis` flag are removed,
@@ -370,8 +384,7 @@ describes `backend/models/` (gateway, registry, manager) as an optional, separat
 that the agents don't use.
 - Check: doc review.
 
-**IMP-086 One entry point for models (must, 3.4.0; plan H2).** After IMP-080 removes
-the stub and self-hosted LLM services, chat models are built only in
+**IMP-086 One entry point for models (must, 3.4.0; plan H2).** Chat models are built only in
 `app/services/llm.py` (`together_llm.py` is imported only by `llm.py`), and embeddings
 only through one `get_embeddings()` in `app/services/vectordb.py`.
 `agents/internal_research.py:205`, which builds `OpenAIEmbeddings` itself today, uses it.
@@ -444,7 +457,7 @@ has the same minor version as `next`.
 
 **IMP-110 Coverage floors (must, 3.4.0; plan T4).** The Jest floors rise by at least 5
 points from 46/45/38/34 (lines/statements/branches/functions). The backend has a
-coverage floor in CI at its measured value after IMP-080, rounded down.
+coverage floor in CI at its measured value after IMP-080 (orphan removal only), rounded down.
 - Check: CI.
 
 **IMP-111 One copy of each test (must, 3.4.0; plan T5).** The duplicate test pairs are
@@ -491,4 +504,4 @@ files move to `docs/archive/`.
 | IMP-NFR-05 | New files stay under about 200 lines | Review |
 | IMP-NFR-06 | API clients that use `X-API-Key` keep working, apart from the changes listed in the upgrade notes (IMP-NFR-08); status replies only gain fields; no existing response field is removed | pytest contract tests |
 | IMP-NFR-07 | After IMP-030, 5 fixed research questions and 5 routine ones are run before and after in uat. A person compares the answers; no answer is clearly worse, and run times stay within IMP-NFR-04 | Results table in the PR |
-| IMP-NFR-08 | Each change that alters a default or behaviour is listed under "Upgrade notes" in the CHANGELOG. At least: 3.2.7 — access code needed in production, dev host and Compose ports local only, agents use their YAML temperatures and limits, 7-minute run limit, longer chat-completions inputs rejected; 3.3.0 — no silent fallback to plain chat, OpenAPI docs off and detailed health behind the key in uat/prod, result files deleted after 30 days, token budget; 3.4.0 — error bodies gain the `error` object, packages removed | Review |
+| IMP-NFR-08 | Each change that alters a default or behaviour is listed under "Upgrade notes" in the CHANGELOG. At least: 3.2.7 — access code needed in production, dev host and Compose ports local only, agents use their YAML temperatures and limits, 7-minute run limit, longer chat-completions inputs rejected; 3.3.0 — no silent fallback to plain chat, OpenAPI docs off and detailed health behind the key in uat/prod, result files deleted after 30 days, token budget; 3.4.0 — error bodies gain the `error` object, packages removed; 3.5.0 — `/api/v1/observability/*` available behind the API key, document drift merged into the main ingestion service | Review |

@@ -250,5 +250,3 @@ class TestLangGraphWorkflow:
         # Verify that dangerous commands were removed
         assert "rm -rf" not in result["state"].query
 
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__]) 

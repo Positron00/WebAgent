@@ -3,6 +3,7 @@ Vector database service for the WebAgent backend.
 Provides document storage and retrieval.
 """
 from typing import Dict, List, Optional, Any
+import asyncio
 import logging
 import os
 from pathlib import Path
@@ -26,6 +27,23 @@ from app.core.observability import (
 )
 
 logger = logging.getLogger(__name__)
+
+_LOCAL_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+
+@lru_cache(maxsize=1)
+def get_embeddings():
+    """Single entry point for embedding models (IMP-086, IMP-095)."""
+    provider = (settings.EMBEDDINGS_PROVIDER or "openai").lower()
+    if provider == "local":
+        from langchain_huggingface import HuggingFaceEmbeddings
+
+        return HuggingFaceEmbeddings(
+            model_name=_LOCAL_EMBEDDING_MODEL,
+            cache_folder="/opt/models",
+        )
+    return OpenAIEmbeddings(api_key=settings.OPENAI_API_KEY)
+
 
 class VectorDBService:
     """
@@ -56,10 +74,7 @@ class VectorDBService:
             # Ensure the directory exists
             os.makedirs(self.vector_db_path, exist_ok=True)
             
-            # Create embeddings
-            self.embeddings = OpenAIEmbeddings(
-                api_key=settings.OPENAI_API_KEY
-            )
+            self.embeddings = get_embeddings()
             
             # Create vector database
             self.vectordb = Chroma(
@@ -151,7 +166,9 @@ class VectorDBService:
             # Use the vectordb's similarity_search method directly
             # instead of using embeddings manually
             try:
-                results = self.vectordb.similarity_search_with_score(query, k=top_k)
+                results = await asyncio.to_thread(
+                    self.vectordb.similarity_search_with_score, query, k=top_k
+                )
                 
                 # Convert to the expected format
                 formatted_results = []

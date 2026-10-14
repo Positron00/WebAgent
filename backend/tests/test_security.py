@@ -521,5 +521,3 @@ class TestAPISecuritySuite:
             pytest.skip(f"Skipping test_injection_prevention due to error: {str(e)}")
 
 
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__]) 

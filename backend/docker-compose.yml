@@ -14,9 +14,10 @@ services:
       dockerfile: Dockerfile
       args:
         APP_VERSION: ${APP_VERSION:-0.0.0}
-    image: webagent/backend:${APP_VERSION:-latest}
+    image: webagent/backend:${APP_VERSION:?set APP_VERSION, e.g. via npm run stack:up}
     container_name: webagent-backend
     restart: unless-stopped
+    mem_limit: 3g
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
@@ -45,7 +46,7 @@ services:
       - prometheus
 
   prometheus:
-    image: prom/prometheus:v2.36.0
+    image: prom/prometheus:v2.55.1
     container_name: prometheus
     restart: unless-stopped
     ports:
@@ -63,7 +64,7 @@ services:
       - webagent-network
 
   grafana:
-    image: grafana/grafana:8.5.3
+    image: grafana/grafana:11.4.0
     container_name: grafana
     restart: unless-stopped
     ports:

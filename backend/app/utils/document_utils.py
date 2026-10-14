@@ -65,31 +65,32 @@ def extract_text_from_pdf(pdf_path: Union[str, Path]) -> str:
         Extracted text
     """
     try:
-        import PyPDF2
-        
+        from pypdf import PdfReader
+
         text = []
-        with open(pdf_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
-            for page_num in range(len(reader.pages)):
-                page = reader.pages[page_num]
-                text.append(page.extract_text())
-        
+        with open(pdf_path, "rb") as file:
+            reader = PdfReader(file)
+            for page in reader.pages:
+                text.append(page.extract_text() or "")
+
         return "\n\n".join(text)
     except ImportError:
-        logger.warning("PyPDF2 not installed. Trying alternative PDF extraction.")
+        logger.warning("pypdf not installed. Trying alternative PDF extraction.")
         try:
-            # Fallback to pdfplumber if PyPDF2 fails
             import pdfplumber
-            
+
             text = []
             with pdfplumber.open(pdf_path) as pdf:
                 for page in pdf.pages:
                     text.append(page.extract_text() or "")
-            
+
             return "\n\n".join(text)
         except ImportError:
-            logger.error("PDF extraction libraries (PyPDF2, pdfplumber) not installed.")
-            raise ImportError("PDF extraction requires PyPDF2 or pdfplumber. Please install with: pip install PyPDF2 pdfplumber")
+            logger.error("PDF extraction libraries (pypdf, pdfplumber) not installed.")
+            raise ImportError(
+                "PDF extraction requires pypdf or pdfplumber. "
+                "Please install with: pip install pypdf pdfplumber"
+            )
 
 def extract_text_from_docx(docx_path: Union[str, Path]) -> str:
     """

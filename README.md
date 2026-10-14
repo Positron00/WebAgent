@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.2.7-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.4.0-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2026--10--14-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent platform for web research and document processing.
@@ -34,11 +34,10 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
 
 - **LangGraph Integration**: Uses LangGraph (0.2.x) for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow
 
-- **Microservices Model Framework**: Decoupled model services that can be independently scaled and managed
-  - Model Registry for discovery and status tracking
-  - API Gateway for unified access to all model services
-  - Supports transformer-based language and embedding models
-  - Configurable via YAML for easy deployment and management
+- **Optional model microservices** (`backend/models/`): a separate gateway/registry toolkit for
+  hosting transformer models. The agent workflow does **not** depend on it; production chat
+  uses Together/OpenAI through `backend/app/services/llm.py`. Use this tree only when you
+  deploy self-hosted model endpoints alongside the main backend.
 
 - **Advanced RAG Architecture**: Sophisticated retrieval and processing with built-in document extraction capabilities, enhanced BM25 lexical retrieval for improved results
 
@@ -328,7 +327,7 @@ WebAgent includes comprehensive testing and diagnostic tools.
    npm run test:coverage     # fails if web app coverage drops below the floor in jest.config.js
    npm run coverage:backend
    ```
-   See [docs/TESTING.md](docs/TESTING.md) for details.
+   See [docs/TESTING.md](docs/TESTING.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for setup and CI details.
 
 3. Run model service tests:
    ```bash
@@ -338,8 +337,8 @@ WebAgent includes comprehensive testing and diagnostic tools.
    # Run model service implementation tests
    python -m backend.tests.test_model_services
    
-   # Run model manager tests (simplified version)
-   python -m backend.tests.test_model_manager_simplified
+   # Run model manager tests
+   python -m backend.tests.test_model_manager
    ```
 
 4. Run diagnostics:
@@ -416,7 +415,7 @@ WebAgent includes comprehensive testing and diagnostic tools.
 
 ## Security
 
-To report a vulnerability, see [SECURITY.md](SECURITY.md). For production backup, metrics exposure, and spending caps, see [docs/RUNBOOK.md](docs/RUNBOOK.md).
+To report a vulnerability, see [SECURITY.md](SECURITY.md). For contributor setup, see [CONTRIBUTING.md](CONTRIBUTING.md). For deploy, rollback, key rotation, backups, and spending caps, see [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
 ## License
 

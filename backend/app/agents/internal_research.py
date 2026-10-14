@@ -30,14 +30,13 @@ from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain.retrievers import ContextualCompressionRetriever, EnsembleRetriever
 from langchain.retrievers.document_compressors import DocumentCompressorPipeline
 from langchain.retrievers.document_compressors import CrossEncoderReranker
-from langchain_huggingface import HuggingFaceEmbeddings
 from sentence_transformers import CrossEncoder
 
 from app.models.task import WorkflowState
 from app.models.research_plan import research_query
 from app.security.hop_guard import acheck_hop, kept_text, task_items
 from app.security.types import ContextItem
-from app.services.vectordb import retrieve_documents, get_vectordb_service
+from app.services.vectordb import retrieve_documents, get_vectordb_service, get_embeddings
 from app.security.tool_guard import guard_tool
 from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
@@ -193,127 +192,17 @@ class RAGRetriever:
                 logger.warning(f"Error checking vector database dimensions: {str(check_err)}")
                 self.vectordb_exists = False
             
-            # Choose the appropriate embedding model based on the database dimension
-            if expected_dim == 1536 or (expected_dim is None and not self.vectordb_exists):
-                # For OpenAI compatible embeddings (1536 dim)
-                if expected_dim is None:
-                    logger.info("Creating new database with OpenAI-compatible embeddings (1536 dim)")
-                else:
-                    logger.info("Using OpenAI-compatible embeddings (1536 dim) to match database")
-                
-                # Set the dimension explicitly
-                self.embedding_dim = 1536
-                
-                from langchain_openai import OpenAIEmbeddings
-                
-                # Try to use the OpenAI embeddings
-                try:
-                    self.advanced_embeddings = OpenAIEmbeddings(
-                        model="text-embedding-ada-002"  # 1536 dimensions
-                    )
-                    logger.info("Successfully initialized OpenAI embeddings")
-                    # Set the model_name for logging purposes
-                    model_name = "text-embedding-ada-002"
-                except Exception as oai_err:
-                    logger.warning(f"Could not initialize OpenAI embeddings: {str(oai_err)}")
-                    # Fallback to a HuggingFace model with dimension transformation
-                    logger.info("Falling back to HuggingFace embeddings with dimension adaptation")
-                    
-                    # Try models with close to 1536 dimensions
-                    hf_models_to_try = [
-                        "BAAI/bge-large-en-v1.5",  # 1024 dimensions
-                        "intfloat/e5-large-v2",  # 1024 dimensions
-                        "sentence-transformers/all-mpnet-base-v2"  # 768 dimensions
-                    ]
-                    
-                    success = False
-                    for model_name in hf_models_to_try:
-                        try:
-                            from langchain_community.embeddings import HuggingFaceEmbeddingsWithDimension
-                            
-                            # Custom class to enforce dimension
-                            class Dim1536Embeddings(HuggingFaceEmbeddings):
-                                def embed_documents(self, texts):
-                                    # Get base embeddings
-                                    embeddings = super().embed_documents(texts)
-                                    # Apply dimension transformation to match 1536
-                                    import numpy as np
-                                    
-                                    # Simple approach: resize with padding or truncation
-                                    resized_embeddings = []
-                                    for emb in embeddings:
-                                        emb_array = np.array(emb)
-                                        if len(emb) < 1536:
-                                            # Pad with zeros
-                                            padding = np.zeros(1536 - len(emb))
-                                            resized = np.concatenate([emb_array, padding])
-                                        else:
-                                            # Truncate
-                                            resized = emb_array[:1536]
-                                        # Normalize
-                                        resized = resized / np.linalg.norm(resized)
-                                        resized_embeddings.append(resized.tolist())
-                                    return resized_embeddings
-                                
-                                def embed_query(self, text):
-                                    # Single query embedding resize
-                                    emb = super().embed_query(text)
-                                    import numpy as np
-                                    emb_array = np.array(emb)
-                                    if len(emb) < 1536:
-                                        # Pad with zeros
-                                        padding = np.zeros(1536 - len(emb))
-                                        resized = np.concatenate([emb_array, padding])
-                                    else:
-                                        # Truncate
-                                        resized = emb_array[:1536]
-                                    # Normalize
-                                    resized = resized / np.linalg.norm(resized)
-                                    return resized.tolist()
-                            
-                            # Initialize with dimension adaptation
-                            self.advanced_embeddings = Dim1536Embeddings(
-                                model_name=model_name,
-                                model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
-                                encode_kwargs={"normalize_embeddings": True}
-                            )
-                            logger.info(f"Successfully initialized HuggingFace embeddings with model {model_name} and dimension adaptation to 1536")
-                            success = True
-                            break
-                        except Exception as hf_err:
-                            logger.warning(f"Failed to initialize {model_name}: {str(hf_err)}")
-                    
-                    if not success:
-                        logger.error("Failed to initialize any compatible embedding model")
-                        raise ValueError("No compatible embedding models available")
-                        
-            elif expected_dim is not None:
-                # Use HuggingFace model that matches the detected dimension
-                logger.info(f"Matching existing database with dimension {expected_dim}")
-                
-                # Select model based on dimension
-                if expected_dim == 768:
-                    model_name = "sentence-transformers/all-mpnet-base-v2"  # 768 dimensions
-                elif expected_dim == 1024:
-                    model_name = "BAAI/bge-large-en-v1.5"  # 1024 dimensions 
-                else:
-                    # Use the configured model as fallback
-                    model_name = self.config.get("embedding_model", "sentence-transformers/all-mpnet-base-v2")
-                
-                logger.info(f"Using HuggingFace embeddings: {model_name}")
-                self.advanced_embeddings = HuggingFaceEmbeddings(
-                    model_name=model_name,
-                    model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
-                    encode_kwargs={"normalize_embeddings": True}
+            self.advanced_embeddings = get_embeddings()
+            if expected_dim is not None:
+                logger.info(
+                    "Using configured embeddings (provider=%s); existing collection dimension=%s",
+                    settings.EMBEDDINGS_PROVIDER,
+                    expected_dim,
                 )
             else:
-                # Use default model 
-                model_name = self.config.get("embedding_model", "sentence-transformers/all-mpnet-base-v2")
-                logger.info(f"Using default HuggingFace embeddings: {model_name}")
-                self.advanced_embeddings = HuggingFaceEmbeddings(
-                    model_name=model_name,
-                    model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
-                    encode_kwargs={"normalize_embeddings": True}
+                logger.info(
+                    "Using configured embeddings (provider=%s) for a new vector database",
+                    settings.EMBEDDINGS_PROVIDER,
                 )
             
             # Initialize the vector store with the embeddings

@@ -10,7 +10,8 @@ import uuid
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from datetime import datetime
 
@@ -22,6 +23,8 @@ if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
 # Now import application modules
+from app.api.http_errors import http_exception_body
+from app.core.api_errors import error_body, error_code_for_status
 from app.api.router import api_router, health_router
 from app.api.endpoints.task import router as task_router
 from app.api.endpoints.guard import router as guard_router
@@ -141,6 +144,23 @@ app.include_router(
     dependencies=[Depends(require_api_key)],
 )
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(status_code=exc.status_code, content=http_exception_body(exc))
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=error_body(
+            "validation_error",
+            "Request validation failed",
+            exc.errors(),
+        ),
+    )
+
+
 # Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -172,15 +192,15 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
     
     # Return a JSON response with appropriate error details
+    message = (
+        sanitize_error_message(exception_msg)
+        if settings.DEBUG_MODE
+        else "An unexpected error occurred"
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
-            "error": "Internal Server Error",
-            "message": (
-                sanitize_error_message(exception_msg)
-                if settings.DEBUG_MODE
-                else "An unexpected error occurred"
-            ),
+            **error_body(error_code_for_status(500), message),
             "error_id": error_id,
             "timestamp": datetime.now().isoformat(),
         },

@@ -1,4 +1,4 @@
-# Spec: platform improvements (3.2.7 – 3.4.0)
+# Spec: platform improvements (3.2.7 – 3.5.0)
 
 Status: draft v1 · Source plan: [`planning/improvement-plan.md`](../../improvement-plan.md) · Base: `main` at v3.2.6 (`741368a`) · 2026-10-14
 
@@ -13,8 +13,10 @@ first three releases into requirements, designs and tasks:
 - **3.3.0, hardening, privacy and long runs.** Cancel and live progress for research
   runs; a per-task token budget; no question text in logs; result files that expire;
   security headers and smaller open endpoints; honest docs.
-- **3.4.0, cleanup.** Dead code removed; dependencies split; more tests (coverage, red
-  team, one browser-to-backend run); contributor and ops docs.
+- **3.4.0, cleanup.** True duplicate/orphan code removed; dependencies split; more tests
+  (coverage, red team, one browser-to-backend run); contributor and ops docs.
+- **3.5.0, observability.** Repair and integrate the advanced observability stack (drift,
+  LLM management API, Grafana helpers) with the live server and `/api/v1/observability`.
 
 ## Documents
 
@@ -34,7 +36,7 @@ and this spec can be read side by side.
 
 ## Scope
 
-In scope: every plan item placed in releases 3.2.7, 3.3.0 and 3.4.0.
+In scope: every plan item placed in releases 3.2.7, 3.3.0, 3.4.0 and 3.5.0.
 
 Out of scope (the plan's "Later" row and items owned by other specs):
 
@@ -55,8 +57,11 @@ spec.
 
 1. **Web app access: a shared access code** in a signed, HTTP-only cookie. Not Vercel
    password protection (plan-dependent, Vercel only) and not user accounts.
-2. **Unused observability code: delete it** (everything in the plan's H1 table except
-   `document_ingestion_service.py`).
+2. **Advanced observability code: repair and integrate in 3.5.0** (IMP-128), not delete.
+   Release 3.4.0 removes only true duplicates and orphans (for example unused
+   `lda_document_extractor.py`). Production metrics stay on `/metrics` and
+   `app/core/observability.py`; the extra stack adds drift APIs, LLM management surfaces,
+   and Grafana helpers once wired.
 3. **Task state: keep JSON files**, add retention. No Redis.
 4. **User questions:** not in logs; result files deleted after 30 days; guard and
    triage collections unchanged.

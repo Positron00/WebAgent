@@ -1,0 +1,5 @@
+# Optional packages for backend/demos and app/services/examples (install manually).
+-r requirements-dev.txt
+
+# Examples and demo scripts that plot or tune models outside the server image.
+# (Runtime already includes mlflow, torch, and pandas.)

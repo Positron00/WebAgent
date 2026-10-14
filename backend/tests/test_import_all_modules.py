@@ -9,8 +9,8 @@ APP_DIR = Path(__file__).resolve().parents[1] / "app"
 # Example scripts start training or MLflow runs when imported; they aren't part of the server.
 SKIPPED_PACKAGES = ("app.services.examples",)
 
-# Dead modules that already fail to import; they are deleted in 3.4.0 (IMP-080).
-KNOWN_BROKEN = {
+# Advanced observability stack: imports fail until 3.5.0 repair-and-integrate (IMP-128).
+PENDING_REPAIR_350 = {
     "app.api.routes.observability",
     "app.services.doc_ingestion_service",
     "app.services.llm_service",
@@ -32,8 +32,14 @@ def _module_names():
 
 def _params():
     for name in _module_names():
-        if name in KNOWN_BROKEN:
-            yield pytest.param(name, marks=pytest.mark.xfail(strict=True, reason="dead code, deleted in 3.4.0"))
+        if name in PENDING_REPAIR_350:
+            yield pytest.param(
+                name,
+                marks=pytest.mark.xfail(
+                    strict=True,
+                    reason="observability stack repair in 3.5.0 (IMP-128)",
+                ),
+            )
         else:
             yield name
 

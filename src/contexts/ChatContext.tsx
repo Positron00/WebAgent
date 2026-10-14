@@ -11,7 +11,7 @@ import React, {
 import { ChatMessage, ChatState } from "@/types/chat";
 import { ChatCompletionResponse } from "@/types/api";
 import { RESEARCH_STOPPED_MESSAGE, ResearchFailed } from "@/types/research";
-import { storage } from "@/utils/storage";
+import { storage, STORAGE_QUOTA_NOTICE } from "@/utils/storage";
 import { apiClient, ApiError } from "@/utils/apiClient";
 import { stoppedError } from "@/utils/taskPolling";
 import { logger } from "@/utils/logger";
@@ -133,7 +133,7 @@ const errorText = (error: unknown) =>
   error instanceof Error ? error.message : "An unknown error occurred";
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { accessibility, agenticMode } = useApp();
+  const { accessibility, agenticMode, showNotification } = useApp();
   const [state, setState] = useState<ChatState>(() => ({
     messages: [],
     isLoading: false,
@@ -169,15 +169,21 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    try {
-      storage.saveMessages(state.messages);
+    const { persisted, quotaTrimmed } = storage.saveMessages(state.messages);
+    if (quotaTrimmed) {
+      showNotification({
+        message: STORAGE_QUOTA_NOTICE,
+        type: "warning",
+      });
+      if (persisted.length !== state.messages.length) {
+        setState((prev) => ({ ...prev, messages: persisted }));
+      }
+    } else {
       logger.debug("Saved messages to storage", {
         messageCount: state.messages.length,
       });
-    } catch (error) {
-      logger.error("Failed to save messages to storage", error);
     }
-  }, [state.messages, state.messages.length]);
+  }, [state.messages, state.messages.length, showNotification]);
 
   const setEditPendingHandler = useCallback(
     (handler: (text: string) => void) => {

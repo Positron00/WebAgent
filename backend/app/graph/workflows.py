@@ -112,7 +112,9 @@ def team_manager_router(state: WorkflowState) -> str:
         return END
 
     team_manager_output = state.reports.get("team_manager", {})
-    needs_analysis = team_manager_output.get("needs_analysis", False)
+    needs_analysis = team_manager_output.get("needs_analysis", False) or state.context.get(
+        "needs_analysis", False
+    )
     needs_coding = team_manager_output.get("needs_coding", False)
 
     logger.info(
@@ -230,8 +232,6 @@ def _build_agent_workflow_impl(config=None, workflow=None) -> StateGraph:
     logger.debug("Initializing agent instances")
     supervisor = get_supervisor_agent()
     document_extraction = get_document_extraction_agent()
-    internal_research = get_internal_research_agent()
-    web_research = get_web_research_agent()
     senior_research = get_senior_research_agent()
     data_analysis = get_data_analysis_agent()
     coding_assistant = get_coding_assistant_agent()
@@ -248,8 +248,6 @@ def _build_agent_workflow_impl(config=None, workflow=None) -> StateGraph:
     logger.debug("Adding agent nodes to graph")
     workflow.add_node("supervisor", supervisor)
     workflow.add_node("document_extraction", document_extraction)
-    workflow.add_node("internal_research", internal_research)
-    workflow.add_node("web_research", web_research)
     workflow.add_node("senior_research", senior_research)
     workflow.add_node("data_analysis", data_analysis)
     workflow.add_node("coding_assistant", coding_assistant)
