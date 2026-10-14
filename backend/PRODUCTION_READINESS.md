@@ -2,7 +2,7 @@
 
 This document summarizes the improvements made to the WebAgent backend to make it production-ready.
 
-## Production checklist (3.2.5)
+## Production checklist (3.2.6)
 
 Before exposing the backend:
 

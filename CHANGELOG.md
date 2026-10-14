@@ -2,6 +2,27 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.2.6 - 2026-10-13
+
+### Fixed
+- `deploy.sh -e uat` deployed prod settings: `deployment.yaml` hard-coded `WEBAGENT_ENV=prod`. The script now sets it from `-e` (`prod` or `uat`; `production` still means prod)
+- The week's collected data would have been lost on any pod restart: `/app/data` was an `emptyDir`. It's now a 5 GiB persistent volume, and the Deployment uses `Recreate` (a ReadWriteOnce volume can't attach to two pods)
+- Secrets went through `sed`, which broke on keys containing `/` or `&`. `deploy.sh` now creates `webagent-secrets` and Grafana's `grafana-credentials` with `kubectl create secret`; no key is written to a file
+- Every backend metric would have been counted twice in Kubernetes: two Prometheus jobs scraped the same pod. The general pod job now skips the backend
+- On clusters without the Prometheus Operator, `deploy.sh` stopped partway: `prometheus.yaml` included a `ServiceMonitor` and a `PrometheusRule`. They moved to `monitoring/prometheus-operator.yaml`, applied only when the Operator's CRDs exist, and the `ServiceMonitor` now matches the real Service and `/metrics`
+- Internal research's reranker downloaded from Hugging Face on the first research task (the pod needed internet access, and it failed where the cache folder belonged to root). It's baked into the image (`HF_HUB_CACHE=/opt/hf-hub`), and `/app/data` in the image belongs to the app user
+- `webagent_contextdefender_score` was registered but never recorded; each freshly scored item now adds its four axis scores
+- The uat config said triage's shadow week left routing unchanged; that holds only for questions sent with Always. In Auto, triage routes for real and `/api/triage` records nothing. The comment and the runbook now say to keep the web app on Always for the week
+
+### Changed
+- `deploy.sh` takes the image repository (`-r`) and ingress host (`-H`), runs from any folder, stops on errors inside pipes, validates its inputs and leaves no rendered manifest behind. CPU limit 2 (request 1) so each worker scores on its own core; a startup probe allows up to 5 minutes for the encoders to load
+- Removed `kubernetes/service.yaml`, `ingress.yaml`, `secrets.yaml` and `configmap.yaml`: unused, with another namespace and labels
+- Shadow-week runbook section 1 covers running the week on one machine with Docker and in Kubernetes
+- Web app headline: the chat's font (Inter, semibold, wide spacing) in soft grey instead of Playfair Display with a gradient; Playfair is no longer loaded
+- Web app logo: greyscale and faded, without the dark square behind it, and it pulses while an answer is on its way (not with reduced motion)
+- Web app toolbar: Agentic is a menu like Style and Focus, its button showing the current mode and its panel listing the three modes with their hints. Style and Focus show their current values on their buttons, coloured by value, instead of the coloured pills. All four menus close on Escape (focus returns to the button) or on a click outside
+- Web app scrollbars are dark and thin, and the page declares a dark colour scheme
+
 ## 3.2.5 - 2026-10-13
 
 Fixes from a simulated shadow week (3.2.4 in Docker with the uat settings and real model and search calls, three tasks at a time).
