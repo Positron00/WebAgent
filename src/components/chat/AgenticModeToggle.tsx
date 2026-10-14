@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BeakerIcon } from '@heroicons/react/24/outline';
 import { AgenticMode, AGENTIC_MODES } from '@/types/routing';
-import { Tooltip } from './Tooltip';
+import { useDismiss } from '@/hooks/useDismiss';
 
 const LABELS: Record<AgenticMode, string> = {
   off: 'Off',
@@ -17,73 +17,92 @@ const TITLES: Record<AgenticMode, string> = {
   always: 'Always use research agents (slower)',
 };
 
+// Text colour of the current mode on the toolbar; Always keeps the indigo of the old selected pill
+const TEXT_COLORS: Record<AgenticMode, string> = {
+  off: 'text-gray-400',
+  auto: 'text-cyan-400',
+  always: 'text-indigo-400',
+};
+
 interface AgenticModeToggleProps {
   value: AgenticMode;
   onChange: (mode: AgenticMode) => void;
   disabled?: boolean;
 }
 
+/** Toolbar button showing the Agentic mode; opens a menu to change it, like Style and Focus. */
 export function AgenticModeToggle({ value, onChange, disabled = false }: AgenticModeToggleProps) {
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  const selectMode = useCallback(
-    (mode: AgenticMode) => {
-      if (!disabled) onChange(mode);
-    },
-    [disabled, onChange],
-  );
-
-  const handleKeyDown = (event: React.KeyboardEvent, index: number) => {
-    if (disabled) return;
-    let nextIndex = index;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-      event.preventDefault();
-      nextIndex = (index + 1) % AGENTIC_MODES.length;
-    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      nextIndex = (index - 1 + AGENTIC_MODES.length) % AGENTIC_MODES.length;
-    } else {
-      return;
-    }
-    const nextMode = AGENTIC_MODES[nextIndex];
-    selectMode(nextMode);
-    buttonRefs.current[nextIndex]?.focus();
-  };
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const displayValue = disabled ? 'off' : value;
 
+  const close = useCallback((returnFocus: boolean) => {
+    setOpen(false);
+    if (returnFocus) triggerRef.current?.focus();
+  }, []);
+
+  useDismiss(containerRef, open, close);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
+
+  const selectMode = (mode: AgenticMode) => {
+    if (disabled) return;
+    onChange(mode);
+    close(true);
+  };
+
   return (
-    <div className="flex items-center gap-1" role="radiogroup" aria-label="Agentic mode">
-      <BeakerIcon className="w-3 h-3 text-gray-300 shrink-0" aria-hidden="true" />
-      <span className="text-[10px] text-gray-300" aria-hidden="true">
-        Agentic:
-      </span>
-      {AGENTIC_MODES.map((mode, index) => {
-        const selected = displayValue === mode;
-        return (
-          <Tooltip key={mode} text={TITLES[mode]}>
-            <button
-              ref={(el) => {
-                buttonRefs.current[index] = el;
-              }}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              tabIndex={selected ? 0 : -1}
-              disabled={disabled}
-              onClick={() => selectMode(mode)}
-              onKeyDown={(e) => handleKeyDown(e, index)}
-              className={`px-1.5 py-0.5 rounded text-[10px] transition-colors ${
-                selected
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-indigo-600/10 text-white/40 hover:bg-indigo-600/40 hover:text-white/80'
-              } disabled:opacity-50`}
-            >
-              {LABELS[mode]}
-            </button>
-          </Tooltip>
-        );
-      })}
+    <div className="relative" ref={containerRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen(!open)}
+        disabled={disabled}
+        className="p-1 hover:bg-white/5 rounded transition-colors flex items-center gap-0.5 text-[10px] disabled:opacity-50"
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label={`Agentic mode: ${LABELS[displayValue]}`}
+      >
+        <BeakerIcon className="w-3 h-3 text-gray-300" aria-hidden="true" />
+        <span className="text-xs text-gray-300">Agentic</span>
+        <span className="text-xs text-gray-500 px-0.5" aria-hidden="true">·</span>
+        <span className={`text-xs ${TEXT_COLORS[displayValue]}`}>{LABELS[displayValue]}</span>
+      </button>
+
+      {open && (
+        <div className="absolute bottom-8 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 min-w-[240px] z-10">
+          <h4 id="agentic-mode-heading" className="text-white text-sm font-medium mb-2">
+            Agentic Mode
+          </h4>
+          <div className="space-y-2" role="radiogroup" aria-labelledby="agentic-mode-heading">
+            {AGENTIC_MODES.map((mode) => (
+              <div key={mode} className="flex items-start">
+                <input
+                  type="radio"
+                  id={`agentic-mode-${mode}`}
+                  name="agenticMode"
+                  className="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  checked={displayValue === mode}
+                  aria-describedby={`agentic-mode-${mode}-hint`}
+                  onChange={() => selectMode(mode)}
+                />
+                <div className="ml-2 text-xs">
+                  <label htmlFor={`agentic-mode-${mode}`} className="block font-medium text-gray-300">
+                    {LABELS[mode]}
+                  </label>
+                  <span id={`agentic-mode-${mode}-hint`} className="block text-gray-400">
+                    {TITLES[mode]}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

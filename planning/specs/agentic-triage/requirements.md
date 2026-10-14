@@ -100,7 +100,7 @@ Terms used throughout:
 
 ## 6. Web app (phase 3)
 
-**REQ-050 Three-way toggle (must).** The Agentic button becomes a three-way control labelled Agentic: Off · Auto · Always, with these tooltips, shown on hover and keyboard focus: "Answer directly, no research agents", "Use research agents when the question needs them", "Always use research agents (slower)". It is keyboard accessible (arrow keys move between options, `aria-checked` on the selected one).
+**REQ-050 Three-way toggle (must).** The Agentic button becomes a three-way control labelled Agentic: Off · Auto · Always, with these tooltips, shown on hover and keyboard focus: "Answer directly, no research agents", "Use research agents when the question needs them", "Always use research agents (slower)". It is keyboard accessible (arrow keys move between options, `aria-checked` on the selected one). *Changed in 3.2.6:* the three pills became a menu like Style and Focus: a toolbar button shows the current mode ("Agentic · Auto") and opens a panel with the three options as radio buttons, each with its hint written under it instead of a tooltip; Escape or a click outside closes it.
 - Verify: Jest + manual.
 
 **REQ-051 Stored mode (must).** The setting is `agenticMode: 'off' | 'auto' | 'always'`, saved in its own storage key (not inside the accessibility settings), and written only when the user picks a mode. "No saved mode" means "follow the server default".

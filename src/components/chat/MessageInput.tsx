@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { MicrophoneIcon, PaperClipIcon, ComputerDesktopIcon, SparklesIcon, PaperAirplaneIcon, Cog6ToothIcon, XMarkIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useApp } from '@/contexts/AppContext';
+import { useDismiss } from '@/hooks/useDismiss';
 import { AgenticModeToggle } from './AgenticModeToggle';
 import path from 'path';
 import { saveAs } from 'file-saver';
@@ -33,14 +34,14 @@ const PROMPT_STYLES = {
   concise: 'Concise'
 };
 
-// Define colors for each prompt style
-const PROMPT_STYLE_COLORS = {
-  balanced: 'bg-indigo-600 text-white',
-  creative: 'bg-purple-600 text-white',
-  precise: 'bg-blue-600 text-white',
-  helpful: 'bg-green-600 text-white',
-  verbose: 'bg-amber-600 text-white',
-  concise: 'bg-rose-600 text-white'
+// Text colour of the current style on the toolbar (the hues of the old style pills, lightened for text)
+const PROMPT_STYLE_TEXT_COLORS = {
+  balanced: 'text-indigo-400',
+  creative: 'text-purple-400',
+  precise: 'text-blue-400',
+  helpful: 'text-green-400',
+  verbose: 'text-amber-400',
+  concise: 'text-rose-400'
 };
 
 // Define knowledge focus areas
@@ -55,16 +56,16 @@ const KNOWLEDGE_FOCUS = {
   nature: 'Nature'
 };
 
-// Define colors for knowledge focus areas
-const KNOWLEDGE_FOCUS_COLORS = {
-  general: 'bg-gray-600 text-white',
-  medical: 'bg-red-600 text-white',
-  legal: 'bg-yellow-600 text-white',
-  science: 'bg-teal-700 text-white',
-  technology: 'bg-cyan-700 text-white',
-  business: 'bg-amber-700 text-white',
-  history: 'bg-orange-700 text-white',
-  nature: 'bg-green-600 text-white'
+// Text colour of the current focus on the toolbar (the hues of the old focus pills, lightened for text)
+const KNOWLEDGE_FOCUS_TEXT_COLORS = {
+  general: 'text-gray-400',
+  medical: 'text-red-400',
+  legal: 'text-yellow-400',
+  science: 'text-teal-400',
+  technology: 'text-cyan-400',
+  business: 'text-amber-400',
+  history: 'text-orange-400',
+  nature: 'text-green-400'
 };
 
 // Define Speech Recognition type for TypeScript
@@ -124,6 +125,29 @@ export function MessageInput({
   const [showFocus, setShowFocus] = useState(false);
   const [showStyle, setShowStyle] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Style, Focus and Settings menus close on a click outside or on Escape (focus returns to the button)
+  const styleMenuRef = useRef<HTMLDivElement>(null);
+  const styleButtonRef = useRef<HTMLButtonElement>(null);
+  const focusMenuRef = useRef<HTMLDivElement>(null);
+  const focusButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsMenuRef = useRef<HTMLDivElement>(null);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const closeStyleMenu = useCallback((returnFocus: boolean) => {
+    setShowStyleDropdown(false);
+    if (returnFocus) styleButtonRef.current?.focus();
+  }, []);
+  const closeFocusMenu = useCallback((returnFocus: boolean) => {
+    setShowFocusDropdown(false);
+    if (returnFocus) focusButtonRef.current?.focus();
+  }, []);
+  const closeSettingsMenu = useCallback((returnFocus: boolean) => {
+    setShowSettings(false);
+    if (returnFocus) settingsButtonRef.current?.focus();
+  }, []);
+  useDismiss(styleMenuRef, showStyleDropdown, closeStyleMenu);
+  useDismiss(focusMenuRef, showFocusDropdown, closeFocusMenu);
+  useDismiss(settingsMenuRef, showSettings, closeSettingsMenu);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -443,22 +467,6 @@ export function MessageInput({
               {isCapturingScreen ? 'Capturing...' : screenshotActive ? 'Clear Screen' : 'Screen'}
             </span>
           </button>
-          
-          {/* Prompt Style Pill */}
-          <div 
-            className={`px-2 py-0.5 rounded-full text-xs ${PROMPT_STYLE_COLORS[accessibility.promptStyle]}`}
-            aria-label={`Current AI style: ${PROMPT_STYLES[accessibility.promptStyle]}`}
-          >
-            {PROMPT_STYLES[accessibility.promptStyle]}
-          </div>
-          
-          {/* Knowledge Focus Pill */}
-          <div 
-            className={`px-2 py-0.5 rounded-full text-xs ${KNOWLEDGE_FOCUS_COLORS[accessibility.knowledgeFocus]}`}
-            aria-label={`Knowledge focus: ${KNOWLEDGE_FOCUS[accessibility.knowledgeFocus]}`}
-          >
-            {KNOWLEDGE_FOCUS[accessibility.knowledgeFocus]}
-          </div>
         </div>
         
         {/* Right side buttons */}
@@ -470,17 +478,22 @@ export function MessageInput({
           />
           
           {/* Style button and dropdown */}
-          <div className="relative">
+          <div className="relative" ref={styleMenuRef}>
             <button
+              ref={styleButtonRef}
               type="button"
               onClick={() => setShowStyleDropdown(!showStyleDropdown)}
               className="p-1 hover:bg-white/5 rounded transition-colors flex items-center gap-0.5 text-[10px]"
               aria-expanded={showStyleDropdown}
               aria-haspopup="true"
-              aria-label="AI Style"
+              aria-label={`AI style: ${PROMPT_STYLES[accessibility.promptStyle]}`}
             >
-              <PencilSquareIcon className="w-3 h-3 text-gray-300" />
+              <PencilSquareIcon className="w-3 h-3 text-gray-300" aria-hidden="true" />
               <span className="text-xs text-gray-300">Style</span>
+              <span className="text-xs text-gray-500 px-0.5" aria-hidden="true">·</span>
+              <span className={`text-xs ${PROMPT_STYLE_TEXT_COLORS[accessibility.promptStyle]}`}>
+                {PROMPT_STYLES[accessibility.promptStyle]}
+              </span>
             </button>
             
             {/* Style Dropdown */}
@@ -515,14 +528,22 @@ export function MessageInput({
           </div>
           
           {/* Focus button and dropdown */}
-          <div className="relative">
+          <div className="relative" ref={focusMenuRef}>
             <button
+              ref={focusButtonRef}
               type="button"
               onClick={() => setShowFocusDropdown(!showFocusDropdown)}
               className="p-1 hover:bg-white/5 rounded transition-colors flex items-center gap-0.5 text-[10px]"
+              aria-expanded={showFocusDropdown}
+              aria-haspopup="true"
+              aria-label={`Knowledge focus: ${KNOWLEDGE_FOCUS[accessibility.knowledgeFocus]}`}
             >
-              <SparklesIcon className="w-3 h-3 text-gray-300" />
+              <SparklesIcon className="w-3 h-3 text-gray-300" aria-hidden="true" />
               <span className="text-xs text-gray-300">Focus</span>
+              <span className="text-xs text-gray-500 px-0.5" aria-hidden="true">·</span>
+              <span className={`text-xs ${KNOWLEDGE_FOCUS_TEXT_COLORS[accessibility.knowledgeFocus]}`}>
+                {KNOWLEDGE_FOCUS[accessibility.knowledgeFocus]}
+              </span>
             </button>
             
             {/* Focus Dropdown */}
@@ -554,8 +575,9 @@ export function MessageInput({
           </div>
           
           {/* Settings Button */}
-          <div className="relative">
+          <div className="relative" ref={settingsMenuRef}>
             <button
+              ref={settingsButtonRef}
               type="button"
               onClick={() => setShowSettings(!showSettings)}
               className="p-1 hover:bg-white/5 rounded transition-colors flex items-center gap-0.5 text-[10px]"

@@ -10,6 +10,36 @@
   --chat-user-bg: #2a2a2a;
   --chat-input-bg: #252525;
   --chat-code-bg: #2d2d2d;
+  --scrollbar-thumb: #3a3a3a;
+  --scrollbar-thumb-hover: #4a4a4a;
+  /* The UI is dark: native scrollbars and form controls follow */
+  color-scheme: dark;
+}
+
+/* Quiet scrollbars: no light track, a dark thumb that lightens on hover */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
 }
 
 body {
@@ -91,4 +121,20 @@ body {
 
 .chat-question p:last-child {
   margin-bottom: 0;
+}
+
+/* Page logo while an answer is on its way: a slow breath, brighter and slightly larger */
+@keyframes logo-thinking {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+.logo-thinking {
+  animation: logo-thinking 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-thinking {
+    animation: none;
+  }
 }
