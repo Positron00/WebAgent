@@ -42,6 +42,7 @@ from app.security.tool_guard import guard_tool
 from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
+from app.core.loadEnvYAML import get_agents_config
 from app.utils.metrics import timing_decorator, log_memory_usage
 
 logger = logging.getLogger(__name__)
@@ -794,6 +795,7 @@ class InternalResearchAgent(BaseAgent):
         
         # Configuration
         self.config = config or {}
+        self.max_documents = get_agents_config().internal_research.max_documents
         
         # Initialize RAG components
         self.retriever = RAGRetriever(config)
@@ -1114,7 +1116,7 @@ class InternalResearchAgent(BaseAgent):
             ):
                 retrieved_documents = await self.retriever.retrieve(
                     query=search_query,
-                    k=self.config.get("retrieve_k", 20)
+                    k=min(self.config.get("retrieve_k", 20), self.max_documents)
                 )
             else:
                 retrieved_documents = []
@@ -1135,7 +1137,7 @@ class InternalResearchAgent(BaseAgent):
                         continue
                     additional_docs = await self.retriever.retrieve(
                         query=question,
-                        k=self.config.get("retrieve_k", 10)  # Fewer documents for follow-up questions
+                        k=min(self.config.get("retrieve_k", 10), self.max_documents)  # Fewer documents for follow-up questions
                     )
                     # Add unique documents that weren't already retrieved
                     existing_ids = {doc.get("id") for doc in retrieved_documents if "id" in doc}

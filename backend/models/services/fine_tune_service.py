@@ -14,8 +14,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from collections import defaultdict
 
 from app.core.config import settings
-from .base_model_service import BaseModelService
-from models.schemas.model import ModelServiceConfig
+from .base_model_service import BaseModelService, ModelServiceConfig
 
 logger = logging.getLogger(__name__)
 

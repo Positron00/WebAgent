@@ -155,12 +155,15 @@ async def run_research_agents(
     logger.info(f"Running research agents - web: {requires_web}, internal: {requires_internal}")
 
     agents = []
+    names = []
     if requires_web:
         logger.info("Starting web research agent")
         agents.append(get_web_research_agent())
+        names.append("web_research")
     if requires_internal:
         logger.info("Starting internal research agent")
         agents.append(get_internal_research_agent())
+        names.append("internal_research")
 
     if not agents:
         state.add_log("No research agents triggered")
@@ -168,15 +171,26 @@ async def run_research_agents(
         return state
 
     results = await asyncio.gather(
-        *(agent(state.model_copy(deep=True)) for agent in agents)
+        *(agent(state.model_copy(deep=True)) for agent in agents), return_exceptions=True
     )
+    failures = [(name, r) for name, r in zip(names, results) if isinstance(r, BaseException)]
+    for name, exc in failures:
+        # Guard stops, cancellation and other BaseException-only errors must still end the run.
+        if not isinstance(exc, Exception):
+            raise exc
+        logger.error(f"{name} failed: {type(exc).__name__}: {exc}", exc_info=exc)
+        state.add_log(f"{name} failed: {type(exc).__name__}")
+        state.context.setdefault("research_errors", []).append({"agent": name, "error": str(exc)[:300]})
+    ok = [r for r in results if not isinstance(r, BaseException)]
+    if not ok:
+        raise RuntimeError("; ".join(f"{name}: {exc}" for name, exc in failures))
 
     from app.security import ledger as security_ledger
 
-    security_ledger.merge(state, list(results))
+    security_ledger.merge(state, ok)
 
     agent_report_names = {"web_research", "internal_research"}
-    for result in results:
+    for result in ok:
         for name, report in result.reports.items():
             if name in agent_report_names:
                 state.reports[name] = report

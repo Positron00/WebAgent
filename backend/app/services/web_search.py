@@ -59,7 +59,17 @@ class WebSearchService:
         sanitized = ' '.join(sanitized.split())
         
         return sanitized
-        
+
+    async def _tavily_search(self, **kwargs) -> Dict:
+        """One blocking Tavily call in a worker thread, limited to SEARCH_TIMEOUT_SECONDS.
+
+        On timeout the thread keeps running until Tavily answers; only the wait is cut short.
+        """
+        return await asyncio.wait_for(
+            asyncio.to_thread(self.tavily_client.search, **kwargs),
+            timeout=settings.SEARCH_TIMEOUT_SECONDS,
+        )
+
     async def search(
         self,
         query: str,
@@ -105,8 +115,7 @@ class WebSearchService:
         try:
             logger.info(f"Searching for: {sanitized_query}")
             
-            response = await asyncio.to_thread(
-                self.tavily_client.search,
+            response = await self._tavily_search(
                 query=sanitized_query,
                 search_depth=search_depth,
                 max_results=max_results,
@@ -116,6 +125,9 @@ class WebSearchService:
             results = response.get("results", [])
             logger.info(f"Found {len(results)} results")
             return results
+        except asyncio.TimeoutError:
+            logger.warning(f"Search timed out after {settings.SEARCH_TIMEOUT_SECONDS} s; no results")
+            return []
         except Exception as e:
             error_details = str(e)
             logger.error(f"Error during Tavily search: {error_details}")
@@ -134,8 +146,7 @@ class WebSearchService:
                     simplified_query = " ".join(sanitized_query.split()[:5])
                     if simplified_query != sanitized_query:
                         logger.info(f"Retrying with simplified query: {simplified_query}")
-                        response = await asyncio.to_thread(
-                            self.tavily_client.search,
+                        response = await self._tavily_search(
                             query=simplified_query,
                             search_depth="basic",  # Always use basic for retry
                             max_results=max(1, max_results - 2)  # Reduce result count
@@ -143,6 +154,8 @@ class WebSearchService:
                         results = response.get("results", [])
                         logger.info(f"Retry found {len(results)} results")
                         return results
+                except asyncio.TimeoutError:
+                    logger.warning(f"Search retry timed out after {settings.SEARCH_TIMEOUT_SECONDS} s; no results")
                 except Exception as retry_error:
                     logger.error(f"Retry also failed: {str(retry_error)}")
                     

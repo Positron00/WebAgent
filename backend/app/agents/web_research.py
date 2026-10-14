@@ -17,6 +17,7 @@ from app.services.llm import get_agent_llm
 from app.services.web_search import perform_web_search
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
+from app.core.loadEnvYAML import get_agents_config
 from app.security.tool_guard import guard_tool
 from app.security.guarded_llm import register_template
 from app.security.hop_integration import format_web_items, run_with_hop, web_result_items
@@ -82,6 +83,7 @@ class WebResearchAgent(BaseAgent):
         self.llm = get_agent_llm("web_research")
         self.output_parser = StrOutputParser()
         self.llm_chain = self.llm
+        self.max_searches = get_agents_config().web_research.max_searches_per_task
     
     def _format_search_results(self, results: List[Dict[str, Any]]) -> str:
         """Format search results for the prompt."""
@@ -162,6 +164,17 @@ class WebResearchAgent(BaseAgent):
                 search_query = feedback.get("search_query", query)
                 logger.info(f"Using feedback search query: {search_query}")
                 
+        searches_made = 0
+
+        async def capped_search(**kwargs) -> List[Dict[str, Any]]:
+            """perform_web_search, until this pass has made max_searches_per_task searches."""
+            nonlocal searches_made
+            if searches_made >= self.max_searches:
+                logger.info(f"Search limit reached ({self.max_searches} per pass); skipping search")
+                return []
+            searches_made += 1
+            return await perform_web_search(**kwargs)
+
         # Perform the web search
         logger.info(f"Performing web search (iteration {iteration})")
         try:
@@ -184,7 +197,7 @@ class WebResearchAgent(BaseAgent):
             ):
                 search_results = []
             else:
-                search_results = await perform_web_search(
+                search_results = await capped_search(
                     query=search_query,
                     search_depth=depth,
                     max_results=5  # Reduced from 7 to avoid overloading
@@ -203,7 +216,7 @@ class WebResearchAgent(BaseAgent):
                     state,
                     principal="web_research",
                 ):
-                    search_results = await perform_web_search(
+                    search_results = await capped_search(
                         query=simplified_query,
                         search_depth="basic",  # Always use basic for fallback
                         max_results=3
@@ -227,7 +240,7 @@ class WebResearchAgent(BaseAgent):
                         state,
                         principal="web_research",
                     ):
-                        additional_results = await perform_web_search(
+                        additional_results = await capped_search(
                             query=question,
                             search_depth="basic",  # Changed from "focused" to valid "basic"
                             max_results=3

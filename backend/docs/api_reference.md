@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.2.6).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.2.7).
 
 ## Base URL
 
@@ -42,7 +42,7 @@ A missing or wrong key returns `401` with `{"detail": "API key required"}` or `{
 
 Each caller may make 60 requests per minute (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS` per `WEBAGENT_SECURITY_RATE_LIMIT_WINDOW_SIZE` seconds; uat/prod YAML can change them).
 
-- The caller is the client's IP address. When the request comes from a trusted proxy (`WEBAGENT_TRUSTED_PROXIES`, default localhost, which covers the web app's `/api/task` route), the first address in `X-Forwarded-For` is used instead, so each end user has their own budget.
+- The caller is the client's IP address. A request from a trusted proxy (`WEBAGENT_TRUSTED_PROXIES`, default localhost) or one carrying a valid `X-API-Key` (the web app, also on Vercel) may name its user in `X-WebAgent-Client` (`s:<session id>`), so each signed-in user has their own budget. From a trusted proxy without that header, the right-most `X-Forwarded-For` address that isn't a trusted proxy is used.
 - Health checks and `/metrics` are never limited.
 - Limits are counted per server worker, so with N workers a caller can make up to N × the limit.
 
@@ -225,7 +225,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.2.6",
+  "version": "3.2.7",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -378,7 +378,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.2.6"
+  "version": "3.2.7"
 }
 ```
 
@@ -391,7 +391,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.2.6",
+  "version": "3.2.7",
   "environment": "prod"
 }
 ```
@@ -408,7 +408,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.2.6"
+    "version": "3.2.7"
   },
   "llm_service": {
     "status": "ok",

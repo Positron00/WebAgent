@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+    branches: [main, 'release/**']
+  pull_request:
+    branches: [main, 'release/**']
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      # Git LFS files stay as pointer files (lfs: false is the default).
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check-types
+      - run: npm run test:coverage
+      # src/config/env.ts needs a TOGETHER_API_KEY of at least 32 characters at build time.
+      # This placeholder is never used for a call.
+      - run: npm run build
+        env:
+          TOGETHER_API_KEY: ci-placeholder-key-not-used-000000000000
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/constraints.txt
+      # The CPU wheel index keeps torch to the small CPU build.
+      - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+      - run: python -m pytest backend/tests -q -m "not needs_lfs and not real_triage_model"

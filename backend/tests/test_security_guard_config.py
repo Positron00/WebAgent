@@ -67,18 +67,11 @@ def test_bad_values_warn_and_keep_yaml(monkeypatch, caplog, name, value):
 
 
 def test_bad_yaml_mode_falls_back_to_shadow(monkeypatch, caplog):
-    class _Guard:
-        enabled = True
-        input_mode = "loud"
-        tool_mode = "nope"
-        judge = False
-        collect = True
-        collect_retention_days = 30
-        model_dir = "models/security"
-        policy_dir = "config/security"
-
+    # model_construct skips validation, so the bad modes reach the builder as they would from loose YAML.
     class FakeAppConfig:
-        security_guard = _Guard()
+        security_guard = SecurityGuardConfig.model_construct(
+            **{**YAML.model_dump(), "input_mode": "loud", "tool_mode": "nope"}
+        )
 
     monkeypatch.setattr(config, "app_config", FakeAppConfig())
     cfg = config._build_security_guard_settings()

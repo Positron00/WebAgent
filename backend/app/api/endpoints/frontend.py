@@ -5,10 +5,12 @@ These endpoints provide compatibility with the frontend API expectations.
 from typing import Dict, List, Literal, Optional, Any
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
+from app.api.intake import GuardRefused, run_intake_guard
 from app.models.chat import ChatRequest, ChatResponse
 from app.graph.workflows import get_agent_workflow
 from app.services.routing import choose_route, resolve_mode
@@ -23,13 +25,14 @@ task_manager = TaskManager()
 # Models for frontend compatibility
 class FrontendMessage(BaseModel):
     """Message format expected by the frontend."""
-    role: str
-    content: str
+    role: Literal["user", "assistant", "system"]
+    content: str = Field(max_length=20000)
 
 class FrontendChatRequest(BaseModel):
     """Chat request format from the frontend."""
     model: str = Field(default=settings.DEFAULT_MODEL)
-    messages: List[FrontendMessage]
+    # 8 earlier turns and the question, the same as /api/task.
+    messages: List[FrontendMessage] = Field(max_length=9)
     max_tokens: int = Field(default=4096)
     temperature: float = Field(default=0.7)
     top_p: float = Field(default=1.0)
@@ -47,21 +50,31 @@ class FrontendChatResponse(BaseModel):
 @router.post("/chat/completions", response_model=FrontendChatResponse)
 async def frontend_chat_completions(
     request: FrontendChatRequest,
-    background_tasks: BackgroundTasks
 ):
     """
     Handle chat completions in a format compatible with the frontend.
     This endpoint adapts the frontend request format to our backend workflow.
     """
+    # System messages are not passed to the agents.
+    messages = [m for m in request.messages if m.role != "system"]
+    user_indexes = [i for i, m in enumerate(messages) if m.role == "user"]
+    if not user_indexes:
+        raise HTTPException(status_code=400, detail="No user message found")
+    last_message = messages[user_indexes[-1]]
+    prev = [{"role": m.role, "content": m.content} for m in messages[: user_indexes[-1]]]
+
+    # Outside the try below, so a refusal keeps its status instead of becoming a 500.
+    task_id = str(uuid4())
     try:
-        # Extract the last user message
-        last_message = next((m for m in reversed(request.messages) if m.role == "user"), None)
-        if not last_message:
-            raise HTTPException(status_code=400, detail="No user message found")
-        
-        prev = [{"role": m.role, "content": m.content} for m in request.messages[:-1]]
+        consented = await run_in_threadpool(
+            run_intake_guard, last_message.content, prev, False, None, task_id
+        )
+    except GuardRefused as refused:
+        return JSONResponse(status_code=refused.status, content=refused.body)
+
+    try:
         resolved = resolve_mode(request.mode, request.agentic_toggle)
-        prev_user = next((m.content for m in reversed(request.messages[:-1]) if m.role == "user"), None)
+        prev_user = next((m["content"] for m in reversed(prev) if m["role"] == "user"), None)
         decision = await run_in_threadpool(
             choose_route, resolved, last_message.content, prev_user, False
         )
@@ -71,27 +84,14 @@ async def frontend_chat_completions(
             "agentic_toggle": not use_direct,
             "triage": decision.to_dict(),
         }
+        if consented:
+            context["consented"] = True
         if request.document_id:
             context["document_id"] = request.document_id
 
-        task_id = str(uuid4())
         task_manager.register_pending(task_id, last_message.content)
+        task_manager.start(task_id, last_message.content, context, direct=use_direct)
 
-        if use_direct:
-            background_tasks.add_task(
-                task_manager.run_direct,
-                task_id=task_id,
-                message=last_message.content,
-                context=context,
-            )
-        else:
-            background_tasks.add_task(
-                task_manager.run_workflow,
-                task_id=task_id,
-                message=last_message.content,
-                context=context,
-            )
-        
         # Return a response that mimics the expected format
         # Note: This is a placeholder response. The frontend should poll for the actual result.
         return FrontendChatResponse(

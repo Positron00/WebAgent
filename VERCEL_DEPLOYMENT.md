@@ -1,6 +1,6 @@
 # Deploying WebAgent to Vercel
 
-[![version](https://img.shields.io/badge/version-3.2.6-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.2.7-blue.svg)](https://semver.org)
 
 This guide explains how to deploy the WebAgent web app (Next.js) to Vercel. Vercel runs only the web app; the multi-agent FastAPI backend runs on a server you control, and the web app reaches it through `/api/task`.
 
@@ -16,6 +16,9 @@ This guide explains how to deploy the WebAgent web app (Next.js) to Vercel. Verc
 
 Before deployment, you need to set up the following environment variables in your Vercel project:
 
+- `WEBAGENT_ACCESS_CODE`: the code people type at `/login` (at least 12 characters). **Required**: a production build without it answers 503 on every API route
+- `WEBAGENT_SESSION_SECRET`: signs the sign-in cookie (at least 32 random characters, e.g. `openssl rand -hex 32`); changing it signs everyone out
+- `WEBAGENT_ACCESS_CODE_DISABLED` (optional): `true` only if another layer already does sign-in (for example Vercel's own protection)
 - `TOGETHER_API_KEY`: Your Together AI API key (used by `/api/chat`)
 - `WEBAGENT_BACKEND_URL`: URL of the FastAPI backend that runs the multi-agent workflow (used by `/api/task`)
 - `WEBAGENT_API_KEY`: API key the FastAPI backend expects when API-key auth is on (sent server-side only)
@@ -71,7 +74,7 @@ For production deployments requiring the full backend capabilities:
 
 1. Run the FastAPI backend on a server you control (`python -m backend.main`, or the Docker image described in [backend/README.md](backend/README.md#running-with-docker)) with `WEBAGENT_ENV=prod`
 2. Set `WEBAGENT_BACKEND_URL` and `WEBAGENT_API_KEY` in Vercel (the backend requires the key in prod)
-3. Rate limits: the `/api/task` proxy forwards each user's address in `X-Forwarded-For`, but the backend trusts that header only from addresses in `WEBAGENT_TRUSTED_PROXIES` (default: localhost). Vercel's outgoing addresses change, so by default every Vercel user shares one budget of `WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS` (60) per minute. Raise that limit, or put the backend behind a proxy with fixed addresses and list them in `WEBAGENT_TRUSTED_PROXIES`
+3. Rate limits: each sign-in session gets its own budget (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS`, 60 per minute). The `/api/task` proxy sends the session as `X-WebAgent-Client`, and the backend accepts it because the request carries the API key, so `WEBAGENT_TRUSTED_PROXIES` isn't needed for Vercel. Set monthly spending limits in the Together and Tavily dashboards as well
 4. Check the backend from outside with `curl https://<backend-host>/health`
 
 ## Troubleshooting
@@ -81,7 +84,9 @@ For production deployments requiring the full backend capabilities:
 - **Cold Start**: The first request may take longer due to serverless cold start
 - **Agentic answers start with "operating in fallback mode"**: the web app couldn't reach the backend at `WEBAGENT_BACKEND_URL`, or the backend rejected the API key. Check the backend's `/health` and its logs
 - **Answers start with "research routing is temporarily unavailable"**: in Auto mode the web app couldn't reach the backend's `/api/triage`, so it answered directly. Check `WEBAGENT_BACKEND_URL` and the backend's `/health`
-- **Agentic requests return 429**: all Vercel users share the backend's rate limit; see step 3 above
+- **Every API call returns 503 `access_code_not_configured`**: set `WEBAGENT_ACCESS_CODE` and `WEBAGENT_SESSION_SECRET` (see step 1) and redeploy
+- **Agentic requests return 429**: that session used its budget; see step 3 above. If every user hits it at once, check that `WEBAGENT_API_KEY` matches the backend's, or the backend can't tell sessions apart
+- **"The research took too long and was stopped."**: the backend stops a run after `WEBAGENT_TASK_MAX_SECONDS` (420 s); see the backend log for the slow step
 
 ## Local Development
 

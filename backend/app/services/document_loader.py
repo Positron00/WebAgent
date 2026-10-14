@@ -35,7 +35,20 @@ logger = logging.getLogger(__name__)
 
 class DocumentLoaderService:
     """Service for batch loading documents into the system."""
-    
+
+    # Map file extensions to appropriate loaders
+    LOADER_MAP = {
+        ".pdf": PyPDFLoader,
+        ".txt": TextLoader,
+        ".md": UnstructuredMarkdownLoader,
+        ".docx": Docx2txtLoader,
+        ".doc": Docx2txtLoader,
+        ".html": UnstructuredHTMLLoader,
+        ".htm": UnstructuredHTMLLoader,
+        ".csv": CSVLoader,
+        ".json": lambda path: JSONLoader(file_path=path, jq_schema='.', text_content=False)
+    }
+
     def __init__(self):
         self.vector_db = get_vectordb_service()
         self.artifacts_path = Path(settings.ARTIFACTS_PATH)
@@ -44,19 +57,12 @@ class DocumentLoaderService:
         
         # Ensure artifacts directory exists
         self.artifacts_path.mkdir(parents=True, exist_ok=True)
-        
-        # Map file extensions to appropriate loaders
-        self.loader_map = {
-            ".pdf": PyPDFLoader,
-            ".txt": TextLoader,
-            ".md": UnstructuredMarkdownLoader,
-            ".docx": Docx2txtLoader,
-            ".doc": Docx2txtLoader,
-            ".html": UnstructuredHTMLLoader,
-            ".htm": UnstructuredHTMLLoader,
-            ".csv": CSVLoader,
-            ".json": lambda path: JSONLoader(file_path=path, jq_schema='.', text_content=False)
-        }
+        self.loader_map = self.LOADER_MAP
+
+    @classmethod
+    def supported_extensions(cls) -> frozenset:
+        """Lower-case file suffixes (with the dot) that a loader exists for."""
+        return frozenset(cls.LOADER_MAP)
     
     def _get_loader_for_file(self, file_path: Union[str, Path]) -> Optional[Any]:
         """Get the appropriate document loader for a file based on its extension."""

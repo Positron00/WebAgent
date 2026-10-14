@@ -1,44 +1,62 @@
-import { NextResponse } from 'next/server';
-import { config } from '@/config/env';
-import { SYSTEM_PROMPT, SYSTEM_PROMPTS, KNOWLEDGE_PROMPTS, CHAT_SETTINGS } from '@/config/chat';
-import { ChatCompletionRequest, ChatRequestMessage, ChatCompletionResponse } from '@/types/api';
-import { rateLimiter } from '@/utils/rateLimiter';
-import { logger } from '@/utils/logger';
-import { clientConfig } from '@/config/clientConfig';
-import { ApiError } from '@/utils/errors';
-import { callGuard } from '@/app/api/guard/client';
-import { scanUserTurn } from '@/utils/guardPatterns';
-import { GUARD_UNAVAILABLE_NOTICE } from '@/config/security/notices';
+import { NextResponse } from "next/server";
+import { config } from "@/config/env";
+import {
+  SYSTEM_PROMPT,
+  SYSTEM_PROMPTS,
+  KNOWLEDGE_PROMPTS,
+  CHAT_SETTINGS,
+} from "@/config/chat";
+import {
+  ChatCompletionRequest,
+  ChatRequestMessage,
+  ChatCompletionResponse,
+} from "@/types/api";
+import { rateLimiter } from "@/utils/rateLimiter";
+import { SESSION_HEADER } from "@/utils/session";
+import { logger } from "@/utils/logger";
+import { clientConfig } from "@/config/clientConfig";
+import { ApiError } from "@/utils/errors";
+import { callGuard } from "@/app/api/guard/client";
+import { scanUserTurn } from "@/utils/guardPatterns";
+import { GUARD_UNAVAILABLE_NOTICE } from "@/config/security/notices";
 
 // Mark this route as dynamic to handle POST requests
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Validate request payload
 function validateRequest(messages: any[]): messages is ChatRequestMessage[] {
-  return Array.isArray(messages) && 
-    messages.every(msg => 
-      typeof msg === 'object' && 
-      ('role' in msg) && 
-      ('content' in msg) &&
-      ['user', 'assistant', 'system'].includes(msg.role)
-    );
+  return (
+    Array.isArray(messages) &&
+    messages.every(
+      (msg) =>
+        typeof msg === "object" &&
+        "role" in msg &&
+        "content" in msg &&
+        ["user", "assistant", "system"].includes(msg.role),
+    )
+  );
 }
 
 export async function POST(req: Request) {
   try {
-    // Check rate limit
-    if (rateLimiter.isRateLimited()) {
-      const timeUntilNext = rateLimiter.getTimeUntilNextAllowed();
-      throw new ApiError(429, `Rate limit exceeded. Please try again in ${Math.ceil(timeUntilNext / 1000)} seconds`);
+    // Without a session (access code off), every caller shares one bucket.
+    const rateKey = req.headers.get(SESSION_HEADER) ?? "shared";
+    if (rateLimiter.isRateLimited(rateKey)) {
+      const timeUntilNext = rateLimiter.getTimeUntilNextAllowed(rateKey);
+      throw new ApiError(
+        429,
+        `Rate limit exceeded. Please try again in ${Math.ceil(timeUntilNext / 1000)} seconds`,
+      );
     }
+    rateLimiter.addRequest(rateKey);
 
     // Parse and validate request
     const body = await req.json();
-    const { 
-      messages, 
-      image = null, 
-      promptStyle = 'balanced',
-      knowledgeFocus = 'general',
+    const {
+      messages,
+      image = null,
+      promptStyle = "balanced",
+      knowledgeFocus = "general",
       citeSources = true,
       agentic = false,
       requestType = null,
@@ -46,9 +64,9 @@ export async function POST(req: Request) {
     } = body;
 
     if (!validateRequest(messages)) {
-      throw new ApiError(400, 'Invalid message format');
+      throw new ApiError(400, "Invalid message format");
     }
-    
+
     // Log the request parameters including agentic mode
     logger.info(`Processing chat request`, {
       promptStyle,
@@ -56,57 +74,70 @@ export async function POST(req: Request) {
       citeSources,
       agentic,
       requestType,
-      version: clientConfig.version
+      version: clientConfig.version,
     });
 
     // If agentic mode is true, we're serving as a fallback for the multi-agent system
     // Log appropriately but continue processing to provide fallback functionality
     if (agentic) {
-      logger.warn('Agentic mode is ON - this endpoint is being used as a fallback for the multi-agent system', {
-        fallback: true,
-        version: clientConfig.version
-      });
+      logger.warn(
+        "Agentic mode is ON - this endpoint is being used as a fallback for the multi-agent system",
+        {
+          fallback: true,
+          version: clientConfig.version,
+        },
+      );
     } else {
-      logger.info('Agentic mode is OFF - serving direct LLM request via Together AI', {
-        fallback: false,
-        version: clientConfig.version
-      });
+      logger.info(
+        "Agentic mode is OFF - serving direct LLM request via Together AI",
+        {
+          fallback: false,
+          version: clientConfig.version,
+        },
+      );
     }
 
     const guard = await callGuard(messages, !!image, consentToken ?? null, req);
-    if (guard.kind === 'refused') {
+    if (guard.kind === "refused") {
       return NextResponse.json(guard.body, { status: guard.status });
     }
 
     let guardUnavailableNotice = false;
-    if (guard.kind === 'unreachable') {
-      const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    if (guard.kind === "unreachable") {
+      const lastUser = [...messages].reverse().find((m) => m.role === "user");
       const lastText =
-        typeof lastUser?.content === 'string' ? lastUser.content : '';
+        typeof lastUser?.content === "string" ? lastUser.content : "";
       if (lastText && scanUserTurn(lastText).length > 0) {
         return NextResponse.json(
           {
-            code: 'declined',
+            code: "declined",
             reason:
               "This message looks like an attempt to change the assistant's instructions.",
           },
-          { status: 403 }
+          { status: 403 },
         );
       }
       guardUnavailableNotice = true;
     }
 
     // Get the appropriate system prompt based on the promptStyle
-    const basePrompt = SYSTEM_PROMPTS[promptStyle as keyof typeof SYSTEM_PROMPTS] || SYSTEM_PROMPT;
-    
+    const basePrompt =
+      SYSTEM_PROMPTS[promptStyle as keyof typeof SYSTEM_PROMPTS] ||
+      SYSTEM_PROMPT;
+
     // Get the knowledge focus prompt
-    let knowledgePrompt = KNOWLEDGE_PROMPTS[knowledgeFocus as keyof typeof KNOWLEDGE_PROMPTS] || KNOWLEDGE_PROMPTS.general;
-    
+    let knowledgePrompt =
+      KNOWLEDGE_PROMPTS[knowledgeFocus as keyof typeof KNOWLEDGE_PROMPTS] ||
+      KNOWLEDGE_PROMPTS.general;
+
     // If citeSources is set to false, remove citation instructions from the knowledge prompt
     if (!citeSources) {
-      knowledgePrompt = knowledgePrompt.replace(/- Include sources of information as citations in your response similar to academic papers\n?/g, '');
+      knowledgePrompt = knowledgePrompt.replace(
+        /- Include sources of information as citations in your response similar to academic papers\n?/g,
+        "",
+      );
     }
-    
+
     // Combine the prompts
     const systemPrompt = `${basePrompt}\n\n${knowledgePrompt}`;
 
@@ -115,18 +146,22 @@ export async function POST(req: Request) {
 
     // Format messages for Together AI's chat completion API
     const formattedMessages: ChatRequestMessage[] = [
-      { role: 'system', content: systemPrompt },
-      ...recentMessages.map(msg => ({
+      { role: "system", content: systemPrompt },
+      ...recentMessages.map((msg) => ({
         role: msg.role,
-        content: msg.content
-      }))
+        content: msg.content,
+      })),
     ];
 
     // If there's an image, add it to the last message
     if (image) {
       formattedMessages[formattedMessages.length - 1].content = [
-        { type: 'text', text: formattedMessages[formattedMessages.length - 1].content as string },
-        { type: 'image_url', image_url: { url: image } }
+        {
+          type: "text",
+          text: formattedMessages[formattedMessages.length - 1]
+            .content as string,
+        },
+        { type: "image_url", image_url: { url: image } },
       ];
     }
 
@@ -138,85 +173,94 @@ export async function POST(req: Request) {
       temperature: CHAT_SETTINGS.temperature,
       top_p: CHAT_SETTINGS.topP,
       frequency_penalty: CHAT_SETTINGS.frequencyPenalty,
-      presence_penalty: CHAT_SETTINGS.presencePenalty
+      presence_penalty: CHAT_SETTINGS.presencePenalty,
     };
 
     // Make API call
     let response;
     try {
       response = await fetch(config.together.endpoint, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.together.apiKey}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${config.together.apiKey}`,
         },
-        body: JSON.stringify(chatRequest)
+        body: JSON.stringify(chatRequest),
       });
     } catch (error) {
-      logger.error('Error calling Together AI API', { error: (error as Error).message });
-      throw new ApiError(503, `Unable to reach LLM API: ${(error as Error).message}`);
+      logger.error("Error calling Together AI API", {
+        error: (error as Error).message,
+      });
+      throw new ApiError(
+        503,
+        `Unable to reach LLM API: ${(error as Error).message}`,
+      );
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error?.message || `API error: ${response.statusText}`;
-      logger.error('Together AI API returned an error', { 
-        status: response.status, 
+      const errorMessage =
+        errorData.error?.message || `API error: ${response.statusText}`;
+      logger.error("Together AI API returned an error", {
+        status: response.status,
         message: errorMessage,
-        errorData
+        errorData,
       });
       throw new ApiError(response.status, errorMessage);
     }
 
     const data = (await response.json()) as ChatCompletionResponse;
-    
+
     if (!data.choices?.[0]?.message?.content) {
-      logger.error('Invalid response format from Together AI API', { data });
-      throw new ApiError(500, 'Invalid response format from API');
+      logger.error("Invalid response format from Together AI API", { data });
+      throw new ApiError(500, "Invalid response format from API");
     }
 
     // Log successful response
-    logger.info('Successfully received response from Together AI', {
+    logger.info("Successfully received response from Together AI", {
       responseLength: data.choices[0].message.content.length,
       finishReason: data.choices[0].finish_reason,
-      tokenUsage: data.usage
+      tokenUsage: data.usage,
     });
 
     // Get the original content
     let responseContent = data.choices[0].message.content;
-    
+
     // Only add fallback announcement if this is a multi-agent fallback request
-    if (requestType === 'multi-agent-fallback') {
+    if (requestType === "multi-agent-fallback") {
       responseContent = `I'm currently operating in fallback mode as the multi-agent system is unavailable. Here's my response:\n\n${responseContent}`;
     } else if (guardUnavailableNotice) {
       responseContent = GUARD_UNAVAILABLE_NOTICE + responseContent;
     }
 
     return NextResponse.json({
-      choices: [{
-        message: {
-          content: responseContent,
-          role: 'assistant',
-          ...(data.choices[0].message.logs && { logs: data.choices[0].message.logs })
+      choices: [
+        {
+          message: {
+            content: responseContent,
+            role: "assistant",
+            ...(data.choices[0].message.logs && {
+              logs: data.choices[0].message.logs,
+            }),
+          },
+          finish_reason: data.choices[0].finish_reason || "stop",
         },
-        finish_reason: data.choices[0].finish_reason || 'stop'
-      }],
-      usage: data.usage
+      ],
+      usage: data.usage,
     });
-
   } catch (error) {
-    console.error('Chat API Error:', error);
+    console.error("Chat API Error:", error);
 
     if (error instanceof ApiError) {
       return NextResponse.json(
         { error: { message: error.message } },
-        { status: error.statusCode }
+        { status: error.statusCode },
       );
     }
 
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
-      { status: 500 }
+      { error: "An unexpected error occurred" },
+      { status: 500 },
     );
   }
-} 
+}

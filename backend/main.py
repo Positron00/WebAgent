@@ -7,9 +7,10 @@ import asyncio
 import os
 import sys
 import uuid
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
 
@@ -32,10 +33,15 @@ from app.security.decision import get_engine
 from app.security.context_defender import warm_up as warm_up_context_defender
 from app.services.triage_model import warm_up
 from app.core.config import settings
-from app.core.middleware import setup_middlewares, LimitSizeMiddleware, SecurityHeadersMiddleware
+from app.core.middleware import setup_middlewares
 from app.core.logger import logger
-from app.core.metrics import setup_metrics, PrometheusMiddleware, ERROR_COUNT
-from app.core.startup_checks import check_production_settings, server_code_execution_enabled
+from app.core.metrics import setup_metrics, mark_worker_dead, PrometheusMiddleware, ERROR_COUNT
+from app.core.startup_checks import (
+    check_dev_exposure,
+    check_production_settings,
+    check_task_timeouts,
+    server_code_execution_enabled,
+)
 from app.core.security import (
     setup_security,
     require_api_key,
@@ -43,8 +49,45 @@ from app.core.security import (
 )
 from fastapi import Depends
 
+
+async def _startup(app: FastAPI) -> None:
+    # Also run before uvicorn starts in the Docker image (see app/core/startup_checks.py).
+    check_production_settings(settings.ENABLE_CODE_EXECUTION)
+    check_task_timeouts()
+    cfg = getattr(settings, "TRIAGE", None)
+    if cfg and cfg.enabled:
+        await run_in_threadpool(warm_up)
+    guard_cfg = getattr(settings, "SECURITY_GUARD", None)
+    if guard_cfg and guard_cfg.enabled:
+        await run_in_threadpool(get_engine)
+        await run_in_threadpool(warm_up_context_defender)
+    # Overrides are collected even with triage disabled, so retention cleanup always runs.
+    triage_collect.cleanup()
+    security_records.cleanup()
+    app.state.triage_cleanup_task = asyncio.create_task(triage_collect.cleanup_daily())
+    app.state.security_cleanup_task = asyncio.create_task(security_records.cleanup_daily())
+
+
+def _shutdown(app: FastAPI) -> None:
+    for name in ("triage_cleanup_task", "security_cleanup_task"):
+        task = getattr(app.state, name, None)
+        if task is not None:
+            task.cancel()
+    mark_worker_dead()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await _startup(app)
+    try:
+        yield
+    finally:
+        _shutdown(app)
+
+
 # Create FastAPI app with OpenAPI documentation
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.PROJECT_NAME,
     description=settings.PROJECT_DESCRIPTION,
     version=settings.VERSION,
@@ -62,27 +105,8 @@ app = FastAPI(
 # First add the metrics middleware to ensure all requests are tracked
 app.add_middleware(PrometheusMiddleware)
 
-# Set up middleware in correct order
-# 1. Security headers should be first to ensure all responses have correct headers
-app.add_middleware(SecurityHeadersMiddleware)
-
-# 2. Request size limiting should happen early to prevent DoS
-app.add_middleware(
-    LimitSizeMiddleware, 
-    max_content_length=settings.REQUEST_SIZE_LIMIT
-)
-
-# 3. Set up other middlewares with the app
+# CORS, security headers, request logging and the request size limit, each added once.
 setup_middlewares(app)
-
-# Add CORS middleware last since it's not critical for security
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Set up metrics endpoints
 setup_metrics(app)
@@ -90,34 +114,6 @@ setup_security(app)
 
 # Model-written code must not run inside the API server unless explicitly enabled.
 settings.ENABLE_CODE_EXECUTION = server_code_execution_enabled()
-
-
-@app.on_event("startup")
-async def validate_production_settings() -> None:
-    # Also run before uvicorn starts in the Docker image (see app/core/startup_checks.py).
-    check_production_settings(settings.ENABLE_CODE_EXECUTION)
-    cfg = getattr(settings, "TRIAGE", None)
-    if cfg and cfg.enabled:
-        await run_in_threadpool(warm_up)
-    guard_cfg = getattr(settings, "SECURITY_GUARD", None)
-    if guard_cfg and guard_cfg.enabled:
-        await run_in_threadpool(get_engine)
-        await run_in_threadpool(warm_up_context_defender)
-    # Overrides are collected even with triage disabled, so retention cleanup always runs.
-    triage_collect.cleanup()
-    security_records.cleanup()
-    app.state.triage_cleanup_task = asyncio.create_task(triage_collect.cleanup_daily())
-    app.state.security_cleanup_task = asyncio.create_task(security_records.cleanup_daily())
-
-
-@app.on_event("shutdown")
-async def stop_triage_cleanup() -> None:
-    task = getattr(app.state, "triage_cleanup_task", None)
-    if task is not None:
-        task.cancel()
-    sec_task = getattr(app.state, "security_cleanup_task", None)
-    if sec_task is not None:
-        sec_task.cancel()
 
 
 # Include API router
@@ -212,6 +208,7 @@ logger.info(f"Debug mode: {settings.DEBUG_MODE}")
 logger.info(f"API base URL: {settings.API_V1_STR}")
 
 if __name__ == "__main__":
+    check_dev_exposure(settings.HOST)
     uvicorn.run(
         "main:app",
         host=settings.HOST,

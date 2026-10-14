@@ -1,6 +1,6 @@
 {
   "name": "webagent-platform",
-  "version": "3.2.6",
+  "version": "3.2.7",
   "description": "WebAgent multi-agent research platform: Next.js web app and FastAPI/LangGraph backend",
   "private": true,
   "scripts": {
@@ -21,7 +21,7 @@
     "diagnostics": "conda run -n agents python -m backend.diagnostics.runners.run_diagnostics",
     "tests": "conda run -n agents python -m backend.diagnostics.runners.run_tests",
     "check": "conda run -n agents python -m backend.diagnostics.runners.run_all",
-    "research": "node scripts/run_webagent.js --mode workflow",
+    "research": "conda run -n agents python scripts/run_webagent.py --mode workflow",
     "vercel-build": "next build"
   },
   "dependencies": {

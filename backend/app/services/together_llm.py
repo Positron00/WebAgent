@@ -9,7 +9,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 import requests
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientTimeout
 from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 from langchain_core.outputs import Generation, LLMResult
 from langchain_together import Together
@@ -96,7 +96,7 @@ class TogetherWithUsage(Together):
         **kwargs: Any,
     ) -> LLMResult:
         texts, usage = [], {}
-        async with ClientSession() as session:
+        async with ClientSession(timeout=ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)) as session:
             for prompt in prompts:
                 headers, payload = self._request_parts(prompt, stop, kwargs)
                 async with session.post(self.base_url, json=payload, headers=headers) as response:

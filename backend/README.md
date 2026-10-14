@@ -207,7 +207,7 @@ Require `X-API-Key` when API-key auth is on (always in uat/prod):
 - **POST /api/v1/documents/upload**, **POST /api/v1/documents/search**, **GET /api/v1/documents/document/{document_id}**, **GET /api/v1/documents/related/{document_id}**: Documents
 - **GET /api/v1/status**: LLM and service status
 
-Requests are rate-limited per caller (60 per minute by default). Behind the Next.js proxy the caller is the end user, taken from `X-Forwarded-For`, which is trusted only from `WEBAGENT_TRUSTED_PROXIES`.
+Requests are rate-limited per caller (60 per minute by default). Behind the Next.js proxy the caller is the user's sign-in session, sent as `X-WebAgent-Client`; the backend accepts that header only from `WEBAGENT_TRUSTED_PROXIES` or from a caller holding the API key. Other proxies' callers are taken from the right-most untrusted `X-Forwarded-For` address.
 
 See the OpenAPI documentation for complete details and request/response schemas.
 
@@ -391,8 +391,11 @@ Key environment variables used by the application:
 | WEBAGENT_SECURITY_API_KEY_ENABLED | Require `X-API-Key` | false (true in uat/prod YAML) |
 | WEBAGENT_ENABLE_CODE_EXECUTION | Let agents run generated code in the API server | false |
 | WEBAGENT_CODE_SANDBOX | `local` (no secrets, CPU/memory limits) or `docker` (isolated; required in uat/prod) | local |
-| WEBAGENT_TRUSTED_PROXIES | Proxies whose `X-Forwarded-For` is used for per-user rate limits | 127.0.0.1,::1 |
-| WEBAGENT_TASK_TIMEOUT_MINUTES | A task still processing after this long is reported as interrupted | 30 |
+| WEBAGENT_TRUSTED_PROXIES | Proxies whose `X-WebAgent-Client` (or right-most untrusted `X-Forwarded-For` address) is used for per-user rate limits | 127.0.0.1,::1 |
+| WEBAGENT_ALLOW_OPEN_DEV | In dev with API keys off, allow listening on an address other than 127.0.0.1 | false |
+| WEBAGENT_TASK_MAX_SECONDS | A research run is stopped after this long (`error_code: timeout`) | 420 |
+| WEBAGENT_SEARCH_TIMEOUT_SECONDS | Each Tavily search (with its retry) gives up after this long | 30 |
+| WEBAGENT_TASK_TIMEOUT_MINUTES | A task still processing after this long is reported as interrupted (a worker died); keep it above the run limit | 30 |
 | WEBAGENT_NLTK_AUTO_DOWNLOAD | Download missing NLTK data on first use | true (false in the Docker image) |
 | WEBAGENT_MODEL_REGISTRY_PATH | Model registry state file | backend/data/registry/models_registry.json |
 | WEB_CONCURRENCY | Uvicorn workers in the Docker image (task status is shared through `data/results`) | 4 |

@@ -3,8 +3,13 @@ or the cached base MiniLM for a frozen classifier). Skipped when either isn't on
 import pytest
 
 from app.services import triage_model
+from tests.lfs import is_lfs_pointer
 
-pytestmark = pytest.mark.real_triage_model
+pytestmark = [pytest.mark.real_triage_model, pytest.mark.needs_lfs]
+
+_ENCODER_WEIGHTS = triage_model.model_dir() / "encoder" / "model.safetensors"
+if is_lfs_pointer(_ENCODER_WEIGHTS):
+    pytest.skip(f"{_ENCODER_WEIGHTS} is a Git LFS pointer; run git lfs pull", allow_module_level=True)
 
 if not (triage_model.model_files_present() and triage_model.encoder_available()):
     pytest.skip("triage classifier or MiniLM encoder not available", allow_module_level=True)

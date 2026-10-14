@@ -3,16 +3,14 @@ import logging
 from typing import Any, Dict, List, Literal, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
+from app.api.intake import GuardRefused, refusal_body, run_intake_guard  # noqa: F401 (refusal_body: guard.py)
 from app.core.config import settings
 from app.core.metrics import record_triage_decision
-from app.models.task import WorkflowState
-from app.security.errors import GuardStop
-from app.security.hop_guard import check_hop, items_from_task_request
 from app.security import tokens
 from app.services import triage_collect
 from app.services.routing import choose_route, resolve_mode
@@ -30,7 +28,7 @@ class ChatTurn(BaseModel):
 
 
 class TaskRequest(BaseModel):
-    query: str
+    query: str = Field(max_length=20000)
     image: Optional[str] = None
     agentic: Optional[bool] = None
     mode: Optional[Literal["off", "auto", "always"]] = None
@@ -48,55 +46,9 @@ def last_user_question(previous: List[ChatTurn]) -> Optional[str]:
     return None
 
 
-class GuardRefused(Exception):
-    """The intake check refused the request; carries the HTTP status and body (SEC-036)."""
-
-    def __init__(self, status: int, body: Dict[str, Any]):
-        self.status = status
-        self.body = body
-
-
-def refusal_body(decision, consent_token: Optional[str] = None) -> Dict[str, Any]:
-    """Top-level refusal body shared by /api/task and /api/guard/input (not wrapped in `detail`)."""
-    code = {"consent": "consent_required", "escalate": "escalated"}.get(decision.outcome, "declined")
-    body: Dict[str, Any] = {
-        "code": code,
-        "outcome": decision.outcome,
-        "reason": decision.reason,
-        "policy_id": decision.policy_ids[0] if decision.policy_ids else "",
-        "policy_ids": list(decision.policy_ids),
-    }
-    if consent_token:
-        body["consent_token"] = consent_token
-    return body
-
-
 def _intake_guard(req: TaskRequest, task_id: str) -> bool:
-    """Checkpoint 1 on the user turn and history before the task exists (SEC-033).
-
-    Returns whether the user consented (the consent token is redeemed here, once).
-    Raises GuardRefused for consent, decline or escalate in act mode.
-    """
-    cfg = getattr(settings, "SECURITY_GUARD", None)
-    if cfg is None or not cfg.enabled:
-        return False
     history = [t.model_dump() for t in req.previous_messages]
-    binding = tokens.consent_binding(req.query, history)
-    consented = bool(req.consent_token and tokens.redeem(req.consent_token, "consent", binding))
-    items = items_from_task_request(req.query, history, has_image=bool(req.image))
-    state = WorkflowState(
-        query=req.query,
-        context={"task_id": task_id, "previous_messages": history, "consented": consented},
-    )
-    try:
-        check_hop("intake", items, state)
-    except GuardStop as exc:
-        decision = exc.decision
-        if decision.outcome == "consent":
-            policy_id = decision.policy_ids[0] if decision.policy_ids else ""
-            raise GuardRefused(409, refusal_body(decision, tokens.issue("consent", binding, policy_id)))
-        raise GuardRefused(403, refusal_body(decision))
-    return consented
+    return run_intake_guard(req.query, history, bool(req.image), req.consent_token, task_id)
 
 
 def _approved_tools(req: TaskRequest) -> List[str]:
@@ -111,7 +63,7 @@ def _approved_tools(req: TaskRequest) -> List[str]:
 
 
 @router.post("")
-async def create_task(req: TaskRequest, background_tasks: BackgroundTasks):
+async def create_task(req: TaskRequest):
     task_id = str(uuid4())
     prev_q = last_user_question(req.previous_messages)
     has_image = bool(req.image)
@@ -166,10 +118,7 @@ async def create_task(req: TaskRequest, background_tasks: BackgroundTasks):
     context["triage"] = triage_info
 
     task_manager.register_pending(task_id, req.query)
-    if use_direct:
-        background_tasks.add_task(task_manager.run_direct, task_id, req.query, context)
-    else:
-        background_tasks.add_task(task_manager.run_workflow, task_id, req.query, context)
+    task_manager.start(task_id, req.query, context, direct=use_direct)
     return {"task_id": task_id, "status": "processing"}
 
 

@@ -120,7 +120,6 @@ def test_chat_completions_modes_choose_the_path():
     with patch("app.api.endpoints.frontend.task_manager") as tm:
         r = client.post("/api/v1/chat/completions", json={"messages": [{"role": "user", "content": "q"}]})
         assert r.status_code == 200
-        assert tm.run_direct.call_count == 1
         client.post(
             "/api/v1/chat/completions",
             json={"messages": [{"role": "user", "content": "q"}], "mode": "always"},
@@ -129,8 +128,7 @@ def test_chat_completions_modes_choose_the_path():
             "/api/v1/chat/completions",
             json={"messages": [{"role": "user", "content": "q"}], "agentic_toggle": True},
         )
-    assert tm.run_direct.call_count == 1
-    assert tm.run_workflow.call_count == 2
+    assert [c.kwargs["direct"] for c in tm.start.call_args_list] == [True, False, False]
 
 
 def test_deprecated_endpoints_marked_in_openapi():

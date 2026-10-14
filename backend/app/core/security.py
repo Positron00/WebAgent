@@ -73,15 +73,35 @@ TRUSTED_PROXIES = {
 RATE_LIMIT_EXEMPT_PATHS = {"/", "/health", "/metrics"}
 
 
+CLIENT_HEADER = "x-webagent-client"
+
+
+def _holds_api_key(request) -> bool:
+    """The caller sent a valid X-API-Key (only servers, such as the web app, hold one)."""
+    given = request.headers.get("x-api-key")
+    return bool(
+        settings.API_KEY_ENABLED
+        and given
+        and any(secrets.compare_digest(given, key) for key in _configured_api_keys())
+    )
+
+
 def client_identifier(request) -> str:
-    """Address to rate-limit by: the real caller when the request came through a trusted proxy."""
-    client_host = request.client.host if request.client else "unknown"
-    if client_host in TRUSTED_PROXIES:
-        forwarded = request.headers.get("x-forwarded-for", "")
-        first_hop = forwarded.split(",")[0].strip()
-        if first_hop:
-            return first_hop
-    return client_host
+    """Who to rate-limit: the web app's session, else the nearest untrusted address."""
+    peer = request.client.host if request.client else "unknown"
+    via_proxy = peer in TRUSTED_PROXIES
+    if via_proxy or _holds_api_key(request):
+        client = request.headers.get(CLIENT_HEADER, "").strip()
+        if client.startswith("s:") and 3 <= len(client) <= 66:
+            return client
+    if not via_proxy:
+        return peer
+    forwarded = request.headers.get("x-forwarded-for", "")
+    hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
+    for hop in reversed(hops):  # right-most first: the hop our proxy added
+        if hop not in TRUSTED_PROXIES:
+            return hop
+    return peer
 
 
 def _is_rate_limit_exempt(path: str) -> bool:

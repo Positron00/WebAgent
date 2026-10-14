@@ -22,16 +22,26 @@ from app.security.hop_guard import acheck_hop, kept_text, task_items
 from app.security.types import ContextItem
 from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
-from app.core.config import settings
+from app.core.loadEnvYAML import get_agents_config
 
 logger = logging.getLogger(__name__)
+
+# A reply whose evaluation can't be read counts as "needs more research" (IMP-031).
+UNREADABLE_EVALUATION = {
+    "research_status": "unknown",
+    "score": None,
+    "requirements_met": [],
+    "missing_information": [],
+    "research_questions": [],
+    "requires_additional_research": True,
+}
 
 # Prompt for the Senior Research Agent
 SENIOR_RESEARCH_PROMPT = """You are a Senior Research Agent specializing in synthesizing information from multiple sources.
 
 USER QUERY: {query}
 SUPERVISOR REQUIREMENTS: {requirements}
-RESEARCH ITERATION: {research_iteration} (Maximum: 3)
+RESEARCH ITERATION: {research_iteration} (Maximum: {max_iterations})
 
 You have been provided with the following research reports:
 
@@ -59,7 +69,7 @@ Your response must include an evaluation section with:
 - Whether additional research is needed (yes/no)
 - If additional research is needed, provide specific questions that need to be addressed
 
-IMPORTANT: If research iteration has already reached 3, you MUST complete the report with available information and not request additional research.
+IMPORTANT: If research iteration has already reached {max_iterations}, you MUST complete the report with available information and not request additional research.
 
 Format your evaluation using the following structure at the start of your output:
 ```evaluation
@@ -119,16 +129,15 @@ class SeniorResearchAgent(BaseAgent):
     def __init__(self):
         """Initialize the Senior Research Agent."""
         super().__init__(name="senior_research")
-        self.prompt = ChatPromptTemplate.from_template(SENIOR_RESEARCH_PROMPT)
+        self.max_iterations = get_agents_config().senior_research.max_follow_up_questions
+        self.prompt = ChatPromptTemplate.from_template(SENIOR_RESEARCH_PROMPT).partial(
+            max_iterations=str(self.max_iterations)
+        )
         self.llm = get_agent_llm("senior_research")
         self.parser = StrOutputParser()
         self.chain = self.prompt | self.llm | self.parser
         self.chain = self.trace_chain(self.chain)
-        
-        # Set up configuration
-        self.config = getattr(settings, "senior_research_config", {})
-        self.max_iterations = self.config.get("max_follow_up_questions", 3)
-        
+
     def _parse_evaluation(self, text: str) -> Dict[str, Any]:
         """
         Parse the evaluation section from the output.
@@ -205,25 +214,11 @@ class SeniorResearchAgent(BaseAgent):
                 
                 return eval_dict
             else:
-                logger.warning("Evaluation block not found in output")
-                return {
-                    "score": 10,
-                    "research_status": "complete",
-                    "requirements_met": [],
-                    "missing_information": [],
-                    "research_questions": [],
-                    "requires_additional_research": False
-                }
+                logger.warning("Evaluation block not found in output; treating research as unknown")
+                return dict(UNREADABLE_EVALUATION)
         except Exception as e:
-            logger.error(f"Error parsing evaluation: {str(e)}")
-            return {
-                "score": 10,
-                "research_status": "complete",
-                "requirements_met": [],
-                "missing_information": [],
-                "research_questions": [],
-                "requires_additional_research": False
-            }
+            logger.warning(f"Could not parse evaluation ({type(e).__name__}: {e}); treating research as unknown")
+            return dict(UNREADABLE_EVALUATION)
             
     def _get_report_content(self, text: str) -> str:
         """
@@ -271,7 +266,7 @@ class SeniorResearchAgent(BaseAgent):
             web_findings = state.reports.get("web_research", "No web research findings available.")
             internal_findings = state.reports.get("internal_research", "No internal research findings available.")
             
-            logger.debug(f"Synthesizing findings from web and internal research (iteration {current_iteration}/3)")
+            logger.debug(f"Synthesizing findings from web and internal research (iteration {current_iteration}/{self.max_iterations})")
             
             hop = await acheck_hop(
                 "senior_research",
@@ -322,7 +317,7 @@ class SeniorResearchAgent(BaseAgent):
             
             # If we need more research and haven't reached the maximum iterations
             if (research_status == "needs_more_research" or requires_additional_research) and not reached_max_iterations:
-                logger.info(f"Senior Research Agent requesting additional research (iteration {current_iteration}/3)")
+                logger.info(f"Senior Research Agent requesting additional research (iteration {current_iteration}/{self.max_iterations})")
                 state.add_log(f"Senior Research: Requesting more research after iteration {current_iteration}")
                 
                 # Add feedback to the context for other agents to use

@@ -617,6 +617,24 @@ def apply_max_tokens(llm, limit: Optional[int]):
     return llm
 
 
+def apply_agent_settings(llm, agent_cfg):
+    """Apply an agent's YAML max_tokens and, only if the YAML sets it, temperature.
+
+    AgentConfig defaults temperature to 0.2, so an agent without the key keeps the
+    global llm.temperature instead of that default (decision 10).
+    """
+    llm = apply_max_tokens(llm, getattr(agent_cfg, "max_tokens", None))
+    if agent_cfg is None or "temperature" not in getattr(agent_cfg, "model_fields_set", set()):
+        return llm
+    for target in (llm, getattr(llm, "llm", None)):
+        if target is not None and hasattr(target, "temperature"):
+            try:
+                setattr(target, "temperature", agent_cfg.temperature)
+            except (AttributeError, ValueError, TypeError):
+                logger.warning(f"Could not set temperature on {type(target).__name__}")
+    return llm
+
+
 _AGENT_CONFIG_KEYS = {
     "coding_assistant": "coding",
     "coding_review": "coding",
@@ -645,8 +663,7 @@ def get_agent_llm(agent_name: str):
     agent_cfg = _agent_config(agents_config, agent_name)
     model = getattr(agent_cfg, "model", None) if agent_cfg else None
     provider = getattr(agent_cfg, "provider", None) if agent_cfg else None
-    limit = getattr(agent_cfg, "max_tokens", None) if agent_cfg else None
-    inner = apply_max_tokens(_build_llm_for_agent(agent_name, model, provider), limit)
+    inner = apply_agent_settings(_build_llm_for_agent(agent_name, model, provider), agent_cfg)
     return GuardedModel(inner, agent=agent_name)
 
 

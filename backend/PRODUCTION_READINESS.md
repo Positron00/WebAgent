@@ -2,7 +2,7 @@
 
 This document summarizes the improvements made to the WebAgent backend to make it production-ready.
 
-## Production checklist (3.2.6)
+## Production checklist (3.2.7)
 
 Before exposing the backend:
 
@@ -11,10 +11,17 @@ Before exposing the backend:
 3. **Leave code execution off**, or run it in the container sandbox: `WEBAGENT_ENABLE_CODE_EXECUTION=true` requires `WEBAGENT_CODE_SANDBOX=docker` and the `backend/sandbox` image in uat/prod, or the server won't start.
 4. **Keep `/app/data` on persistent storage.** Task status and results live there and are shared by the server's workers. Run one replica unless that folder is on a shared volume.
 5. **Check health and metrics.** `GET /health` (no key) for probes; Prometheus scrapes `GET /metrics`.
-6. **Watch run times.** A typical agentic task takes 2.5–3.5 minutes, and the web app waits up to 8. If runs approach that, open the task's LangSmith trace: a model call whose completion tokens equal its `max_tokens` is running away, and the log will say "stopped at the max_tokens limit".
-7. **Rate limits.** 60 requests per minute per caller by default (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS`). If the backend sits behind a proxy other than the bundled Next.js app, list it in `WEBAGENT_TRUSTED_PROXIES` so limits apply per end user.
+6. **Watch run times.** A typical agentic task takes 2.5–3.5 minutes. The backend stops a run after `WEBAGENT_TASK_MAX_SECONDS` (420 s) with `error_code: timeout`, and the web app waits up to 8 minutes. If runs approach the limit, open the task's LangSmith trace: a model call whose completion tokens equal its `max_tokens` is running away, and the log will say "stopped at the max_tokens limit".
+7. **Rate limits.** 60 requests per minute per caller by default (`WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS`). Through the web app the caller is the user's sign-in session (`X-WebAgent-Client`), accepted from `WEBAGENT_TRUSTED_PROXIES` or from callers holding the API key. If the backend sits behind another proxy, list it in `WEBAGENT_TRUSTED_PROXIES`.
 8. **Agentic triage.** uat and prod ship with `triage.enabled: false` (Auto then acts like Always). Classifier `triage-2026-10-c` passes the release gate, but turn triage on only after the shadow week and a human review of its training data. With triage on, the server refuses to start unless `models/triage/metadata.json` records `test.passed: true` and the fine-tuned encoder is in `models/triage/encoder/` (copied into the image with the code; its weights come from Git LFS, so run `git lfs pull` before `docker build`). Keep `WEBAGENT_TRIAGE_COLLECT` off unless storing users' questions for review is approved. The image runs 2 workers (`WEB_CONCURRENCY=2`), each with its own encoder; Kubernetes allows 1.5 GiB; measured use is 955 MiB with triage off and 1.08 GiB with it on.
 9. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD` (in `.env.local` for Docker Compose, in the environment for `deploy.sh`); no password is stored in the repo. Change any password that was used with the old committed default.
+10. **Web app sign-in.** A production web app needs `WEBAGENT_ACCESS_CODE` (12+ characters) and `WEBAGENT_SESSION_SECRET` (32+ characters), or every API route answers 503. Rotate both together to sign everyone out.
+11. **Spending caps.** Set monthly limits in the Together AI and Tavily dashboards for every key used in uat and prod (suggested: twice the highest month so far, with alerts at 50% and 80%). Record them here:
+
+    | Key (name, not value) | Service | Monthly limit | Set on |
+    |---|---|---|---|
+    | _not set yet_ | Together AI | | |
+    | _not set yet_ | Tavily | | |
 
 ## Version 2.4.0 Enhancements
 
@@ -60,8 +67,7 @@ Before exposing the backend:
 
 1. **Rate Limiting Middleware**:
    - Limits requests per minute per client
-   - Configurable burst allowance
-   - Uses client IP or API key for identification
+   - Identifies the caller by sign-in session (through the web app) or client IP
 
 2. **JWT Authentication**:
    - Secure token generation and validation

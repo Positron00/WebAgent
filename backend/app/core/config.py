@@ -81,6 +81,33 @@ for key, value in _preserved_webagent_env.items():
     os.environ[key] = value
 
 
+def _env_number(name: str, default, minimum=None):
+    """A number from the environment; a bad or too-small value logs a warning and keeps the default."""
+    raw = os.getenv(name)
+    if raw in (None, ""):
+        return default
+    try:
+        value = type(default)(raw)
+    except ValueError:
+        logging.getLogger(__name__).warning("Invalid %s=%s; using %s", name, raw, default)
+        return default
+    if minimum is not None and value < minimum:
+        logging.getLogger(__name__).warning("%s=%s is below %s; using %s", name, raw, minimum, default)
+        return default
+    return value
+
+
+def _env_choice(name: str, default: str, choices) -> str:
+    """One of `choices` from the environment (any case); anything else logs a warning and keeps the default."""
+    raw = (os.getenv(name) or "").strip().lower()
+    if not raw:
+        return default
+    if raw not in choices:
+        logging.getLogger(__name__).warning("Invalid %s=%s; using %s", name, raw, default)
+        return default
+    return raw
+
+
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
@@ -104,6 +131,9 @@ class Settings(BaseSettings):
     
     # CORS
     CORS_ORIGINS: List[str] = os.getenv("WEBAGENT_CORS_ORIGINS", "http://localhost:3000").split(",")
+    CORS_ALLOW_METHODS: List[str] = ["*"]
+    CORS_ALLOW_HEADERS: List[str] = ["*"]
+    CORS_ALLOW_CREDENTIALS: bool = True
     
     # Default LLM services
     LLM_DEFAULT_PROVIDER: str = os.getenv("WEBAGENT_LLM_DEFAULT_PROVIDER", "together")
@@ -218,10 +248,25 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_RATE_LIMIT_ENABLED", "True").lower() == "true"
     RATE_LIMIT_MAX_REQUESTS: int = int(os.getenv("WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS", "60"))  # requests per window
     RATE_LIMIT_WINDOW_SIZE: int = int(os.getenv("WEBAGENT_SECURITY_RATE_LIMIT_WINDOW_SIZE", "60"))  # window size in seconds
-    RATE_LIMIT_BURST_LIMIT: int = int(os.getenv("WEBAGENT_SECURITY_RATE_LIMIT_BURST_LIMIT", "120"))  # burst limit
     
     # Request size limiting
     REQUEST_SIZE_LIMIT: int = int(os.getenv("WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT", "10485760"))  # 10MB default
+
+    # Dev only: allow listening on a non-loopback address with API keys off.
+    ALLOW_OPEN_DEV: bool = os.getenv("WEBAGENT_ALLOW_OPEN_DEV", "false").strip().lower() == "true"
+
+    # Runs and outbound calls
+    TASK_MAX_SECONDS: int = _env_number("WEBAGENT_TASK_MAX_SECONDS", 420, minimum=1)
+    SEARCH_TIMEOUT_SECONDS: float = _env_number("WEBAGENT_SEARCH_TIMEOUT_SECONDS", 30.0, minimum=0.1)
+    # 0 means no budget.
+    TASK_TOKEN_BUDGET: int = _env_number("WEBAGENT_TASK_TOKEN_BUDGET", 0, minimum=0)
+
+    # Data kept on the volume
+    RESULTS_RETENTION_DAYS: int = _env_number("WEBAGENT_RESULTS_RETENTION_DAYS", 30, minimum=1)
+
+    # Documents and retrieval
+    LDA_MAX_CHARS: int = _env_number("WEBAGENT_LDA_MAX_CHARS", 200000, minimum=1)
+    EMBEDDINGS_PROVIDER: str = _env_choice("WEBAGENT_EMBEDDINGS_PROVIDER", "openai", ("openai", "local"))
     
     # Authentication settings
     JWT_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_JWT_ENABLED", "False").lower() == "true"
@@ -314,16 +359,14 @@ def _build_security_guard_settings() -> SecurityGuardConfig:
             mode = yaml_mode
         return mode
 
-    return SecurityGuardConfig(
-        enabled=_triage_bool("WEBAGENT_GUARD_ENABLED", base.enabled),
-        input_mode=_mode("input_mode", "WEBAGENT_GUARD_INPUT_MODE", base.input_mode),
-        tool_mode=_mode("tool_mode", "WEBAGENT_GUARD_TOOL_MODE", base.tool_mode),
-        judge=_triage_bool("WEBAGENT_GUARD_JUDGE", base.judge),
-        collect=_triage_bool("WEBAGENT_GUARD_COLLECT", base.collect),
-        collect_retention_days=base.collect_retention_days,
-        model_dir=base.model_dir,
-        policy_dir=base.policy_dir,
-    )
+    # Only fields with an environment variable are overridden; every other YAML field passes through.
+    return base.model_copy(update={
+        "enabled": _triage_bool("WEBAGENT_GUARD_ENABLED", base.enabled),
+        "input_mode": _mode("input_mode", "WEBAGENT_GUARD_INPUT_MODE", base.input_mode),
+        "tool_mode": _mode("tool_mode", "WEBAGENT_GUARD_TOOL_MODE", base.tool_mode),
+        "judge": _triage_bool("WEBAGENT_GUARD_JUDGE", base.judge),
+        "collect": _triage_bool("WEBAGENT_GUARD_COLLECT", base.collect),
+    })
 
 
 def _attach_guard(settings_obj):
@@ -367,6 +410,9 @@ if app_config:
         
         # CORS
         CORS_ORIGINS: List[str] = cors_config.origins
+        CORS_ALLOW_METHODS: List[str] = cors_config.allow_methods
+        CORS_ALLOW_HEADERS: List[str] = cors_config.allow_headers
+        CORS_ALLOW_CREDENTIALS: bool = cors_config.allow_credentials
         
         # LLM
         DEFAULT_MODEL: str = llm_config.default_model
@@ -383,7 +429,6 @@ if app_config:
         RATE_LIMIT_ENABLED: bool = _security_setting("rate_limit_enabled", "WEBAGENT_SECURITY_RATE_LIMIT_ENABLED", True)
         RATE_LIMIT_MAX_REQUESTS: int = _security_setting("rate_limit_max_requests", "WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS", 60)
         RATE_LIMIT_WINDOW_SIZE: int = _security_setting("rate_limit_window_size", "WEBAGENT_SECURITY_RATE_LIMIT_WINDOW_SIZE", 60)
-        RATE_LIMIT_BURST_LIMIT: int = _security_setting("rate_limit_burst_limit", "WEBAGENT_SECURITY_RATE_LIMIT_BURST_LIMIT", 120)
         REQUEST_SIZE_LIMIT: int = _security_setting("request_size_limit", "WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT", 10485760)
         JWT_ENABLED: bool = _security_setting("jwt_enabled", "WEBAGENT_SECURITY_JWT_ENABLED", False)
         API_KEY_ENABLED: bool = _security_setting("api_key_enabled", "WEBAGENT_SECURITY_API_KEY_ENABLED", False)

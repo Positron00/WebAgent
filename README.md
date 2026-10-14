@@ -1,7 +1,7 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.2.6-blue.svg)](https://semver.org)
-[![last-updated](https://img.shields.io/badge/last%20updated-2026--10--10-lightgrey.svg)](https://github.com/Positron00/WebAgent)
+[![version](https://img.shields.io/badge/version-3.2.7-blue.svg)](https://semver.org)
+[![last-updated](https://img.shields.io/badge/last%20updated-2026--10--14-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent platform for web research and document processing.
 
@@ -266,6 +266,8 @@ Follow these steps to set up and run the WebAgent platform:
    # Edit .env.local: set TOGETHER_API_KEY and TAVILY_API_KEY at minimum
    ```
    `.env.local` is git-ignored and is read by both the backend and the web app. The template lists every setting with its default.
+
+   To require sign-in, also set `WEBAGENT_ACCESS_CODE` (at least 12 characters) and `WEBAGENT_SESSION_SECRET` (at least 32 random characters, e.g. `openssl rand -hex 32`). People then enter the code once at `/login`. In development the web app stays open without them (with a warning); **a production build answers 503 on every API route until both are set**, unless `WEBAGENT_ACCESS_CODE_DISABLED=true`.
    Environment-specific settings (agents, models, limits) live in `backend/config/{dev,uat,prod}.yaml`, chosen by `WEBAGENT_ENV`. Each agent under `agents:` can set its own `model` and output limit (`max_tokens`).
 
 ### Running the Application
@@ -408,8 +410,8 @@ WebAgent includes comprehensive testing and diagnostic tools.
 8. **A backend test fails with "Test tried to open a network connection"**
    - The test reached a real service (LLM, Tavily, LangSmith, Hugging Face, NLTK). Fake it instead; see [docs/TESTING.md](docs/TESTING.md)
 
-9. **Agentic runs are slow, or the web app gives up after 8 minutes**
-   - A typical run takes 2.5–3.5 minutes. Open the task's LangSmith trace and compare each model call's completion tokens with its limit: a call that stops exactly at the limit is running away, and the backend log says "stopped at the max_tokens limit"
+9. **Agentic runs are slow, or "The research took too long and was stopped."**
+   - A typical run takes 2.5–3.5 minutes; the backend stops a run after `WEBAGENT_TASK_MAX_SECONDS` (420 s), and the web app waits up to 8 minutes. Open the task's LangSmith trace and compare each model call's completion tokens with its limit: a call that stops exactly at the limit is running away, and the backend log says "stopped at the max_tokens limit"
    - Lower or raise that agent's `max_tokens` under `agents:` in `backend/config/{env}.yaml`, and check that agent's prompt
 
 ## License

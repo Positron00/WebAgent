@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.core.metrics import timing_decorator, track_task_start, track_task_completion
 from app.security.errors import GuardDeclined, GuardStop
 from app.services import result_store
+from app.services.run_supervisor import RunSupervisor
 from app.core.log_context import current_task_id
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,33 @@ class TaskManager:
         self.active_tasks = {}  # task_id -> task_info
         self.task_results = {}  # task_id -> result
         self.task_errors = {}   # task_id -> error details
+        self.supervisor = RunSupervisor(on_stop=self._mark_stopped)
         logger.info("Task Manager initialized")
+
+    def start(self, task_id: str, message: str, context: Dict[str, Any], direct: bool) -> None:
+        """Start a direct or workflow run in the background, under the run time limit.
+
+        Must be called from a running event loop (an async endpoint). Call register_pending first.
+        """
+        run = self.run_direct if direct else self.run_workflow
+        self.supervisor.start(task_id, run(task_id, message, context))
+
+    def _mark_stopped(self, task_id: str, code: str, message: str) -> None:
+        """Show a run the supervisor stopped as an error in this worker's memory.
+
+        The run's own TaskInfo object is changed in place: its `finally` writes that object back.
+        """
+        task_info = self.active_tasks.get(task_id)
+        if task_info is not None:
+            task_info.status = "error"
+            task_info.error = message
+            task_info.message = message
+            task_info.current_step = "error"
+            task_info.completed_at = datetime.now()
+            duration = (task_info.completed_at - task_info.created_at).total_seconds()
+            track_task_completion(task_id, duration, "error")
+        self.task_results[task_id] = {"error": message, "error_code": code}
+        self.task_errors[task_id] = {"message": message, "error_code": code}
         
     def register_pending(self, task_id: str, message: str) -> None:
         """Record a task as processing before its background job starts, so early polls find it.
@@ -211,7 +238,7 @@ class TaskManager:
                     "result": result,
                     **meta,
                 }
-                result_store.save_result(task_id, payload)
+                result_store.save_final(task_id, **payload)
             current_task_id.reset(task_id_token)
 
     @timing_decorator
@@ -374,7 +401,7 @@ class TaskManager:
                     "result": result,
                     **meta,
                 }
-                result_store.save_result(task_id, payload)
+                result_store.save_final(task_id, **payload)
             current_task_id.reset(task_id_token)
     
     def get_task_status(self, task_id: str) -> Tuple[str, Optional[Dict[str, Any]]]:

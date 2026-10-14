@@ -2,6 +2,42 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.2.7 - 2026-10-14
+
+First release of the platform-improvements spec (`planning/specs/platform-improvements/`): a safety net, the open doors closed, and limits on runs.
+
+### Upgrade notes
+- **A production web app needs `WEBAGENT_ACCESS_CODE` (12+ characters) and `WEBAGENT_SESSION_SECRET` (32+ characters)**, or every API route answers 503 `access_code_not_configured`. Set `WEBAGENT_ACCESS_CODE_DISABLED=true` only if another layer does sign-in. Development stays open without them, with a warning
+- The dev backend listens on `127.0.0.1`, and `python -m backend.main` refuses another address in dev while API keys are off (`WEBAGENT_ALLOW_OPEN_DEV=true` overrides). Docker Compose publishes the backend, Prometheus and Grafana on `127.0.0.1` only
+- Agents now use their own `temperature`, loop limit and search/document caps from `agents:` in the YAML. Before, every Together agent ran at the global `llm.temperature` (0.7 dev, 0.5 uat, 0.3 prod) and Senior Research always stopped after 3 rounds (prod asks for 5). Answers will differ
+- A research run is stopped after 7 minutes (`WEBAGENT_TASK_MAX_SECONDS=420`) and reported as `error_code: timeout`; the web app shows "The research took too long and was stopped." instead of falling back to plain chat
+- `/api/v1/chat/completions` runs the intake guard and rejects more than 9 messages, messages over 20,000 characters, and roles other than user, assistant and system. `POST /api/task` rejects questions over 20,000 characters
+- `RATE_LIMIT_BURST_LIMIT` is gone (it was never applied)
+
+### Added
+- Web app sign-in: one shared access code, a signed HTTP-only session cookie (Web Crypto, no new dependency), `/login`, `/api/auth/login` (500 ms minimum answer time; 429 after 20 wrong codes in a minute) and `/api/auth/logout`. Middleware protects every page and API route except `/api/health`, sign-in and static files
+- CI: GitHub Actions run lint, type check, Jest with coverage, the web build and the backend suite on every push and pull request to `main` and `release/*`, without Git LFS files; a weekly job runs the tests that need the LFS weights. A pre-commit hook runs `lint-staged`
+- Run supervisor (`app/services/run_supervisor.py`): runs start as `asyncio` tasks instead of FastAPI background tasks, and the supervisor enforces the run limit. A stop is saved once and a late result can't overwrite it
+- A test imports every backend module
+
+### Fixed
+- The web app's rate limiter never counted a request, and it was one bucket for the whole server. `/api/chat` now counts each request against the caller's sign-in session
+- Anyone could get a fresh backend rate limit on every request by sending their own `X-Forwarded-For` through the web app. The web app no longer copies browser headers; it sends the session as `X-WebAgent-Client`, which the backend accepts only from trusted proxies or callers holding the API key (so it works on Vercel too). Other proxies' callers are taken from the right-most untrusted `X-Forwarded-For` address
+- Web app retries after a timeout failed at once, and after another error ran with no timeout: every attempt now has its own timer
+- Async Together calls waited up to 300 s (aiohttp's default) instead of 120 s; each Tavily search is limited to 30 s (`WEBAGENT_SEARCH_TIMEOUT_SECONDS`)
+- One failing research agent no longer throws away the other's report; the failure is logged and kept in `research_errors`
+- When Senior Research couldn't read the model's evaluation it counted as complete with score 10; it now counts as unknown and asks for more research until the loop limit
+- Document IDs are checked as UUIDs (`..` reached the parent folder); search and related-document limits are bounded; an unsupported upload is refused with 415 before it is written to disk
+- `harm_judge`, `jailbreak_judge` and `prompt_guard_threshold` in the YAML were dropped when the guard settings were built
+- CORS was added twice with `*`, so the YAML lists were ignored; it's added once from the YAML, and uat/prod allow `X-API-Key`. Security headers and the request size limit were also added twice; the size limit now uses `WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT`
+- `/api/v1/chat/completions` turned "No user message found" (400) into a 500
+- `npm run research` pointed at a script that doesn't exist; `fine_tune_service.py` imported a module that doesn't exist
+- Startup and shutdown use FastAPI's `lifespan` (no more `on_event` deprecation warnings)
+
+### Changed
+- Removed five unused `lda_*` keys from `config/dev.yaml`
+- Docs: README sign-in setup, Vercel guide (sign-in variables, per-session limits), production checklist (run limit, sign-in, spending caps), rate-limit sections of the backend README, API reference and architecture
+
 ## 3.2.6 - 2026-10-13
 
 ### Fixed
