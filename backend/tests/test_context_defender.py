@@ -167,3 +167,20 @@ def test_policy_thresholds_follow_the_loaded_model(monkeypatch):
     assert th["harm_decline_at"] == 93 and th["injection_drop_at"] == 55
     assert th["jailbreak_consent_at"] == DEFAULT_THRESHOLDS["jailbreak_consent_at"]
     assert merged({"injection_drop_at": 15})["injection_watch_at"] == 14  # watch stays below drop
+
+
+def test_scores_are_recorded_in_the_score_histogram():
+    # The histogram was registered in 3.2.2 but never observed, so /metrics never listed it.
+    from app.core.metrics import WEBAGENT_REGISTRY
+    from app.security import context_defender as cd
+
+    def count():
+        return WEBAGENT_REGISTRY.get_sample_value(
+            "webagent_contextdefender_score_count", {"axis": "injection", "source": "web_result"}) or 0
+
+    cd._score_cache.clear()
+    set_model_for_tests(_FakeModel()._inner)
+    before = count()
+    score([ContextItem("web_result", "a page about the weather in spring")])
+    score([ContextItem("web_result", "a page about the weather in spring")])  # cached: not counted again
+    assert count() == before + 1

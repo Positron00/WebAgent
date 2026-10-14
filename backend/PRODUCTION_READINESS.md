@@ -2,7 +2,7 @@
 
 This document summarizes the improvements made to the WebAgent backend to make it production-ready.
 
-## Production checklist (3.2.5)
+## Production checklist (3.2.6)
 
 Before exposing the backend:
 
@@ -100,7 +100,7 @@ Before exposing the backend:
    - Deployment with replicas
    - Service for internal access
    - Ingress for external access
-   - ConfigMap for configuration
+   - PersistentVolumeClaim for `/app/data`
    - Secrets for sensitive data
 
 2. **Docker Optimization**:

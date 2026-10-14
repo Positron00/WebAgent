@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.2.5-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.2.6-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2026--10--10-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent platform for web research and document processing.
@@ -279,7 +279,7 @@ Follow these steps to set up and run the WebAgent platform:
    ```bash
    npm run dev
    ```
-   The **Agentic** control in the chat toolbar has three modes:
+   The **Agentic** menu in the chat toolbar shows the current mode (for example "Agentic · Auto"); click it to choose one of three:
    - **Off**: answer directly through Together AI; the backend isn't needed.
    - **Auto**: the backend's triage decides per question. Routine questions are answered directly in seconds; research questions go to the multi-agent backend.
    - **Always**: every question goes to the multi-agent backend (a run takes a few minutes). Images are only used by direct answers.

@@ -46,7 +46,7 @@ Out of scope:
 These came from checking the plan against the code; the plan has been updated to match.
 
 1. **Follow-up history already reaches the supervisor.** `SupervisorAgent._with_history` reads `context["previous_messages"]` and folds the last 8 messages into `{query}`. Phase 0 needs only the new `TaskRequest` field and the client change; no new prompt variable, and `test_followup_query.py` stays as it is.
-2. **The Hugging Face cache lives on the data volume.** The Dockerfile sets `HF_HOME=/app/data/hf-cache`, and `/app/data` is mounted in Compose and Kubernetes, so a model there would be hidden. 3.1.x baked the base encoder into `/opt/models`; since `triage-2026-10-c` the fine-tuned encoder ships in `models/triage/encoder/` with the code instead.
+2. **The Hugging Face cache lives on the data volume.** The Dockerfile sets `HF_HOME=/app/data/hf-cache`, and `/app/data` is mounted in Compose and Kubernetes, so a model there would be hidden. 3.1.x baked the base encoder into `/opt/models`; since `triage-2026-10-c` the fine-tuned encoder ships in `models/triage/encoder/` with the code instead. Since 3.2.6 the image also sets `HF_HUB_CACHE=/opt/hf-hub`, where internal research's reranker is baked in; before that it downloaded onto the data volume on the first research task.
 3. **"Backend unreachable" needs a marker.** A 503 could come from the Next.js proxy or the backend. The proxy adds `X-WebAgent-Proxy-Error: unreachable` so the client can tell them apart.
 4. **The backend LLM wrapper is text only**, which led to decision 1.
 5. **`/api/v1/chat/completions` defaults to non-agentic today**, which led to decision 2.

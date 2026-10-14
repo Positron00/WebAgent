@@ -1,5 +1,8 @@
 #!/bin/bash
-set -e
+set -eo pipefail
+
+# Paths below are relative to this folder, wherever the script is run from
+cd "$(dirname "$0")"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -8,18 +11,22 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Default values
-ENVIRONMENT="production"
+ENVIRONMENT="prod"
 NAMESPACE="default"
-VERSION="3.2.5"
+VERSION="3.2.6"
+REGISTRY="webagent/backend"
+HOST="api.webagent.example.com"
 
 # Print usage information
 function print_usage {
   echo "Usage: $0 [options]"
   echo ""
   echo "Options:"
-  echo "  -e, --environment   Environment to deploy to (default: production)"
+  echo "  -e, --environment   prod or uat: sets WEBAGENT_ENV, so the pod uses config/<env>.yaml (default: prod)"
   echo "  -n, --namespace     Kubernetes namespace (default: default)"
-  echo "  -v, --version       Version to deploy (default: 3.2.5)"
+  echo "  -v, --version       Image tag to deploy (default: 3.2.6)"
+  echo "  -r, --registry      Image repository the cluster pulls from (default: webagent/backend)"
+  echo "  -H, --host          Public host name for the ingress (default: api.webagent.example.com)"
   echo "  -h, --help          Show this help message"
   echo ""
   echo "Environment variables required:"
@@ -53,6 +60,16 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    -r|--registry)
+      REGISTRY="$2"
+      shift
+      shift
+      ;;
+    -H|--host)
+      HOST="$2"
+      shift
+      shift
+      ;;
     -h|--help)
       print_usage
       exit 0
@@ -63,6 +80,26 @@ while [[ $# -gt 0 ]]; do
       exit 1
       ;;
   esac
+done
+
+# "production" was the old default name for prod
+if [ "$ENVIRONMENT" = "production" ]; then
+  ENVIRONMENT="prod"
+fi
+case "$ENVIRONMENT" in
+  prod|uat) ;;
+  *)
+    echo -e "${RED}Error: environment must be prod or uat (got: $ENVIRONMENT)${NC}"
+    exit 1
+    ;;
+esac
+
+# Values substituted into the manifest with sed; secrets are never substituted (see below)
+for value in "$NAMESPACE" "$VERSION" "$REGISTRY" "$HOST"; do
+  if [[ -z "$value" || ! "$value" =~ ^[A-Za-z0-9._:/-]+$ ]]; then
+    echo -e "${RED}Error: namespace, version, registry and host must be non-empty and use only letters, digits and . _ : / -${NC}"
+    exit 1
+  fi
 done
 
 # Check required environment variables
@@ -96,10 +133,18 @@ if ! kubectl get namespace monitoring &> /dev/null; then
   
   echo -e "${YELLOW}Deploying Prometheus...${NC}"
   kubectl apply -f monitoring/prometheus.yaml
+  # ServiceMonitor and PrometheusRule exist only with the Prometheus Operator
+  if kubectl get crd servicemonitors.monitoring.coreos.com &> /dev/null; then
+    kubectl apply -f monitoring/prometheus-operator.yaml
+  fi
   
   echo -e "${YELLOW}Deploying Grafana...${NC}"
-  # The admin password comes from the environment; it is never stored in the repo.
-  sed "s/\${GRAFANA_ADMIN_PASSWORD}/$GRAFANA_ADMIN_PASSWORD/g" monitoring/grafana.yaml | kubectl apply -f -
+  # The admin password comes from the environment; it is never stored in the repo or a file.
+  kubectl create secret generic grafana-credentials -n monitoring \
+    --from-literal=admin-user=admin \
+    --from-literal=admin-password="$GRAFANA_ADMIN_PASSWORD" \
+    --dry-run=client -o yaml | kubectl apply -f -
+  kubectl apply -f monitoring/grafana.yaml
   
   echo -e "${YELLOW}Configuring Grafana datasource...${NC}"
   kubectl apply -f monitoring/grafana-datasource.yaml
@@ -107,29 +152,36 @@ else
   echo -e "${GREEN}Monitoring namespace already exists${NC}"
 fi
 
-# Process the deployment template
+# Secrets go straight to the cluster: never written to a file or put through sed
+# (a key containing "/" or "&" broke the old substitution).
+echo -e "${YELLOW}Creating or updating secret webagent-secrets...${NC}"
+kubectl create secret generic webagent-secrets -n "$NAMESPACE" \
+  --from-literal=openai-api-key="$OPENAI_API_KEY" \
+  --from-literal=together-api-key="${TOGETHER_API_KEY:-}" \
+  --from-literal=security-secret-key="$WEBAGENT_SECURITY_SECRET_KEY" \
+  --from-literal=api-key="$WEBAGENT_API_KEY" \
+  --from-literal=tavily-api-key="${TAVILY_API_KEY:-}" \
+  --from-literal=langsmith-api-key="${LANGSMITH_API_KEY:-}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# Process the deployment template (no secrets in it)
 echo -e "${YELLOW}Generating deployment manifest...${NC}"
-cat deployment.yaml | \
-  sed "s/\${OPENAI_API_KEY}/$OPENAI_API_KEY/g" | \
-  sed "s/\${TOGETHER_API_KEY}/${TOGETHER_API_KEY:-}/g" | \
-  sed "s/\${WEBAGENT_SECURITY_SECRET_KEY}/$WEBAGENT_SECURITY_SECRET_KEY/g" | \
-  sed "s/\${WEBAGENT_API_KEY}/$WEBAGENT_API_KEY/g" | \
-  sed "s/\${TAVILY_API_KEY}/${TAVILY_API_KEY:-}/g" | \
-  sed "s/\${LANGSMITH_API_KEY}/${LANGSMITH_API_KEY:-}/g" | \
-  sed "s/webagent\/backend:3.2.5/webagent\/backend:$VERSION/g" | \
-  sed "s/version: \"3.2.5\"/version: \"$VERSION\"/g" | \
-  sed "s/namespace: default/namespace: $NAMESPACE/g" > deployment-$ENVIRONMENT.yaml
+MANIFEST="$(mktemp)"
+trap 'rm -f "$MANIFEST"' EXIT
+sed -e "s|^\( *image: \).*|\1$REGISTRY:$VERSION|" \
+    -e "s|version: \"[^\"]*\"|version: \"$VERSION\"|g" \
+    -e "/name: WEBAGENT_ENV/{n;s|value: \"prod\"|value: \"$ENVIRONMENT\"|;}" \
+    -e "s|api.webagent.example.com|$HOST|g" \
+    -e "s|namespace: default|namespace: $NAMESPACE|g" \
+    deployment.yaml > "$MANIFEST"
 
 # Apply the deployment
-echo -e "${YELLOW}Deploying WebAgent backend to $ENVIRONMENT environment in namespace $NAMESPACE...${NC}"
-kubectl apply -f deployment-$ENVIRONMENT.yaml
-
-# Clean up
-rm deployment-$ENVIRONMENT.yaml
+echo -e "${YELLOW}Deploying WebAgent backend ($ENVIRONMENT) to namespace $NAMESPACE...${NC}"
+kubectl apply -f "$MANIFEST"
 
 echo -e "${GREEN}Deployment completed successfully!${NC}"
 echo -e "${YELLOW}Checking deployment status...${NC}"
-kubectl rollout status deployment/webagent-backend -n $NAMESPACE
+kubectl rollout status deployment/webagent-backend -n "$NAMESPACE"
 
 echo -e "${GREEN}WebAgent backend v$VERSION has been deployed to the $ENVIRONMENT environment in namespace $NAMESPACE${NC}"
 echo -e "${YELLOW}To access Grafana dashboards, run:${NC}"

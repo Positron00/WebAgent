@@ -1,15 +1,34 @@
-# Shadow week runbook (release 3.2.5, uat)
+# Shadow week runbook (release 3.2.6, uat)
 
 Goal: run the security guard on real uat traffic for about a week in shadow mode (it checks everything and records what it would do, but blocks nothing), then decide whether checkpoint 1 can act. Triage runs its own pending shadow week at the same time (decided 2026-10-13; see section 7). Tasks 3.8 and 5.1–5.3 in [`tasks.md`](tasks.md); targets in [`requirements.md`](requirements.md) (SEC-028, SNFR-01, SNFR-05).
 
 ## 1. Before deploying
 
-- [ ] `git lfs pull` (the ContextDefender encoder and dataset are LFS files; without them the image has pointer files and the guard can't score).
-- [ ] Build and push the backend image: `docker build --build-arg APP_VERSION=3.2.5 -t webagent/backend:3.2.5 backend/`, then deploy with `backend/kubernetes/deploy.sh -e uat -v 3.2.5` (the script applies the manifests; it doesn't build). It needs `OPENAI_API_KEY`, `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD` in the environment.
-- [ ] Environment: `WEBAGENT_ENV=uat`, a real `WEBAGENT_SECURITY_SECRET_KEY` (signs consent and approval tokens), `WEB_CONCURRENCY=2`. The guard itself uses `OPENAI_API_KEY` only if the harm judge is turned on.
-- [ ] `backend/config/uat.yaml`, `security_guard:` — `enabled: true`, `input_mode: shadow`, `tool_mode: shadow`, `collect: true`, `judge: false`. (Set in 3.2.2.)
-- [ ] Kubernetes: memory limit 3 GiB, request 2 GiB (`kubernetes/deployment.yaml`; raised in 3.2.5: two workers peaked at 1.81 GiB in the simulated week), one replica (collection writes to `/app/data`, which must be writable). `/tmp` must be writable too: since 3.2.4 every worker writes its metrics to `PROMETHEUS_MULTIPROC_DIR` (`/tmp/webagent_prometheus`) and `/metrics` sums them; with a read-only root filesystem, mount an `emptyDir` at `/tmp`.
-- [ ] `uat.yaml`, `triage:` — `enabled: true`, `mode: shadow`, `collect: true`, `llm_tiebreak: false` (set in 3.2.3). Triage collection in uat stores question text; approved for this week (triage task 2.12).
+The week runs either on one machine with Docker (how the 2026-10-13 week runs: there is no uat cluster yet) or in Kubernetes. The 2026-10-13 week started on 3.2.5 and stays on it until the review, so the numbers come from one version; 3.2.6 changes nothing the guard or triage decide. Settings for both:
+
+- `backend/config/uat.yaml`, `security_guard:` — `enabled: true`, `input_mode: shadow`, `tool_mode: shadow`, `collect: true`, `judge: false` (set in 3.2.2).
+- `uat.yaml`, `triage:` — `enabled: true`, `mode: shadow`, `collect: true`, `llm_tiebreak: false` (set in 3.2.3). Triage collection in uat stores question text; approved for this week (triage task 2.12).
+- Environment: `WEBAGENT_ENV=uat`, `WEB_CONCURRENCY=2`, a real `WEBAGENT_SECURITY_SECRET_KEY` (signs consent and approval tokens) and `WEBAGENT_API_KEY` (the web app sends the same key), plus the Together, Tavily and OpenAI keys. The guard itself uses `OPENAI_API_KEY` only if the harm judge is turned on.
+- `git lfs pull` first: the ContextDefender encoder and dataset are LFS files; without them the image has pointer files and the guard can't score.
+
+### On one machine (Docker)
+
+- [ ] Build: `docker build --build-arg APP_VERSION=3.2.6 -t webagent-backend:3.2.6 backend/`.
+- [ ] Put the environment above in a file outside the repo, readable only by you (`chmod 600`), e.g. `~/webagent-uat.env`.
+- [ ] Run, keeping the data on disk:
+  ```bash
+  docker run -d --name webagent-uat --restart unless-stopped -p 127.0.0.1:8000:8000 --memory 3g \
+    --env-file ~/webagent-uat.env -v ~/webagent-uat-data:/app/data webagent-backend:3.2.6
+  ```
+- [ ] Web app: in the repo's `.env.local`, `WEBAGENT_BACKEND_URL=http://127.0.0.1:8000` (the default) and the same `WEBAGENT_API_KEY`; then `npm run dev` (add `-- -p 3001` if port 3000 is taken) and turn Agentic on.
+- [ ] There's no Prometheus: read the same series from `curl localhost:8000/metrics`, and the collection from `~/webagent-uat-data/security/collected` and `~/webagent-uat-data/triage/collected`. Latency and memory measured on a laptop don't stand in for the server: measure them once on the real host before act mode in prod.
+
+### In Kubernetes
+
+- [ ] Build and push to a registry the cluster can pull from: `docker build --build-arg APP_VERSION=3.2.6 -t <registry>/webagent-backend:3.2.6 backend/`, `docker push ...`.
+- [ ] With the keys and `GRAFANA_ADMIN_PASSWORD` exported, from `backend/kubernetes/`: `./deploy.sh -e uat -n webagent-uat -v 3.2.6 -r <registry>/webagent-backend -H <uat host>`. Before 3.2.6 the script ignored `-e` (the pod ran prod settings) and kept `/app/data` in an `emptyDir`; use 3.2.6 or later.
+- [ ] What it sets up: one replica, memory limit 3 GiB (request 2 GiB; two workers peaked at 1.81 GiB in the simulated week), CPU limit 2, `/app/data` on a 5 GiB persistent volume so the collection survives restarts, `/tmp` writable for the workers' metrics.
+- [ ] Web app on Vercel or locally with `WEBAGENT_BACKEND_URL=https://<uat host>` and the same `WEBAGENT_API_KEY`.
 
 ## 2. Right after deploying
 
@@ -73,7 +92,7 @@ Any time, without a new image: set `WEBAGENT_GUARD_INPUT_MODE=shadow` (or `WEBAG
 
 ## 7. Triage's shadow week
 
-Triage only sees questions sent with **Agentic on**, so during the week send a deliberate mix of routine questions (definitions, quick facts, rewrites) and real research questions with Agentic on. For each one it records what it would have decided; routing doesn't change.
+Triage only records questions sent with Agentic set to **Always**. In **Auto** it isn't in shadow: with `enabled: true` it routes the question for real (direct or research), and `/api/triage` records nothing, so misrouted questions never reach the review. Keep the web app on Always for the week, and send a deliberate mix of routine questions (definitions, quick facts, rewrites) and real research questions with Agentic on. For each one it records what it would have decided; routing doesn't change.
 
 At the end of the week, follow triage's own review (`planning/specs/agentic-triage/tasks.md`, "Shadow week"): label the collected questions (`/app/data/triage/collected/`) with an LLM judge, review every disagreement between the judge and the classifier, anonymize, add them to `backend/data/triage/train.jsonl` (never to `test.jsonl`), retrain and re-run the gate. If the gate still passes, task 3.11 switches triage to `mode: act`.
 

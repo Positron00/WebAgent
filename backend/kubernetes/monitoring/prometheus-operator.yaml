@@ -1,0 +1,77 @@
+# Only for clusters running the Prometheus Operator (these kinds need its CRDs).
+# deploy.sh applies this file only when the ServiceMonitor CRD exists; the plain
+# Prometheus in prometheus.yaml already scrapes the backend without it.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: webagent-backend
+  namespace: monitoring
+  labels:
+    app: webagent
+    component: backend
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: webagent-backend
+  namespaceSelector:
+    any: true
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+    honorLabels: true
+    metricRelabelings:
+    - sourceLabels: [__name__]
+      regex: "go_.*"
+      action: drop
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: webagent-backend-alerts
+  namespace: monitoring
+  labels:
+    app: webagent
+    component: backend
+    release: prometheus
+spec:
+  groups:
+  - name: webagent-backend.rules
+    rules:
+    - alert: WebAgentBackendDown
+      expr: up{job="webagent-backend"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "WebAgent Backend is down"
+        description: "The WebAgent Backend service has been down for more than 1 minute."
+    
+    - alert: WebAgentHighErrorRate
+      expr: sum(rate(http_requests_total{job="webagent-backend", status_code=~"5.."}[5m])) / sum(rate(http_requests_total{job="webagent-backend"}[5m])) > 0.05
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High Error Rate"
+        description: "More than 5% of requests are failing with 5xx errors."
+    
+    - alert: WebAgentHighResponseTime
+      expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="webagent-backend"}[5m])) by (le)) > 1
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High Response Time"
+        description: "95th percentile of response time is above 1 second."
+    
+    - alert: WebAgentTooManyRequests
+      expr: sum(rate(http_requests_total{job="webagent-backend"}[1m])) > 100
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Too Many Requests"
+        description: "WebAgent Backend is receiving too many requests (> 100 per second)." 

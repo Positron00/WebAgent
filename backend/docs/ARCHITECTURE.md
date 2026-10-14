@@ -10,7 +10,7 @@ WebAgent is a sophisticated AI system built as a microservice architecture that 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WebAgent Platform v3.2.5                          │
+│                           WebAgent Platform v3.2.6                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌────────────────┐                         ┌─────────────────────────────┐ │
@@ -320,8 +320,8 @@ The system supports multiple deployment options:
   - Service definitions
   - Ingress rules
   - Resource requests and limits
-  - Read-only root filesystem with `emptyDir` volumes for `/app/data` and `/app/logs`
-  - One replica until `/app/data` is on a shared ReadWriteMany volume
+  - Read-only root filesystem; `/app/data` on a persistent volume, `emptyDir` for `/app/logs` and `/tmp`
+  - One replica (Recreate updates) until `/app/data` is on a shared ReadWriteMany volume
 
 - **Scaling Strategy**:
   - Horizontal scaling for API layer

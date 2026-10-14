@@ -105,9 +105,11 @@ security_guard:
   collect: true            # shadow week: decisions with scores for review (no text outside dev; 30-day retention)
 
 triage:
-  # Shadow week (2026-10-13), alongside the security guard's: with Agentic on, triage classifies each
-  # question and records what it would have done; routing is unchanged. Collection stores question text
-  # for the review (30-day retention). After the review, task 3.11 sets mode: act.
+  # Shadow week (2026-10-13), alongside the security guard's: for questions sent with Agentic set to
+  # Always, triage classifies each one and records what it would have done; their routing is unchanged.
+  # Shadow mode doesn't cover Auto: with enabled: true, Auto routes by triage for real and /api/triage
+  # records nothing, so send the week's questions with Always. Collection stores question text for the
+  # review (30-day retention). After the review, task 3.11 sets mode: act.
   enabled: true
   mode: shadow
   collect: true
