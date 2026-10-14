@@ -7,8 +7,10 @@ from app.security.errors import GuardStop
 from app.security.types import Decision
 
 
-def _working(name, text):
+def _working(name, text, log_line=None):
     async def agent(state):
+        if log_line:
+            state.add_log(log_line)
         state.update_with_agent_output(name, {"findings": text})
         return state
     return agent
@@ -32,11 +34,16 @@ def _use(monkeypatch, web, internal):
 
 @pytest.mark.asyncio
 async def test_failed_web_research_keeps_the_internal_report(monkeypatch):
-    _use(monkeypatch, _failing(RuntimeError("Tavily down")), _working("internal_research", "from docs"))
+    _use(
+        monkeypatch,
+        _failing(RuntimeError("Tavily down")),
+        _working("internal_research", "from docs", log_line="internal agent trace"),
+    )
 
     state = await workflows.run_research_agents(_state())
 
     assert state.reports["internal_research"] == {"findings": "from docs"}
+    assert any("internal agent trace" in line for line in state.logs)
     assert "web_research" not in state.reports
     assert state.context["research_errors"] == [{"agent": "web_research", "error": "Tavily down"}]
     assert any("web_research failed: RuntimeError" in line for line in state.logs)

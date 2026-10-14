@@ -24,7 +24,8 @@ flowchart LR
 CI (tasks 1.1–1.3) goes first, so everything after it is checked automatically. Within a
 phase, web app and backend tasks can run in parallel unless a dependency says otherwise.
 
-Totals: phase 1 about 60 h (7.5 d), phase 2 about 62 h (8 d), phase 3 about 60 h (7.5 d).
+Totals: phase 1 about 60 h (7.5 d), phase 2 about 62 h (8 d), phase 3 about 60 h (7.5 d),
+phase 4 about 24 h (3 d).
 
 ## Phase 1: 3.2.7, safety net and open doors (~60 h)
 
@@ -119,8 +120,8 @@ Totals: phase 1 about 60 h (7.5 d), phase 2 about 62 h (8 d), phase 3 about 60 h
 
 | ID | Task | Covers | Depends | Done when | Est. |
 |---|---|---|---|---|---|
-| 4.1 | Repair imports: align `llm_service`, `doc_ingestion_service` / document drift, and `observability` routes with `app.core.observability` | IMP-128 | 3.22 | `test_import_all_modules.py` has no `xfail` for the observability set | 6 h |
-| 4.2 | Merge document drift into `document_ingestion_service.py`; remove `doc_ingestion_service.py` | IMP-128 | 4.1 | Observability `/drift` and doc baseline routes still work | 4 h |
+| 4.1 | Repair imports: align `llm_service`, document drift (`document_ingestion_service`), and `observability` routes with `app.core.observability` | IMP-128 | 3.22 | `test_import_all_modules.py` has no `xfail` for the observability set | 6 h |
+| 4.2 | Merge document drift into `document_ingestion_service.py` (`doc_ingestion_service` alias); remove `doc_ingestion_service.py` | IMP-128 | 4.1 | Observability `/drift` and doc baseline routes still work | 4 h |
 | 4.3 | Mount `api/routes/observability` on `/api/v1` (API key); document vs `/metrics` and LangSmith | IMP-128 | 4.1 | `test_observability_api.py` passes | 3 h |
 | 4.4 | Wire drift hooks from production LLM calls where appropriate (no duplicate chat routing) | IMP-128 | 4.1 | pytest with fakes; RUNBOOK section | 4 h |
 | 4.5 | Self-hosted LLM Docker entrypoint and README aligned with repaired stack | IMP-128 | 4.1 | `docker run … id -u` non-root; health check passes | 2 h |

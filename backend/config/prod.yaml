@@ -121,4 +121,3 @@ security:
   algorithm: "HS256"
   password_min_length: 12
   api_key_enabled: true
-  jwt_enabled: false 

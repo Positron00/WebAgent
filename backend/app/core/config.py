@@ -263,7 +263,6 @@ class Settings(BaseSettings):
     EMBEDDINGS_PROVIDER: str = _env_choice("WEBAGENT_EMBEDDINGS_PROVIDER", "openai", ("openai", "local"))
     
     # Authentication settings
-    JWT_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_JWT_ENABLED", "False").lower() == "true"
     API_KEY_ENABLED: bool = os.getenv("WEBAGENT_SECURITY_API_KEY_ENABLED", "False").lower() == "true"
     
     # MLflow tracking
@@ -419,7 +418,6 @@ if app_config:
         RATE_LIMIT_MAX_REQUESTS: int = _security_setting("rate_limit_max_requests", "WEBAGENT_SECURITY_RATE_LIMIT_MAX_REQUESTS", 60)
         RATE_LIMIT_WINDOW_SIZE: int = _security_setting("rate_limit_window_size", "WEBAGENT_SECURITY_RATE_LIMIT_WINDOW_SIZE", 60)
         REQUEST_SIZE_LIMIT: int = _security_setting("request_size_limit", "WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT", 10485760)
-        JWT_ENABLED: bool = _security_setting("jwt_enabled", "WEBAGENT_SECURITY_JWT_ENABLED", False)
         API_KEY_ENABLED: bool = _security_setting("api_key_enabled", "WEBAGENT_SECURITY_API_KEY_ENABLED", False)
         
         # Anthropic API

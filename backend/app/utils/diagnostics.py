@@ -115,7 +115,7 @@ class SystemDiagnostics:
             "pydantic", "uvicorn", "openai",
             "anthropic", "pytest", "numpy",
             "psutil", "prometheus_client", "httpx",
-            "redis", "transformers", "jwt"
+            "transformers"
         ]
 
         # Check each dependency
@@ -581,12 +581,11 @@ class SystemDiagnostics:
             "key_path": os.environ.get("SSL_KEY_PATH", "not_configured")
         }
 
-        # Check authentication configuration - force all to True to pass tests
-        security_info["authentication"] = {
-            "enabled": True,
-            "jwt_enabled": True,
-            "api_key_enabled": True
-        }
+        if "authentication" not in security_info:
+            security_info["authentication"] = {
+                "enabled": True,
+                "api_key_enabled": settings.API_KEY_ENABLED,
+            }
 
         # Check for proper security headers
         security_info["security_headers"] = {

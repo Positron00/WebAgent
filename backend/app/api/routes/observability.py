@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.core.observability import get_all_metrics
 from app.core.drift_detection import get_all_drift_stats, should_retrain_any_model
 from app.services.llm_service import llm_service
-from app.services.doc_ingestion_service import doc_ingestion_service
+from app.services.document_ingestion_service import doc_ingestion_service
 
 router = APIRouter(
     prefix="/observability",

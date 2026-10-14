@@ -2,6 +2,31 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.5.0 - 2026-10-14
+
+Advanced observability repair and integration (IMP-128), plus CSP-aligned web app connectivity and research log merging.
+
+### Upgrade notes
+- **`/api/v1/observability/*`** is available behind the API key (`metrics`, `drift`, `health`, `alerts`, LLM/doc baseline reset). Prometheus **`/metrics`** and LangSmith tracing are unchanged.
+- Document drift for the observability API lives in **`document_ingestion_service.py`** (`doc_ingestion_service` alias); the standalone **`doc_ingestion_service.py`** module is removed.
+- **Web app:** API calls use same-origin **`/api`** only (`clientConfig`); offline detection uses **`/api/ping`** only (no third-party connectivity probes under CSP).
+
+### Added
+- Observability bridge helpers on `app.core.observability` (`record_model_latency`, `get_all_metrics`, …)
+- `backend/standalone/llm_server.py` as the self-hosted LLM Docker entrypoint
+- `test_observability_api.py`; full-app import scan with no observability `xfail`
+
+### Changed
+- `api/routes/observability` mounted on the key-protected `/api/v1` router
+- Production LLM usage records latency/tokens into the observability registries via `llm.py`
+- JWT/PyJWT config and diagnostics leftovers removed (API-key auth only)
+- `docs/RUNBOOK.md` advanced observability section updated for operators
+- Platform-improvements specs and `planning/improvement-plan.md` aligned for IMP-128 vs IMP-080
+
+### Fixed
+- Parallel research agents merge workflow **log lines** back into the run (`workflows.py`, IMP-043 follow-up)
+- **CSP:** `AppContext` no longer fetches `google.com` on ping failure; `clientConfig` no longer targets `NEXT_PUBLIC_VERCEL_URL` for `/api`
+
 ## 3.4.0 - 2026-10-14
 
 Cleanup, reliability fixes, and contributor docs. Advanced observability code is kept for repair in 3.5.0 (IMP-128).

@@ -10,8 +10,10 @@ needs to be initialized with documents.
 import os
 import logging
 import time
+import threading
 from pathlib import Path
 import asyncio
+from typing import Any, Dict, List
 
 from app.core.config import settings
 from app.core.observability import (
@@ -623,4 +625,127 @@ def get_document_ingestion_service():
     global _document_ingestion_service
     if _document_ingestion_service is None:
         _document_ingestion_service = DocumentIngestionService()
-    return _document_ingestion_service 
+    return _document_ingestion_service
+
+
+# --- Document drift for /api/v1/observability (IMP-128; merged from doc_ingestion_service) ---
+
+from app.core.drift_detection import (
+    create_categorical_drift_detector,
+    create_numerical_drift_detector,
+    create_performance_drift_detector,
+)
+from app.core.observability import (
+    log_to_mlflow,
+    record_document_count,
+    record_error_count,
+    record_processing_time,
+)
+
+_doc_obs_lock = threading.RLock()
+processing_time_detector = create_numerical_drift_detector(
+    "doc_processing_time", window_size=500, threshold=0.05
+)
+doc_size_detector = create_numerical_drift_detector("doc_size", window_size=500, threshold=0.1)
+doc_type_detector = create_categorical_drift_detector("doc_type", window_size=500, threshold=0.05)
+doc_quality_detector = create_performance_drift_detector(
+    "doc_quality", window_size=200, threshold=0.15
+)
+
+
+class DocumentProcessingObservability:
+    """Drift and metrics surface for observability document routes."""
+
+    def __init__(self):
+        self.collecting_baseline = True
+        self.baseline_count = 0
+        self.max_baseline_samples = 50
+
+    def process_document(self, document: Dict[str, Any]) -> Dict[str, Any]:
+        start_time = time.time()
+        try:
+            doc_id = document.get("id", "unknown")
+            doc_type = document.get("type", "unknown")
+            doc_content = document.get("content", "")
+            doc_size = len(doc_content)
+            time.sleep(0.1)
+            tokens = len(doc_content.split())
+            entities = ["entity1", "entity2"]
+            quality_score = min(0.95, len(doc_content) / 10000)
+            ocr_confidence = 0.9 if doc_type == "pdf" else 1.0
+            processing_time = time.time() - start_time
+            record_processing_time("document_processing", processing_time)
+            record_document_count(doc_type, 1)
+            record_document_size(doc_type, doc_size)
+            with _doc_obs_lock:
+                if self.collecting_baseline and self.baseline_count < self.max_baseline_samples:
+                    processing_time_detector.add_reference_sample(processing_time)
+                    doc_size_detector.add_reference_sample(doc_size)
+                    doc_type_detector.add_reference_sample(doc_type)
+                    self.baseline_count += 1
+                    if self.baseline_count >= self.max_baseline_samples:
+                        self.collecting_baseline = False
+                else:
+                    processing_time_detector.add_current_sample(processing_time)
+                    doc_size_detector.add_current_sample(doc_size)
+                    doc_type_detector.add_current_sample(doc_type)
+                    doc_quality_detector.add_performance_metrics(
+                        accuracy=quality_score, confidence=ocr_confidence
+                    )
+            log_to_mlflow(
+                metrics={
+                    "processing_time": processing_time,
+                    "doc_size": doc_size,
+                    "token_count": tokens,
+                    "quality_score": quality_score,
+                    "ocr_confidence": ocr_confidence,
+                },
+                params={"doc_id": doc_id, "doc_type": doc_type, "entity_count": len(entities)},
+                experiment_name="document_processing",
+            )
+            return {
+                "doc_id": doc_id,
+                "processing_time": processing_time,
+                "tokens": tokens,
+                "entities": entities,
+                "quality_score": quality_score,
+                "status": "success",
+            }
+        except Exception as e:
+            processing_time = time.time() - start_time
+            record_error_count("document_processing", 1)
+            record_processing_time("document_processing", processing_time)
+            logger.error("Document processing observability error: %s", e)
+            return {"error": str(e), "processing_time": processing_time, "status": "error"}
+
+    def get_drift_status(self) -> Dict[str, Any]:
+        return {
+            "collecting_baseline": self.collecting_baseline,
+            "baseline_count": self.baseline_count,
+            "processing_time_drift": processing_time_detector.get_stats(),
+            "doc_size_drift": doc_size_detector.get_stats(),
+            "doc_type_drift": doc_type_detector.get_stats(),
+            "doc_quality_drift": doc_quality_detector.get_stats(),
+            "pipeline_adjustments_recommended": doc_quality_detector.should_retrain(),
+        }
+
+    def reset_drift_baselines(self) -> None:
+        global processing_time_detector, doc_size_detector, doc_type_detector, doc_quality_detector
+        with _doc_obs_lock:
+            self.collecting_baseline = True
+            self.baseline_count = 0
+            processing_time_detector = create_numerical_drift_detector(
+                "doc_processing_time", window_size=500, threshold=0.05
+            )
+            doc_size_detector = create_numerical_drift_detector(
+                "doc_size", window_size=500, threshold=0.1
+            )
+            doc_type_detector = create_categorical_drift_detector(
+                "doc_type", window_size=500, threshold=0.05
+            )
+            doc_quality_detector = create_performance_drift_detector(
+                "doc_quality", window_size=200, threshold=0.15
+            )
+
+
+doc_ingestion_service = DocumentProcessingObservability()

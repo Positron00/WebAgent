@@ -121,7 +121,6 @@ logging:
 # Security settings
 security:
   api_key_enabled: true
-  jwt_enabled: false
   token_expire_minutes: 30
   algorithm: "HS256"
   password_min_length: 10 

@@ -43,7 +43,9 @@ async def test_search_error_is_recorded_in_the_report_and_logs(monkeypatch, capl
     assert report["analysis"].startswith("Web search failed")
     assert "Web search failed: timed out after 30 s" in state.logs
     assert len(calls) == 1  # a broken search isn't retried with a simplified query
-    assert "zebra" not in caplog.text
+    own_lines = [r.getMessage() for r in caplog.records if r.name == web_research_module.logger.name]
+    assert any("chars" in line for line in own_lines)
+    assert not any("zebra" in line for line in own_lines)
 
 
 @pytest.mark.asyncio

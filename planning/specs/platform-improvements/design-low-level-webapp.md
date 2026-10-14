@@ -354,9 +354,12 @@ images: {
 ```
 
 `'unsafe-inline'` for scripts is needed for Next.js 14's inline bootstrap without nonces
-(see known limitations). `connect-src 'self'` works because the browser only calls the
-web app's own routes. The task checks voice input, screenshot capture and image upload
-under the policy (IMP-060).
+(see known limitations). `connect-src 'self'` means every browser `fetch` must stay on the
+web app origin. **`clientConfig.ts`** always sets `api.baseUrl` to `'/api'` (do not point
+at `NEXT_PUBLIC_VERCEL_URL`, which would break the session cookie and CSP). **`AppContext`**
+treats a failed `HEAD /api/ping` as offline; it must not probe third-party hosts (for
+example `google.com`). Document **`WEBAGENT_IMAGE_HOSTS`** in `.env.local.example`. The
+task checks voice input, screenshot capture and image upload under the policy (IMP-060).
 
 ## 13. Minimal open endpoints (IMP-063)
 
@@ -411,3 +414,9 @@ saveMessages(messages) {
 
 Jest runs in jsdom, which lacks `crypto.subtle` on older Node; `jest.setup.js` assigns
 `globalThis.crypto = require('node:crypto').webcrypto` when it's missing.
+
+## 16. Release 3.5.0 (IMP-128)
+
+No web app or Next.js changes. Advanced observability is backend-only (`/api/v1/observability`
+behind the API key). Operators use the runbook; the chat UI continues to call `/api/task` and
+does not surface drift APIs in 3.5.0.

@@ -85,11 +85,21 @@ Set monthly limits in each provider dashboard for every key used in uat and prod
 twice the highest month so far, with alerts at 50% and 80%). Record the key **name** (not the
 secret), limit, and date in `backend/PRODUCTION_READINESS.md`. Review quarterly.
 
-## Advanced observability (release 3.5.0)
+## Advanced observability (IMP-128)
 
-Drift detection, LLM-management helpers, and `/api/v1/observability/*` are repaired and
-mounted in **3.5.0** (spec IMP-128). Until then, use Prometheus `/metrics`, LangSmith
-tracing, and `GET /api/v1/health/detailed` with the API key for operations.
+**JSON API (API key):** `GET /api/v1/observability/metrics`, `/drift`, `/health`, and
+`/alerts` expose drift status, registry metrics, and LLM/document baselines. `POST`
+`/api/v1/observability/llm/reset_baseline` and `/doc/reset_baseline` reset drift windows.
+These routes use the same `X-API-Key` (or `Authorization: Bearer`) as other `/api/v1/*`
+endpoints.
+
+**Prometheus:** in-cluster scrapes still use `/metrics` on port 8000 (not the public Ingress).
+**LangSmith:** agent tracing is unchanged (`LANGCHAIN_TRACING_V2` / project settings).
+**Chat routing:** production runs still use `app/services/llm.py` only; `llm_service.py` feeds
+the observability API and drift detectors, not user-facing chat.
+
+Grafana dashboard helpers and MLflow experiment logging for model metrics are documented in
+`backend/demos/README.md` and `backend/README.md` (demos section).
 
 ## Metrics exposure
 

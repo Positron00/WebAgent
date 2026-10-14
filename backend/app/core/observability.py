@@ -261,6 +261,72 @@ def record_citation(status: str = "success"):
     """Record citation/reference tracking."""
     CITATION_COUNT.labels(status=status).inc()
 
+# ================ Service metrics bridge (IMP-128) ================
+
+_model_token_totals: Dict[str, Dict[str, int]] = {}
+
+
+def record_model_latency(model_name: str, latency: float, task_type: str = "generation") -> None:
+    """Record LLM latency in Prometheus."""
+    MODEL_LATENCY.labels(model_name=model_name, task_type=task_type).observe(latency)
+
+
+def record_model_token_usage(
+    model_name: str, prompt_tokens: int, completion_tokens: int
+) -> None:
+    """Accumulate token counts for observability API responses."""
+    totals = _model_token_totals.setdefault(
+        model_name, {"prompt": 0, "completion": 0, "total": 0}
+    )
+    totals["prompt"] += prompt_tokens
+    totals["completion"] += completion_tokens
+    totals["total"] += prompt_tokens + completion_tokens
+
+
+def record_model_error_rate(model_name: str, error_count: int = 1) -> None:
+    """Record failed LLM calls."""
+    MODEL_PREDICTION_COUNT.labels(
+        model_name=model_name, task_type="generation", status="error"
+    ).inc(error_count)
+
+
+def log_model_prediction(model_name: str, success: bool = True) -> None:
+    """Increment Prometheus prediction counters (registry updates use record_model_*)."""
+    status = "success" if success else "error"
+    MODEL_PREDICTION_COUNT.labels(
+        model_name=model_name, task_type="generation", status=status
+    ).inc()
+
+
+def record_processing_time(pipeline_id: str, seconds: float) -> None:
+    """Record document or pipeline processing duration."""
+    DOCUMENT_PROCESSING_LATENCY.labels(doc_type=pipeline_id).observe(seconds)
+
+
+def record_document_count(doc_type: str, count: int = 1) -> None:
+    """Record processed document count by type."""
+    DOCUMENT_PROCESSING_COUNT.labels(status="success", doc_type=doc_type).inc(count)
+
+
+def record_error_count(pipeline_id: str, error_count: int = 1) -> None:
+    """Record pipeline processing failures."""
+    DOCUMENT_PROCESSING_COUNT.labels(status="error", doc_type=pipeline_id).inc(error_count)
+
+
+def get_all_metrics() -> Dict[str, Any]:
+    """Structured metrics snapshot (Prometheus remains the source of truth)."""
+    model_metrics = {
+        model_id: {"token_totals": totals} for model_id, totals in _model_token_totals.items()
+    }
+    return {
+        "model_metrics": model_metrics,
+        "document_metrics": {},
+        "pipeline_metrics": {},
+        "data_quality_metrics": {},
+        "system_metrics": get_observability_stats(),
+        "timestamp": datetime.now().isoformat(),
+    }
+
 # ================ GPU monitoring ================
 
 def start_gpu_monitoring(interval_seconds: int = 30):
@@ -387,6 +453,14 @@ def get_observability_stats() -> Dict[str, Any]:
     Returns:
         Dictionary with observability metrics
     """
+    try:
+        return _build_observability_stats()
+    except Exception as exc:
+        logger.warning("Could not build observability stats: %s", exc)
+        return {}
+
+
+def _build_observability_stats() -> Dict[str, Any]:
     stats = {
         "ml_model": {
             "predictions": {
@@ -434,8 +508,9 @@ def get_observability_stats() -> Dict[str, Any]:
             "success_rate": _calculate_success_rate(CITATION_COUNT, "status")
         }
     }
-    
+
     return stats
+
 
 def _calculate_success_rate(counter, label_name):
     """Helper to calculate success rate from a counter with success/error labels."""

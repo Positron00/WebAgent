@@ -4,10 +4,16 @@ from langgraph.graph import END
 from app.graph.workflows import _build_agent_workflow_impl
 
 
+def _edge_endpoints(edge):
+    if isinstance(edge, tuple):
+        return edge[0], edge[1]
+    return edge.source, edge.target
+
+
 def _reachable_from_start(graph) -> set[str]:
     successors: dict[str, set[str]] = {}
     for edge in graph.edges:
-        src, dst = edge[0], edge[1]
+        src, dst = _edge_endpoints(edge)
         if dst is END:
             continue
         successors.setdefault(src, set()).add(dst)

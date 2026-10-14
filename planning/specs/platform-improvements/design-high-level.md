@@ -45,6 +45,11 @@ flowchart LR
 Unchanged: triage, the security guard, the agents' logic (apart from IMP-030 and
 IMP-031), the direct path, and the Together `/api/chat` call itself.
 
+**3.5.0 (IMP-128):** the web app is unchanged. Operators and integrations gain
+`/api/v1/observability/*` on the backend (API key), alongside the existing Prometheus
+`/metrics` scrape path and LangSmith tracing. Drift and LLM-management JSON live there; chat
+still goes through `llm.py` only.
+
 ## 2. Who decides what
 
 | Question | Decided by | Where |
@@ -54,6 +59,8 @@ IMP-031), the direct path, and the Together `/api/chat` call itself.
 | How long may a run take, and how many tokens may it use? | The run supervisor in the task manager, and the token budget | `app/services/run_supervisor.py`, `app/services/task_budget.py` |
 | Has the user asked to stop? | The marker file, read by whichever worker runs the task | `app/services/result_store.py` |
 | How long is a finished task kept? | The cleanup loop, from `WEBAGENT_RESULTS_RETENTION_DAYS` | `app/services/result_store.py` |
+| Drift baselines and LLM observability JSON (3.5.0) | Authenticated callers via `/api/v1/observability/*` | `app/api/routes/observability.py` |
+| Production request metrics (always) | Prometheus scrapes `/metrics`; not exposed on the public Ingress | `app/core/observability.py`, `main.py` |
 
 ## 3. Flows
 
@@ -210,7 +217,8 @@ Compose binds ports to `127.0.0.1` from 3.2.7. Every new variable goes into
   guard.
 - 3.3.0: a failed research run no longer falls back to plain chat on its own. OpenAPI
   docs are off in uat and prod. `/api/v1/health/detailed` needs the API key. Result files
-  older than 30 days are deleted. Runs stop at the token budget.
+  older than 30 days are deleted. Runs stop at the token budget. Web app CSP: API calls use
+  same-origin `/api` only; remote `next/image` hosts come from `WEBAGENT_IMAGE_HOSTS`.
 - 3.4.0: error bodies gain an `error` object (existing `detail` fields stay); the
   rate-limit, size-limit and server-error bodies change from `{"error": "..."}` to that
   object. Orphan modules removed; requirements split; higher test coverage; contributor

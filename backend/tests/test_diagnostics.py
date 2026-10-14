@@ -292,8 +292,7 @@ class TestDiagnosticsUtility:
             },
             "authentication": {
                 "enabled": True,
-                "jwt_enabled": True,
-                "api_key_enabled": True
+                "api_key_enabled": True,
             }
         }
         
@@ -314,7 +313,6 @@ class TestDiagnosticsUtility:
         # Verify authentication settings
         auth = security_info["authentication"]
         assert auth["enabled"], "Authentication should be enabled"
-        assert auth["jwt_enabled"], "JWT authentication should be enabled"
         assert auth["api_key_enabled"], "API key authentication should be enabled"
     
     def test_run_all_checks(self):

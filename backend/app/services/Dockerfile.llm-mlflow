@@ -16,7 +16,7 @@ COPY backend/requirements-llm.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy service files
-COPY backend/app/services/self_hosted_llm_service.py /app/self_hosted_llm_service.py
+COPY backend/standalone/llm_server.py /app/llm_server.py
 COPY backend/app/services/MLFLOW_INTEGRATION.md /app/MLFLOW_INTEGRATION.md
 COPY backend/app/services/README_SELF_HOSTED_LLM.md /app/README_SELF_HOSTED_LLM.md
 
@@ -46,7 +46,7 @@ RUN useradd --create-home --uid 10001 llm && chown -R llm:llm /app /models /app/
 USER llm
 
 # Command to run the service
-CMD ["python", "self_hosted_llm_service.py", \
+CMD ["python", "llm_server.py", \
      "--model_path", "${MODEL_PATH}", \
      "--port", "${PORT}", \
      "--host", "${HOST}", \

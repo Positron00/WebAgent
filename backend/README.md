@@ -106,7 +106,8 @@ The diagnostics can help identify issues with:
 
 2. Install dependencies (pinned by `backend/constraints.txt`):
    ```bash
-   pip install -r backend/requirements.txt -c backend/constraints.txt
+   pip install -r requirements.txt
+   # (from repo root: runtime + dev, with backend/constraints.txt pins; the Docker image installs backend/requirements.txt only)
    ```
 
 3. Create `.env.local` in the repo root from the template and add your keys:
@@ -332,8 +333,10 @@ backend/
 ├── tests/                # Test suite
 ├── main.py               # Application entry point
 ├── path_setup.py         # Path configuration utility
-├── requirements.txt      # Dependencies
-└── requirements-llm.txt  # LLM-specific dependencies
+├── requirements.txt          # Runtime (server image)
+├── requirements-dev.txt      # Tests, lint, dev sandbox libs
+├── requirements-demos.txt    # Optional demo extras
+└── requirements-llm.txt      # LLM-specific dependencies
 ```
 
 ### Adding a New Agent

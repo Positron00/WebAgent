@@ -5,6 +5,7 @@
 pytest>=7.4.0
 pytest-asyncio>=0.23.5
 pytest-cov>=4.1.0
+pytest-mock>=3.14.0
 
 # Lint and format
 black>=23.12.0

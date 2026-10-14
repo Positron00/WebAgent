@@ -35,6 +35,15 @@ Paths are relative to `backend/`. Requirement IDs refer to [`requirements.md`](r
 | `app/services/vectordb.py` | changed | Search in a thread; embedding provider | 3.4.0 | +20 lines |
 | `app/agents/document_extraction_agent.py` | changed | LDA size limit and pass cap; remove `_route_to_team_manager` | 3.4.0 | ±20 lines |
 | `config/{dev,uat,prod}.yaml` | changed | Dev host; remove unused keys; uat/prod `allow_headers` gain `X-API-Key` (3.2.7); remove `database.redis` (3.3.0) | 3.2.7, 3.3.0 | small |
+| `app/api/routes/observability.py` | changed | Repair imports; drift and LLM-management handlers | 3.5.0 | small |
+| `app/api/router.py` | changed | `include_router(observability)` on the key-protected `api_router` | 3.5.0 | +3 lines |
+| `app/core/drift_detection.py`, `grafana_integration.py`, `metrics_registry.py`, `mlflow_integration.py` | changed | Align with `app.core.observability`; real metrics hooks | 3.5.0 | varies |
+| `app/services/llm_service.py`, `self_hosted_llm_service.py` | changed | Observability/drift only; no chat routing | 3.5.0 | varies |
+| `app/services/document_ingestion_service.py` | changed | Absorb doc drift from `doc_ingestion_service.py` | 3.5.0 | +lines |
+| `app/services/doc_ingestion_service.py` | deleted | Drift API merged into `document_ingestion_service.py` (IMP-128) | 3.5.0 | — |
+| `backend/standalone/llm_server.py` | new / moved | Self-hosted LLM Docker entrypoint (IMP-128 / IMP-080) | 3.4.0–3.5.0 | ~200 lines |
+| `tests/test_import_all_modules.py` | changed | Remove `PENDING_REPAIR_350` xfail set | 3.5.0 | −15 lines |
+| `tests/test_observability_api.py` | new | API key on `/api/v1/observability/*` | 3.5.0 | ~80 lines |
 
 ## 2. Configuration
 
@@ -263,8 +272,13 @@ ok = [r for r in results if not isinstance(r, BaseException)]
 if not ok:
     raise RuntimeError("; ".join(f"{n}: {e}" for n, e in failures))
 security_ledger.merge(state, ok)
-# … existing merge of reports and history over `ok`
+log_prefix = len(state.logs)  # before gather
+# … for each result in ok: state.logs.extend(result.logs[log_prefix:])
+# … merge reports and history over `ok`
 ```
+
+Successful agents run on a deep copy, so their new log lines (for example
+`Web search failed: …` from IMP-055) are copied back with `result.logs[log_prefix:]`.
 
 `names` is built next to `agents` ("web_research", "internal_research"). Errors that
 derive from `BaseException` only (guard stops, the budget, cancellation) still end the run.
@@ -486,15 +500,32 @@ reads (`src/utils/apiClient.ts`, `isGuardRefusal`).
 
 ## 19. Cleanup (3.4.0) and observability (3.5.0)
 
-- **IMP-080 (3.4.0):** delete only orphans and true duplicates, for example
-  `services/lda_document_extractor.py` (unused; LDA is in `document_extraction_agent.py`).
-  Do not delete the advanced observability stack.
-- **IMP-128 (3.5.0):** repair imports on `drift_detection`, `grafana_integration`,
-  `metrics_registry`, `mlflow_integration`, `llm_service`, `api/routes/observability`, and
-  `self_hosted_llm_service`; merge `doc_ingestion_service` drift helpers into
-  `document_ingestion_service.py`; mount the observability router on `/api/v1`; document
-  how it relates to `/metrics` and LangSmith. Chat routing stays in `llm.py` only
-  (IMP-086).
+### 3.4.0 cleanup table (IMP-080)
+
+| Path | Action | Reason |
+|---|---|---|
+| `app/services/lda_document_extractor.py` | delete | Unused; LDA lives in `document_extraction_agent.py` |
+| Other orphans found in review | delete | No production import; list each in the 3.4.0 PR |
+
+Do **not** delete: `drift_detection`, `grafana_integration`, `metrics_registry`,
+`mlflow_integration`, `llm_service`, `self_hosted_llm_service`, `api/routes/observability`,
+or observability demos. Document drift for the HTTP API is merged into
+`document_ingestion_service.py` in 3.5.0 (not a separate `doc_ingestion_service.py` file).
+
+### 3.5.0 observability (IMP-128)
+
+- Repair imports on the modules in the table above (plus `api/routes/observability`).
+- `app/api/router.py`: `api_router.include_router(observability.router)` so routes are
+  `/api/v1/observability/*` with the same `require_api_key` dependency as other v1 APIs.
+  Prometheus scraping stays on `/metrics` at the app root (Ingress still 404s it publicly).
+- Document drift: `DocumentProcessingObservability` in `document_ingestion_service.py`,
+  alias `doc_ingestion_service`; delete `app/services/doc_ingestion_service.py`.
+- Wire drift recording from production LLM calls where appropriate (`llm.py` / wrappers), without
+  a second chat code path.
+- Extend `docs/RUNBOOK.md`: how `/api/v1/observability`, `/metrics`, and LangSmith relate;
+  Grafana/MLflow helpers for operators.
+- `backend/tests/test_import_all_modules.py`: remove `PENDING_REPAIR_350` once imports pass.
+- Chat routing stays in `llm.py` only (IMP-086).
 - **IMP-081:** remove `workflow.add_node("web_research", …)` and `("internal_research", …)`
   (`workflows.py:237-238`); remove `_route_to_team_manager` and Senior Research's
   `needs_analysis` branch (or wire it to `team_manager_router` with a test).
@@ -532,6 +563,8 @@ reads (`src/utils/apiClient.ts`, `isGuardRefusal`).
 | `test_hardening.py` | IMP-063 (docs 404 in prod, detailed health 401), IMP-065 (dev keys rejected), IMP-024 (CORS preflight) |
 | `test_error_envelope.py` | IMP-082 |
 | `test_graph_reachable.py` | IMP-081 |
+| `test_import_all_modules.py` | IMP-080 (3.4.0 may use `PENDING_REPAIR_350`); IMP-128 (3.5.0: no xfail) |
+| `test_observability_api.py` | IMP-128: 401 without key; 200 on `/metrics`, `/drift`, LLM baseline routes with key |
 
 All use the existing offline fakes (`tests/fakes/`) and the network block in
 `tests/conftest.py`.

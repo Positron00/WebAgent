@@ -72,7 +72,7 @@ Run the self-hosted LLM service:
 ### Basic Usage
 
 ```bash
-python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/your/model" --port 8080
+python backend/standalone/llm_server.py --model_path "/path/to/your/model" --port 8080
 ```
 
 ### With Model Quantization (Reduced Memory Usage)
@@ -81,10 +81,10 @@ For larger models that may not fit in GPU memory, you can use quantization:
 
 ```bash
 # 8-bit quantization (uses approximately half the memory)
-python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/your/model" --port 8080 --load_in_8bit
+python backend/standalone/llm_server.py --model_path "/path/to/your/model" --port 8080 --load_in_8bit
 
 # 4-bit quantization (uses approximately quarter the memory)
-python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/your/model" --port 8080 --load_in_4bit
+python backend/standalone/llm_server.py --model_path "/path/to/your/model" --port 8080 --load_in_4bit
 ```
 
 ### Available Command-Line Arguments

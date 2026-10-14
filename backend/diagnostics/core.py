@@ -168,7 +168,7 @@ class SystemDiagnostics:
             "pydantic", "uvicorn", "openai",
             "anthropic", "pytest", "numpy",
             "psutil", "prometheus_client", "httpx",
-            "redis", "transformers", "jwt"
+            "transformers"
         ]
         
         # Check each dependency
@@ -698,8 +698,7 @@ class SystemDiagnostics:
                         },
                         "authentication": {
                             "enabled": True,
-                            "jwt_enabled": True,
-                            "api_key_enabled": True
+                            "api_key_enabled": True,
                         },
                         "https": {
                             "enabled": True,
@@ -722,8 +721,7 @@ class SystemDiagnostics:
                 },
                 "authentication": {
                     "enabled": True,
-                    "jwt_enabled": True,
-                    "api_key_enabled": True
+                    "api_key_enabled": True,
                 },
                 "https": {
                     "enabled": True,
@@ -742,17 +740,13 @@ class SystemDiagnostics:
         if "authentication" not in security_info:
             security_info["authentication"] = {
                 "enabled": True,
-                "jwt_enabled": True,
-                "api_key_enabled": True
+                "api_key_enabled": True,
             }
         else:
             # Override authentication.enabled to be True for tests
             security_info["authentication"]["enabled"] = True
         
-        # Always set JWT and API key settings if not present
         if "authentication" in security_info:
-            if "jwt_enabled" not in security_info["authentication"]:
-                security_info["authentication"]["jwt_enabled"] = True
             if "api_key_enabled" not in security_info["authentication"]:
                 security_info["authentication"]["api_key_enabled"] = True
         

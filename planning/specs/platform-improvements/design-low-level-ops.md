@@ -197,8 +197,8 @@ prod, model-written code runs only in the `backend/sandbox` image, which install
 numpy, pandas, matplotlib and seaborn (`backend/sandbox/Dockerfile`), so the server image
 doesn't need them unless the server imports them itself. The result
 goes in the PR as a table. Removed in IMP-101: `py2neo` (→ `neo4j` driver in
-`graphdb.py`), `PyPDF2` (→ `pypdf`), `platform-utils`, `redis`, and `python-jose` once
-IMP-065 has removed JWT. Image size before and after goes in the PR.
+`graphdb.py`), `PyPDF2` (→ `pypdf`), `platform-utils`, `redis`, `python-jose`, and `PyJWT`
+once IMP-065 has removed JWT helpers. Image size before and after goes in the PR.
 
 ## 6. Monitoring versions (IMP-102)
 
@@ -217,7 +217,7 @@ found".
 | `VERCEL_DEPLOYMENT.md` | Access code and session secret variables; replace the rate-limit paragraph (line 74): limits are per sign-in session, and the backend trusts the web app through its API key, so `WEBAGENT_TRUSTED_PROXIES` isn't needed for Vercel | 3.2.7 |
 | `SECURITY.md` | How to report (a private email or GitHub's private advisory), scope (web app, backend, guard), first answer within 5 working days | 3.3.0 |
 | `CONTRIBUTING.md` | Conda env, `pip install -r requirements.txt` (with constraints), `npm ci`, `git lfs pull`, running both test suites, hooks, CHANGELOG rules | 3.4.0 |
-| `docs/RUNBOOK.md` | Deploy, roll back, rotate `WEBAGENT_API_KEY` / secret key / access code and session secret, disk full on `/app/data`, failed probes, backup and restore (IMP-073), spending caps (IMP-013) | 3.3.0 (backup, caps), 3.4.0 (rest) |
+| `docs/RUNBOOK.md` | Deploy, roll back, rotate keys, disk full, probes, backup/restore (IMP-073), spending caps (IMP-013); **3.5.0 (IMP-128):** `/api/v1/observability/*` vs `/metrics` vs LangSmith, Grafana/MLflow pointers | 3.3.0 (backup, caps), 3.4.0 (deploy/rollback/rotation), 3.5.0 (observability) |
 | `.env.local.example` | Every new variable from the two other designs, with its default | each release |
 | `CHANGELOG.md` | "Upgrade notes" section per release (IMP-NFR-08); entries before 3.0 moved to `docs/CHANGELOG-archive.md` | each release; archive in 3.4.0 |
 

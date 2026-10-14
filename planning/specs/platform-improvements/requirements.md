@@ -346,19 +346,25 @@ Do **not** delete the advanced observability stack (`drift_detection`, `grafana_
 `self_hosted_llm_service`, demos that exercise them). `services/document_ingestion_service.py`
 is the production ingestion path; `doc_ingestion_service.py` is merged in IMP-128, not
 deleted here.
-- Check: pytest passes; import scan passes except modules marked pending repair in IMP-128;
-  grep finds no import of a deleted module.
+- Check: pytest passes; at **3.4.0** the import scan may `xfail` the IMP-128 module set
+  (`PENDING_REPAIR_350` in `test_import_all_modules.py`); grep finds no import of a module
+  deleted in 3.4.0 (for example `lda_document_extractor.py`).
 
 **IMP-128 Advanced observability repair and integrate (must, 3.5.0).** The stack above is
 repaired (imports, missing helpers on `app.core.observability`, drift detectors wired to real
 metrics) and integrated into the running product: `api/routes/observability` is mounted under
-`/api/v1` behind the API key; document drift moves from `doc_ingestion_service.py` into
-`document_ingestion_service.py` (then the thin duplicate is removed); optional self-hosted LLM
-Docker images keep a supported entrypoint; Grafana dashboard helpers and MLflow integration
-are documented in the runbook. Production agent runs continue to use `llm.py` for chat;
-`llm_service.py` feeds observability and drift APIs without duplicating routing logic.
-- Check: no `xfail` on the observability import set; `test_observability_api.py` (or
-  equivalent) hits `/api/v1/observability/metrics` with a key; drift and LLM management
+`/api/v1` behind the API key; document drift lives in `document_ingestion_service.py` as
+`DocumentProcessingObservability` (exported as `doc_ingestion_service` for the observability
+routes); the standalone `doc_ingestion_service.py` module is removed; optional self-hosted LLM
+Docker images use `backend/standalone/llm_server.py`; Grafana dashboard helpers and MLflow
+integration are documented in the runbook. Production agent runs continue to use `llm.py` for
+chat; `llm_service.py` feeds observability and drift APIs without duplicating routing logic.
+Repair at least: `core/drift_detection.py`, `core/grafana_integration.py`,
+`core/metrics_registry.py`, `core/mlflow_integration.py`, `services/llm_service.py`,
+`services/self_hosted_llm_service.py`, and `api/routes/observability.py`.
+- Check: `test_import_all_modules.py` has no `xfail` for the observability import set;
+- Check: no `xfail` on that import set; `test_observability_api.py` (or equivalent) hits
+  `/api/v1/observability/metrics` with a key and gets 401 without one; drift and LLM management
   endpoints return structured JSON; RUNBOOK describes how this relates to `/metrics` and
   LangSmith.
 
@@ -437,7 +443,7 @@ the runtime file. The root `requirements.txt` installs runtime and dev.
 
 **IMP-101 Package cleanup (must, 3.4.0; plan D2).** `py2neo` is replaced by the
 `neo4j` driver, `PyPDF2` by `pypdf`, and unused packages (`platform-utils`, `redis`,
-`python-jose` if IMP-065 removed its last use) are removed.
+`python-jose` and `PyJWT` if IMP-065 removed their last use) are removed.
 - Check: pytest; image build.
 
 **IMP-102 Monitoring versions (must, 3.4.0; plan D3).** Grafana and Prometheus images
@@ -504,4 +510,4 @@ files move to `docs/archive/`.
 | IMP-NFR-05 | New files stay under about 200 lines | Review |
 | IMP-NFR-06 | API clients that use `X-API-Key` keep working, apart from the changes listed in the upgrade notes (IMP-NFR-08); status replies only gain fields; no existing response field is removed | pytest contract tests |
 | IMP-NFR-07 | After IMP-030, 5 fixed research questions and 5 routine ones are run before and after in uat. A person compares the answers; no answer is clearly worse, and run times stay within IMP-NFR-04 | Results table in the PR |
-| IMP-NFR-08 | Each change that alters a default or behaviour is listed under "Upgrade notes" in the CHANGELOG. At least: 3.2.7 — access code needed in production, dev host and Compose ports local only, agents use their YAML temperatures and limits, 7-minute run limit, longer chat-completions inputs rejected; 3.3.0 — no silent fallback to plain chat, OpenAPI docs off and detailed health behind the key in uat/prod, result files deleted after 30 days, token budget; 3.4.0 — error bodies gain the `error` object, packages removed; 3.5.0 — `/api/v1/observability/*` available behind the API key, document drift merged into the main ingestion service | Review |
+| IMP-NFR-08 | Each change that alters a default or behaviour is listed under "Upgrade notes" in the CHANGELOG. At least: 3.2.7 — access code needed in production, dev host and Compose ports local only, agents use their YAML temperatures and limits, 7-minute run limit, longer chat-completions inputs rejected; 3.3.0 — no silent fallback to plain chat, OpenAPI docs off and detailed health behind the key in uat/prod, result files deleted after 30 days, token budget, web CSP (`connect-src 'self'`, `WEBAGENT_IMAGE_HOSTS`, same-origin `/api`); 3.4.0 — error bodies gain the `error` object, packages removed; 3.5.0 — `/api/v1/observability/*` available behind the API key, document drift merged into the main ingestion service | Review |

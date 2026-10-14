@@ -13,7 +13,7 @@ COPY requirements-llm.txt /app/
 RUN pip install --no-cache-dir -r requirements-llm.txt
 
 # Copy service code
-COPY app/services/self_hosted_llm_service.py /app/
+COPY standalone/llm_server.py /app/llm_server.py
 
 # Default environment variables
 ENV MODEL_PATH="/models/llama-3"
@@ -34,4 +34,4 @@ RUN useradd --create-home --uid 10001 llm && chown -R llm:llm /app /models
 USER llm
 
 # Run the service
-CMD ["sh", "-c", "python self_hosted_llm_service.py --model_path ${MODEL_PATH} --host ${HOST} --port ${PORT}"] 
+CMD ["sh", "-c", "python llm_server.py --model_path ${MODEL_PATH} --host ${HOST} --port ${PORT}"] 

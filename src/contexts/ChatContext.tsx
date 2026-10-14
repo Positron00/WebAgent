@@ -143,6 +143,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   );
   const researchInFlightRef = useRef<string | null>(null);
   const editPendingHandlerRef = useRef<((text: string) => void) | null>(null);
+  const showNotificationRef = useRef(showNotification);
+  showNotificationRef.current = showNotification;
   const {
     run: researchRun,
     failure: researchFailure,
@@ -171,7 +173,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const { persisted, quotaTrimmed } = storage.saveMessages(state.messages);
     if (quotaTrimmed) {
-      showNotification({
+      showNotificationRef.current({
         message: STORAGE_QUOTA_NOTICE,
         type: "warning",
       });
@@ -183,7 +185,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         messageCount: state.messages.length,
       });
     }
-  }, [state.messages, state.messages.length, showNotification]);
+  }, [state.messages, state.messages.length]);
 
   const setEditPendingHandler = useCallback(
     (handler: (text: string) => void) => {

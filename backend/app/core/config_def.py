@@ -150,7 +150,6 @@ class SecurityConfig(BaseModel):
     algorithm: str = Field(default="HS256")
     password_min_length: int = Field(default=8, ge=8)
     api_key_enabled: bool = Field(default=False)
-    jwt_enabled: bool = Field(default=False)
     rate_limit_enabled: bool = Field(default=True)
     rate_limit_max_requests: int = Field(default=60, gt=0)
     rate_limit_window_size: int = Field(default=60, gt=0)

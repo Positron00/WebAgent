@@ -5,7 +5,7 @@ Status: draft v1 · Source plan: [`planning/improvement-plan.md`](../../improvem
 ## What this work does
 
 The 3.2.6 review found gaps around the parts that work well. This spec turns the plan's
-first three releases into requirements, designs and tasks:
+four releases into requirements, designs and tasks:
 
 - **3.2.7, safety net and open doors.** CI; an access code on the web app; rate limits
   that can't be dodged; the dev backend kept off the network; per-agent settings that
@@ -15,8 +15,9 @@ first three releases into requirements, designs and tasks:
   security headers and smaller open endpoints; honest docs.
 - **3.4.0, cleanup.** True duplicate/orphan code removed; dependencies split; more tests
   (coverage, red team, one browser-to-backend run); contributor and ops docs.
-- **3.5.0, observability.** Repair and integrate the advanced observability stack (drift,
-  LLM management API, Grafana helpers) with the live server and `/api/v1/observability`.
+- **3.5.0, observability (current release).** Repair and integrate the advanced observability
+  stack (drift, LLM management API, Grafana helpers) with the live server and
+  `/api/v1/observability`.
 
 ## Documents
 
@@ -27,7 +28,7 @@ first three releases into requirements, designs and tasks:
 | [`design-low-level-backend.md`](design-low-level-backend.md) | Python modules, function signatures, config, endpoint changes, cleanup list |
 | [`design-low-level-webapp.md`](design-low-level-webapp.md) | Middleware, sign-in route and page, proxy, rate limiter, `apiClient`, UI changes |
 | [`design-low-level-ops.md`](design-low-level-ops.md) | CI workflow, git hooks, Python lint, Docker and Compose, dependency split, docs |
-| [`tasks.md`](tasks.md) | Work in three phases (one per release). Each task lists the requirements it covers and the check that proves it |
+| [`tasks.md`](tasks.md) | Work in four phases (one per release). Each task lists the requirements it covers and the check that proves it |
 
 Read in that order. Requirements say *what*; the designs say *how*; tasks say *in what
 order*. When documents disagree, `requirements.md` wins, then the designs, then the plan.

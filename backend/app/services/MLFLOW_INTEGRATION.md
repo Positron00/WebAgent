@@ -48,7 +48,7 @@ mlflow server \
 Start the service with MLflow configuration:
 
 ```bash
-python backend/app/services/self_hosted_llm_service.py \
+python backend/standalone/llm_server.py \
   --model_path "/path/to/model" \
   --mlflow_tracking_uri "http://localhost:5000" \
   --mlflow_experiment_name "llm-experiments"
@@ -59,7 +59,7 @@ Or use environment variables:
 ```bash
 export MLFLOW_TRACKING_URI="http://localhost:5000"
 export MLFLOW_EXPERIMENT_NAME="llm-experiments"
-python backend/app/services/self_hosted_llm_service.py --model_path "/path/to/model"
+python backend/standalone/llm_server.py --model_path "/path/to/model"
 ```
 
 ## Tracking Experiments
@@ -388,7 +388,7 @@ ENV MLFLOW_TRACKING_URI=http://mlflow-server:5000
 ENV MLFLOW_EXPERIMENT_NAME=production-llm
 
 # Start the service with MLflow config
-CMD ["python", "self_hosted_llm_service.py", "--model_path", "${MODEL_PATH}", "--mlflow_tracking_uri", "${MLFLOW_TRACKING_URI}", "--mlflow_experiment_name", "${MLFLOW_EXPERIMENT_NAME}"]
+CMD ["python", "llm_server.py", "--model_path", "${MODEL_PATH}", "--mlflow_tracking_uri", "${MLFLOW_TRACKING_URI}", "--mlflow_experiment_name", "${MLFLOW_EXPERIMENT_NAME}"]
 ```
 
 ### A/B Testing Fine-Tuned Models
@@ -406,7 +406,7 @@ models = [
 for i, model in enumerate(models):
     port = 8080 + i
     os.system(f"""
-    python self_hosted_llm_service.py \
+    python llm_server.py \
       --model_path "{model['path']}" \
       --port {port} \
       --mlflow_tracking_uri "http://localhost:5000" \

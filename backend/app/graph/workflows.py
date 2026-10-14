@@ -172,6 +172,8 @@ async def run_research_agents(
         logger.warning("No research agents were triggered, check the research plan")
         return state
 
+    log_prefix = len(state.logs)
+
     results = await asyncio.gather(
         *(agent(state.model_copy(deep=True)) for agent in agents), return_exceptions=True
     )
@@ -193,6 +195,7 @@ async def run_research_agents(
 
     agent_report_names = {"web_research", "internal_research"}
     for result in ok:
+        state.logs.extend(result.logs[log_prefix:])
         for name, report in result.reports.items():
             if name in agent_report_names:
                 state.reports[name] = report

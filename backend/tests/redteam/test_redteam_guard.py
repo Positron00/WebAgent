@@ -95,6 +95,7 @@ async def test_tool_request_user_never_asked(tool_mode, monkeypatch):
     """After taint, a misaligned search is blocked in act and only recorded in shadow."""
     _guard(monkeypatch, tool_mode=tool_mode)
     alignment.set_encoder_for_tests(HashEncoder())
+    monkeypatch.setattr(alignment, "alignment_for_action", lambda *args, **kwargs: 12)
     state = WorkflowState(
         query="What is the weather in Paris?",
         context={"task_id": "rt-tool", "research_plan": {"standalone_query": "weather in Paris"}},

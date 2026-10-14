@@ -31,7 +31,10 @@ from app.core.observability import (
     MODEL_PREDICTION_COUNT,
     MODEL_LATENCY,
     record_data_drift,
-    log_to_mlflow
+    log_to_mlflow,
+    record_model_latency,
+    record_model_token_usage,
+    record_model_error_rate,
 )
 
 logger = logging.getLogger(__name__)
@@ -203,6 +206,9 @@ class LLMMetrics:
                     model_name=provider,
                     task_type="chat"
                 ).observe(latency)
+                record_model_latency(provider, latency, task_type="chat")
+            if tokens > 0:
+                record_model_token_usage(provider, tokens, 0)
         else:
             self.failed_requests += 1
             
@@ -215,6 +221,7 @@ class LLMMetrics:
                 task_type="chat", 
                 status="error"
             ).inc()
+            record_model_error_rate(provider)
     
     def get_metrics(self) -> Dict[str, Any]:
         """Get all metrics as a dictionary."""
@@ -1000,53 +1007,6 @@ async def get_llm_metrics():
     }
     
     return metrics_data
-
-def get_llm_service_status() -> Dict[str, Any]:
-    """
-    Get LLM service status information without making API calls.
-    
-    Returns:
-        Dict[str, Any]: Information about LLM service configuration
-    """
-    try:
-        # Get the LLM config
-        config = get_llm_config()
-        
-        # Access the provider attribute directly
-        llm_provider = getattr(config, "provider", "openai").lower()
-        
-        # Create a status dict with all provider information
-        status = {
-            "provider": llm_provider,
-            "openai": {
-                "enabled": llm_provider == "openai" or llm_provider == "all",
-                "api_key_set": bool(settings.OPENAI_API_KEY),
-                "default_model": getattr(config.openai, "model_name", "gpt-3.5-turbo") if hasattr(config, "openai") else "gpt-3.5-turbo"
-            },
-            "together": {
-                "enabled": llm_provider == "together" or llm_provider == "all",
-                "api_key_set": bool(settings.TOGETHER_API_KEY),
-                "default_model": getattr(config.together, "model_name", TOGETHER_DEFAULT_MODEL) if hasattr(config, "together") else TOGETHER_DEFAULT_MODEL
-            },
-            "self": {
-                "enabled": llm_provider == "self" or llm_provider == "all",
-                "url": getattr(config.self_hosted, "url", SELF_HOSTED_DEFAULT_URL) if hasattr(config, "self_hosted") else SELF_HOSTED_DEFAULT_URL,
-                "model_path": getattr(config.self_hosted, "model_path", "") if hasattr(config, "self_hosted") else "",
-                "active": hasattr(config, "self_hosted") and bool(getattr(config.self_hosted, "url", None))
-            }
-        }
-        
-        return status
-    except Exception as e:
-        # Fallback to a basic status if we can't get detailed config
-        logger.error(f"Error getting LLM service status: {e}")
-        return {
-            "provider": "unknown",
-            "error": str(e),
-            "openai": {"enabled": bool(settings.OPENAI_API_KEY)},
-            "together": {"enabled": bool(settings.TOGETHER_API_KEY)},
-            "self": {"enabled": False}
-        }
 
 def confirm_llm_selection(required_provider=None):
     """

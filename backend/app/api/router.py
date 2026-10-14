@@ -5,6 +5,7 @@ Includes all endpoint routers from different modules.
 from fastapi import APIRouter, Depends
 
 from app.api.endpoints import chat, tasks, health, frontend, documents
+from app.api.routes import observability
 from app.core.security import require_api_key
 
 api_router = APIRouter(dependencies=[Depends(require_api_key)])
@@ -18,4 +19,5 @@ api_router.add_api_route("/health/detailed", health.detailed_health, methods=["G
 api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 api_router.include_router(frontend.router, tags=["frontend"])
-api_router.include_router(documents.router, prefix="/documents", tags=["documents"]) 
+api_router.include_router(documents.router, prefix="/documents", tags=["documents"])
+api_router.include_router(observability.router)

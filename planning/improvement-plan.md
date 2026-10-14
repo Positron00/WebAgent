@@ -5,7 +5,7 @@ Every file and line reference below was checked against the code on 2026-10-13.
 Decisions in section 4 were made on 2026-10-13, and the plan reflects them.
 Releases 3.2.7–3.5.0 are specified in
 [`planning/specs/platform-improvements/`](specs/platform-improvements/README.md); when the
-two disagree, the spec wins.
+two disagree, the spec wins. **Current platform release: 3.5.0** (`release/3.5.0`, 2026-10-14).
 
 ## 1. Summary
 
@@ -30,7 +30,9 @@ are mostly around them:
 5. **User questions are kept forever.** Every agent logs the question text, and result
    files never expire. (The backend runs as one replica with files on one volume; we
    decided to keep it that way, see section 4.)
-6. **About 17% of the backend code is dead or demo-only,** and the README describes
+6. **A large slice of the backend is demo-only or not wired into the running server**
+   (especially the advanced observability stack). The spec keeps that stack for repair in
+   **3.5.0** (IMP-128); **3.4.0** removes only true orphans. The README still describes
    several features that are really stubs (model gateway, artifact registry, state
    persistence).
 7. **101 files are over the 200-line rule:** 59 in app code, 19 tests, and 23 demos,
@@ -66,7 +68,7 @@ or risk with limited reach. **Low** = cleanup or hardening.
 | 7 | Apply the per-agent YAML settings (Q15) | Prod config says one thing, code does another | S |
 | 8 | Fix two small reliability bugs: one failed research agent fails the run (Q5); web app retries after a timeout fail instantly (Q2) | Cheap fixes for failures users see | S |
 | 9 | Cancel button and live progress for research runs (R1, R2) | Biggest user-facing gap | M |
-| 10 | Delete dead code and fix the README claims (H1, docs table in section 11) | Removes over 4,500 lines and false claims | M |
+| 10 | Remove orphan code, repair observability in 3.5.0, fix README claims (H1 narrowed, IMP-128, docs table in section 11) | Drops true duplicates in 3.4.0; integrates drift/LLM APIs in 3.5.0; corrects false claims | M |
 
 ## 4. Decisions
 
@@ -190,36 +192,38 @@ ReadWriteOnce volume), and task state stays in JSON files (decision 3).
 
 ## 10. Phase 5: code health
 
-### Dead and duplicate code
+### Dead, duplicate and observability code
 
-These modules have 0% test coverage (about 1,700 statements, 17% of the backend). All
-but one are unreachable from the running server: they are imported only by
-`backend/app/api/routes/observability.py`, which is never mounted, or by demos.
+These modules have low or no test coverage. When this plan disagrees with
+[`planning/specs/platform-improvements/`](specs/platform-improvements/README.md) on H1,
+the spec wins (decision 2 → IMP-080 in 3.4.0, IMP-128 in 3.5.0).
 
-| Module | Lines | Used by |
-|--------|------:|---------|
-| `core/grafana_integration.py` | 881 | demos only |
-| `core/drift_detection.py` | 844 | unmounted route, stub services |
-| `core/metrics_registry.py` | 586 | demos only |
-| `core/mlflow_integration.py` | 406 | demos only |
-| `services/self_hosted_llm_service.py` | 783 | an example script |
-| `services/lda_document_extractor.py` | 618 | nothing (the agent re-implements LDA inline) |
-| `services/document_ingestion_service.py` | 625 | **live:** loaded by `internal_research.py:464` but untested, so it needs tests, not deletion |
-| `services/doc_ingestion_service.py` | 238 | unmounted route; fakes its work with `time.sleep` |
-| `services/llm_service.py` | 233 | unmounted route; fakes its work |
+| Module | Lines | Used by | Release |
+|--------|------:|---------|---------|
+| `core/grafana_integration.py` | 881 | demos; IMP-128 runbook | 3.5.0 repair |
+| `core/drift_detection.py` | 844 | unmounted route until IMP-128 | 3.5.0 repair |
+| `core/metrics_registry.py` | 586 | demos; IMP-128 | 3.5.0 repair |
+| `core/mlflow_integration.py` | 406 | demos; IMP-128 | 3.5.0 repair |
+| `services/self_hosted_llm_service.py` | 783 | Docker / examples; IMP-128 | 3.5.0 repair |
+| `services/lda_document_extractor.py` | 618 | nothing (LDA is in the agent) | **3.4.0 delete** (IMP-080) |
+| `services/document_ingestion_service.py` | 625 | **live:** `internal_research.py` | keep; gains doc drift in 3.5.0 |
+| `services/doc_ingestion_service.py` | 238 | observability drift API | **3.5.0:** merged into `document_ingestion_service.py`, file deleted |
+| `services/llm_service.py` | 233 | unmounted route until IMP-128 | 3.5.0 repair (observability only) |
+| `api/routes/observability.py` | — | not mounted until IMP-128 | 3.5.0 mount on `/api/v1` |
 
-- **H1.** Decision 2: delete every module in the table except
-  `document_ingestion_service.py`. Also delete what only they use:
-  `backend/app/api/routes/observability.py`, `backend/demos/ml_observability_demo.py`
-  and `backend/app/services/examples/model_fine_tuning.py`. Remove the
-  `doc_ingestion_service` import from `backend/demos/internal_research_demo.py`. Then
-  run the tests, and drop any packages nothing else uses (D1). Keep `mlflow`:
-  `core/task_tracking.py` and `core/mlflow_utils.py` still use it. (M)
-- **H2.** One LLM entry point. Today there are four: `llm.py`, `together_llm.py`,
-  `llm_service.py` (stub) and `self_hosted_llm_service.py`. H1 removes the last two, and
-  chat models are already built only in `llm.py`, so what's left is embeddings, which
-  are built in two places (`vectordb.py:14` and `internal_research.py:205`); give them
-  one `get_embeddings()` before C4 adds a provider switch (spec IMP-086). (S)
+- **H1 (IMP-080, 3.4.0; IMP-128, 3.5.0).** Delete only true orphans such as
+  `lda_document_extractor.py` (full list in the backend design's 3.4.0 cleanup table).
+  **Do not** delete the observability stack, `ml_observability_demo.py`, or
+  `model_fine_tuning.py`. In **3.5.0**, repair imports, mount
+  `api/routes/observability` behind the API key, merge document drift into
+  `document_ingestion_service.py`, and remove `doc_ingestion_service.py`. Drop packages
+  nothing else uses when safe (D1 / IMP-100–101). Keep `mlflow` for `task_tracking.py` and
+  `mlflow_utils.py`. (M, split across 3.4.0 and 3.5.0)
+- **H2 (IMP-086, 3.4.0).** Chat models are built only in `llm.py` (`together_llm.py` is
+  imported only there). `llm_service.py` and `self_hosted_llm_service.py` stay for
+  observability and self-hosted images after IMP-128; they must not duplicate chat routing.
+  Embeddings today are built in two places (`vectordb.py:14` and `internal_research.py:205`);
+  give them one `get_embeddings()` before the provider switch (IMP-095). (S)
 - **H3.** Document extraction goes straight to the end of the graph (`workflows.py:267`),
   `_route_to_team_manager` only logs (`document_extraction_agent.py:635-644`), and
   Senior Research's `needs_analysis` flag (`senior_research.py:331-336`) is never read
