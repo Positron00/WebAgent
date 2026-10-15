@@ -24,6 +24,11 @@ Thank you for improving WebAgent. This guide covers local setup, tests, and what
    ```
    The root `requirements.txt` includes `backend/requirements-dev.txt` and `backend/constraints.txt`.
    Demo-only extras live in `backend/requirements-demos.txt` (install manually if you run demos).
+   Then the NLTK data the document agent needs (the tests never download it; the Docker image
+   and CI install the same list):
+   ```bash
+   python -m nltk.downloader punkt punkt_tab stopwords wordnet maxent_ne_chunker words
+   ```
 
 3. Web app:
    ```bash
