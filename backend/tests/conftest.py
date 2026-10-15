@@ -19,6 +19,10 @@ os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 os.environ["WEBAGENT_NLTK_AUTO_DOWNLOAD"] = "false"
 os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
+# Placeholder provider keys, so agents can be built without a .env.local (CI has none). They
+# never reach a provider: outbound connections are blocked below. A real .env.local still wins.
+for _name in ("TOGETHER_API_KEY", "OPENAI_API_KEY", "TAVILY_API_KEY"):
+    os.environ.setdefault(_name, "test-placeholder-key-never-sent-0000000000")
 
 _LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost", "0.0.0.0"}
 _real_connect = socket.socket.connect
