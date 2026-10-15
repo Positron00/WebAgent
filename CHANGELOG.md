@@ -2,6 +2,14 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.5.2 - 2026-10-15
+
+### Fixed
+- CI still failed after 3.5.1 (8 backend tests). The earlier key errors had hidden a second missing piece: the document agent loads NLTK's stopword list when it's built, the runner has no NLTK data, and the tests forbid downloading it. Both CI workflows now install the same NLTK data as the Docker image before the tests run. 3.5.1's note that CI was green was written before CI had run; it passes from this release
+
+### Changed
+- `CONTRIBUTING.md` and `docs/TESTING.md`: a fresh checkout needs the NLTK data once (`python -m nltk.downloader …`), and the tests supply placeholder provider keys when `.env.local` has none
+
 ## 3.5.1 - 2026-10-15
 
 The first CI runs on GitHub failed in the backend job (31 tests); the web job passed. Every failure came from the runner having no `.env.local`, no Git LFS files and no downloaded models, which a developer machine has.
@@ -12,7 +20,7 @@ The first CI runs on GitHub failed in the backend job (31 tests); the web job pa
 - The local code sandbox could end a runaway script through its CPU limit before the wall-clock timeout, and then returned normally instead of raising a timeout (seen on Linux). A CPU-limit stop (`SIGXCPU`) is now reported as a timeout too, the same as the wall-clock one, and has its own test
 
 ### Changed
-- Version 3.5.1 in the docs and manifests; the platform-improvements spec records CI (task 1.2) as green
+- Version 3.5.1 in the docs and manifests
 
 ## 3.5.0 - 2026-10-14
 

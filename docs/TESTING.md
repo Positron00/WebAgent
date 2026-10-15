@@ -139,7 +139,8 @@ Layout (`backend/tests/`):
 - blocks every network connection except localhost; a test that tries one fails with
   "Test tried to open a network connection". Fake the service instead. To debug with the
   network on, set `WEBAGENT_TESTS_ALLOW_NETWORK=true`
-- sets Hugging Face to offline mode and turns off NLTK auto-download
+- sets Hugging Face to offline mode and turns off NLTK auto-download (install the NLTK data once, as in [CONTRIBUTING.md](../CONTRIBUTING.md); CI does the same)
+- supplies placeholder Together, OpenAI and Tavily keys when `.env.local` has none, so agents can be built; they are never sent anywhere
 - runs triage in `act` mode with collection off and no classifier (model decisions fall back to agentic), and points `DATA_DIR` at a temporary folder, so tests never write collected questions. Tests set a fake model (`tests/fakes/triage.py`) or shadow mode themselves
 
 ### Faking the model

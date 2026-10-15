@@ -65,7 +65,7 @@ Both ask the same **decision point** (Cedar policies, in-process). A local class
 | [`design-high-level.md`](design-high-level.md) | Components, sources and trust, flows for each checkpoint, outcomes, taint, tokens, failure handling, deployment, key decisions |
 | [`design-low-level-backend.md`](design-low-level-backend.md) | Python modules, types, the LLM factory change, `check_hop`, tool guards, the decision point and policies, ContextDefender, endpoints, config, metrics, scripts |
 | [`design-low-level-webapp.md`](design-low-level-webapp.md) | The `/api/chat` guard call and fallback, `apiClient` handling of consent/decline/escalate, the consent dialog, the security summary under answers |
-| [`shadow-week-runbook.md`](shadow-week-runbook.md) | Deploying 3.5.1 to uat with the guard and triage in shadow mode, what to watch, the review, and the criteria for act mode |
+| [`shadow-week-runbook.md`](shadow-week-runbook.md) | Deploying 3.5.2 to uat with the guard and triage in shadow mode, what to watch, the review, and the criteria for act mode |
 | [`tasks.md`](tasks.md) | Work in phases, each task with the requirements it covers, dependencies, done criteria and estimates |
 
 Read in that order. Requirements say *what*; the designs say *how*; tasks say *in what order*. When documents disagree, `requirements.md` wins, then the designs, then the plan.

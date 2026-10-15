@@ -24,4 +24,7 @@ jobs:
           cache: pip
           cache-dependency-path: backend/constraints.txt
       - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+      # NLTK data the document agent loads when it's built; the Docker image installs the same
+      # list. The tests turn NLTK auto-download off, so it must be here before they run.
+      - run: python -m nltk.downloader -q punkt punkt_tab stopwords wordnet maxent_ne_chunker words
       - run: python -m pytest backend/tests -q -m "needs_lfs or real_triage_model"

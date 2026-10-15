@@ -43,5 +43,8 @@ jobs:
             backend/requirements-dev.txt
       # The CPU wheel index keeps torch to the small CPU build.
       - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+      # NLTK data the document agent loads when it's built; the Docker image installs the same
+      # list. The tests turn NLTK auto-download off, so it must be here before they run.
+      - run: python -m nltk.downloader -q punkt punkt_tab stopwords wordnet maxent_ne_chunker words
       - run: ruff check backend
       - run: python -m pytest backend/tests -q -m "not needs_lfs and not real_triage_model" --cov=backend/app --cov-report=term --cov-fail-under=50
