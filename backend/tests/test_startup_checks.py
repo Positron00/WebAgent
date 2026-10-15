@@ -21,6 +21,9 @@ def prod(monkeypatch):
     monkeypatch.setenv("WEBAGENT_API_KEY", "client-key")
     monkeypatch.setenv("WEBAGENT_CODE_SANDBOX", "local")
     monkeypatch.setattr(settings, "TRIAGE", TriageConfig(enabled=False))
+    # These tests are about prod settings, not model files: CI has no downloaded base encoder
+    # (no Hugging Face cache, no LFS files). The guard's file checks have their own tests below.
+    monkeypatch.setattr(startup_checks, "defender_encoder_files_present", lambda *a: True)
 
 
 def test_good_prod_settings_pass(prod):
@@ -103,6 +106,9 @@ def test_command_line_check_exits_with_a_message():
         "WEBAGENT_CODE_SANDBOX": "local",
         "LANGSMITH_TRACING_ENABLED": "false",
         "WEBAGENT_TRIAGE_ENABLED": "false",
+        # Without the guard, no model files are needed, so the sandbox error is the only one
+        # (CI has no base encoder; a developer machine usually has it cached).
+        "WEBAGENT_GUARD_ENABLED": "false",
     }
     out = subprocess.run(
         [sys.executable, "-m", "app.core.startup_checks"],

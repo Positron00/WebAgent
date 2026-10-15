@@ -1,4 +1,5 @@
 """Model-written code must not see the server's secrets, and docker mode must be isolated."""
+import os
 import subprocess
 import sys
 
@@ -35,6 +36,22 @@ def test_local_mode_enforces_timeout(tmp_path, monkeypatch):
 
     with pytest.raises(subprocess.TimeoutExpired):
         code_sandbox.run_python_file(script, timeout_seconds=1)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="CPU limits are POSIX only")
+def test_cpu_limit_stop_is_reported_as_a_timeout(tmp_path, monkeypatch):
+    # On Linux CI the CPU limit ended the busy loop before the wall-clock timeout, and the run
+    # returned (killed by SIGXCPU) instead of raising. Both must look the same to callers.
+    import signal
+
+    monkeypatch.setenv("WEBAGENT_CODE_SANDBOX", "local")
+    monkeypatch.setattr(
+        code_sandbox.subprocess,
+        "run",
+        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, -signal.SIGXCPU, "", ""),
+    )
+    with pytest.raises(subprocess.TimeoutExpired):
+        code_sandbox.run_python_file(_script(tmp_path, "print('x')\n"), timeout_seconds=1)
 
 
 def test_docker_mode_runs_without_network_and_with_limits(tmp_path, monkeypatch):

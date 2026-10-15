@@ -7,6 +7,7 @@ Modes (WEBAGENT_CODE_SANDBOX):
   limits. Required for code execution in uat/prod. Build the image from backend/sandbox/.
 """
 import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -35,14 +36,15 @@ def _limit_resources(cpu_seconds: int) -> None:
     import resource
 
     limits = [
-        (resource.RLIMIT_CPU, cpu_seconds),
-        (resource.RLIMIT_FSIZE, 100 * 1024 * 1024),  # 100 MB per file
+        # Soft limit sends SIGXCPU (reported as a timeout); the hard limit, a second later, kills.
+        (resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds + 1)),
+        (resource.RLIMIT_FSIZE, (100 * 1024 * 1024,) * 2),  # 100 MB per file
     ]
     if sys.platform.startswith("linux"):
-        limits.append((resource.RLIMIT_AS, 2 * 1024 * 1024 * 1024))  # 2 GB address space
+        limits.append((resource.RLIMIT_AS, (2 * 1024 * 1024 * 1024,) * 2))  # 2 GB address space
     for limit, value in limits:
         try:
-            resource.setrlimit(limit, (value, value))
+            resource.setrlimit(limit, value)
         except (ValueError, OSError):
             pass
 
@@ -81,11 +83,17 @@ def run_python_file(script_path: str, timeout_seconds: int) -> subprocess.Comple
     preexec = None
     if os.name == "posix":
         preexec = lambda: _limit_resources(timeout_seconds)  # noqa: E731
-    return subprocess.run(
-        [sys.executable, script_path],
+    cmd = [sys.executable, script_path]
+    result = subprocess.run(
+        cmd,
         capture_output=True,
         text=True,
         timeout=timeout_seconds,
         env=scrubbed_env(),
         preexec_fn=preexec,
     )
+    # The CPU limit can stop a busy loop before the wall-clock timeout does (it did on Linux CI);
+    # report both the same way, so callers see one kind of timeout.
+    if os.name == "posix" and result.returncode in (-signal.SIGXCPU, -signal.SIGKILL):
+        raise subprocess.TimeoutExpired(cmd, timeout_seconds, output=result.stdout, stderr=result.stderr)
+    return result

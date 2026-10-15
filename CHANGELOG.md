@@ -2,6 +2,18 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.5.1 - 2026-10-15
+
+The first CI runs on GitHub failed in the backend job (31 tests); the web job passed. Every failure came from the runner having no `.env.local`, no Git LFS files and no downloaded models, which a developer machine has.
+
+### Fixed
+- 26 tests failed with "Unable to initialize any LLM provider": building an agent needs a provider key. The test setup now supplies placeholder Together, OpenAI and Tavily keys when none are set; they never reach a provider (the suite blocks outbound connections), and a real `.env.local` still wins
+- 5 startup-check tests stopped at "ContextDefender base encoder is missing" before reaching what they test. The production-settings tests treat the encoder as present (the guard's file checks keep their own tests), and the command-line test runs with the guard off
+- The local code sandbox could end a runaway script through its CPU limit before the wall-clock timeout, and then returned normally instead of raising a timeout (seen on Linux). A CPU-limit stop (`SIGXCPU`) is now reported as a timeout too, the same as the wall-clock one, and has its own test
+
+### Changed
+- Version 3.5.1 in the docs and manifests; the platform-improvements spec records CI (task 1.2) as green
+
 ## 3.5.0 - 2026-10-14
 
 Advanced observability repair and integration (IMP-128), plus CSP-aligned web app connectivity and research log merging.

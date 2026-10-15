@@ -129,8 +129,9 @@ phase 4 about 24 h (3 d).
 
 ## Implementation status (2026-10-14)
 
-Releases 3.2.7, 3.3.0, 3.4.0 and 3.5.0 are implemented on `release/3.5.0` (not yet merged to
-`main` or tagged). An alignment review on 2026-10-14 checked every requirement against the
+Releases 3.2.7, 3.3.0, 3.4.0 and 3.5.0 are implemented and released (merged to `main`, tag
+`v3.5.0`, 2026-10-14). The first CI runs on GitHub failed in the backend job; 3.5.1 (2026-10-15)
+fixes that, so CI (task 1.2) is green. An alignment review on 2026-10-14 checked every requirement against the
 code: all automated checks pass (backend pytest, `ruff`, Jest with coverage floors,
 `check-types`, `lint`, `next build`), and every test file the tasks name exists. The review's
 fixes are listed under 3.5.0 in `CHANGELOG.md`.
