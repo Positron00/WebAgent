@@ -129,3 +129,13 @@ def test_cleanup_deletes_only_old_files():
     write("doc_size", [1.0], start=T0 + timedelta(days=40))
     assert drift_store.cleanup(30, now=T0 + timedelta(days=41)) == 1
     assert len(list(drift_store.drift_dir().glob("samples-*.jsonl"))) == 1
+
+
+def test_an_unreadable_state_is_logged_once(caplog):
+    end = write("llm_tokens:a", [100] * 50)
+    drift_store.compute_once(end)
+    (drift_store.drift_dir() / "state.json").write_text("{not json")
+    with caplog.at_level(logging.WARNING):
+        for _ in range(3):
+            drift_store.load_state()
+    assert sum("Drift state unreadable" in r.message for r in caplog.records) == 1

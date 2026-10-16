@@ -2,6 +2,19 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.6.1 - 2026-10-16
+
+A check of the 3.6.0 code against its spec (`planning/specs/observability-drift/`) and plan.
+
+### Fixed
+- **The self-hosted model couldn't answer:** `SelfHostedChatModel` returned a bare message where LangChain expects a chat result, and a reply without token usage raised an error. Both are fixed, so its model calls now also record drift samples (with their call label, and a 429 as a rate limit)
+- The Grafana alert rules' runbook link pointed to `docs/RUNBOOK.md#drift-and-alerts`, which didn't exist (the heading carried "(3.6.0)"); the heading is now "Drift and alerts"
+- An unreadable drift `state.json` was logged at WARNING on every read; it's logged once until a read succeeds again
+
+### Changed
+- The spec, its designs and the plan now match the code (module of the detector table, file sizes, `/health` and `/metrics` provider, `figures` keys, how samples are read); the API reference describes `model_metrics` field by field
+- New tests: the self-hosted model's samples (200 and 429), the cost of the embeddings tap with 1,536-dimension vectors, the runbook anchor, and logging an unreadable state once
+
 ## 3.6.0 - 2026-10-16
 
 Drift and alerts now come from real traffic. Before, the observability API reported drift from simulated calls that nothing made, each worker kept its own numbers, and its alerts recommended retraining a hosted model we can't retrain. Plan: `planning/observability-plan-3.6.0.md`; spec: `planning/specs/observability-drift/`.

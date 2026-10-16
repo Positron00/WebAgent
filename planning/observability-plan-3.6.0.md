@@ -113,7 +113,7 @@ Embeddings (D2), from a wrapper around the object `vectordb.get_embeddings()` re
 
 Nothing records question text, document text, file names or single vectors (OBS-004).
 
-### 5.2 The drift store (`app/core/drift_store.py`, new; under about 200 lines)
+### 5.2 The drift store (`app/core/drift_store.py`, new; about 225 lines, with the per-detector logic in `drift_reference.py`)
 
 - `add(detector, value)`: appends one line (time, detector, value) to
   `data/drift/samples-<date>.jsonl` with `O_APPEND` (number lines are under 512 bytes, so writes from
@@ -157,7 +157,8 @@ Computed with the drift state and written to `state.json`, so every worker retur
 - `/alerts` returns these (`name`, `severity`, `service`, `message`, `since`, and the old
   `timestamp` = `since`). Messages follow D5.
 - `/health` derives its status from them (critical → unhealthy, warning → degraded) and lists
-  model figures by provider and label from the store; the `gpt-4` filter goes.
+  model figures per call label from the store, with the configured default provider (samples
+  don't record the provider); the `gpt-4` filter goes.
 - `/drift` returns per detector: score, drift yes/no, `enough_data`, reference and current sample
   counts, reference start, last drift time. Fields are added; none is removed
   (`retrain_recommendations` stays, always empty).

@@ -6,17 +6,17 @@ Paths are relative to `backend/`. Requirement IDs refer to [`requirements.md`](r
 
 | File | New? | Purpose | Approx. size |
 |---|---|---|---|
-| `app/core/drift_store.py` | new | `add`, `add_aggregate`, `reset`, `compute_once`, `load_state`, `compute_loop`, `apply_gauges`, `cleanup` | ~190 lines |
+| `app/core/drift_store.py` | new | `add`, `add_aggregate`, `reset`, `compute_once`, `load_state`, `compute_loop`, `apply_gauges`, `cleanup` | ~225 lines (with the reference logic split out) |
 | `app/core/drift_alerts.py` | new | `figures(samples, now)` and `evaluate(figures, detectors, token_limit)`: the six alert rules | ~100 lines |
 | `app/core/drift_reference.py` | new (in implementation) | Detector table, `update_detector` (reference freeze, current window, scoring), `public()`; split out so `drift_store.py` stays near 200 lines | ~125 lines |
 | `app/core/drift_detection.py` | changed | Pure scoring functions; detector classes, module registry, `get_all_drift_stats`, `should_retrain_any_model` and MLflow calls removed | −700 / +80 |
 | `demos/drift_detectors.py` | new (in implementation) | The old detector classes, kept for `demos/ml_observability_demo.py` only | moved |
-| `app/services/drift_embeddings.py` | new | `DriftRecordingEmbeddings`: wraps an embeddings object, records aggregates | ~70 lines |
+| `app/services/drift_embeddings.py` | new | `DriftRecordingEmbeddings`: wraps an embeddings object, records aggregates | ~65 lines |
 | `app/services/llm_call_metrics.py` | changed | `record(..., call_label=…)` also adds drift samples | +25 lines |
 | `app/services/together_llm.py` | changed | `call_label` field; pass it to `record`; base URL from `TOGETHER_API_BASE` | +10 lines |
-| `app/services/llm.py` | changed | `call_label` through `get_agent_llm`, `get_trusted_llm`, `_build_llm`; `SelfHostedChatModel.call_label` and status code; remove `record_data_drift("llm_response", 0.8)` and the unused `_build_llm_without_tags` | ±40 lines |
+| `app/services/llm.py` | changed | `call_label` through `get_agent_llm`, `get_trusted_llm`, `_build_llm`; `SelfHostedChatModel.call_label` and status code; remove `record_data_drift("llm_response", 0.8)` and the unused `_build_llm_without_tags`. Also fixes `SelfHostedChatModel` (undeclared fields; `_generate` returned an `AIMessage` instead of a `ChatResult`; a reply without `usage` failed) | ±60 lines |
 | `app/security/judge.py`, `app/services/triage.py` | changed | `get_trusted_llm(call_label="judge" / "triage")` | one line each |
-| `app/services/document_loader.py` | changed | Record document samples in `load_document` | +20 lines |
+| `app/services/document_loader.py` | changed | Record document samples in `load_document`; also observe `document_processing_latency_seconds` (the dashboard's document-time panel) | +25 lines |
 | `app/services/vectordb.py` | changed | `get_embeddings()` returns the wrapped object | +3 lines |
 | `app/services/llm_service.py` | changed | Keep `get_drift_status`, `reset_drift_baselines` over the store; remove simulations and detectors | −200 / +40 |
 | `app/services/document_ingestion_service.py` | changed | `DocumentProcessingObservability` keeps status and reset over the store; remove `process_document` and module detectors | −90 / +25 |
@@ -25,6 +25,7 @@ Paths are relative to `backend/`. Requirement IDs refer to [`requirements.md`](r
 | `app/core/observability.py` | changed | `DATA_DRIFT_SCORE` gets `multiprocess_mode="max"`; new gauges and counter | +30 lines |
 | `app/core/config.py` | changed | Four drift settings | +6 lines |
 | `main.py` | changed | Sample cleanup at startup; start and stop the compute loop | +6 lines |
+| `docker-compose.yml` | changed (in implementation) | Passes `TOGETHER_API_BASE` and the four drift settings to the backend (the local check needs them) | +6 lines |
 | `requirements.txt` | changed | Declare `scipy>=1.11` (pinned to 1.13.1 by `constraints.txt`; already installed) | +1 line |
 | `scripts/fake_together.py` (repo root `scripts/`) | new | Dev-only fake Together completions server | ~80 lines |
 
@@ -33,7 +34,7 @@ Paths are relative to `backend/`. Requirement IDs refer to [`requirements.md`](r
 ```python
 DRIFT_ENABLED: bool = os.getenv("WEBAGENT_DRIFT_ENABLED", "true").lower() == "true"
 DRIFT_WINDOW: int = _env_number("WEBAGENT_DRIFT_WINDOW", 50, minimum=30)
-DRIFT_INTERVAL_SECONDS: int = _env_number("WEBAGENT_DRIFT_INTERVAL_SECONDS", 60, minimum=5)
+DRIFT_INTERVAL_SECONDS: float = _env_number("WEBAGENT_DRIFT_INTERVAL_SECONDS", 60.0, minimum=5)
 TOKEN_ALERT_DAILY: int = _env_number("WEBAGENT_TOKEN_ALERT_DAILY", 0, minimum=0)
 ```
 
@@ -66,8 +67,11 @@ grep).
 
 ## 4. Detectors
 
-A static table in `drift_store.py` maps detector names to their kind and group. Names with a label
-are matched by prefix.
+A static table (`DETECTORS` in `drift_reference.py`, used by `drift_store.py`) maps detector names
+to their kind and group. Names with a label are matched by prefix. `drift_reference.update_detector`
+holds the per-detector steps of §5.4 (reference freeze, current window, scoring), and
+`drift_reference.public` drops the stored reference values (`reference`, `reference_centroid`,
+`reference_end`, `reference_after`) for the API.
 
 | Detector | Kind | Group | Value |
 |---|---|---|---|
@@ -146,8 +150,8 @@ def cleanup(retention_days: int, now: datetime | None = None) -> int
   "detectors": {
     "llm_speed:supervisor": {
       "group": "llm", "kind": "ks",
-      "reference": [4.8, 5.1, "..."], "reference_start": "2026-10-15T09:03:11",
-      "reference_count": 50, "current_count": 50, "enough_data": true,
+      "reference": [4.8, 5.1, "..."], "reference_start": "2026-10-15T09:03:11.204",
+      "reference_end": "2026-10-15T09:41:52.018", "reference_count": 50, "current_count": 50, "enough_data": true,
       "score": 0.41, "drift": false, "last_drift_at": null
     },
     "embeddings:openai": {
@@ -162,7 +166,7 @@ def cleanup(retention_days: int, now: datetime | None = None) -> int
   ],
   "figures": {
     "llm": {"window": "1h", "requests": 42, "errors": 1, "rate_limited": 3,
-            "tokens_24h": 51234, "by_label": {"supervisor": {"requests": 6, "tokens_24h": 9100}}},
+            "tokens_24h": 51234, "by_label": {"supervisor": {"requests_24h": 6, "tokens_24h": 9100}}},
     "doc": {"window": "24h", "loads": 4, "errors": 0}
   },
   "last_cleanup": "2026-10-15T00:00:12"
@@ -173,8 +177,8 @@ def cleanup(retention_days: int, now: datetime | None = None) -> int
 
 1. Load state; for each group, `reset_at = state["resets"].get(group)` (absent = beginning of time,
    which is "reset at the first sample" for a fresh install).
-2. Read sample files from `min(reset_at of detectors without a frozen reference, now − retention)`
-   to now, in date order; skip bad lines.
+2. Read every sample file (retention bounds them to `WEBAGENT_RESULTS_RETENTION_DAYS`), sorted by
+   time; skip bad lines.
 3. For each detector seen in the samples or in the state:
    - **Reference not frozen:** its samples after `reset_at`; when there are
      `DRIFT_WINDOW` of them, freeze the first `DRIFT_WINDOW` (`ks`/`chi2`: the values; `centroid`:
@@ -183,17 +187,17 @@ def cleanup(retention_days: int, now: datetime | None = None) -> int
    - **Current:** the latest `DRIFT_WINDOW` samples (or aggregates reaching that many vectors),
      excluding those in the reference.
    - **Embeddings:** if the current dimension differs from `reference_dim`, drop the reference
-     (a provider change starts a new one).
+     and start a new one from the first aggregate with the new dimension (`reference_after`).
    - With a frozen reference and at least `MIN_SAMPLES` current samples (vectors for
      embeddings), score with the kind's function; otherwise `enough_data` false, no score, no
      drift.
    - Set `last_drift_at` when `drift` turns true.
-4. `figures = drift_alerts.figures(samples, now)` (step 5);
-   `alerts = drift_alerts.evaluate(figures, detectors, settings.TOKEN_ALERT_DAILY)`; keep `since` for alerts already
-   active; log WARNING once for each new alert and each new drift; one MLflow metric per new drift
-   (`log_to_mlflow`, experiment `drift_detection`).
-5. Compute `figures` (model requests, errors and rate limits over the last hour; tokens over the
-   last 24 h, in total and per label; document loads and errors over the last 24 h).
+4. `figures = drift_alerts.figures(samples, now)`: model requests, errors and rate limits over
+   the last hour; tokens over the last 24 h, in total and per label (with the label's successful
+   replies, `requests_24h`); document loads and errors over the last 24 h.
+5. `alerts = drift_alerts.evaluate(figures, detectors, settings.TOKEN_ALERT_DAILY)`; keep `since`
+   for alerts already active; log WARNING once for each new alert and each new drift; one MLflow
+   metric per new drift (`log_to_mlflow`, experiment `drift_detection`).
 6. If `last_cleanup` is more than 24 h ago, run `cleanup` and record the time.
 7. Write the state; return it.
 
@@ -224,19 +228,22 @@ tokens).
 ```python
 class TogetherWithUsage(Together):
     call_label: str = "other"
-    base_url: str = f"{TOGETHER_API_BASE.rstrip('/')}/completions"   # OBS-021
+    # OBS-021; read when the client is built; an empty TOGETHER_API_BASE means Together's address
+    base_url: str = Field(default_factory=lambda: f"{together_api_base()}/completions")
 
 class SelfHostedChatModel(BaseChatModel):
     call_label: str = "other"   # declared field, set by the builder
 ```
 
-- `_build_llm(model_name=None, call_label="other")` passes the label to the Together wrapper's
-  `_create_llm` (and to `SelfHostedChatModel`).
+- `_build_llm(model_name=None, call_label="other")` builds the provider's model as before
+  (`_build_llm_by_provider`) and sets `call_label` on it and on the Together wrapper's inner client
+  (`_with_call_label`); clients are built per call site, never shared, so setting it after the
+  build is safe.
 - `_build_llm_for_agent(agent_name, …)` calls `_build_llm(model, call_label=agent_name)`.
 - `get_trusted_llm(model_name=None, call_label="other")`; `judge.py` passes `"judge"`,
   `triage.py` passes `"triage"`.
-- `TOGETHER_API_BASE` moves from `llm.py` to `together_llm.py` (imported back by `llm.py`), so the
-  client and the module constant agree.
+- `TOGETHER_API_BASE` is read only in `together_llm.py` (`together_api_base()`); `llm.py` no longer
+  keeps its own constant.
 
 ### 7.2 `llm_call_metrics.record`
 
@@ -267,18 +274,20 @@ for other failures, with its `call_label`.
 `load_document` wraps its body:
 
 ```python
-started = time.perf_counter(); ok = False
+started = time.perf_counter()
+size = file_path.stat().st_size                      # measured before loading
+doc_type = file_path.suffix.lower().lstrip(".") or "none"
+loaded = False
 try:
     ...  # existing body
-    ok = True
+    loaded = True
     return artifact_id
 finally:
-    _record_document_samples(file_path, time.perf_counter() - started, ok)
+    _record_document_samples(time.perf_counter() - started, size, doc_type, loaded)
 ```
 
-`_record_document_samples` adds `doc_processing_time`, `doc_size` (`file_path.stat().st_size`, if
-the file still exists), `doc_type` (`file_path.suffix.lower().lstrip(".") or "none"`) and
-`doc_outcome`. The `FileNotFoundError` and unsupported-type checks at the top stay before the
+`_record_document_samples` adds `doc_processing_time`, `doc_size`, `doc_type` and `doc_outcome`,
+and observes `document_processing_latency_seconds{doc_type}` for the dashboard. The `FileNotFoundError` and unsupported-type checks at the top stay before the
 `try`, so a refused file records nothing (OBS-002).
 
 ### 7.4 Embeddings (`drift_embeddings.py`)
@@ -324,7 +333,8 @@ older `state.json` (OBS-013).
   and `services.document_processing` with `status` and figures from the last hour or day: requests,
   failures, rate limits, tokens per call label (computed in `compute_once` and stored under
   `state["figures"]`).
-- `GET /metrics` → `model_metrics` (per provider and call label from `state["figures"]`),
+- `GET /metrics` → `model_metrics` (`provider`: the configured default provider, since samples
+  don't record one; the figures and `by_label` from `state["figures"]`),
   `document_metrics`, `system_metrics`, `timestamp`; `pipeline_metrics` and
   `data_quality_metrics` stay as empty objects.
 
@@ -346,7 +356,7 @@ DRIFT_SAMPLES = Counter("webagent_drift_samples_total", "...", ["detector"], reg
 the dashboard shows 0 instead of "no data"). For a detector without enough data it sets
 `data_drift_score` to 0 and `webagent_drift_enough_data` to 0: removing a labelled series isn't
 reliable in multiprocess mode, and the detector table shows why the score is 0.
-`record_data_drift` stays for the store's own use only.
+`apply_gauges` sets `data_drift_score` through `record_data_drift`, now its only caller.
 
 ## 10. Startup and shutdown (`main.py`)
 
@@ -373,6 +383,7 @@ depend on the results module.
 | `record_data_drift("llm_response", 0.8)` in `SelfHostedChatModel` | An invented score with a different meaning from every other detector |
 | `self_hosted_llm_service.py` under `app/services/` | Moved to `app/services/examples/` (decision 4) |
 | `_build_llm_without_tags` in `llm.py` | No caller (grep); it would otherwise need a call label |
+| Detector classes in `drift_detection.py` | `demos/ml_observability_demo.py` still uses them, so they moved to `backend/demos/drift_detectors.py` (demo only) |
 
 ## 12. Fake Together server (`scripts/fake_together.py`, dev only)
 
@@ -392,9 +403,9 @@ It answers `POST /v1/completions` with a Together-shaped body (`choices[0].text`
 | File | Covers |
 |---|---|
 | `tests/test_drift_scoring.py` (new) | `ks_score`, `chi2_score`, `centroid_score`: same vs. shifted distributions, seeded (OBS-007) |
-| `tests/test_drift_store.py` (new) | add/compute; 29 vs 30 samples (OBS-006); reference freeze surviving retention (OBS-008); reset (OBS-009); two instances and a restart (OBS-005); two loops, one write per tick, one log per transition (OBS-010); retention (OBS-011); bad lines skipped |
+| `tests/test_drift_store.py` (new) | add/compute; 29 vs 30 samples (OBS-006); reference freeze surviving retention (OBS-008); reset (OBS-009); two instances and a restart (OBS-005); two loops, one write per tick, one log per transition (OBS-010); retention (OBS-011); bad lines skipped; an unreadable state kept and logged once |
 | `tests/test_drift_alerts.py` (new) | Each alert fires, stays, clears; no "retrain" in any message (OBS-012) |
-| `tests/test_drift_feeding.py` (new) | Model samples per label and outcome with fake Together replies 200/429/500 (OBS-001); document samples via upload and `batch_load_documents` (OBS-002); embeddings aggregates (OBS-003); timing (OBS-014); base URL (OBS-021) |
+| `tests/test_drift_feeding.py` (new) | Model samples per label and outcome with fake Together replies 200/429/500 and a fake self-hosted server 200/429 (OBS-001); document samples via upload and `batch_load_documents` (OBS-002); embeddings aggregates (OBS-003); timing of `record` and of the embeddings tap (OBS-014); base URL (OBS-021) |
 | `tests/test_drift_privacy.py` (new) | Marker text never in `data/drift/`; every aggregate has `n ≥ 30` (OBS-004) |
 | `tests/test_observability_api.py` (extended) | Contract per route (OBS-013, OBS-NFR-03) |
 | `tests/test_metrics_multiprocess.py` (extended) | New gauges, one series per label with two workers (OBS-015) |

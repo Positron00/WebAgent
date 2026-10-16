@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.6.0).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.6.1).
 
 ## Base URL
 
@@ -230,7 +230,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.6.0",
+  "version": "3.6.1",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -401,7 +401,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.6.0"
+  "version": "3.6.1"
 }
 ```
 
@@ -414,7 +414,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.6.0",
+  "version": "3.6.1",
   "environment": "prod"
 }
 ```
@@ -431,7 +431,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.6.0"
+    "version": "3.6.1"
   },
   "llm_service": {
     "status": "ok",
@@ -461,7 +461,7 @@ Needs `X-API-Key`. Prometheus `/metrics` and LangSmith tracing are separate and 
 
 | Endpoint | What it returns |
 |---|---|
-| `GET /observability/metrics` | `model_metrics` (provider, requests, errors and rate limits in the last hour, tokens in the last 24 hours, `by_label`), `document_metrics` (loads and errors in the last 24 hours), `system_metrics`, `timestamp`; `pipeline_metrics` and `data_quality_metrics` are empty |
+| `GET /observability/metrics` | `model_metrics` (`provider`: the configured default provider, since samples don't record one; requests, errors and rate limits in the last hour; tokens in the last 24 hours; `by_label`: per call label, successful replies `requests_24h` and `tokens_24h`), `document_metrics` (loads and errors in the last 24 hours), `system_metrics`, `timestamp`; `pipeline_metrics` and `data_quality_metrics` are empty |
 | `GET /observability/drift` | `computed_at`; `detectors` (see below); `global_drift_stats` (same content, the 3.5 key); `llm_service_drift` and `doc_service_drift` (baseline status and the highest-scoring detector of each kind); `retrain_recommendations` (always `[]`) |
 | `GET /observability/alerts` | Active alerts: `name`, `severity` (`warning` or `critical`), `service` (`llm` or `document_processing`), `message`, `since`, `timestamp` (equals `since`) |
 | `GET /observability/health` | `overall_status` (`unhealthy` with a critical alert, `degraded` with a warning, else `healthy`), `alert_counts` (`critical`, `warning`, `total`; also `high`/`medium`/`low` as in 3.5), `services.llm` and `services.document_processing` (status and figures), `components` (the 3.5 shape) |

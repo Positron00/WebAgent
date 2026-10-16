@@ -1,5 +1,9 @@
 # Tasks: real drift and alerts (3.6.0)
 
+Status: all 17 tasks done; released as 3.6.0 on 2026-10-16 (PR #4, tag `v3.6.0`). The review after
+the release (3.6.1) added the self-hosted and embeddings-timing checks and fixed the gaps it found;
+see the README's implementation notes.
+
 One release. Each task lists what it covers, what it depends on, and when it is done. Estimates
 are in hours (h); a working day is 8 h.
 

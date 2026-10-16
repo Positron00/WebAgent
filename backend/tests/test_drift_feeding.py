@@ -175,3 +175,59 @@ def test_an_upload_through_the_api_adds_one_set_of_samples(loader, tmp_path, mon
 def test_an_empty_base_url_means_the_default(monkeypatch):
     monkeypatch.setenv("TOGETHER_API_BASE", "")
     assert make_llm().base_url == "https://api.together.xyz/v1/completions"
+
+
+# --- the self-hosted model (OBS-001) ---
+
+class FakeSelfHostedResponse:
+    def __init__(self, status=200):
+        self.status_code = status
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            import requests
+
+            raise requests.HTTPError(f"{self.status_code}", response=self)
+
+    def json(self):
+        return {"choices": [{"message": {"content": "Tuples are immutable."}}],
+                "usage": {"prompt_tokens": 12, "completion_tokens": 5, "total_tokens": 17}}
+
+
+def test_the_self_hosted_model_records_its_label_and_a_429(monkeypatch):
+    import requests
+    from tenacity import RetryError, stop_after_attempt
+
+    from app.services import llm as llm_module
+
+    health = type("Health", (), {"raise_for_status": lambda self: None, "json": lambda self: {"status": "ready"}})
+    monkeypatch.setattr(llm_module.requests, "get", lambda *a, **k: health())
+    model = llm_module.SelfHostedChatModel(base_url="http://127.0.0.1:9")
+    model.call_label = "triage"
+    monkeypatch.setattr(llm_module.requests, "post", lambda *a, **k: FakeSelfHostedResponse())
+    assert model.invoke("q").content == "Tuples are immutable."
+    monkeypatch.setattr(llm_module.requests, "post", lambda *a, **k: FakeSelfHostedResponse(429))
+    once = llm_module.SelfHostedChatModel._generate.retry_with(stop=stop_after_attempt(1))
+    with pytest.raises((requests.HTTPError, RetryError)):
+        once(model, [])
+    rows = [(s.detector, s.value) for s in samples()]
+    assert ("llm_tokens:triage", 17) in rows and ("llm_outcome", "ok") in rows
+    assert rows[-1] == ("llm_outcome", "rate_limited")
+
+
+def test_the_embeddings_tap_is_cheap():
+    """OBS-014 includes embeddings: 1,536-dimension vectors, an aggregate written every 30."""
+    vector = [0.01] * 1536
+
+    class Wide:
+        def embed_query(self, text):
+            return vector
+
+    emb = DriftRecordingEmbeddings(Wide(), "openai")
+    times = []
+    for _ in range(1000):
+        started = time.perf_counter()
+        emb.embed_query("q")
+        times.append(time.perf_counter() - started)
+    assert sorted(times)[int(0.95 * len(times))] < 0.005
+    assert by_detector()["embeddings:openai"] == 33

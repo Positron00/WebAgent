@@ -34,7 +34,8 @@ self-hosted model adds:
   never `error`; for the self-hosted model the status comes from the HTTP error, if any).
 - Accept: an agent's call is labelled with its agent name; the judge's with `judge`; the triage
   tie-breaker's with `triage`; anything else with `other`.
-- Check: pytest with fake Together replies (200, 429, 500), one per label kind.
+- Check: pytest with fake Together replies (200, 429, 500), one per label kind, and a fake
+  self-hosted server (200, 429).
 
 **OBS-002 Document loads (must).** Each call to `DocumentLoaderService.load_document` adds one
 `doc_processing_time` (seconds), one `doc_size` (bytes), one `doc_type` (lower-case file extension)
@@ -44,15 +45,18 @@ nothing. Loading a directory adds one set per file.
 
 **OBS-003 Embeddings (must; should if the 5 ms limit of OBS-014 can't be met).** Vectors computed
 by the embeddings object `vectordb.get_embeddings()` returns are summed in memory; each time a
-worker has 30, it appends one aggregate (sum, count, dimension, provider) for
-`embeddings:<provider>`. The reference and current centroids are built from aggregates totalling
-at least 50 vectors. A change of dimension (a new embeddings provider) starts a new reference.
+worker has 30, it appends one aggregate (sum, count, dimension; the provider is in the detector
+name `embeddings:<provider>`). The reference centroid is built from the first aggregates totalling
+at least `WEBAGENT_DRIFT_WINDOW` (50) vectors; the current centroid from the latest aggregates, up
+to that many vectors, and it scores with at least 30. A change of dimension (a new embeddings
+provider) starts a new reference.
 - Check: pytest with a fake embeddings object.
 
 **OBS-004 Privacy (must).** Nothing under `data/drift/` contains question text, history, document
 text, file names, file paths or a single embedding vector.
-- Check: pytest runs a fake task, a fake upload and 30 fake embeddings, all containing a marker
-  string, and asserts the marker appears in no file; asserts every embedding record has
+- Check: pytest runs a model call (marker in the prompt and the fake reply), an upload (marker in
+  the file name and text) and 63 fake embeddings (marker in the texts), then a compute tick, and
+  asserts the marker appears in no file under `data/drift/`; asserts every embedding record has
   `count ≥ 30`.
 
 ## 2. The shared store
@@ -60,8 +64,9 @@ text, file names, file paths or a single embedding vector.
 **OBS-005 Same answer everywhere (must).** Drift results, alerts and health read the same state
 from the drift store, so any worker returns the same answer, and a restart loses nothing but
 samples from an in-memory embedding sum not yet written.
-- Check: pytest with two store instances on one folder (two workers) and a new instance after
-  writes (restart).
+- Check: pytest: after a compute, a reader with no in-memory copy (another worker, or a restart)
+  loads the same state from the folder; separate processes setting gauges from one state give one
+  series per label (OBS-015).
 
 **OBS-006 Not enough data (must).** A detector without enough data reports
 `enough_data: false`, no score and no drift, and raises no alert.
@@ -121,7 +126,10 @@ reset the baseline once understood.
   `message`, `since` (the old `severity`, `service`, `message`, `timestamp` keys stay; `timestamp`
   equals `since`).
 - `GET /observability/health` derives `overall_status` from the alerts (critical → `unhealthy`,
-  warning → `degraded`, none → `healthy`) and lists model figures by provider and call label.
+  warning → `degraded`, none → `healthy`) and lists the model figures: requests, errors and rate
+  limits in the last hour, tokens in the last 24 h, and per call label the successful replies and
+  their tokens. Samples don't record the provider, so `provider` is the configured default
+  (`WEBAGENT_LLM_DEFAULT_PROVIDER`); calls served by a fallback provider are counted with it.
 - `GET /observability/metrics` keeps `model_metrics`, `document_metrics` and `timestamp`, filled
   from the drift store.
 - All need the API key, as today.
@@ -134,7 +142,8 @@ reset the baseline once understood.
 
 **OBS-014 Cost (must).** Recording samples adds under 5 ms per model call at p95, embeddings
 included (else OBS-003 is dropped, per decision 2).
-- Check: pytest timing on 1,000 recorded calls with a fake store folder.
+- Check: pytest timing on 1,000 recorded calls and on 1,000 embedding calls with 1,536-dimension
+  vectors, with a fake store folder.
 
 **OBS-015 Prometheus metrics (must).** Each worker sets, from the drift state on every tick:
 `webagent_alert_active{alert,severity}` (1 or 0, for every alert in OBS-012),
