@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.6.0 -t <registry>/webagent-backend:3.6.0 backend/
-   docker push <registry>/webagent-backend:3.6.0
+   docker build --build-arg APP_VERSION=3.6.1 -t <registry>/webagent-backend:3.6.1 backend/
+   docker push <registry>/webagent-backend:3.6.1
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.6.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.6.1 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -115,7 +115,9 @@ Model-call panels fill from real calls: each Together (or self-hosted) request r
 `ml_model_latency_seconds` once (`app/services/llm_call_metrics.py`). Both stacks provision the
 Prometheus data source with uid `prometheus`, which the dashboards and alert rules refer to.
 
-## Drift and alerts (3.6.0)
+## Drift and alerts
+
+Since 3.6.0. (The Grafana alert rules link here: keep this heading's anchor `#drift-and-alerts`.)
 
 **Where the numbers come from.** Real traffic only: every model call adds its speed (seconds per
 1,000 completion tokens) and total tokens under its call label (the agent name, `judge`,

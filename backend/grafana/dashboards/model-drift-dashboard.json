@@ -712,7 +712,7 @@
       ],
       "title": "Embedding drift",
       "type": "gauge",
-      "description": "Highest embeddings detector score: 1 − cosine similarity between the reference and current centroids of at least 30 vectors; drift above 0.7. 0 until a detector has enough data."
+      "description": "Highest embeddings detector score: 1 − cosine similarity between the reference centroid (the first 50 vectors after a reset) and the current one (at least 30 vectors); drift above 0.7. 0 until a detector has enough data."
     },
     {
       "datasource": {

@@ -22,6 +22,7 @@ except ImportError:
 from langchain.chat_models.base import BaseChatModel
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain.schema.runnable import Runnable
+from langchain_core.outputs import ChatGeneration, ChatResult
 from app.core.config import settings
 from app.core.loadEnvYAML import get_llm_config, get_agents_config
 
@@ -479,7 +480,7 @@ class SelfHostedChatModel(BaseChatModel):
             response_data = response.json()
             
             # Extract token usage if available
-            token_usage = 0
+            token_usage = prompt_tokens = completion_tokens = 0
             usage = response_data.get("usage", {})
             if usage:
                 prompt_tokens = usage.get("prompt_tokens", 0)
@@ -516,7 +517,8 @@ class SelfHostedChatModel(BaseChatModel):
                 if len(content) < 5 and prompt_length > 100:
                     logger.warning(f"Unusually short response from LLM for request {request_id}")
                 
-                return AIMessage(content=content)
+                # BaseChatModel expects a ChatResult (an AIMessage alone made invoke() fail)
+                return ChatResult(generations=[ChatGeneration(message=AIMessage(content=content))])
             except (KeyError, IndexError) as e:
                 logger.error(f"Error parsing response: {e}")
                 logger.error(f"Response data: {response_data}")

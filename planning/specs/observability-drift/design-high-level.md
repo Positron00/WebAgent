@@ -28,10 +28,11 @@ flowchart LR
 |---|---|---|
 | `app/core/drift_store.py` | Append samples; freeze references; compute detectors and alerts under a lock; read and write `state.json`; retention | new |
 | `app/core/drift_detection.py` | Pure scoring functions (KS, chi-square, centroid); the detector classes and registry go | changed |
-| `app/core/drift_alerts.py` | Alert rules evaluated over samples and detector results | new |
+| `app/core/drift_reference.py` | Detector table; per-detector reference freeze, current window and scoring; the public fields | new |
+| `app/core/drift_alerts.py` | Figures (requests, errors, rate limits, tokens, loads) from the samples; alert rules over the figures and detector results | new |
 | `app/services/llm_call_metrics.py` | Also adds drift samples per request, with the call label | changed |
 | `app/services/together_llm.py`, `llm.py` | `call_label` on the clients; Together base URL from `TOGETHER_API_BASE` | changed |
-| `app/services/document_loader.py` | Records document samples per loaded file | changed |
+| `app/services/document_loader.py` | Records document samples per loaded file (and the document-time histogram) | changed |
 | `app/services/drift_embeddings.py` | Wraps the embeddings object to record centroid aggregates | new |
 | `app/api/routes/observability.py` | Reads the drift state; alerts and health from it; resets write the store | changed |
 | `app/core/observability.py` | New gauges and counter; `data_drift_score` in multiprocess mode `max` | changed |
@@ -76,8 +77,7 @@ stops before 30 loses that partial sum, which is acceptable.
 
 1. Every `WEBAGENT_DRIFT_INTERVAL_SECONDS` (60) each worker's loop tries a non-blocking lock on
    `data/drift/compute.lock`.
-2. The worker that gets it reads the state and the sample files since the oldest open reference,
-   freezes any reference that just reached `WEBAGENT_DRIFT_WINDOW` (50) samples, scores each
+2. The worker that gets it reads the state and the retained sample files, freezes any reference that just reached `WEBAGENT_DRIFT_WINDOW` (50) samples, scores each
    detector with enough data (a frozen reference and at least 30 current samples), evaluates the
    alerts, logs transitions, runs the sample cleanup if a day has passed, and writes `state.json`
    atomically (write to a temp file, then rename).
@@ -119,7 +119,7 @@ Grafana's alert list. The first tick the condition is false clears it everywhere
 |---|---|---|
 | Can't write a sample (disk full, permissions) | That sample is lost | `add` logs at DEBUG and returns; the model call or upload is unaffected |
 | The computing worker dies holding the lock | `flock` is released with the process | The next tick another worker takes it |
-| `state.json` unreadable or half-written | — | Written by temp-and-rename; a reader that fails keeps its last good state and logs once |
+| `state.json` unreadable or half-written | — | Written by temp-and-rename; a reader that fails keeps its last good state and logs once until a read succeeds again |
 | A bad line in a samples file | — | Skipped while reading |
 | Not enough data | No score, no drift, no alert | Shown as `enough_data: false` and in the dashboard's detector table |
 | `WEBAGENT_DRIFT_ENABLED=false` | No samples, no loop | Routes answer with no detectors, no alerts and `healthy`, ignoring any older `state.json` |
@@ -129,7 +129,7 @@ Grafana's alert list. The first tick the condition is false clears it everywhere
 
 | File | Contents | Written by | Kept |
 |---|---|---|---|
-| `data/drift/samples-YYYY-MM-DD.jsonl` | One line per sample: time, detector, value (number or short string), or an embedding aggregate (sum vector, count ≥ 30, dimension, provider) | every worker (append) | `WEBAGENT_RESULTS_RETENTION_DAYS` (30) |
+| `data/drift/samples-YYYY-MM-DD.jsonl` | One line per sample: time, detector, value (number or short string), or an embedding aggregate (sum vector, count ≥ 30, dimension; the provider is in the detector name) | every worker (append) | `WEBAGENT_RESULTS_RETENTION_DAYS` (30) |
 | `data/drift/state.json` | Reset times per group; frozen references; last results per detector; active alerts with `since`; figures for `/health` and `/metrics`; time of the last sample cleanup; `computed_at` | the worker holding the lock (and a reset) | until replaced |
 | `data/drift/compute.lock` | Empty lock file: one computing worker per tick; resets wait for it | the loop, resets | always |
 | `data/drift/append.lock` | Empty lock file: serialises appends of embedding aggregates (large lines) | embedding tap | always |
@@ -139,7 +139,8 @@ No question text, history, document text, file names or single vectors (OBS-004)
 ## 6. Deployment
 
 - **Compose and the local stack:** no new service. The Grafana container gets the alert-rule
-  provisioning folder (already mounted through `./grafana/provisioning`).
+  provisioning folder (already mounted through `./grafana/provisioning`); the backend container
+  gets `TOGETHER_API_BASE` and the drift settings passed through (empty means the default).
 - **Kubernetes:** on every deploy, `deploy.sh` re-applies the Grafana data source, applies the
   dashboard and alert-rule ConfigMaps, and restarts Grafana; `grafana.yaml` mounts the alerting
   ConfigMap. `/app/data` is already a persistent volume (3.2.6), so
@@ -163,7 +164,12 @@ failures and rate limits as alerts, not a detector; no simulations left.
 - **What drift shows.** Speed and token drift catch provider changes, overload and prompt changes;
   not answer quality.
 - **Embedding threshold.** The detector's similarity threshold (0.3) is the existing one and is
-  loose; it may need tuning once real centroids exist.
+  loose. In the local check (2026-10-16) the centroids of short text notes and of large CSV tables
+  still had cosine similarity above 0.99 with OpenAI embeddings, so this detector will rarely fire;
+  it may need tuning once real centroids exist.
+- **Speed is sensitive.** With steady latencies, a KS test at p < 0.05 on 30–50 samples flags a
+  shift of about 10% (seen in the local check), and a slow hour at Together can do the same.
+  `model_drift` may therefore fire often on real traffic; the shadow week will show how often.
 - **One replica.** The store relies on one shared data volume, as results do (improvement plan,
   decision 5). `flock` works on local and block volumes, not on every network filesystem.
 - **OpenAI calls** (coding agents with an OpenAI key) are not measured.

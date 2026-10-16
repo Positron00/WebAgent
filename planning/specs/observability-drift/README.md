@@ -1,6 +1,6 @@
 # Spec: real drift and alerts (3.6.0)
 
-Status: implemented in 3.6.0 (2026-10-16; deviations below) · Source plan: [`planning/observability-plan-3.6.0.md`](../../observability-plan-3.6.0.md) ·
+Status: implemented in 3.6.0 (2026-10-16); reviewed against the code for 3.6.1 (notes below) · Source plan: [`planning/observability-plan-3.6.0.md`](../../observability-plan-3.6.0.md) ·
 Base: `main` at v3.5.3 (`cac70c6`) · 2026-10-15 · Release: 3.6.0, before the next shadow week
 
 ## What this work does
@@ -123,6 +123,23 @@ Where the code differs from the designs, or adds to them:
   alert list, and cleared again. It also showed that the speed detector flags shifts of about 10%
   when latencies are steady (KS at p < 0.05 on 30–50 samples), so `model_drift` may fire often on
   real traffic: watch it in the shadow week.
+
+Fixed in the review after the release (3.6.1, 2026-10-16), where the code or the checks fell
+short of this spec:
+
+- `SelfHostedChatModel._generate` returned an `AIMessage`, which LangChain rejects, and a reply
+  without `usage` failed, so the self-hosted half of OBS-001 couldn't work; both fixed, with a test
+  against a fake server (200 and 429).
+- OBS-014 covers the embeddings tap, which wasn't timed; a test now times 1,000 embedding calls
+  with 1,536-dimension vectors.
+- An unreadable `state.json` was logged on every read; now once until a read succeeds (high-level
+  design §4).
+- `apply_gauges` now sets `data_drift_score` through `record_data_drift` (backend design §9).
+- The Grafana alert rules link to `docs/RUNBOOK.md#drift-and-alerts`, but the heading was
+  "Drift and alerts (3.6.0)" (a different anchor); renamed, with a test.
+- The designs and the plan now match the code: the detector table's module, `base_url` read when
+  the client is built, the samples read in `compute_once`, `figures` key names, the `/health` and
+  `/metrics` provider (the configured default: samples don't record one), file sizes.
 
 ## Traceability
 

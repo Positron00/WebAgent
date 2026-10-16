@@ -23,6 +23,7 @@ from app.core.drift_reference import detector_kind, group_of, update_detector
 logger = logging.getLogger(__name__)
 MIN_SAMPLES = 30
 _last_state: Dict[str, Any] = {}
+_state_unreadable = False
 
 
 def drift_dir() -> Path:
@@ -96,14 +97,17 @@ def _locked(path: Path, blocking: bool = True):
 
 def load_state() -> Dict[str, Any]:
     """The last computed state; the last good copy (or an empty state) if the file can't be read."""
-    global _last_state
+    global _last_state, _state_unreadable
     path = drift_dir() / "state.json"
     try:
         _last_state = json.loads(path.read_text(encoding="utf-8"))
+        _state_unreadable = False
     except FileNotFoundError:
-        _last_state = _empty_state()
+        _last_state, _state_unreadable = _empty_state(), False
     except (OSError, ValueError) as exc:
-        logger.warning("Drift state unreadable (%s); using the last good copy", exc)
+        if not _state_unreadable:  # once per run of failures, not on every read
+            logger.warning("Drift state unreadable (%s); using the last good copy", exc)
+        _state_unreadable = True
     return _last_state or _empty_state()
 
 
@@ -180,8 +184,8 @@ def _log_drift_to_mlflow(name: str, score: float) -> None:
 
 
 def apply_gauges(state: Dict[str, Any]) -> None:
-    from app.core.observability import (ALERT_ACTIVE, DATA_DRIFT_SCORE, DRIFT_CURRENT_SAMPLES,
-                                        DRIFT_DETECTED, DRIFT_ENOUGH_DATA)
+    from app.core.observability import (ALERT_ACTIVE, DRIFT_CURRENT_SAMPLES, DRIFT_DETECTED,
+                                        DRIFT_ENOUGH_DATA, record_data_drift)
 
     active = {a["name"] for a in state.get("alerts", [])}
     for name, (severity, _) in drift_alerts.ALERTS.items():
@@ -190,7 +194,7 @@ def apply_gauges(state: Dict[str, Any]) -> None:
         DRIFT_DETECTED.labels(detector=name).set(1 if d.get("drift") else 0)
         DRIFT_ENOUGH_DATA.labels(detector=name).set(1 if d.get("enough_data") else 0)
         DRIFT_CURRENT_SAMPLES.labels(detector=name).set(d.get("current_count", 0))
-        DATA_DRIFT_SCORE.labels(component=name).set(d.get("score") or 0.0)
+        record_data_drift(name, d.get("score") or 0.0)  # 0 without enough data
 
 
 async def compute_loop(interval_sec: Optional[float] = None) -> None:

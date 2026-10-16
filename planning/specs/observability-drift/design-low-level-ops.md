@@ -12,6 +12,7 @@ Paths are relative to the repo root. Requirement IDs refer to [`requirements.md`
 | `backend/kubernetes/monitoring/grafana.yaml` | changed | Drop the inline dashboard ConfigMap; mount the alerting ConfigMap |
 | `scripts/fake_together.py` | new | Dev-only fake Together server (backend design §12) |
 | `.env.local.example` | changed | Four drift settings and `TOGETHER_API_BASE` (OBS-NFR-04) |
+| `backend/docker-compose.yml` | changed | Pass `TOGETHER_API_BASE` and the four drift settings to the backend container, for the local check (OBS-020) |
 | Docs (§5) | changed | RUNBOOK, API reference, READMEs, production checklist, specs, CHANGELOG |
 
 ## 2. Drift dashboard (`model-drift-dashboard.json`)
@@ -113,7 +114,7 @@ picked up, and Grafana's "can't read alerting provisioning files" log error stop
 
 | Doc | Change |
 |---|---|
-| `docs/RUNBOOK.md` | New "Drift and alerts" section: what each alert means, what to check, how to reset a baseline (`curl -X POST … /llm/reset_baseline`), why a fresh install shows "not enough data", where samples live and for how long; the dashboards paragraph from 3.5.3 updated |
+| `docs/RUNBOOK.md` | New "Drift and alerts" section (heading exactly that: the alert rules link to `#drift-and-alerts`): what each alert means, what to check, how to reset a baseline (`curl -X POST … /llm/reset_baseline`), why a fresh install shows "not enough data", where samples live and for how long; the dashboards paragraph from 3.5.3 updated |
 | `backend/docs/api_reference.md` | Observability section: `/drift`, `/alerts`, `/health`, `/metrics` fields (OBS-013) |
 | `backend/README.md` | Endpoint list (observability fields); settings table (drift settings, `TOGETHER_API_BASE`) |
 | `README.md` | "Advanced Observability" feature bullets: real drift, alerts on the dashboard |

@@ -186,3 +186,6 @@ def test_alert_rules_provision_one_rule_per_alert():
         assert "retrain" not in rule["annotations"]["summary"].lower()
         assert (rule["labels"]["severity"], rule["labels"]["service"]) == ALERTS[name]
     assert set(by_alert) == set(ALERTS)
+    # The annotation's anchor must exist: GitHub makes "#drift-and-alerts" from this exact heading.
+    runbook = (BACKEND.parent / "docs" / "RUNBOOK.md").read_text(encoding="utf-8")
+    assert "\n## Drift and alerts\n" in runbook
