@@ -365,6 +365,7 @@ def _build_security_guard_settings() -> SecurityGuardConfig:
         "tool_mode": _mode("tool_mode", "WEBAGENT_GUARD_TOOL_MODE", base.tool_mode),
         "judge": _triage_bool("WEBAGENT_GUARD_JUDGE", base.judge),
         "collect": _triage_bool("WEBAGENT_GUARD_COLLECT", base.collect),
+        "plan_check": _triage_bool("WEBAGENT_GUARD_PLAN_CHECK", base.plan_check),
     })
 
 

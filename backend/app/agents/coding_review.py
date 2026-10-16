@@ -123,7 +123,8 @@ class CodingReviewAgent(BaseAgent):
             clean_code = self.clean_code(code)
             
             # Execute the code and get results
-            success, execution_result = self.execute_python_code(clean_code, state)
+            purpose = str(coding_report.get("explanation") or "")
+            success, execution_result = self.execute_python_code(clean_code, state, scored_text=purpose)
             
             # Prepare error details
             error_details = execution_result if not success else ""
@@ -165,7 +166,7 @@ class CodingReviewAgent(BaseAgent):
             if fixed_code and not success:
                 logger.info("Executing fixed code")
                 fixed_code_success, fixed_code_execution_result = self.execute_python_code(
-                    fixed_code, state
+                    fixed_code, state, scored_text=purpose
                 )
             
             # Create the coding review report
@@ -241,7 +242,8 @@ class CodingReviewAgent(BaseAgent):
             return max(code_blocks, key=len).strip()
         return ""
     
-    def execute_python_code(self, code: str, state: Optional[WorkflowState] = None) -> tuple:
+    def execute_python_code(self, code: str, state: Optional[WorkflowState] = None,
+                            scored_text: Optional[str] = None) -> tuple:
         """Execute Python code and return the result."""
         from app.core.config import settings
 
@@ -259,6 +261,8 @@ class CodingReviewAgent(BaseAgent):
                     {"code": code},
                     state,
                     principal="coding_review",
+                    # What the code is for, checked against the user's intent (checkpoint2-intent SEC-107).
+                    scored_text=scored_text,
                 )
 
             try:

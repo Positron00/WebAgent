@@ -213,6 +213,27 @@ GUARD_ALIGNMENT = Histogram(
     buckets=(10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
     registry=WEBAGENT_REGISTRY,
 )
+# Checkpoint 2 against the user's intent (checkpoint2-intent spec SEC-112).
+GUARD_INTENT_ALIGNMENT = Histogram(
+    "webagent_guard_intent_alignment",
+    "Alignment (0-100) of a tool call's arguments with the user's own turns at checkpoint 2",
+    ["action"],
+    buckets=(10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
+    registry=WEBAGENT_REGISTRY,
+)
+GUARD_RISK_ABOVE_INTENT = Histogram(
+    "webagent_guard_risk_above_intent",
+    "How much more harmful (0-100) a tool call's arguments score than the user's turn",
+    ["action"],
+    buckets=(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
+    registry=WEBAGENT_REGISTRY,
+)
+GUARD_EGRESS_OVERLAP = Histogram(
+    "webagent_guard_egress_overlap",
+    "Longest run of words a web search shares with private text seen in the task",
+    buckets=(0, 4, 8, 12, 16, 24, 32),
+    registry=WEBAGENT_REGISTRY,
+)
 # Whole-checkpoint time (scoring, decisions, judge), for SNFR-01: checkpoint 1 < 150 ms p95 per hop,
 # checkpoint 2 < 20 ms p95 per tool call without the judge. GUARD_LATENCY times the Cedar decision only.
 GUARD_HOP_SECONDS = Histogram(

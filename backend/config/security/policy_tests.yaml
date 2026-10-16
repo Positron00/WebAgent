@@ -297,23 +297,13 @@ tests:
       jailbreak: 30
     expected: allow
 
-  - name: misaligned search in an untainted task is only recorded
+  - name: search far from the task text (old rule removed) records nothing
     principal: web_research
     action: tool::web_search
     resource: task-1
     context:
       source: tool
       alignment: 12
-    expected: allow
-    expected_shadow: [untainted-search-misaligned]
-
-  - name: aligned search in an untainted task records nothing
-    principal: web_research
-    action: tool::web_search
-    resource: task-1
-    context:
-      source: tool
-      alignment: 75
     expected: allow
     expected_shadow: []
 
@@ -326,4 +316,225 @@ tests:
       alignment: 12
       tainted: true
     expected: verify
+    expected_shadow: []
+
+  # Checkpoint 2 against the user's intent (checkpoint2-intent spec SEC-109): every new rule is shadow-only,
+  # so each row expects allow and lists the shadow match.
+  - name: intent - drifted rewrite recorded
+    principal: supervisor
+    action: plan::rewrite
+    resource: task-1
+    context:
+      source: plan
+      rewrite_alignment: 20
+    expected: allow
+    expected_shadow: [rewrite-drift-verify]
+
+  - name: intent - rewrite at its threshold not recorded
+    principal: supervisor
+    action: plan::rewrite
+    resource: task-1
+    context:
+      source: plan
+      rewrite_alignment: 40
+    expected: allow
+    expected_shadow: []
+
+  - name: intent - no signals, no rewrite match
+    principal: supervisor
+    action: plan::rewrite
+    resource: task-1
+    context:
+      source: plan
+      rewrite_alignment: 5
+      signals_available: false
+    expected: allow
+    expected_shadow: []
+
+  - name: intent - harmful subgoal under a benign intent recorded
+    principal: senior_research
+    action: plan::subgoal
+    resource: task-1
+    context:
+      source: plan
+      subgoal_harm: 90
+      intent_harm: 5
+      subgoal_origin: follow_up
+    expected: allow
+    expected_shadow: [subgoal-harm-decline]
+
+  - name: intent - harmful subgoal under an already harmful intent not this rule
+    principal: senior_research
+    action: plan::subgoal
+    resource: task-1
+    context:
+      source: plan
+      subgoal_harm: 90
+      intent_harm: 60
+    expected: allow
+    expected_shadow: []
+
+  - name: intent - off-intent subgoal recorded
+    principal: supervisor
+    action: plan::subgoal
+    resource: task-1
+    context:
+      source: plan
+      intent_alignment: 10
+    expected: allow
+    expected_shadow: [subgoal-off-intent-decline]
+
+  - name: intent - on-intent subgoal records nothing
+    principal: supervisor
+    action: plan::subgoal
+    resource: task-1
+    context:
+      source: plan
+      intent_alignment: 15
+    expected: allow
+    expected_shadow: []
+
+  - name: intent - much riskier search recorded by both risk rules
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      risk_above_intent: 70
+    expected: allow
+    expected_shadow: [call-risk-above-intent-decline, call-risk-above-intent-verify]
+
+  - name: intent - somewhat riskier code recorded by the verify rule
+    principal: coding_review
+    action: tool::execute_code
+    resource: task-1
+    context:
+      source: tool
+      risk_above_intent: 35
+      code_execution_enabled: true
+      sandbox: docker
+    expected: allow
+    expected_shadow: [call-risk-above-intent-verify]
+
+  - name: intent - risk just under verify records nothing
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      risk_above_intent: 29
+    expected: allow
+    expected_shadow: []
+
+  - name: intent - off-intent search recorded tainted or not
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      intent_alignment: 12
+      alignment: 80
+    expected: allow
+    expected_shadow: [off-intent-search-verify]
+
+  - name: intent - off-intent retrieval recorded
+    principal: internal_research
+    action: tool::internal_retrieve
+    resource: task-1
+    context:
+      source: tool
+      intent_alignment: 24
+    expected: allow
+    expected_shadow: [off-intent-search-verify]
+
+  - name: intent - search at the threshold records nothing
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      intent_alignment: 25
+    expected: allow
+    expected_shadow: []
+
+  - name: intent - search copying private text recorded
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      egress_overlap: 12
+    expected: allow
+    expected_shadow: [private-egress-decline]
+
+  - name: intent - seven shared words is not egress
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      egress_overlap: 7
+    expected: allow
+    expected_shadow: []
+
+  - name: intent - undeclared retrieval recorded
+    principal: internal_research
+    action: tool::internal_retrieve
+    resource: task-1
+    context:
+      source: tool
+      declared: false
+    expected: allow
+    expected_shadow: [undeclared-tool-verify]
+
+  - name: intent - undeclared document read recorded
+    principal: document_extraction
+    action: tool::document_extract
+    resource: task-1
+    context:
+      source: tool
+      declared: false
+    expected: allow
+    expected_shadow: [undeclared-tool-verify]
+
+  - name: intent - third off-intent call recorded as drift
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      low_alignment_calls: 3
+    expected: allow
+    expected_shadow: [drift-escalate]
+
+  - name: intent - drift also stops follow-up subgoals
+    principal: senior_research
+    action: plan::subgoal
+    resource: task-1
+    context:
+      source: plan
+      low_alignment_calls: 4
+    expected: allow
+    expected_shadow: [drift-escalate]
+
+  - name: intent - two off-intent calls is not drift
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      low_alignment_calls: 2
+    expected: allow
+    expected_shadow: []
+
+  - name: intent - no signals, no alignment or risk match
+    principal: web_research
+    action: tool::web_search
+    resource: task-1
+    context:
+      source: tool
+      signals_available: false
+      intent_alignment: 0
+      risk_above_intent: 100
+    expected: allow
     expected_shadow: []

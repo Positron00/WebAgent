@@ -59,13 +59,6 @@ when { context.declined_actions_in_task >= 3 };
 forbid (principal, action == Action::"converse", resource)
 when { !context.scores_available && context.source != "user_turn" };
 
-// Shadow-only (2026-10-12): a search far from the task in a task checkpoint 1 didn't taint. InjecAgent
-// injections that checkpoint 1 misses produce exactly these (alignment median 9-16); how often real
-// follow-up searches fall below 30 isn't known yet, so matches are recorded, never applied (SEC-044a).
-@id("untainted-search-misaligned") @outcome("verify") @shadow("true")
-forbid (principal, action in [Action::"tool::web_search", Action::"tool::internal_retrieve"], resource)
-when { !context.tainted && context.alignment < 30 };
-
 @id("document-provenance-decline") @outcome("decline")
 forbid (principal, action == Action::"tool::document_extract", resource)
 when { context.pattern_hits.contains("document_provenance") };
@@ -85,3 +78,44 @@ when { context.code_findings.containsAny(["process", "native", "env", "unparseab
 @id("code-disabled-decline") @outcome("decline")
 forbid (principal, action == Action::"tool::execute_code", resource)
 when { !context.code_execution_enabled };
+
+// Checkpoint 2 against the user's intent (checkpoint2-intent spec SEC-109). All shadow-only: matches are
+// recorded (webagent_guard_shadow_policy_total, collection) and never change an outcome until a rule's
+// threshold is measured (SEC-130). off-intent-search-verify replaces untainted-search-misaligned
+// (SEC-044a): it compares with the user's own turns, not the supervisor's rewrite, tainted or not.
+@id("rewrite-drift-verify") @outcome("verify") @shadow("true")
+forbid (principal, action == Action::"plan::rewrite", resource)
+when { context.signals_available && context.rewrite_alignment < context.rewrite_at };
+
+@id("subgoal-harm-decline") @outcome("decline") @shadow("true")
+forbid (principal, action == Action::"plan::subgoal", resource)
+when { context.signals_available && context.subgoal_harm >= context.harm_decline_at
+       && context.intent_harm < context.harm_verify_at };
+
+@id("subgoal-off-intent-decline") @outcome("decline") @shadow("true")
+forbid (principal, action == Action::"plan::subgoal", resource)
+when { context.signals_available && context.intent_alignment < context.subgoal_align_at };
+
+@id("call-risk-above-intent-decline") @outcome("decline") @shadow("true")
+forbid (principal, action in [Action::"tool::web_search", Action::"tool::internal_retrieve", Action::"tool::execute_code"], resource)
+when { context.signals_available && context.risk_above_intent >= context.risk_decline_at };
+
+@id("call-risk-above-intent-verify") @outcome("verify") @shadow("true")
+forbid (principal, action in [Action::"tool::web_search", Action::"tool::internal_retrieve", Action::"tool::execute_code"], resource)
+when { context.signals_available && context.risk_above_intent >= context.risk_verify_at };
+
+@id("off-intent-search-verify") @outcome("verify") @shadow("true")
+forbid (principal, action in [Action::"tool::web_search", Action::"tool::internal_retrieve"], resource)
+when { context.signals_available && context.intent_alignment < context.search_align_at };
+
+@id("private-egress-decline") @outcome("decline") @shadow("true")
+forbid (principal, action == Action::"tool::web_search", resource)
+when { context.egress_overlap >= context.egress_words_at };
+
+@id("undeclared-tool-verify") @outcome("verify") @shadow("true")
+forbid (principal, action in [Action::"tool::web_search", Action::"tool::internal_retrieve", Action::"tool::document_extract", Action::"tool::execute_code"], resource)
+when { !context.declared };
+
+@id("drift-escalate") @outcome("escalate") @shadow("true")
+forbid (principal, action in [Action::"tool::web_search", Action::"tool::internal_retrieve", Action::"plan::subgoal"], resource)
+when { context.low_alignment_calls >= context.drift_calls_at };

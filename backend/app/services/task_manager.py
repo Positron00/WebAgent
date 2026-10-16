@@ -309,6 +309,11 @@ class TaskManager:
             from app.security import ledger as security_ledger
 
             ctx["security"] = security_ledger.get_ledger(WorkflowState(query=message, context={}))
+            # The user's own words, the reference for checking agent subgoals and tool calls
+            # (checkpoint2-intent SEC-100); its embedding and harm are computed on first use.
+            from app.security import intent as security_intent
+
+            security_intent.record_intent(WorkflowState(query=message, context=ctx))
             inputs: Dict[str, Any] = {}
             if ctx.get("document_id"):
                 inputs["document_id"] = ctx["document_id"]

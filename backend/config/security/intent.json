@@ -1,0 +1,19 @@
+{
+  "_comment": "Checkpoint2-intent spec SEC-107: regexes (case-insensitive) that mark an intent as asking for code, a chart or a calculation. Matched on the user's own turns only.",
+  "code_request": [
+    "\\bcode\\b",
+    "\\bscript\\b",
+    "\\bpython\\b",
+    "\\bprogram\\b",
+    "\\bfunction\\b",
+    "\\bsnippet\\b",
+    "\\bimplement",
+    "\\bchart\\b",
+    "\\bplot\\b",
+    "\\bgraph\\b",
+    "\\bvisuali[sz]",
+    "\\bcalculat",
+    "\\bcompute\\b",
+    "\\bsimulat"
+  ]
+}

@@ -77,7 +77,7 @@ def test_new_guard_metrics_are_exported():
     from prometheus_client import generate_latest
 
     metrics.GUARD_ALIGNMENT.labels(tainted="false").observe(42)
-    metrics.GUARD_SHADOW_POLICY.labels(policy_id="untainted-search-misaligned", action="tool::web_search").inc()
+    metrics.GUARD_SHADOW_POLICY.labels(policy_id="off-intent-search-verify", action="tool::web_search").inc()
     metrics.GUARD_TOOL_SECONDS.labels(action="tool::web_search").observe(0.01)
     exported = generate_latest(metrics.WEBAGENT_REGISTRY).decode()
     for name in ("webagent_guard_search_alignment", "webagent_guard_shadow_policy_total",
@@ -88,14 +88,16 @@ def test_new_guard_metrics_are_exported():
 def test_checkpoint2_rows_carry_alignment_and_taint(monkeypatch, tmp_path):
     import asyncio
 
-    from app.security import alignment, tool_guard
+    from app.security import signals, tool_guard
 
     _guard(monkeypatch, tmp_path)
     monkeypatch.setattr(settings, "SECURITY_GUARD", settings.SECURITY_GUARD.model_copy(
         update={"enabled": True, "tool_mode": "shadow", "collect": True}))
-    monkeypatch.setattr(alignment, "alignment_for_action", lambda action, args, state: 12)
+    monkeypatch.setattr(signals, "score_text", lambda state, text: signals.TextSignals(
+        intent_alignment=12, task_alignment=12, harm=0, available=True))
     state = WorkflowState(query="what's the weather in Paris", context={"task_id": "t-4"})
     assert asyncio.run(tool_guard.guard_tool("tool::web_search", {"query": "unlock the front door"}, state))
     row = next(r for r in _rows(tmp_path) if r["checkpoint"] == 2)
     assert row["context"]["alignment"] == 12 and row["context"]["tainted"] is False
-    assert row["shadow_policy_ids"] == ["untainted-search-misaligned"]
+    assert row["context"]["intent_alignment"] == 12 and row["context"]["signals_available"] is True
+    assert row["shadow_policy_ids"] == ["off-intent-search-verify"]

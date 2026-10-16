@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.6.1 -t <registry>/webagent-backend:3.6.1 backend/
-   docker push <registry>/webagent-backend:3.6.1
+   docker build --build-arg APP_VERSION=3.7.0 -t <registry>/webagent-backend:3.7.0 backend/
+   docker push <registry>/webagent-backend:3.7.0
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.6.1 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.7.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -168,6 +168,21 @@ baseline, make 30 calls, then make the fake server slower or failing and watch t
 
 Grafana dashboard helpers and MLflow experiment logging for model metrics are documented in
 `backend/demos/README.md` and `backend/README.md` (demos section).
+
+## Security guard: checks against the user's intent (3.7.0)
+
+Checkpoint 2 now also compares each tool call, and each agent-written subgoal (the supervisor's
+rewrite and plan questions, the senior research agent's follow-up questions), with the user's own
+turns: intent alignment, risk above intent (is the call more harmful than the request?), private
+text copied into a web search, tools the plan didn't ask for, and drift across a task. In 3.7.0
+**all nine of these rules are shadow-only**: they are recorded
+(`webagent_guard_shadow_policy_total{policy_id}`, `webagent_guard_intent_alignment`,
+`webagent_guard_risk_above_intent`, `webagent_guard_egress_overlap`, collection rows) and never
+change what an agent does, whatever `WEBAGENT_GUARD_TOOL_MODE` says. A rule starts acting only in
+its own later release, after its threshold is measured (`planning/specs/checkpoint2-intent/`,
+SEC-130). `WEBAGENT_GUARD_PLAN_CHECK=false` turns the subgoal checks off. Nothing new is stored:
+private text is kept only as salted hashes in memory for the task, and outside dev no intent or
+subgoal text is logged or collected.
 
 ## Metrics exposure
 

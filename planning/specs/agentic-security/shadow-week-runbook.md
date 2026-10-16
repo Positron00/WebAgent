@@ -1,4 +1,4 @@
-# Shadow week runbook (release 3.6.1, uat)
+# Shadow week runbook (release 3.7.0, uat)
 
 Goal: run the security guard on real uat traffic for about a week in shadow mode (it checks everything and records what it would do, but blocks nothing), then decide whether checkpoint 1 can act. Triage runs its own pending shadow week at the same time (decided 2026-10-13; see section 7). Tasks 3.8 and 5.1–5.3 in [`tasks.md`](tasks.md); targets in [`requirements.md`](requirements.md) (SEC-028, SNFR-01, SNFR-05).
 
@@ -15,20 +15,20 @@ The week runs either on one machine with Docker (how the 2026-10-13 week ran: th
 
 ### On one machine (Docker)
 
-- [ ] Build: `docker build --build-arg APP_VERSION=3.6.1 -t webagent-backend:3.6.1 backend/`.
+- [ ] Build: `docker build --build-arg APP_VERSION=3.7.0 -t webagent-backend:3.7.0 backend/`.
 - [ ] Put the environment above in a file outside the repo, readable only by you (`chmod 600`), e.g. `~/webagent-uat.env`.
 - [ ] Run, keeping the data on disk, in a new folder for each week (the stopped 3.2.5 week's files are in `~/webagent-uat-data`):
   ```bash
   docker run -d --name webagent-uat --restart unless-stopped -p 127.0.0.1:8000:8000 --memory 3g \
-    --env-file ~/webagent-uat.env -v ~/webagent-uat-data-3.5.0:/app/data webagent-backend:3.6.1
+    --env-file ~/webagent-uat.env -v ~/webagent-uat-data-3.5.0:/app/data webagent-backend:3.7.0
   ```
 - [ ] Web app: in the repo's `.env.local`, `WEBAGENT_BACKEND_URL=http://127.0.0.1:8000` (the default) and the same `WEBAGENT_API_KEY`; then `npm run dev` (add `-- -p 3001` if port 3000 is taken) and set Agentic to **Always** (section 7).
 - [ ] There's no Prometheus: read the same series from `curl localhost:8000/metrics`, and the collection from `security/collected` and `triage/collected` in that folder. Latency and memory measured on a laptop don't stand in for the server: measure them once on the real host before act mode in prod.
 
 ### In Kubernetes
 
-- [ ] Build and push to a registry the cluster can pull from: `docker build --build-arg APP_VERSION=3.6.1 -t <registry>/webagent-backend:3.6.1 backend/`, `docker push ...`.
-- [ ] With the keys and `GRAFANA_ADMIN_PASSWORD` exported, from `backend/kubernetes/`: `./deploy.sh -e uat -n webagent-uat -v 3.6.1 -r <registry>/webagent-backend -H <uat host> -i <ingress controller namespace>` (default `ingress-nginx`). Before 3.2.6 the script ignored `-e` (the pod ran prod settings) and kept `/app/data` in an `emptyDir`; use 3.2.6 or later. Since 3.3.0 it also applies `networkpolicy.yaml` (only the ingress controller and `monitoring` reach the pod), and the public Ingress answers 404 for `/metrics`.
+- [ ] Build and push to a registry the cluster can pull from: `docker build --build-arg APP_VERSION=3.7.0 -t <registry>/webagent-backend:3.7.0 backend/`, `docker push ...`.
+- [ ] With the keys and `GRAFANA_ADMIN_PASSWORD` exported, from `backend/kubernetes/`: `./deploy.sh -e uat -n webagent-uat -v 3.7.0 -r <registry>/webagent-backend -H <uat host> -i <ingress controller namespace>` (default `ingress-nginx`). Before 3.2.6 the script ignored `-e` (the pod ran prod settings) and kept `/app/data` in an `emptyDir`; use 3.2.6 or later. Since 3.3.0 it also applies `networkpolicy.yaml` (only the ingress controller and `monitoring` reach the pod), and the public Ingress answers 404 for `/metrics`.
 - [ ] What it sets up: one replica, memory limit 3 GiB (request 2 GiB; two workers peaked at 1.81 GiB in the simulated week), CPU limit 2, `/app/data` on a 5 GiB persistent volume so the collection survives restarts, `/tmp` writable for the workers' metrics.
 - [ ] Web app on Vercel or locally with `WEBAGENT_BACKEND_URL=https://<uat host>` and the same `WEBAGENT_API_KEY`. A production build (Vercel, `next start`) also needs `WEBAGENT_ACCESS_CODE` and `WEBAGENT_SESSION_SECRET` (since 3.2.7), or every API route answers 503; `npm run dev` stays open without them.
 
@@ -49,7 +49,11 @@ Prometheus (adjust the range to the period):
 | Checkpoint 2 time per tool call, p95 | `histogram_quantile(0.95, sum by (le) (rate(webagent_guard_tool_seconds_bucket[1d])))` | < 0.02 s without the judge |
 | What checkpoint 1 would do | `sum by (outcome) (increase(webagent_guard_decisions_total{checkpoint="1"}[1d]))` | watch decline / consent / escalate |
 | Real searches' alignment (untainted) | `histogram_quantile(0.1, sum by (le) (rate(webagent_guard_search_alignment_bucket{tainted="false"}[1d])))` | sets the shadow rule's threshold |
-| Shadow rule matches | `increase(webagent_guard_shadow_policy_total[1d])` | how often `untainted-search-misaligned` would act |
+| Shadow rule matches | `sum by (policy_id) (increase(webagent_guard_shadow_policy_total[1d]))` | how often each shadow-only rule would act (3.7.0: the nine intent rules, e.g. `off-intent-search-verify`) |
+| Calls against the user's intent (3.7.0) | `histogram_quantile(0.1, sum by (le, action) (rate(webagent_guard_intent_alignment_bucket[1d])))` | sets `search_align_at` and `drift_align_at` (checkpoint2-intent SEC-130) |
+| Risk above intent (3.7.0) | `histogram_quantile(0.99, sum by (le, action) (rate(webagent_guard_risk_above_intent_bucket[1d])))` | sets `risk_verify_at` / `risk_decline_at`; real tasks should sit near 0 |
+| Private-text egress (3.7.0) | `histogram_quantile(0.99, sum by (le) (rate(webagent_guard_egress_overlap_bucket[1d])))` | how often searches copy 8+ words of retrieved or uploaded text |
+| Plan check (3.7.0) | `sum by (action, outcome) (increase(webagent_guard_decisions_total{action=~"plan::.*"}[1d]))` | rewrites and subgoals checked; shadow matches in the row above |
 | Memory per pod | `container_memory_working_set_bytes` (or `kubectl top pod`); per worker: `memory_usage_bytes{type="rss"}` (one series per `pid`) | ≤ 2.4 GiB per pod (3 GiB with 20% headroom, SNFR-05) |
 | Unlabelled LLM calls | `increase(webagent_guard_unlabelled_total[1d])` | 0 |
 | Triage: what it would route (Agentic-on questions) | `sum by (route, decided_by) (increase(webagent_triage_decisions_total[1d]))` | the split, for the review |
@@ -75,7 +79,7 @@ python scripts/review_security_collection.py --dir /app/data/security/collected
    python scripts/review_security_collection.py --dir /app/data/security/collected --labels review_labelled.csv
    ```
 4. Real injections go into the next training round (task 5.3), through a reviewed import, never by copying collected text by hand.
-5. From the alignment distribution, pick the threshold for `untainted-search-misaligned`: the score that the lowest few percent of real untainted searches fall under, compared with InjecAgent's misaligned searches (median 9–16).
+5. From the intent-alignment distribution (3.7.0: `webagent_guard_intent_alignment`, and the collection rows' `intent_alignment`), pick the threshold for `off-intent-search-verify` (it replaced `untainted-search-misaligned`), and read the other intent rules' shadow matches against reviewed tasks (checkpoint2-intent SEC-130). For the old wording: the score that the lowest few percent of real untainted searches fall under, compared with InjecAgent's misaligned searches (median 9–16).
 
 ## 5. Deciding on act mode (checkpoint 1)
 

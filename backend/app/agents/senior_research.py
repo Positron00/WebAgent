@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 
 from app.models.task import WorkflowState
 from app.services.llm import get_agent_llm
+from app.security import intent as security_intent
 from app.security.hop_guard import acheck_hop, kept_text, task_items
 from app.security.types import ContextItem
 from app.security.guarded_llm import register_template
@@ -324,6 +325,11 @@ class SeniorResearchAgent(BaseAgent):
                 logger.info(f"Senior Research Agent requesting additional research (iteration {current_iteration}/{self.max_iterations})")
                 state.add_log(f"Senior Research: Requesting more research after iteration {current_iteration}")
                 
+                # The follow-up questions become searches and retrievals: check them against the
+                # user's intent first (checkpoint2-intent SEC-102).
+                senior_research_output["research_questions"] = await security_intent.check_follow_ups(
+                    state, senior_research_output.get("research_questions", [])
+                )
                 # Add feedback to the context for other agents to use
                 state.context["research_feedback"] = senior_research_output
                 state.context["continue_research"] = True

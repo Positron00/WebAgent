@@ -397,6 +397,7 @@ Key environment variables used by the application:
 | LANGSMITH_TRACING_ENABLED | Set `false` to turn tracing off | true |
 | WEBAGENT_API_KEY | Key clients send as `X-API-Key` (required in uat/prod) | |
 | WEBAGENT_SECURITY_SECRET_KEY | Signs the security guard's consent and approval tokens (required in uat/prod) | insecure dev default |
+| WEBAGENT_GUARD_PLAN_CHECK | Check the supervisor's rewrite and plan questions, and senior research's follow-up questions, against the user's own turns (checkpoint 2's intent rules are shadow-only in 3.7.0, so this only records) | true |
 | WEBAGENT_SECURITY_API_KEY_ENABLED | Require `X-API-Key` | false (true in uat/prod YAML) |
 | WEBAGENT_ENABLE_CODE_EXECUTION | Let agents run generated code in the API server | false |
 | WEBAGENT_CODE_SANDBOX | `local` (no secrets, CPU/memory limits) or `docker` (isolated; required in uat/prod) | local |
