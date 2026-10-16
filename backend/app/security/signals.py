@@ -4,6 +4,10 @@ SEC-103 – SEC-105, SEC-110: one base MiniLM-L6 encode of the text gives both i
 intent and with the task text (the existing ``alignment``); ContextDefender's harm score runs at
 the same time on another thread, so checkpoint 2 costs about the slower of the two. Any failure
 leaves defaults that match no rule and ``available=False``.
+
+Phase B (SEC-126): with a gated alignment classifier loaded, ``intent_alignment`` and ``risk`` come
+from it (one pair score, no ContextDefender call per text); a classifier failure falls back to the
+phase A signals with ``classifier=False``.
 """
 from __future__ import annotations
 
@@ -15,7 +19,7 @@ from typing import Optional, Sequence
 import numpy as np
 
 from app.models.task import WorkflowState
-from app.security import alignment, ledger
+from app.security import alignment, alignment_model, ledger
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +38,9 @@ class TextSignals:
     task_alignment: int = 100
     harm: int = 0
     available: bool = True
+    risk: Optional[int] = None  # phase B: the classifier's risk (0-100), used as-is for risk above intent
+    p_aligned: Optional[float] = None  # phase B: calibrated P(aligned), for the judge band (SEC-127)
+    classifier: bool = False
 
 
 def _warn_once(kind: str, exc: BaseException) -> None:
@@ -95,11 +102,41 @@ def intent_harm(state: Optional[WorkflowState]) -> int:
     return int(record.get("harm") or 0)
 
 
-def score_text(state: WorkflowState, text: str) -> TextSignals:
-    """Intent alignment, task alignment and harm of ``text`` (an argument or a subgoal)."""
+def _classifier_signals(state: WorkflowState, text: str, action: str) -> Optional[TextSignals]:
+    """SEC-126: the classifier's alignment and risk, plus the MiniLM task alignment; None without a
+    gated model or on any failure (phase A is used)."""
+    model = alignment_model.get_model()
+    record = _intent_record(state)
+    if model is None or record is None:
+        return None
+    try:
+        p_aligned, risk = model.score_pair(record["text"], f"{action}: {text}" if action else text)
+    except Exception as exc:  # noqa: BLE001
+        _warn_once("classifier", exc)
+        return None
+    task_alignment = None
+    try:
+        task_alignment = cos100(alignment.encode(text), alignment.task_embedding(state))
+    except Exception as exc:  # noqa: BLE001
+        _warn_once("encoder", exc)
+    return TextSignals(
+        intent_alignment=int(round(100 * p_aligned)),
+        task_alignment=100 if task_alignment is None else task_alignment,
+        harm=risk, risk=risk, p_aligned=p_aligned, classifier=True,
+    )
+
+
+def score_text(state: WorkflowState, text: str, action: str = "") -> TextSignals:
+    """Intent alignment, task alignment and harm of ``text`` (an argument or a subgoal).
+
+    ``action`` is the classifier's action word (``web_search``, ``internal_retrieve``,
+    ``execute_code``, ``plan``); the pair it scores is ``"<action>: <text>"``. Phase A ignores it."""
     text = (text or "").strip()
     if not text:
         return TextSignals()
+    phase_b = _classifier_signals(state, text, action)
+    if phase_b is not None:
+        return phase_b
     harm_future = _POOL.submit(harm_of, text)
     vec = None
     try:
@@ -140,3 +177,10 @@ def warm_intent(state: WorkflowState) -> None:
 
 def risk_above_intent(state: WorkflowState, harm: int) -> int:
     return max(0, int(harm) - intent_harm(state))
+
+
+def call_risk(state: WorkflowState, sig: TextSignals) -> int:
+    """Risk above intent: the classifier's risk as-is in phase B, else harm minus the intent's harm."""
+    if not sig.available:
+        return 0
+    return int(sig.risk) if sig.risk is not None else risk_above_intent(state, sig.harm)

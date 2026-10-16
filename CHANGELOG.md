@@ -2,6 +2,23 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.8.0 - 2026-10-16
+
+Phase B of the checkpoint 2 upgrade: everything needed to train, gate and run a small classifier for checkpoint 2's intent checks. **No model ships**: the first candidates failed the gate, so checkpoint 2 keeps 3.7.0's signals and nothing changes at runtime. Spec: `planning/specs/checkpoint2-intent/` (README, phase B notes).
+
+### Upgrade notes
+- **New startup check (uat and prod):** if `backend/models/security/alignment/` (`security_guard.alignment_model_dir`) holds a model whose `metadata.json` doesn't record a passed gate, the server refuses to start. The folder is absent in 3.8.0, so nothing changes.
+- `signals.score_text` takes an optional `action`; context keys starting with `_` are no longer passed to Cedar.
+
+### Added
+- **Runtime** (`app/security/alignment_model.py`): loads a gated cross-encoder or siamese model, scores (intent, call) pairs for alignment and risk above intent, supplies its own thresholds, and sends `verify` decisions in its uncertain band to the judge. Without a gated model, phase A's signals are used.
+- **Data** (`data/security/alignment/`, Git LFS): 34,953 (intent, call) rows from the approved sources, built by `scripts/fetch_alignment_sources.py` and `build_alignment_dataset.py` (`--check-data` passes). Rows from gated and no-train sources stay in the git-ignored `local/` folder, because the repository is public. The saroku dataset passed its quality check with conditions (`QUALITY.md`).
+- **Training and gate:** `scripts/train_alignment_model.py` (cross-encoder or siamese, isotonic calibration, thresholds from a held-out fold), `eval_alignment_model.py` (the gate) and `eval_alignment_suites.py` (evaluation-only sets, counts only).
+
+### Measured
+- **Gate:** none of the three candidates passed. At 95% off-intent recall, the MiniLM-L6 cross-encoder (AUC 0.888) would hold 5.6% of real aligned calls against the gate's 1%; MiniLM-L12 held 7.4%; the siamese baseline held 32.4%. The next attempt needs reviewed real calls from the shadow week.
+- **Evaluation-only sets with 3.7.0's signals** (shadow rules counted as acting): AgentDojo 74% held, OS-Harm misuse and injection 87%, AgentHarm 8%; AgentDAM over-holds legitimate web actions (89%).
+
 ## 3.7.0 - 2026-10-16
 
 Checkpoint 2 now checks tool calls, and the subgoals agents write, against what the user actually asked, not only against the supervisor's own rewrite. Every new rule is **shadow-only**: it is recorded and never changes what an agent does, until a later release sets its threshold from shadow-week data. Plan: `planning/checkpoint2-upgrade-plan.md`; spec: `planning/specs/checkpoint2-intent/` (phase A).

@@ -380,7 +380,7 @@ End to end, before any rule acts:
 | Phase | Release (proposed) | Contents | Ends when |
 |---|---|---|---|
 | A | 3.7.0, **before the shadow week** (D6) | Intent record; plan check; new context fields from existing models, scored in parallel; egress shingles; run counter; judge prompt; new shadow rules; metrics and collection fields; the 50-question generation estimate and starting thresholds; latency measured | Tests pass; shadow metrics flowing; checkpoint 2 p95 < 20 ms (`webagent_guard_tool_seconds`) in the container, or < 30 ms with the reason recorded (D5), with the caveat that arm64 Docker on a Mac isn't server hardware |
-| B | 3.8.0 | Dataset (after approvals), classifier, gate, probe; classifier in the context (shadow) | Gate passes; p95 back under 20 ms |
+| B | 3.8.0 | Dataset (after approvals), classifier, gate, probe; classifier in the context (shadow) | Gate passes; p95 back under 20 ms. **3.8.0 shipped the pipeline; its first candidates failed the gate** (spec README), so phase A's signals stay until a retrained model passes |
 | C | per rule | Thresholds from shadow data; rules switched from shadow to acting one at a time (`tool_mode: act` already required) | Each rule's shadow false-positive rate within target |
 
 ## 11. Risks and limits

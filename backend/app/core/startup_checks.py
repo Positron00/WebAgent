@@ -96,6 +96,25 @@ def check_security_guard() -> None:
         raise RuntimeError(f"Security guard policy check failed: {exc}") from exc
 
 
+def check_alignment_model_gate() -> None:
+    """checkpoint2-intent SEC-126: an alignment classifier that ships must have passed its gate.
+
+    A missing folder is fine (phase A signals are used). Called by check_security_guard_files, which
+    has already checked uat/prod and that the guard is enabled."""
+    from app.security import alignment_model
+
+    d = alignment_model.model_dir()
+    if not (d / "metadata.json").is_file():
+        return
+    if not alignment_model.gate_passed(alignment_model.read_metadata(d)):
+        raise RuntimeError(
+            f"The alignment classifier in {d} has not passed the release gate (metadata.json "
+            "test.passed is not true; run scripts/eval_alignment_model.py --write-metadata). "
+            "Remove it, set security_guard.alignment_model_dir to a gated model, or set "
+            "WEBAGENT_GUARD_ENABLED=false."
+        )
+
+
 def check_security_guard_files() -> None:
     """In uat/prod with the guard enabled, policies are required; model gate when artifacts exist."""
     cfg = getattr(settings, "SECURITY_GUARD", None)
@@ -104,6 +123,7 @@ def check_security_guard_files() -> None:
     if settings.WEBAGENT_ENV not in ("uat", "prod"):
         return
     get_engine(force_reload=True)
+    check_alignment_model_gate()
     if not defender_model_files_present():
         return
     import json

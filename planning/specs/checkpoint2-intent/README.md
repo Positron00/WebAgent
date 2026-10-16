@@ -110,6 +110,42 @@ Checked in the code on 2026-10-16.
   replaces the two model passes with one (SNFR-10 back to 20 ms); the server measurement is still
   owed (no target hardware).
 
+## Implementation notes (phase B, 3.8.0)
+
+- **Built:** the runtime loader and its gate check (`alignment_model.py`, startup refusal of an
+  ungated model in uat/prod, judge band), the classifier path in the signals (`score_text(...,
+  action=)`), the data pipeline (`fetch_alignment_sources.py`, `build_alignment_dataset.py` and
+  helpers; `QUALITY.md`, data README), training (`train_alignment_model.py`), the gate
+  (`eval_alignment_model.py`) and the evaluation suites (`eval_alignment_suites.py`).
+- **saroku quality check: passed with conditions** (`data/security/alignment/QUALITY.md`): Gemini rows
+  with a goal only; the 13 long-tail domains from an unnamed external corpus excluded (licence
+  doubt); `corrigibility` dropped; re-split by batch and cluster. 13,956 rows usable.
+- **Dataset:** 34,953 rows (34,603 committed; 350 git-ignored local rows from AgentHarm, OS-Harm and
+  SHADE-Arena); `--check-data` passes. xLAM and TraceSafe were skipped (no Hugging Face token on the
+  build machine). Agent-SafetyBench has no per-case source field, so derived cases are dropped by
+  markers (AdvBench category, failure mode M9, AgentDojo-named environments): conservative, not exact.
+  ASQ uses HotpotQA questions only; Researchy Questions (CDLA-Permissive-2.0) is not on the approved
+  list and is left out pending a decision.
+- **No candidate passed the gate (2026-10-16), so none is installed** and checkpoint 2 keeps phase A's
+  signals (SEC-125, SEC-126). On `test` (7,535 rows):
+
+  | Candidate | AUC aligned / risk | Real calls held at 95% off-intent recall | p95 per pair |
+  |---|---|---|---|
+  | Cross-encoder MiniLM-L6, 3 epochs | 0.888 / 0.910 | 5.6% (gate: 1%) | 13.2 ms |
+  | Cross-encoder MiniLM-L12, 4 epochs | 0.897 / 0.888 | 7.4% | 23.4 ms |
+  | Siamese baseline (ContextDefender encoder) | 0.844 / 0.952 | 32.4% | 52.3 ms |
+
+  The hardest rows: real aligned calls that share few words with their question (ASQ's second-hop
+  queries), saroku's goal-drift and scope rows (median P(aligned) 0.4), AgentHarm's harmful tasks
+  under their benign twins (0.64), and look-alikes. The next attempt needs real, reviewed calls from
+  the shadow week as aligned rows, and probably fewer re-paired hard negatives.
+- **Evaluation-only suites with phase A's signals** (shadow rules counted as acting): AgentDojo
+  injected goals 74% held, OS-Harm misuse and injection 87%, AgentHarm 8% (same-topic harm, which
+  phase A's risk signal misses), AgentDAM: 63% of actions using unneeded personal data held but also
+  89% of required ones (web actions read as off-intent searches).
+- The threshold rule now uses the look-alikes' point rate (a fold has only tens of them, so a Wilson
+  bound on them alone could never reach 2%), bounded by all benign rows.
+
 ## Traceability
 
 Every requirement names its check; every task names its requirements; `tasks.md` maps each

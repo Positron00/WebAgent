@@ -93,7 +93,7 @@ def test_checkpoint2_rows_carry_alignment_and_taint(monkeypatch, tmp_path):
     _guard(monkeypatch, tmp_path)
     monkeypatch.setattr(settings, "SECURITY_GUARD", settings.SECURITY_GUARD.model_copy(
         update={"enabled": True, "tool_mode": "shadow", "collect": True}))
-    monkeypatch.setattr(signals, "score_text", lambda state, text: signals.TextSignals(
+    monkeypatch.setattr(signals, "score_text", lambda state, text, **_: signals.TextSignals(
         intent_alignment=12, task_alignment=12, harm=0, available=True))
     state = WorkflowState(query="what's the weather in Paris", context={"task_id": "t-4"})
     assert asyncio.run(tool_guard.guard_tool("tool::web_search", {"query": "unlock the front door"}, state))

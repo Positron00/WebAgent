@@ -19,8 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from app.core.config import settings
 from app.core.metrics import record_guard_decision
 from app.models.task import WorkflowState
-from app.security import ledger, records, signals
-from app.security import judge as guard_judge
+from app.security import alignment_model, ledger, records, signals
 from app.security.decision import decide
 from app.security.errors import GuardStop
 from app.security.types import Decision
@@ -101,22 +100,24 @@ def _decide_text(state: WorkflowState, action: str, text: str, origin: str, prin
     """Decide one rewrite or subgoal; returns (effective outcome, decision). Raises GuardStop on escalate."""
     cfg = _cfg()
     shadow = cfg.tool_mode == "shadow"
-    sig = signals.score_text(state, text)
+    sig = signals.score_text(state, text, action="plan")
     context: Dict[str, Any] = {
         "source": "plan",
         "subgoal_origin": origin,
         "signals_available": sig.available,
+        "classifier_available": sig.classifier,
         "intent_harm": signals.intent_harm(state),
         "tainted": ledger.is_tainted(state),
         "declined_actions_in_task": ledger.declined_actions(state),
         "low_alignment_calls": ledger.low_alignment_calls(state),
         "env": settings.WEBAGENT_ENV,
+        **alignment_model.current_thresholds(),  # a gated classifier's intent thresholds (SEC-126)
     }
     if action == "plan::rewrite":
         context["rewrite_alignment"] = sig.intent_alignment
     else:
         context["intent_alignment"] = sig.intent_alignment
-        context["subgoal_harm"] = sig.harm
+        context["subgoal_harm"] = sig.risk if sig.risk is not None else sig.harm
     resource = str(state.context.get("task_id") or "task-unknown")
     decision = decide(principal, action, resource, context, shadow=shadow)
     record_guard_decision(2, action, decision)
@@ -124,15 +125,17 @@ def _decide_text(state: WorkflowState, action: str, text: str, origin: str, prin
     records.record_collection(
         checkpoint=2, action=action, decision=decision, state_context=state.context,
         args={"text": text[:500]} if dev else {},
-        context={k: context.get(k) for k in ("subgoal_origin", "signals_available", "intent_harm",
-                                              "rewrite_alignment", "intent_alignment", "subgoal_harm")
+        context={k: context.get(k) for k in ("subgoal_origin", "signals_available", "classifier_available",
+                                              "intent_harm", "rewrite_alignment", "intent_alignment", "subgoal_harm")
                  if k in context},
     )
     effective = decision.outcome
     if decision.error or shadow:
         effective = "allow"  # shadow mode, or a decision error: the plan check fails open
     if effective == "verify":
-        effective = "allow" if guard_judge.is_aligned(state, action, {"text": text}) else "decline"
+        from app.security.tool_guard import resolve_verify  # tool_guard imports this module
+
+        effective = resolve_verify(state, action, {"text": text}, decision, sig.p_aligned)
     logger.info(
         "guard plan action=%s origin=%s outcome=%s effective=%s policies=%s shadow_policies=%s task=%s shadow=%s%s",
         action, origin, decision.outcome, effective, ",".join(decision.policy_ids) or "-",

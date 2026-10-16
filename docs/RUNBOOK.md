@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.7.0 -t <registry>/webagent-backend:3.7.0 backend/
-   docker push <registry>/webagent-backend:3.7.0
+   docker build --build-arg APP_VERSION=3.8.0 -t <registry>/webagent-backend:3.8.0 backend/
+   docker push <registry>/webagent-backend:3.8.0
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.7.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.8.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -180,7 +180,13 @@ text copied into a web search, tools the plan didn't ask for, and drift across a
 `webagent_guard_risk_above_intent`, `webagent_guard_egress_overlap`, collection rows) and never
 change what an agent does, whatever `WEBAGENT_GUARD_TOOL_MODE` says. A rule starts acting only in
 its own later release, after its threshold is measured (`planning/specs/checkpoint2-intent/`,
-SEC-130). `WEBAGENT_GUARD_PLAN_CHECK=false` turns the subgoal checks off. Nothing new is stored:
+SEC-130). `WEBAGENT_GUARD_PLAN_CHECK=false` turns the subgoal checks off.
+
+Since 3.8.0 the intent signals can come from a small classifier in `backend/models/security/alignment/`
+(`security_guard.alignment_model_dir`). It is used only if its `metadata.json` records a passed gate
+(`scripts/eval_alignment_model.py`); in uat and prod the server **refuses to start** if that folder
+holds a model whose gate didn't pass (an empty or missing folder is fine: phase A's signals are used).
+3.8.0 ships no model: its first candidates failed the gate. Nothing new is stored:
 private text is kept only as salted hashes in memory for the task, and outside dev no intent or
 subgoal text is logged or collected.
 
