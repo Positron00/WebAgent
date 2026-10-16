@@ -2,6 +2,28 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.5.3 - 2026-10-15
+
+Checking the Grafana 11.4 dashboards on the local stack (spec task 3.14) found that they had never worked there, and that model calls weren't being measured.
+
+### Upgrade notes
+- **Grafana data source uid is now `prometheus`** in both the Compose and Kubernetes provisioning. An existing Grafana volume keeps working (provisioning updates the data source by name); dashboards made by hand that point at the old generated uid need it changed.
+- `backend/grafana/model-drift-dashboard.json` moved to `backend/grafana/dashboards/`.
+- Model-call metrics change meaning: `ml_model_latency_seconds{task_type="chat"}` and `ml_model_predictions_total` now count real model requests. Before, they timed building the LLM client.
+
+### Fixed
+- **The local stack showed no dashboards:** Compose never mounted `backend/grafana/dashboards`, which the dashboard provider reads, so Grafana logged "Cannot read directory" every 10 seconds. It's mounted now, with the drift dashboard moved into it
+- **The drift dashboard failed on every panel:** it pointed at a data source uid that didn't exist and queried metric names nothing exports (`data_drift`, `model_latency`, `model_token_usage_*`, `document_processing_time`). It now shows drift scores per detector (gauges turn red at each detector's threshold), model latency p95, model errors and tokens per minute, and document processing time, from metrics the backend exports
+- **Model calls weren't measured:** `llm_requests_total`, `llm_request_duration_seconds` and `llm_tokens_total` were never written (their decorator wasn't used anywhere), so the backend dashboard's model panels were always empty; and the "model latency" that was recorded timed building the LLM client, observed twice per call. Each Together or self-hosted request now records all of them once (`app/services/llm_call_metrics.py`)
+- **Together rate limits failed the request at once:** a 429 was reported as "invalid payload" and not retried, so a busy moment at Together failed a question. It's reported as a rate limit and retried with back-off, like 5xx errors
+- **Kubernetes Grafana couldn't reach Prometheus:** its data source URL had no port, and the `prometheus-server` Service listens on 9090
+- Compose no longer installs `grafana-piechart-panel`, an Angular plugin Grafana 11 refuses to load and no dashboard used
+
+### Changed
+- `PRODUCTION_READINESS.md` records the spending caps: Together $25 in total, Tavily Researcher plan (1,000 credits a month)
+- `docs/RUNBOOK.md` describes the two dashboards and where their data comes from; the platform-improvements spec closes tasks 1.11 and 3.14 and notes how 1.18, 2.10 and 2.24 will be done
+- New tests: dashboards query only exported metrics through the provisioned data source, each model call records each metric once, client set-up isn't counted as a call, and rate limits are retried
+
 ## 3.5.2 - 2026-10-15
 
 ### Fixed
