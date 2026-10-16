@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.metrics import (GUARD_ALIGNMENT, GUARD_EGRESS_OVERLAP, GUARD_INTENT_ALIGNMENT,
                               GUARD_RISK_ABOVE_INTENT, GUARD_TOOL_SECONDS, record_guard_decision)
 from app.models.task import WorkflowState
-from app.security import code_checks, egress, intent, patterns, signals
+from app.security import alignment_model, code_checks, egress, intent, patterns, signals
 from app.security.decision import decide
 from app.security.errors import GuardStop
 from app.security import judge as guard_judge
@@ -59,14 +59,17 @@ def _intent_fields(action: ToolAction, text: str, state: WorkflowState) -> Dict[
     if not text.strip():
         fields["intent_harm"] = signals.intent_harm(state)
         return fields
-    sig = signals.score_text(state, text)  # also fills the intent's harm the first time (in parallel)
+    # Phase A also fills the intent's harm the first time (in parallel); phase B scores one pair.
+    sig = signals.score_text(state, text, action=action.split("::", 1)[-1])
     fields.update(
         intent_harm=signals.intent_harm(state),
         signals_available=sig.available,
+        classifier_available=sig.classifier,
         intent_alignment=sig.intent_alignment,
         arg_harm=sig.harm,
-        risk_above_intent=signals.risk_above_intent(state, sig.harm) if sig.available else 0,
+        risk_above_intent=signals.call_risk(state, sig),
         task_alignment=sig.task_alignment,
+        _p_aligned=sig.p_aligned,
     )
     return fields
 
@@ -117,8 +120,28 @@ def _build_context(
         "code_execution_enabled": bool(getattr(settings, "ENABLE_CODE_EXECUTION", False)),
         "sandbox": sandbox_mode(),
         "consented": bool(state.context.get("consented")),
+        # A gated classifier's own intent thresholds (SEC-126), like checkpoint 1's ContextDefender ones.
+        **alignment_model.current_thresholds(),
         **extra,
     }
+
+
+# Verify rules on the intent signals: with the classifier, its uncertain band picks judge or side (SEC-127).
+INTENT_VERIFY_RULES = frozenset({"off-intent-search-verify", "call-risk-above-intent-verify",
+                                 "undeclared-tool-verify", "rewrite-drift-verify"})
+
+
+def resolve_verify(state: WorkflowState, action: str, args: Dict[str, Any], decision: Decision,
+                   p_aligned: Optional[float]) -> str:
+    """"allow" or "decline" for a verify. With the judge on and the classifier's score present, a
+    verify from the intent rules only goes to the judge inside the uncertain band (SEC-127)."""
+    cfg = _guard_cfg()
+    ids = set(decision.policy_ids)
+    if cfg is not None and cfg.judge and p_aligned is not None and ids and ids <= INTENT_VERIFY_RULES:
+        side = alignment_model.band_outcome(p_aligned)
+        if side != "judge":
+            return side
+    return "allow" if guard_judge.is_aligned(state, action, args) else "decline"
 
 
 # Collected with each checkpoint 2 decision (numbers and flags only; SEC-113).
@@ -233,6 +256,7 @@ async def _guard_tool(
     # Alignment encodes text and the judge may wait 3 s: keep both off the event loop.
     context = await asyncio.to_thread(_build_context, action, args, state, tool_mode=tool_mode,
                                       scored_text=scored_text)
+    p_aligned = context.pop("_p_aligned", None)
     decision = decide(
         principal,
         action,
@@ -264,10 +288,7 @@ async def _guard_tool(
         effective = "allow"
 
     if effective == "verify":
-        if await asyncio.to_thread(guard_judge.is_aligned, state, action, args):
-            effective = "allow"
-        else:
-            effective = "decline"
+        effective = await asyncio.to_thread(resolve_verify, state, action, args, decision, p_aligned)
 
     _log_decision(decision, action, state, effective=effective)
 

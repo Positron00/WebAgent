@@ -217,7 +217,8 @@ def _resource(value: str) -> str:
 
 def build_context(context: Mapping[str, Any]) -> Dict[str, Any]:
     merged = dict(CONTEXT_DEFAULTS)
-    merged.update(context)
+    # Keys starting with "_" are the guard's own (e.g. the classifier's P(aligned)), never Cedar's.
+    merged.update({k: v for k, v in context.items() if not str(k).startswith("_")})
     merged["pattern_hits"] = list(merged.get("pattern_hits") or [])
     merged["code_findings"] = list(merged.get("code_findings") or [])
     merged["approved_tools"] = list(merged.get("approved_tools") or [])

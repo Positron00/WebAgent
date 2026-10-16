@@ -33,6 +33,7 @@ from starlette.concurrency import run_in_threadpool
 from app.services import result_store, triage_collect
 from app.security import records as security_records
 from app.security.decision import get_engine
+from app.security.alignment_model import warm_up as warm_up_alignment_model
 from app.security.context_defender import warm_up as warm_up_context_defender
 from app.services.triage_model import warm_up
 from app.core import drift_store
@@ -65,6 +66,7 @@ async def _startup(app: FastAPI) -> None:
     if guard_cfg and guard_cfg.enabled:
         await run_in_threadpool(get_engine)
         await run_in_threadpool(warm_up_context_defender)
+        await run_in_threadpool(warm_up_alignment_model)  # phase B, when a gated model ships
     # Overrides are collected even with triage disabled, so retention cleanup always runs.
     triage_collect.cleanup()
     security_records.cleanup()
