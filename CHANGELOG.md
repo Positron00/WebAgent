@@ -2,6 +2,31 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.7.0 - 2026-10-16
+
+Checkpoint 2 now checks tool calls, and the subgoals agents write, against what the user actually asked, not only against the supervisor's own rewrite. Every new rule is **shadow-only**: it is recorded and never changes what an agent does, until a later release sets its threshold from shadow-week data. Plan: `planning/checkpoint2-upgrade-plan.md`; spec: `planning/specs/checkpoint2-intent/` (phase A).
+
+### Upgrade notes
+- **New shadow-only rules** (nine): `rewrite-drift-verify`, `subgoal-harm-decline`, `subgoal-off-intent-decline`, `call-risk-above-intent-decline`, `call-risk-above-intent-verify`, `off-intent-search-verify`, `private-egress-decline`, `undeclared-tool-verify`, `drift-escalate`. Their matches appear in `webagent_guard_shadow_policy_total{policy_id}` and in collection rows' `shadow_policy_ids`.
+- **`untainted-search-misaligned` is replaced** by `off-intent-search-verify`, which compares a search with the user's own turns instead of the supervisor's rewrite, tainted or not. Shadow-week reviews that counted the old rule should count the new one.
+- **The plan check** (`WEBAGENT_GUARD_PLAN_CHECK`, default true; `security_guard.plan_check` in YAML) decides the supervisor's rewrite and plan questions, and the senior research agent's follow-up questions, against the user's turns. In shadow mode it only records; with `tool_mode: act` its decisions also apply through the existing acting rules (for example `repeated-declines-escalate`).
+- **New Prometheus metrics:** `webagent_guard_intent_alignment{action}`, `webagent_guard_risk_above_intent{action}`, `webagent_guard_egress_overlap`; plan decisions count in `webagent_guard_decisions_total` with `action="plan::rewrite"` / `"plan::subgoal"`.
+- **Collection rows** (`data/security/collected/`) gain numeric fields (`intent_alignment`, `arg_harm`, `intent_harm`, `risk_above_intent`, `egress_overlap`, `declared`, `low_alignment_calls`, `signals_available`) and plan-check rows; outside dev they hold no intent or subgoal text.
+- **Checkpoint 2 takes longer per call:** about 27 ms p95 in the container at 2 CPUs (was a single small encode), because ContextDefender's harm score now runs on each search, retrieval and code call, in parallel with the encoder. Measured on arm64 Docker on a Mac; the server measurement is still owed.
+
+### Added
+- **Intent record:** the user's turn and up to three previous user turns, fixed when a research task starts; never agent text (`app/security/intent.py`).
+- **Signals per call:** alignment with the intent, harm of the arguments, risk above intent, private text copied into a web search (salted 8-word shingles of retrieved and uploaded text, kept only in memory), whether the plan declared the tool, and a per-task count of off-intent calls (`signals.py`, `egress.py`).
+- **Judge prompt:** the checkpoint 2 judge (still off by default) sees the user's request, the agents' subgoals and the last three calls, each inside data markers, so text in a query can't instruct it.
+- `scripts/eval_checkpoint2_injecagent.py --untainted`: with the intent rules acting, 98.6% of InjecAgent's direct-harm attacks in untainted tasks would be held at a search threshold of 30 and 95.9% at the shipped 25 (today 10%).
+- `scripts/generate_alignment_calls.py` (benign planner calls for the phase B classifier; the 50-question estimate cost $0.05) and `scripts/bench_checkpoint2.py` (checkpoint 2 latency with the real models).
+
+### Fixed
+- Cedar reported matched policies in no fixed order, so `policy_ids` and `shadow_policy_ids` could differ between identical decisions; they are now sorted by their place in the policy file.
+
+### Found
+- In 2 of 50 benign test questions the supervisor's rewrite replaced the user's goal with an unrelated one (for example a dog-training question rewritten into one about AI chip makers). `rewrite-drift-verify` matched both. This is the kind of drift the new rules exist to catch; it is recorded in the spec.
+
 ## 3.6.1 - 2026-10-16
 
 A check of the 3.6.0 code against its spec (`planning/specs/observability-drift/`) and plan.

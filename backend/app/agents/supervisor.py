@@ -40,6 +40,7 @@ from app.models.research_plan import normalize_research_plan, without_missing_do
 from app.utils.json_utils import extract_json_object
 from app.utils.reasoning import strip_reasoning
 from app.security.guarded_llm import register_template
+from app.security import intent as security_intent
 from app.security.hop_guard import acheck_hop, task_items
 
 # Initialize logging
@@ -243,6 +244,8 @@ class SupervisorAgent(BaseAgent):
                 logger.info("Plan asked for document extraction, but no document was attached; researching instead")
             plan = without_missing_document(plan, has_document)
             state.context["research_plan"] = plan.model_dump()
+            # Check the rewrite and plan questions against the user's intent (checkpoint2-intent SEC-101/102).
+            await security_intent.check_plan(state)
             state.add_log(
                 "Supervisor: Plan ready - "
                 f"web search: {plan.requires_web_search}, "

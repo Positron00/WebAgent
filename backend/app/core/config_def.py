@@ -183,6 +183,10 @@ class SecurityGuardConfig(BaseModel):
     collect_retention_days: int = Field(default=30, gt=0)
     model_dir: str = Field(default="models/security")
     policy_dir: str = Field(default="config/security")
+    # Checkpoint 2 against the user's intent (checkpoint2-intent spec SEC-114): the plan check of the
+    # supervisor's rewrite and agent subgoals, and the phase B alignment classifier's folder.
+    plan_check: bool = Field(default=True)
+    alignment_model_dir: str = Field(default="models/security/alignment")
 
 
 class TriageConfig(BaseModel):

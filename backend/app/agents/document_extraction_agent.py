@@ -46,6 +46,7 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.schema.runnable import RunnableLambda
 from app.core.logger import logger, get_logger
 from app.models.task import WorkflowState
+from app.security import egress as security_egress
 from app.security.tool_guard import guard_tool
 from app.services.document_loader import get_document_loader_service
 
@@ -679,6 +680,8 @@ class DocumentExtractionAgent(BaseAgent):
                 
             # Extract text content from document
             text = document.page_content
+            # Private text: a web search copying it is the egress signal (checkpoint2-intent SEC-106).
+            security_egress.remember(state, text)
             self._hop_state = state
             self._current_document_id = document_id
             

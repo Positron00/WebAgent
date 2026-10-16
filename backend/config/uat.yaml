@@ -95,6 +95,7 @@ security_guard:
   judge: false
   harm_judge: moderation   # OpenAI moderation (needs OPENAI_API_KEY); or llm / off
   jailbreak_judge: llm      # trusted chat model; or off
+  plan_check: true         # check agent subgoals against the user's turns (checkpoint2-intent; rules shadow-only)
   collect: true            # shadow week: decisions with scores for review (no text outside dev; 30-day retention)
 
 triage:

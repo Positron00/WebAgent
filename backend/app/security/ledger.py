@@ -43,6 +43,34 @@ def declined_actions(state: Optional[WorkflowState]) -> int:
     return int(get_ledger(state).get("declined_actions_in_task", 0))
 
 
+def low_alignment_calls(state: Optional[WorkflowState]) -> int:
+    """Search and retrieval calls far from the user's intent so far (checkpoint2-intent SEC-108)."""
+    if state is None:
+        return 0
+    return int(get_ledger(state).get("low_alignment_calls", 0))
+
+
+def increment_low_alignment_calls(state: WorkflowState) -> None:
+    ledger = get_ledger(state)
+    ledger["low_alignment_calls"] = int(ledger.get("low_alignment_calls", 0)) + 1
+
+
+RECENT_CALLS = 3
+
+
+def note_call(state: WorkflowState, line: str) -> None:
+    """Keep the last few checked calls for the judge's context (SEC-111). Not copied into results."""
+    calls = get_ledger(state).setdefault("recent_calls", [])
+    calls.append(line[:300])
+    del calls[:-RECENT_CALLS]
+
+
+def recent_calls(state: Optional[WorkflowState]) -> List[str]:
+    if state is None:
+        return []
+    return list(get_ledger(state).get("recent_calls") or [])
+
+
 def add_hop(state: WorkflowState, hop: Dict[str, Any]) -> None:
     ledger = get_ledger(state)
     ledger["hops"].append(hop)
@@ -74,6 +102,16 @@ def merge(into: WorkflowState, branches: List[WorkflowState]) -> None:
         ledger["declined_actions_in_task"] = int(ledger.get("declined_actions_in_task", 0)) + int(
             other.get("declined_actions_in_task", 0)
         )
+        # Checkpoint2-intent SEC-115: drift counts add up; egress hashes are unioned (same salt per task).
+        ledger["low_alignment_calls"] = int(ledger.get("low_alignment_calls", 0)) + int(
+            other.get("low_alignment_calls", 0)
+        )
+        other_egress = other.get("egress")
+        if isinstance(other_egress, dict) and other_egress.get("hashes"):
+            mine = ledger.setdefault("egress", {"salt": other_egress.get("salt"), "hashes": []})
+            if mine.get("salt") == other_egress.get("salt"):
+                seen = set(mine["hashes"])
+                mine["hashes"].extend(h for h in other_egress["hashes"] if h not in seen)
 
 
 def output_item(agent: str, text: str, tainted: bool) -> Dict[str, Any]:

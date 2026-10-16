@@ -58,6 +58,19 @@ CONTEXT_DEFAULTS: Dict[str, Any] = {
     "env": "dev",
     "code_execution_enabled": False,
     "sandbox": "local",
+    # Checkpoint 2 against the user's intent (SEC-110): defaults that match no rule.
+    "intent_alignment": 100,
+    "rewrite_alignment": 100,
+    "arg_harm": 0,
+    "subgoal_harm": 0,
+    "intent_harm": 0,
+    "risk_above_intent": 0,
+    "egress_overlap": 0,
+    "low_alignment_calls": 0,
+    "declared": True,
+    "subgoal_origin": "plan",
+    "signals_available": True,
+    "classifier_available": False,
     **DEFAULT_THRESHOLDS,
 }
 
@@ -131,7 +144,7 @@ class PolicyEngine:
             )
 
         # cedarpy names policies policy0, policy1… in file order (SEC-012).
-        matched_keys = list(getattr(result.diagnostics, "reasons", []) or [])
+        matched_keys = sorted(getattr(result.diagnostics, "reasons", []) or [], key=_policy_order)
         outcomes: List[Tuple[Outcome, str, Optional[str]]] = []
         shadow_ids: List[str] = []
         for key in matched_keys:
@@ -178,6 +191,13 @@ class PolicyEngine:
 
 
 _ENGINE: Optional[PolicyEngine] = None
+
+
+def _policy_order(key: str) -> int:
+    """Cedar reports matched policies in no fixed order; sort them by their place in the file
+    (cedarpy names them policy0, policy1, …) so ids and shadow ids are deterministic (SNFR-06)."""
+    suffix = key[len("policy"):] if key.startswith("policy") else ""
+    return int(suffix) if suffix.isdigit() else 1_000_000
 
 
 def _entity(kind: str, value: str) -> str:

@@ -137,7 +137,9 @@ Terms used throughout:
 
 **SEC-044 Alignment (must).** For search and retrieval, `alignment` = round(100 × cosine) between the arguments and the task text (the supervisor's `standalone_query`, else the user turn), with ContextDefender's encoder. Code and document actions get 100.
 
-**SEC-044a Misaligned searches in untainted tasks (should).** Injections checkpoint 1 misses leave the task untainted, so `tainted-search-verify` doesn't apply; on InjecAgent such searches had alignment median 9–16 (`scripts/eval_checkpoint2_injecagent.py`). `untainted-search-misaligned` (verify below 30, untainted) runs shadow-only until real searches' alignment (`webagent_guard_search_alignment{tainted}`) shows how many legitimate follow-up searches it would hold; then it gets a measured threshold and acts.
+**SEC-044a Misaligned searches in untainted tasks (should).** *Superseded in 3.7.0 by
+`off-intent-search-verify` (checkpoint2-intent SEC-109), which compares a search with the user's own
+turns rather than the supervisor's rewrite, tainted or not; the text below is kept as history.* Injections checkpoint 1 misses leave the task untainted, so `tainted-search-verify` doesn't apply; on InjecAgent such searches had alignment median 9–16 (`scripts/eval_checkpoint2_injecagent.py`). `untainted-search-misaligned` (verify below 30, untainted) runs shadow-only until real searches' alignment (`webagent_guard_search_alignment{tainted}`) shows how many legitimate follow-up searches it would hold; then it gets a measured threshold and acts.
 - Verify: pytest (policy rows); shadow-mode metrics before enabling.
 - Verify: pytest.
 

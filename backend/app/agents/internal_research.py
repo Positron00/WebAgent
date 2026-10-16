@@ -37,6 +37,7 @@ from app.models.research_plan import research_query
 from app.security.hop_guard import acheck_hop, kept_text, task_items
 from app.security.types import ContextItem
 from app.services.vectordb import retrieve_documents, get_vectordb_service, get_embeddings
+from app.security import egress as security_egress
 from app.security.tool_guard import guard_tool
 from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
@@ -113,6 +114,14 @@ if TRACKING_ENABLED:
                 raise
     else:
         mlflow.set_experiment("rag_agent_performance")
+
+
+def _remember_private_text(state: WorkflowState, documents) -> None:
+    """Internal documents are private: a web search copying them is the egress signal (checkpoint2-intent SEC-106)."""
+    for doc in documents or []:
+        text = doc.get("page_content") if isinstance(doc, dict) else getattr(doc, "page_content", None)
+        if isinstance(text, str):
+            security_egress.remember(state, text)
 
 class RAGRetriever:
     """
@@ -1010,6 +1019,7 @@ class InternalResearchAgent(BaseAgent):
                     query=search_query,
                     k=min(self.config.get("retrieve_k", 20), self.max_documents)
                 )
+                _remember_private_text(state, retrieved_documents)
             else:
                 retrieved_documents = []
             
@@ -1031,6 +1041,7 @@ class InternalResearchAgent(BaseAgent):
                         query=question,
                         k=min(self.config.get("retrieve_k", 10), self.max_documents)  # Fewer documents for follow-up questions
                     )
+                    _remember_private_text(state, additional_docs)
                     # Add unique documents that weren't already retrieved
                     existing_ids = {doc.get("id") for doc in retrieved_documents if "id" in doc}
                     for doc in additional_docs:

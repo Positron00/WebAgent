@@ -18,7 +18,9 @@ def fresh_engine():
 
 def test_policies_load_validate_and_offline_tests_pass():
     engine = load_policy_engine()
-    assert len(engine.annotations) == 18  # 15 starting + two user-turn verify (SEC-035a) + one shadow-only (SEC-044a)
+    # 15 starting + two user-turn verify (SEC-035a) + nine shadow-only intent rules (checkpoint2-intent
+    # SEC-109; off-intent-search-verify replaced SEC-044a's untainted-search-misaligned)
+    assert len(engine.annotations) == 26
     assert engine.annotations["policy0"].policy_id == "baseline-permit"
 
 
@@ -68,11 +70,12 @@ def test_shadow_only_policy_is_recorded_but_never_applied(tmp_path):
     from app.security.decision import load_policy_engine
 
     engine = load_policy_engine()
-    untainted = engine.decide("web_research", "tool::web_search", "task-1", {"source": "tool", "alignment": 12})
+    untainted = engine.decide("web_research", "tool::web_search", "task-1",
+                              {"source": "tool", "intent_alignment": 12})
     assert untainted.outcome == "allow"
-    assert untainted.shadow_policy_ids == ("untainted-search-misaligned",)
+    assert untainted.shadow_policy_ids == ("off-intent-search-verify",)
     tainted = engine.decide("web_research", "tool::web_search", "task-1",
-                            {"source": "tool", "alignment": 12, "tainted": True})
+                            {"source": "tool", "alignment": 12, "intent_alignment": 80, "tainted": True})
     assert tainted.outcome == "verify" and tainted.shadow_policy_ids == ()
 
 

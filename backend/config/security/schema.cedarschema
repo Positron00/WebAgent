@@ -7,7 +7,15 @@ type GuardContext = {
   code_findings: Set<String>, approved_tools: Set<String>, consented: Bool, has_image: Bool,
   declined_actions_in_task: Long, mode: String, env: String, code_execution_enabled: Bool, sandbox: String,
   injection_watch_at: Long, injection_drop_at: Long, harm_verify_at: Long, harm_decline_at: Long,
-  jailbreak_verify_at: Long, jailbreak_consent_at: Long
+  jailbreak_verify_at: Long, jailbreak_consent_at: Long,
+  intent_alignment: Long, rewrite_alignment: Long, arg_harm: Long, subgoal_harm: Long, intent_harm: Long,
+  risk_above_intent: Long, egress_overlap: Long, low_alignment_calls: Long, declared: Bool,
+  subgoal_origin: String, signals_available: Bool, classifier_available: Bool,
+  rewrite_at: Long, subgoal_align_at: Long, search_align_at: Long, drift_align_at: Long,
+  drift_calls_at: Long, risk_verify_at: Long, risk_decline_at: Long, egress_words_at: Long
 };
 action "converse", "tool::web_search", "tool::internal_retrieve", "tool::document_extract", "tool::execute_code"
   appliesTo { principal: [Agent], resource: [Task, Chat], context: GuardContext };
+// The plan check (checkpoint2-intent spec, SEC-101, SEC-102): agent-written subgoals.
+action "plan::rewrite", "plan::subgoal"
+  appliesTo { principal: [Agent], resource: [Task], context: GuardContext };

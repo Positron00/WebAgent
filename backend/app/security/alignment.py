@@ -55,6 +55,28 @@ def _task_embedding(state: WorkflowState, encoder: _Encoder) -> np.ndarray:
     return vec
 
 
+def encode(text: str) -> Optional[np.ndarray]:
+    """Normalised base MiniLM-L6 embedding of ``text``; None when the encoder is unavailable."""
+    text = (text or "").strip()
+    if not text:
+        return None
+    encoder = _load_encoder()
+    if encoder is None:
+        return None
+    with lock_for(encoder):
+        return np.asarray(encoder.encode([text], normalize_embeddings=True)[0])
+
+
+def task_embedding(state: WorkflowState) -> Optional[np.ndarray]:
+    """Embedding of the task text (rewrite, else turn), cached per task; None without an encoder."""
+    if not task_text(state).strip():
+        return None
+    encoder = _load_encoder()
+    if encoder is None:
+        return None
+    return _task_embedding(state, encoder)
+
+
 def cosine_alignment(args_text: str, state: WorkflowState) -> int:
     """Return 0–100 alignment score; 100 when args are empty or the encoder is down."""
     args_text = (args_text or "").strip()

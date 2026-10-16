@@ -26,6 +26,8 @@ ToolAction = Literal[
     "tool::document_extract",
     "tool::execute_code",
 ]
+# The plan check: the supervisor's rewrite and agent-written subgoals (checkpoint2-intent spec).
+PlanAction = Literal["plan::rewrite", "plan::subgoal"]
 
 
 @dataclass(frozen=True)

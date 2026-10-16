@@ -2,6 +2,8 @@
 
 Status: phases 0–4 implemented, running in shadow mode; ContextDefender `cd-2026-10-13-2` **passed the release gate** (2026-10-13), so checkpoint 1 may go to act mode when the operators choose (`input_mode: act`; not switched yet) · Release 3.2.1 · Source plan: [`planning/agentic-security-plan.md`](../../agentic-security-plan.md) (v5) · 2026-10-13
 
+Next: checkpoint 2 checked against the user's intent (rogue subgoals, risk above intent, egress) is specified in [`../checkpoint2-intent/`](../checkpoint2-intent/README.md) (SEC-100 onwards; its `off-intent-search-verify` will replace SEC-044a's shadow rule).
+
 ## ContextDefender status (2026-10-13)
 
 `cd-2026-10-13-2`: fine-tuned from **`all-MiniLM-L12-v2`** (12 layers) on the same 35,026 rows as `-13-1` (data README), 96-token windows. Thresholds (SEC-028a), all chosen with the upper confidence bound of the held-out false-positive rate: injection drop 57 (watch 28); harm verify 20, decline 98; jailbreak verify 26, consent 96. Injection used a point estimate with a margin until this version; it gave 36 for this model, whose test false positives sat exactly at the 2% limit (the second time that rule landed on the limit), and the held-out part now has 821 benign untrusted rows, enough for the bound. That rule change was made after seeing that result.
@@ -65,7 +67,7 @@ Both ask the same **decision point** (Cedar policies, in-process). A local class
 | [`design-high-level.md`](design-high-level.md) | Components, sources and trust, flows for each checkpoint, outcomes, taint, tokens, failure handling, deployment, key decisions |
 | [`design-low-level-backend.md`](design-low-level-backend.md) | Python modules, types, the LLM factory change, `check_hop`, tool guards, the decision point and policies, ContextDefender, endpoints, config, metrics, scripts |
 | [`design-low-level-webapp.md`](design-low-level-webapp.md) | The `/api/chat` guard call and fallback, `apiClient` handling of consent/decline/escalate, the consent dialog, the security summary under answers |
-| [`shadow-week-runbook.md`](shadow-week-runbook.md) | Deploying 3.6.1 to uat with the guard and triage in shadow mode, what to watch, the review, and the criteria for act mode |
+| [`shadow-week-runbook.md`](shadow-week-runbook.md) | Deploying 3.7.0 to uat with the guard and triage in shadow mode, what to watch, the review, and the criteria for act mode |
 | [`tasks.md`](tasks.md) | Work in phases, each task with the requirements it covers, dependencies, done criteria and estimates |
 
 Read in that order. Requirements say *what*; the designs say *how*; tasks say *in what order*. When documents disagree, `requirements.md` wins, then the designs, then the plan.
