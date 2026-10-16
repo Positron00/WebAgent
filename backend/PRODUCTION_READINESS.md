@@ -2,7 +2,7 @@
 
 This document summarizes the improvements made to the WebAgent backend to make it production-ready.
 
-## Production checklist (3.5.3)
+## Production checklist (3.6.0)
 
 Before exposing the backend:
 
@@ -16,10 +16,11 @@ Before exposing the backend:
 8. **Runs and retention.** Users can cancel a run (`POST /api/task/{id}/cancel`); stopped runs keep `error_code` `timeout`, `cancelled`, or `budget`. Result JSON files older than `WEBAGENT_RESULTS_RETENTION_DAYS` (default 30) are deleted daily. Pod restarts still lose in-flight runs that haven't been written to disk.
 9. **Token budget (optional).** `WEBAGENT_TASK_TOKEN_BUDGET=0` leaves the cap off. When set, Together token usage for one task is summed across parallel agents; overages end the run with `error_code: budget`.
 10. **Agentic triage.** prod ships with `triage.enabled: false` (Auto then acts like Always); uat has it on in `mode: shadow` with collection on, for the shadow week. Shadow mode covers only questions sent with Always: in Auto, triage routes for real. Classifier `triage-2026-10-c` passes the release gate, but turn triage on only after the shadow week and a human review of its training data. With triage on, the server refuses to start unless `models/triage/metadata.json` records `test.passed: true` and the fine-tuned encoder is in `models/triage/encoder/` (copied into the image with the code; its weights come from Git LFS, so run `git lfs pull` before `docker build`). Keep `WEBAGENT_TRIAGE_COLLECT` off unless storing users' questions for review is approved. The image runs 2 workers (`WEB_CONCURRENCY=2`), each with its own encoders; Kubernetes allows 3 GiB (request 2 GiB). With the security guard and triage both on, two workers peaked at 1.81 GiB (about 1.25 GiB RSS each) in the 3.2.4 simulated shadow week.
-11. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD` (in `.env.local` for Docker Compose, in the environment for `deploy.sh`); no password is stored in the repo. Change any password that was used with the old committed default.
+11. **Grafana.** Set `GRAFANA_ADMIN_PASSWORD` (in `.env.local` for Docker Compose, in the environment for `deploy.sh`); no password is stored in the repo. Change any password that was used with the old committed default. `deploy.sh` re-applies the data source, the dashboards and the alert rules and restarts Grafana on every deploy.
 12. **Web app sign-in.** A production web app needs `WEBAGENT_ACCESS_CODE` (12+ characters) and `WEBAGENT_SESSION_SECRET` (32+ characters), or every API route answers 503. Rotate both together to sign everyone out.
-13. **Backups.** See `docs/RUNBOOK.md` for volume snapshots or `backup-cronjob.yaml`.
-14. **Spending caps.** Set monthly limits in the Together AI and Tavily dashboards for every key used in uat and prod (suggested: twice the highest month so far, with alerts at 50% and 80%). Record them here:
+13. **Drift and alerts.** Drift samples and state live in `/app/data/drift/` (on the persistent volume, deleted after `WEBAGENT_RESULTS_RETENTION_DAYS`). The six alerts show on the Model Drift dashboard and in Grafana's alert list; Grafana sends **no notifications** until a contact point is set up. A fresh install shows "not enough data" until each detector has 50 reference and 30 current samples. See `docs/RUNBOOK.md` "Drift and alerts".
+14. **Backups.** See `docs/RUNBOOK.md` for volume snapshots or `backup-cronjob.yaml`.
+15. **Spending caps.** Set monthly limits in the Together AI and Tavily dashboards for every key used in uat and prod (suggested: twice the highest month so far, with alerts at 50% and 80%). Record them here:
 
     | Key (name, not value) | Service | Limit | Recorded on |
     |---|---|---|---|

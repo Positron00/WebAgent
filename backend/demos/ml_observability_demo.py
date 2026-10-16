@@ -34,7 +34,7 @@ from backend.app.core.metrics_registry import (
     get_data_quality_registry,
     get_all_metrics
 )
-from backend.app.core.drift_detection import (
+from backend.demos.drift_detectors import (
     create_numerical_drift_detector,
     create_categorical_drift_detector,
     create_embedding_drift_detector,

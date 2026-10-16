@@ -14,6 +14,7 @@ from datetime import datetime
 import uuid
 import shutil
 import tempfile
+import time
 
 from langchain_community.document_loaders import (
     PyPDFLoader,
@@ -128,7 +129,12 @@ class DocumentLoaderService:
             raise ValueError(f"Unsupported file type: {file_path.suffix}")
         
         logger.info(f"Loading document: {file_path}")
-        
+        # Drift samples (OBS-002): numbers and the extension only, never the name or the text.
+        started = time.perf_counter()
+        size = file_path.stat().st_size
+        doc_type = file_path.suffix.lower().lstrip(".") or "none"
+        loaded = False
+
         try:
             # Load document
             loader = loader_class(str(file_path))
@@ -172,11 +178,14 @@ class DocumentLoaderService:
             self.vector_db.add_documents(chunks)
             
             logger.info(f"Document loaded successfully: {file_path}, ID: {artifact_id}")
+            loaded = True
             return artifact_id
-            
+
         except Exception as e:
             logger.error(f"Error loading document {file_path}: {str(e)}")
             raise
+        finally:
+            _record_document_samples(time.perf_counter() - started, size, doc_type, loaded)
     
     @timing_decorator
     async def batch_load_documents(self, directory_path: Union[str, Path], glob_pattern: str = "*.*", metadata: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
@@ -252,4 +261,19 @@ def get_document_loader_service():
     global _document_loader_service
     if _document_loader_service is None:
         _document_loader_service = DocumentLoaderService()
-    return _document_loader_service 
+    return _document_loader_service
+
+
+def _record_document_samples(seconds: float, size: int, doc_type: str, loaded: bool) -> None:
+    from app.core import drift_store
+
+    drift_store.add("doc_processing_time", round(seconds, 4))
+    drift_store.add("doc_size", size)
+    drift_store.add("doc_type", doc_type)
+    drift_store.add("doc_outcome", "ok" if loaded else "error")
+    try:  # the dashboard's "Document processing time (p95)" panel
+        from app.core.observability import DOCUMENT_PROCESSING_LATENCY
+
+        DOCUMENT_PROCESSING_LATENCY.labels(doc_type=doc_type).observe(seconds)
+    except Exception as exc:  # noqa: BLE001 - metrics must never break an upload
+        logger.debug("Document latency not recorded: %s", exc)

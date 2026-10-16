@@ -36,9 +36,368 @@
         "x": 0,
         "y": 0
       },
+      "id": 12,
+      "panels": [],
+      "title": "Alerts",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "id": 13,
+      "type": "stat",
+      "title": "Active alerts",
+      "description": "Number of WebAgent alerts active now (webagent_alert_active). Details: /api/v1/observability/alerts and Grafana's alert list.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(webagent_alert_active) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "id": 14,
+      "type": "state-timeline",
+      "title": "Alerts over time",
+      "description": "Each WebAgent alert: ok or active.",
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "lineWidth": 0
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "ok",
+                  "color": "green",
+                  "index": 0
+                },
+                "1": {
+                  "text": "active",
+                  "color": "red",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "alignValue": "left",
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (alert) (webagent_alert_active)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{alert}}"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "id": 15,
+      "type": "table",
+      "title": "Detectors",
+      "description": "Per detector: whether it has its reference and enough current samples to score, whether it reports drift, its score (0 without enough data) and its current sample count (vectors for embeddings).",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "enough data"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "no",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "yes",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "drift"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "no",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "yes",
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "score"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        },
+        "sortBy": [
+          {
+            "displayName": "detector",
+            "desc": false
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (detector) (webagent_drift_enough_data)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "expr": "max by (detector) (webagent_drift_detected)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "expr": "max by (detector) (label_replace(data_drift_score, \"detector\", \"$1\", \"component\", \"(.*)\"))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "D",
+          "expr": "max by (detector) (webagent_drift_current_samples)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "detector",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true
+            },
+            "indexByName": {
+              "detector": 0,
+              "Value #A": 1,
+              "Value #B": 2,
+              "Value #C": 3,
+              "Value #D": 4
+            },
+            "renameByName": {
+              "Value #A": "enough data",
+              "Value #B": "drift",
+              "Value #C": "score",
+              "Value #D": "current samples"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
       "id": 10,
       "panels": [],
-      "title": "Model Drift Overview",
+      "title": "Drift",
       "type": "row"
     },
     {
@@ -91,11 +450,13 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 0.95
               }
             ]
           },
-          "unit": "percentunit"
+          "unit": "none",
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },
@@ -103,7 +464,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 1
+        "y": 19
       },
       "id": 1,
       "options": {
@@ -121,7 +482,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "data_drift_score{component=~\"llm_.*\"}",
+          "expr": "data_drift_score{component=~\"llm_.*|embeddings:.*\"}",
           "legendFormat": "{{component}}",
           "datasource": {
             "type": "prometheus",
@@ -129,8 +490,9 @@
           }
         }
       ],
-      "title": "LLM drift scores",
-      "type": "timeseries"
+      "title": "Model drift scores",
+      "type": "timeseries",
+      "description": "Score per model detector (0 until it has enough data). KS and chi-square scores mean drift above 0.95; embedding scores above 0.7."
     },
     {
       "datasource": {
@@ -182,11 +544,13 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 0.95
               }
             ]
           },
-          "unit": "percentunit"
+          "unit": "none",
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },
@@ -194,7 +558,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 1
+        "y": 19
       },
       "id": 2,
       "options": {
@@ -220,8 +584,135 @@
           }
         }
       ],
-      "title": "Document processing drift scores",
-      "type": "timeseries"
+      "title": "Document drift scores",
+      "type": "timeseries",
+      "description": "Score per document detector (0 until it has enough data); drift above 0.95."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.95
+              }
+            ]
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 28
+      },
+      "id": 3,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "9.3.6",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(data_drift_score{component=~\"llm_speed:.*\"}) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "model speed"
+        }
+      ],
+      "title": "Model speed drift",
+      "type": "gauge",
+      "description": "Highest llm_speed detector score: 1 − p-value of a KS test between the reference and current samples; drift above 0.95 (p < 0.05). 0 until a detector has enough data."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.7
+              }
+            ]
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 28
+      },
+      "id": 4,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "9.3.6",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(data_drift_score{component=~\"embeddings:.*\"}) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "embeddings"
+        }
+      ],
+      "title": "Embedding drift",
+      "type": "gauge",
+      "description": "Highest embeddings detector score: 1 − cosine similarity between the reference and current centroids of at least 30 vectors; drift above 0.7. 0 until a detector has enough data."
     },
     {
       "datasource": {
@@ -247,131 +738,8 @@
             ]
           },
           "min": 0,
-          "max": 1
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 10
-      },
-      "id": 3,
-      "options": {
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "pluginVersion": "9.3.6",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "max(data_drift_score{component=\"llm_latency\"}) or vector(0)",
-          "legendFormat": "llm_latency",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "title": "LLM latency drift score",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 0.3
-              }
-            ]
-          },
-          "min": 0,
-          "max": 1
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 10
-      },
-      "id": 4,
-      "options": {
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "pluginVersion": "9.3.6",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "max(data_drift_score{component=\"llm_embeddings\"}) or vector(0)",
-          "legendFormat": "llm_embeddings",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "title": "LLM embedding drift score",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 0.15
-              }
-            ]
-          },
-          "min": 0,
-          "max": 1
+          "max": 1,
+          "unit": "percentunit"
         },
         "overrides": []
       },
@@ -379,7 +747,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 10
+        "y": 28
       },
       "id": 5,
       "options": {
@@ -398,16 +766,17 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max(data_drift_score{component=\"llm_performance\"}) or vector(0)",
-          "legendFormat": "llm_performance",
+          "expr": "sum(increase(llm_requests_total{status=\"error\"}[1h])) / clamp_min(sum(increase(llm_requests_total[1h])), 1)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          }
+          },
+          "legendFormat": "failure share"
         }
       ],
-      "title": "LLM performance drift score",
-      "type": "gauge"
+      "title": "Model failure share, last hour",
+      "type": "gauge",
+      "description": "Failed model requests divided by all model requests in the last hour; red above 5%. Rate-limited requests count as failures here (llm_requests_total can't tell them apart); the model_errors alert, which excludes them, is the authoritative signal."
     },
     {
       "collapsed": false,
@@ -415,11 +784,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 36
       },
       "id": 11,
       "panels": [],
-      "title": "Model Performance Metrics",
+      "title": "Model performance",
       "type": "row"
     },
     {
@@ -484,7 +853,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 19
+        "y": 37
       },
       "id": 6,
       "options": {
@@ -580,7 +949,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 19
+        "y": 37
       },
       "id": 7,
       "options": {
@@ -675,7 +1044,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 27
+        "y": 45
       },
       "id": 8,
       "options": {
@@ -770,7 +1139,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 27
+        "y": 45
       },
       "id": 9,
       "options": {
@@ -825,7 +1194,7 @@
   "timezone": "",
   "title": "Model Drift Dashboard",
   "uid": "model-drift",
-  "version": 1,
+  "version": 2,
   "weekStart": "",
-  "description": "Drift scores from the drift detectors (data_drift_score, one series per detector) and the model and document metrics they watch. Gauges turn red at each detector's threshold. Series appear once the backend has made model calls or processed documents."
+  "description": "WebAgent alerts (webagent_alert_active), the drift detectors (data_drift_score and webagent_drift_*), and the model and document metrics they watch. Gauges turn red where a score means drift: 0.95 for KS and chi-square, 0.7 for embeddings, 5% for the model failure share. Detectors score 0 until they have a reference and 30 current samples; the Detectors table shows which have enough data."
 }

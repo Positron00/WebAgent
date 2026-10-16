@@ -2,6 +2,35 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.6.0 - 2026-10-16
+
+Drift and alerts now come from real traffic. Before, the observability API reported drift from simulated calls that nothing made, each worker kept its own numbers, and its alerts recommended retraining a hosted model we can't retrain. Plan: `planning/observability-plan-3.6.0.md`; spec: `planning/specs/observability-drift/`.
+
+### Upgrade notes
+- **Drift is computed from real traffic and shared by all workers.** Samples and state live in `/app/data/drift/` (on the data volume); sample files are deleted after `WEBAGENT_RESULTS_RETENTION_DAYS`. A fresh install takes its reference from the first 50 samples per detector, then needs 30 more before a detector scores (80 after a reset); until then the dashboard shows "not enough data" and a score of 0.
+- `/observability/drift` adds `computed_at` and `detectors` (per detector: `group`, `kind`, `enough_data`, `score`, `drift`, `reference_count`, `current_count`, `reference_start`, `last_drift_at`). `retrain_recommendations` stays but is always `[]`; the per-service blocks report `performance_drift: null` / `doc_quality_drift: null` and never recommend retraining. `/alerts` adds `name` and `since` (`timestamp` kept, equal to `since`); severities are now `warning` and `critical`. `/health` takes its status from the alerts and adds `services`; `alert_counts` adds `critical` and `warning` (`high`/`medium`/`low` kept). `/metrics` fills `model_metrics` and `document_metrics` from the drift store. No field was removed.
+- New Prometheus metrics: `webagent_alert_active{alert,severity}`, `webagent_drift_detected`, `webagent_drift_enough_data`, `webagent_drift_current_samples` (by `detector`) and `webagent_drift_samples_total`. `data_drift_score` is now one series per detector across workers (multiprocess `max`), 0 without enough data.
+- The drift dashboard starts with an Alerts row; its gauges turn red at 0.95 (KS and chi-square scores) and 0.7 (embeddings) instead of 3.5.3's wrong 0.05 / 0.3 / 0.15; "performance drift" became "model failure share, last hour".
+- Grafana provisions six alert rules (folder "WebAgent", `backend/grafana/provisioning/alerting/`). It sends no notifications until you add a contact point.
+- **Kubernetes:** every `deploy.sh` run re-applies the Grafana data source, rebuilds the dashboard ConfigMap from `backend/grafana/dashboards/`, applies the alert-rule ConfigMap and restarts Grafana. The old inline dashboard in `monitoring/grafana.yaml` is gone.
+- New settings (all optional): `WEBAGENT_DRIFT_ENABLED` (true), `WEBAGENT_DRIFT_WINDOW` (50, minimum 30), `WEBAGENT_DRIFT_INTERVAL_SECONDS` (60), `WEBAGENT_TOKEN_ALERT_DAILY` (0 = off). `TOGETHER_API_BASE` is now honoured by the Together client (dev only). Docker Compose passes all five to the backend.
+- Removed: `LLMService.generate_response` and `get_embedding`, `DocumentProcessingObservability.process_document` (simulations nobody called), the drift detector classes and registry in `app/core/drift_detection.py` (`get_all_drift_stats`, `should_retrain_any_model`; the demo keeps a copy in `backend/demos/drift_detectors.py`), and `_build_llm_without_tags`. `app/services/self_hosted_llm_service.py` moved to `app/services/examples/`.
+- `scipy` is declared in `backend/requirements.txt` (it was already installed).
+
+### Added
+- **Drift from real traffic** (`app/core/drift_store.py`): every model call adds its speed (seconds per 1,000 completion tokens), tokens and outcome under its call label (the agent's name, `judge`, `triage` or `other`); every document load adds its time, size, file type and outcome; embeddings are added as sums of at least 30 vectors. No text, prompt or single vector is stored. One worker per tick computes KS, chi-square and centroid scores against a frozen reference and writes `state.json`; every worker sets its gauges from it.
+- **Six alerts:** `model_drift`, `model_errors` (over 5% of at least 20 requests in an hour, rate limits not counted), `rate_limited` (over 20%), `token_usage` (over `WEBAGENT_TOKEN_ALERT_DAILY` in 24 hours), `document_drift`, `document_errors` (over 10% of at least 10 loads in 24 hours). Each shows on the dashboard and in Grafana's alert list, and is logged once when it starts. `docs/RUNBOOK.md` "Drift and alerts" says what each means and what to check
+- `scripts/fake_together.py`: a dev-only fake Together server (slow, failing or rate-limited on request) for checking drift and alerts without spending credit
+- Uploads now feed `document_processing_latency_seconds`, so the dashboard's "Document processing time (p95)" panel has data
+
+### Fixed
+- The self-hosted model client failed to build ("object has no field base_url"): its settings weren't declared as model fields
+- Together 4xx and 5xx errors now carry their HTTP status, so a 429 is counted as a rate limit and not as an error
+
+### Changed
+- Docs: RUNBOOK, API reference (observability fields), backend README (settings), production checklist (drift and alerts), `.env.local.example`; the platform-improvements spec closes task 4.4 (IMP-128)
+- New tests: scoring, the store (reference freeze, reset, two workers, restart, retention), alerts, feeding from model calls, uploads and embeddings, privacy (no text in `data/drift/`), the API contract, multiprocess gauges, dashboards and alert rules, `deploy.sh`, and the removals
+
 ## 3.5.3 - 2026-10-15
 
 Checking the Grafana 11.4 dashboards on the local stack (spec task 3.14) found that they had never worked there, and that model calls weren't being measured.

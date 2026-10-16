@@ -35,6 +35,7 @@ from app.security import records as security_records
 from app.security.decision import get_engine
 from app.security.context_defender import warm_up as warm_up_context_defender
 from app.services.triage_model import warm_up
+from app.core import drift_store
 from app.core.config import settings
 from app.core.middleware import setup_middlewares
 from app.core.logger import logger
@@ -70,10 +71,13 @@ async def _startup(app: FastAPI) -> None:
     app.state.triage_cleanup_task = asyncio.create_task(triage_collect.cleanup_daily())
     app.state.security_cleanup_task = asyncio.create_task(security_records.cleanup_daily())
     app.state.results_cleanup_task = asyncio.create_task(result_store.cleanup_daily())
+    drift_store.cleanup(settings.RESULTS_RETENTION_DAYS)
+    if settings.DRIFT_ENABLED:
+        app.state.drift_task = asyncio.create_task(drift_store.compute_loop())
 
 
 def _shutdown(app: FastAPI) -> None:
-    for name in ("triage_cleanup_task", "security_cleanup_task", "results_cleanup_task"):
+    for name in ("triage_cleanup_task", "security_cleanup_task", "results_cleanup_task", "drift_task"):
         task = getattr(app.state, name, None)
         if task is not None:
             task.cancel()

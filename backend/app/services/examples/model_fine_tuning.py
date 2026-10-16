@@ -22,7 +22,7 @@ from app.core.config import settings
 def start_llm_service(model_path, port, mlflow_tracking_uri, experiment_name, quantize=None):
     """Start the self-hosted LLM service with a specific model."""
     cmd = [
-        "python", "backend/app/services/self_hosted_llm_service.py",
+        "python", "backend/app/services/examples/self_hosted_llm_service.py",
         "--model_path", model_path,
         "--port", str(port),
         "--mlflow_tracking_uri", mlflow_tracking_uri,

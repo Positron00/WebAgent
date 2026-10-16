@@ -5,7 +5,7 @@ This standalone script serves a local LLM model via a Flask API,
 making it compatible with the WebAgent LLM service framework.
 
 Usage:
-    python self_hosted_llm_service.py --model_path "/path/to/model" --port 8080
+    python backend/app/services/examples/self_hosted_llm_service.py --model_path "/path/to/model" --port 8080
 
 Requirements:
     - torch

@@ -257,6 +257,13 @@ class Settings(BaseSettings):
     # Data kept on the volume
     RESULTS_RETENTION_DAYS: int = _env_number("WEBAGENT_RESULTS_RETENTION_DAYS", 30, minimum=1)
 
+    # Drift and alerts (3.6.0): samples in data/drift/, computed by one worker per interval.
+    DRIFT_ENABLED: bool = os.getenv("WEBAGENT_DRIFT_ENABLED", "true").lower() == "true"
+    DRIFT_WINDOW: int = _env_number("WEBAGENT_DRIFT_WINDOW", 50, minimum=30)
+    DRIFT_INTERVAL_SECONDS: float = _env_number("WEBAGENT_DRIFT_INTERVAL_SECONDS", 60.0, minimum=5)
+    # Alert when the last 24 h used more tokens than this; 0 turns the alert off.
+    TOKEN_ALERT_DAILY: int = _env_number("WEBAGENT_TOKEN_ALERT_DAILY", 0, minimum=0)
+
     # Documents and retrieval
     LDA_MAX_CHARS: int = _env_number("WEBAGENT_LDA_MAX_CHARS", 200000, minimum=1)
     EMBEDDINGS_PROVIDER: str = _env_choice("WEBAGENT_EMBEDDINGS_PROVIDER", "openai", ("openai", "local"))

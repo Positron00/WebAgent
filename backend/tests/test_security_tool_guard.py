@@ -107,7 +107,7 @@ async def test_judge_verify_becomes_allow(act_guard, monkeypatch, state):
         def invoke(self, _prompt):
             return "ALIGNED"
 
-    monkeypatch.setattr("app.services.llm.get_trusted_llm", lambda: _LLM())
+    monkeypatch.setattr("app.services.llm.get_trusted_llm", lambda **kw: _LLM())
     allowed = await guard_tool(
         "tool::web_search",
         {"query": "user@example.com please research"},

@@ -29,7 +29,6 @@ from app.core.loadEnvYAML import get_llm_config, get_agents_config
 from app.core.observability import (
     track_model_prediction,
     MODEL_PREDICTION_COUNT,
-    record_data_drift,
     log_to_mlflow,
 )
 from app.services import llm_call_metrics
@@ -37,7 +36,7 @@ from app.services import llm_call_metrics
 logger = logging.getLogger(__name__)
 
 # Define model constants - these should match config.py
-TOGETHER_API_BASE = os.getenv("TOGETHER_API_BASE", "https://api.together.xyz/v1")
+# Together's API base comes from TOGETHER_API_BASE in together_llm.py (the client honours it).
 TOGETHER_DEFAULT_MODEL = os.getenv(
     "TOGETHER_MODEL",
     os.getenv("WEBAGENT_LLM_DEFAULT_MODEL", "meta-models/Muse-Glimmer-30B"),
@@ -348,7 +347,18 @@ def log_llm_request(provider: str = "unknown"):
 # Add a custom LangChain chat model for self-hosted LLMs
 class SelfHostedChatModel(BaseChatModel):
     """Custom LangChain chat model for self-hosted LLMs."""
-    
+
+    # Declared fields: BaseChatModel is a pydantic model, and assigning undeclared attributes
+    # raised '"SelfHostedChatModel" object has no field "base_url"', so this provider never started.
+    base_url: str = SELF_HOSTED_DEFAULT_URL
+    model: str = "local-model"
+    temperature: float = 0.7
+    max_tokens: int = 1024
+    timeout: int = 60
+    retry_attempts: int = 3
+    # Who made the call (an agent name, "judge", "triage" or "other"): keys the drift samples.
+    call_label: str = "other"
+
     def __init__(
         self,
         base_url: str = SELF_HOSTED_DEFAULT_URL,
@@ -360,13 +370,8 @@ class SelfHostedChatModel(BaseChatModel):
         **kwargs
     ):
         """Initialize the self-hosted chat model."""
-        super().__init__(**kwargs)
-        self.base_url = base_url.rstrip("/")
-        self.model = model
-        self.temperature = temperature
-        self.max_tokens = max_tokens
-        self.timeout = timeout
-        self.retry_attempts = retry_attempts
+        super().__init__(base_url=base_url.rstrip("/"), model=model, temperature=temperature,
+                         max_tokens=max_tokens, timeout=timeout, retry_attempts=retry_attempts, **kwargs)
         
         # Track initialization in metrics
         metrics.record_request("self", success=True)
@@ -484,7 +489,8 @@ class SelfHostedChatModel(BaseChatModel):
                 
             # Record in metrics
             metrics.record_request("self", success=True, tokens=token_usage, latency=latency)
-            llm_call_metrics.record("self", self.model, latency, ok=True, usage=usage)
+            llm_call_metrics.record("self", self.model, latency, ok=True, usage=usage,
+                                    call_label=self.call_label)
             
             # Log to MLflow
             log_to_mlflow(
@@ -508,7 +514,6 @@ class SelfHostedChatModel(BaseChatModel):
                 
                 # Check for potential model drift by monitoring unusual responses
                 if len(content) < 5 and prompt_length > 100:
-                    record_data_drift("llm_response", 0.8)  # High drift score for unusually short responses
                     logger.warning(f"Unusually short response from LLM for request {request_id}")
                 
                 return AIMessage(content=content)
@@ -523,7 +528,9 @@ class SelfHostedChatModel(BaseChatModel):
             
             # Record in metrics
             metrics.record_request("self", success=False)
-            llm_call_metrics.record("self", self.model, time.time() - start_time, ok=False)
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            llm_call_metrics.record("self", self.model, time.time() - start_time, ok=False,
+                                    call_label=self.call_label, status_code=status)
             
             # Log to MLflow
             log_to_mlflow(
@@ -637,7 +644,7 @@ def _build_llm_for_agent(agent_name: str, model: Optional[str], provider: Option
         return get_openai_llm(model)
     if agent_name in ("coding_assistant", "coding_review") and settings.OPENAI_API_KEY:
         return get_openai_llm(model or settings.OPENAI_MODEL)
-    return _build_llm(model)
+    return _build_llm(model, call_label=agent_name)
 
 
 def get_agent_llm(agent_name: str):
@@ -782,12 +789,28 @@ def get_self_hosted_llm(model_name: Optional[str] = None):
         logger.error(traceback.format_exc())
         raise
 
-def get_trusted_llm(model_name: Optional[str] = None):
+def get_trusted_llm(model_name: Optional[str] = None, call_label: str = "other"):
     """Unguarded LLM for trusted-only inputs (judge, tie-breaker, diagnostics)."""
-    return _build_llm(model_name)
+    return _build_llm(model_name, call_label=call_label)
 
 
-def _build_llm(model_name: Optional[str] = None):
+def _with_call_label(llm, call_label: str):
+    """Set the call label on the model client that records drift samples (Together or self-hosted)."""
+    for target in (llm, getattr(llm, "llm", None)):  # TogetherWrapper keeps the client in .llm
+        if target is not None and hasattr(target, "call_label"):
+            try:
+                target.call_label = call_label
+            except Exception:  # noqa: BLE001 - a fake or foreign model without the field
+                pass
+    return llm
+
+
+def _build_llm(model_name: Optional[str] = None, call_label: str = "other"):
+    """The configured provider's model, labelled with who calls it (drift samples, OBS-001)."""
+    return _with_call_label(_build_llm_by_provider(model_name), call_label)
+
+
+def _build_llm_by_provider(model_name: Optional[str] = None):
     """
     Get a LangChain LLM instance based on the configured provider.
     
@@ -1110,39 +1133,3 @@ def confirm_llm_selection(required_provider=None):
     
     print(f"\nSelection confirmed. Using {provider} with model {model}")
     return provider, model
-
-def _build_llm_without_tags(model_name: Optional[str] = None):
-    """
-    Get a LangChain LLM instance based on the configured provider, but with no tags.
-    This helps prevent duplicate tags when chaining with prompts that already have tags.
-    
-    Args:
-        model_name: Optional model name to use (defaults to provider-specific default)
-        
-    Returns:
-        A configured LLM instance without tags
-    """
-    llm = _build_llm(model_name)
-    
-    # Remove any tags by wrapping the LLM in a simple wrapper that doesn't pass tags
-    class NoTagsLLMWrapper:
-        def __init__(self, base_llm):
-            self.base_llm = base_llm
-            
-        async def ainvoke(self, input, **kwargs):
-            # Remove tags from kwargs to avoid conflicts
-            if "tags" in kwargs:
-                del kwargs["tags"]
-            return await self.base_llm.ainvoke(input, **kwargs)
-            
-        def invoke(self, input, **kwargs):
-            # Remove tags from kwargs to avoid conflicts
-            if "tags" in kwargs:
-                del kwargs["tags"]
-            return self.base_llm.invoke(input, **kwargs)
-            
-        # Delegate all other attributes to the base LLM
-        def __getattr__(self, name):
-            return getattr(self.base_llm, name)
-    
-    return NoTagsLLMWrapper(llm) 

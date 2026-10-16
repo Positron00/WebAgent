@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 # Default values
 ENVIRONMENT="prod"
 NAMESPACE="default"
-VERSION="3.5.3"
+VERSION="3.6.0"
 REGISTRY="webagent/backend"
 HOST="api.webagent.example.com"
 INGRESS_NAMESPACE="ingress-nginx"
@@ -25,7 +25,7 @@ function print_usage {
   echo "Options:"
   echo "  -e, --environment   prod or uat: sets WEBAGENT_ENV, so the pod uses config/<env>.yaml (default: prod)"
   echo "  -n, --namespace     Kubernetes namespace (default: default)"
-  echo "  -v, --version       Image tag to deploy (default: 3.5.3)"
+  echo "  -v, --version       Image tag to deploy (default: 3.6.0)"
   echo "  -i, --ingress-ns    Namespace of the nginx ingress controller (default: ingress-nginx; also --ingress-namespace)"
   echo "  -r, --registry      Image repository the cluster pulls from (default: webagent/backend)"
   echo "  -H, --host          Public host name for the ingress (default: api.webagent.example.com)"
@@ -158,6 +158,18 @@ if ! kubectl get namespace monitoring &> /dev/null; then
 else
   echo -e "${GREEN}Monitoring namespace already exists${NC}"
 fi
+
+# On every deploy, not only the first: the dashboards and alert rules are built from backend/grafana/.
+echo -e "${YELLOW}Updating Grafana data source, dashboards and alert rules...${NC}"
+GRAFANA_DIR="../grafana"
+# The data source (uid "prometheus", port 9090 since 3.5.3) must reach existing clusters too.
+kubectl apply -f monitoring/grafana-datasource.yaml
+kubectl create configmap grafana-dashboard-definitions -n monitoring \
+  --from-file="$GRAFANA_DIR/dashboards" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap grafana-alerting -n monitoring \
+  --from-file="$GRAFANA_DIR/provisioning/alerting" --dry-run=client -o yaml | kubectl apply -f -
+# Grafana reloads dashboard files on its own, but reads alert-rule files only at startup.
+kubectl rollout restart deployment/grafana -n monitoring
 
 # Secrets go straight to the cluster: never written to a file or put through sed
 # (a key containing "/" or "&" broke the old substitution).

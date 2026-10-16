@@ -161,7 +161,7 @@ def _ask_llm(prompt: str) -> str:
     """One text LLM call. Replaced in tests."""
     from app.services.llm import get_trusted_llm
 
-    reply = get_trusted_llm().invoke(prompt)
+    reply = get_trusted_llm(call_label="triage").invoke(prompt)
     return reply if isinstance(reply, str) else str(getattr(reply, "content", reply))
 
 

@@ -1,0 +1,124 @@
+# Grafana alert rules, one per WebAgent alert (OBS-012, OBS-017).
+# The backend computes each alert and exports webagent_alert_active{alert,severity} (1 while active);
+# these rules only show that state in Grafana's alert list. No contact point is provisioned, so
+# nothing is sent until one is added in Grafana. Grafana reads this file only at startup.
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: webagent
+    folder: WebAgent
+    interval: 1m
+    rules:
+      - uid: webagent-model-drift
+        title: Model drift
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model: {refId: A, expr: 'max(webagent_alert_active{alert="model_drift"}) or vector(0)', instant: true}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        labels: {severity: warning, service: llm}
+        annotations:
+          summary: Model behaviour changed. See /api/v1/observability/alerts for the detectors.
+          runbook: docs/RUNBOOK.md#drift-and-alerts
+
+      - uid: webagent-model-errors
+        title: Model errors
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model: {refId: A, expr: 'max(webagent_alert_active{alert="model_errors"}) or vector(0)', instant: true}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        labels: {severity: critical, service: llm}
+        annotations:
+          summary: More than 5% of model requests failed in the last hour (rate limits excluded).
+          runbook: docs/RUNBOOK.md#drift-and-alerts
+
+      - uid: webagent-rate-limited
+        title: Model requests rate-limited
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model: {refId: A, expr: 'max(webagent_alert_active{alert="rate_limited"}) or vector(0)', instant: true}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        labels: {severity: warning, service: llm}
+        annotations:
+          summary: More than 20% of model requests were rate-limited in the last hour.
+          runbook: docs/RUNBOOK.md#drift-and-alerts
+
+      - uid: webagent-token-usage
+        title: Token usage
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model: {refId: A, expr: 'max(webagent_alert_active{alert="token_usage"}) or vector(0)', instant: true}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        labels: {severity: warning, service: llm}
+        annotations:
+          summary: Tokens used in the last 24 hours exceed WEBAGENT_TOKEN_ALERT_DAILY.
+          runbook: docs/RUNBOOK.md#drift-and-alerts
+
+      - uid: webagent-document-drift
+        title: Document drift
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model: {refId: A, expr: 'max(webagent_alert_active{alert="document_drift"}) or vector(0)', instant: true}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        labels: {severity: warning, service: document_processing}
+        annotations:
+          summary: Documents changed. See /api/v1/observability/alerts for the detectors.
+          runbook: docs/RUNBOOK.md#drift-and-alerts
+
+      - uid: webagent-document-errors
+        title: Document errors
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model: {refId: A, expr: 'max(webagent_alert_active{alert="document_errors"}) or vector(0)', instant: true}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        labels: {severity: critical, service: document_processing}
+        annotations:
+          summary: More than 10% of document loads failed in the last 24 hours.
+          runbook: docs/RUNBOOK.md#drift-and-alerts

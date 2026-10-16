@@ -15,8 +15,10 @@ from app.core.observability import MODEL_PREDICTION_COUNT, record_model_latency,
 logger = logging.getLogger(__name__)
 
 
-def record(provider: str, model: str, seconds: float, ok: bool, usage: Optional[Dict[str, Any]] = None) -> None:
-    """Count one model request; never raises (metrics must not break a call)."""
+def record(provider: str, model: str, seconds: float, ok: bool, usage: Optional[Dict[str, Any]] = None,
+           *, call_label: str = "other", status_code: Optional[int] = None) -> None:
+    """Count one model request and add its drift samples (OBS-001); never raises."""
+    _record_drift(seconds, ok, usage, call_label, status_code)
     try:
         status = "success" if ok else "error"
         model = model or "unknown"
@@ -36,3 +38,22 @@ def record(provider: str, model: str, seconds: float, ok: bool, usage: Optional[
         record_model_token_usage(provider, prompt, completion)
     except Exception as exc:  # noqa: BLE001
         logger.debug("Model call metrics not recorded: %s", exc)
+
+
+def _record_drift(seconds: float, ok: bool, usage: Optional[Dict[str, Any]], call_label: str,
+                  status_code: Optional[int]) -> None:
+    """Speed and tokens under the call's label; the outcome unlabelled (a 429 is rate_limited)."""
+    try:
+        from app.core import drift_store
+
+        drift_store.add("llm_outcome", "ok" if ok else ("rate_limited" if status_code == 429 else "error"))
+        if not ok or not usage:
+            return
+        completion = usage.get("completion_tokens") if isinstance(usage.get("completion_tokens"), int) else 0
+        total = usage.get("total_tokens") if isinstance(usage.get("total_tokens"), int) else 0
+        if completion > 0:
+            drift_store.add(f"llm_speed:{call_label}", seconds * 1000.0 / completion)
+        if total > 0:
+            drift_store.add(f"llm_tokens:{call_label}", total)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Drift samples not recorded: %s", exc)
