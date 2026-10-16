@@ -29,13 +29,10 @@ from app.core.loadEnvYAML import get_llm_config, get_agents_config
 from app.core.observability import (
     track_model_prediction,
     MODEL_PREDICTION_COUNT,
-    MODEL_LATENCY,
     record_data_drift,
     log_to_mlflow,
-    record_model_latency,
-    record_model_token_usage,
-    record_model_error_rate,
 )
+from app.services import llm_call_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -193,36 +190,15 @@ class LLMMetrics:
             if provider in self.provider_stats:
                 self.provider_stats[provider]["requests"] += 1
                 self.provider_stats[provider]["tokens"] += tokens
-                
-            # Track in Prometheus metrics too for real-time monitoring
-            MODEL_PREDICTION_COUNT.labels(
-                model_name=provider, 
-                task_type="chat", 
-                status="success"
-            ).inc()
-            
-            if latency > 0:
-                MODEL_LATENCY.labels(
-                    model_name=provider,
-                    task_type="chat"
-                ).observe(latency)
-                record_model_latency(provider, latency, task_type="chat")
-            if tokens > 0:
-                record_model_token_usage(provider, tokens, 0)
         else:
             self.failed_requests += 1
-            
+
             if provider in self.provider_stats:
                 self.provider_stats[provider]["errors"] += 1
-                
-            # Track in Prometheus metrics
-            MODEL_PREDICTION_COUNT.labels(
-                model_name=provider, 
-                task_type="chat", 
-                status="error"
-            ).inc()
-            record_model_error_rate(provider)
-    
+        # Prometheus metrics for model calls are recorded per request by llm_call_metrics (in the
+        # Together client and the self-hosted call). This tracker also wraps building the client,
+        # so its timings would be set-up time, not call time.
+
     def get_metrics(self) -> Dict[str, Any]:
         """Get all metrics as a dictionary."""
         success_rate = 0
@@ -508,6 +484,7 @@ class SelfHostedChatModel(BaseChatModel):
                 
             # Record in metrics
             metrics.record_request("self", success=True, tokens=token_usage, latency=latency)
+            llm_call_metrics.record("self", self.model, latency, ok=True, usage=usage)
             
             # Log to MLflow
             log_to_mlflow(
@@ -546,6 +523,7 @@ class SelfHostedChatModel(BaseChatModel):
             
             # Record in metrics
             metrics.record_request("self", success=False)
+            llm_call_metrics.record("self", self.model, time.time() - start_time, ok=False)
             
             # Log to MLflow
             log_to_mlflow(

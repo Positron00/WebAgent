@@ -2,7 +2,7 @@
 
 This document summarizes the improvements made to the WebAgent backend to make it production-ready.
 
-## Production checklist (3.5.2)
+## Production checklist (3.5.3)
 
 Before exposing the backend:
 
@@ -21,10 +21,12 @@ Before exposing the backend:
 13. **Backups.** See `docs/RUNBOOK.md` for volume snapshots or `backup-cronjob.yaml`.
 14. **Spending caps.** Set monthly limits in the Together AI and Tavily dashboards for every key used in uat and prod (suggested: twice the highest month so far, with alerts at 50% and 80%). Record them here:
 
-    | Key (name, not value) | Service | Monthly limit | Set on |
+    | Key (name, not value) | Service | Limit | Recorded on |
     |---|---|---|---|
-    | _not set yet_ | Together AI | | |
-    | _not set yet_ | Tavily | | |
+    | `TOGETHER_API_KEY` | Together AI | $25 in total (not monthly) | 2026-10-15 |
+    | `TAVILY_API_KEY` | Tavily | Researcher plan: up to 1,000 API credits a month | 2026-10-15 |
+
+    One key of each serves dev, the local uat runs and any deployment, so they share these limits.
 
 ## Version 2.4.0 Enhancements
 

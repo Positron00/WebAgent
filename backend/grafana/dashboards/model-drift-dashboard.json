@@ -120,42 +120,16 @@
       },
       "targets": [
         {
+          "refId": "A",
+          "expr": "data_drift_score{component=~\"llm_.*\"}",
+          "legendFormat": "{{component}}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "data_drift{name=\"llm_latency\"}",
-          "legendFormat": "Latency Drift",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "data_drift{name=\"llm_token_usage\"}",
-          "hide": false,
-          "legendFormat": "Token Usage Drift",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "data_drift{name=\"llm_embeddings\"}",
-          "hide": false,
-          "legendFormat": "Embedding Drift",
-          "range": true,
-          "refId": "C"
+          }
         }
       ],
-      "title": "LLM Drift Metrics",
+      "title": "LLM drift scores",
       "type": "timeseries"
     },
     {
@@ -237,42 +211,16 @@
       },
       "targets": [
         {
+          "refId": "A",
+          "expr": "data_drift_score{component=~\"doc_.*\"}",
+          "legendFormat": "{{component}}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "data_drift{name=\"doc_processing_time\"}",
-          "legendFormat": "Processing Time Drift",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "data_drift{name=\"doc_size\"}",
-          "hide": false,
-          "legendFormat": "Document Size Drift",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "data_drift{name=\"doc_type\"}",
-          "hide": false,
-          "legendFormat": "Document Type Drift",
-          "range": true,
-          "refId": "C"
+          }
         }
       ],
-      "title": "Document Processing Drift Metrics",
+      "title": "Document processing drift scores",
       "type": "timeseries"
     },
     {
@@ -285,23 +233,6 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "green",
-                  "index": 0,
-                  "text": "No"
-                },
-                "1": {
-                  "color": "red",
-                  "index": 1,
-                  "text": "Yes"
-                }
-              },
-              "type": "value"
-            }
-          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -310,15 +241,13 @@
                 "value": null
               },
               {
-                "color": "orange",
-                "value": 0.5
-              },
-              {
                 "color": "red",
-                "value": 1
+                "value": 0.05
               }
             ]
-          }
+          },
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },
@@ -344,18 +273,16 @@
       "pluginVersion": "9.3.6",
       "targets": [
         {
+          "refId": "A",
+          "expr": "max(data_drift_score{component=\"llm_latency\"}) or vector(0)",
+          "legendFormat": "llm_latency",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "max(data_drift{name=\"llm_latency_drift_detected\"} or 0)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
+          }
         }
       ],
-      "title": "LLM Latency Drift Detected",
+      "title": "LLM latency drift score",
       "type": "gauge"
     },
     {
@@ -368,23 +295,6 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "green",
-                  "index": 0,
-                  "text": "No"
-                },
-                "1": {
-                  "color": "red",
-                  "index": 1,
-                  "text": "Yes"
-                }
-              },
-              "type": "value"
-            }
-          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -393,15 +303,13 @@
                 "value": null
               },
               {
-                "color": "orange",
-                "value": 0.5
-              },
-              {
                 "color": "red",
-                "value": 1
+                "value": 0.3
               }
             ]
-          }
+          },
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },
@@ -427,18 +335,16 @@
       "pluginVersion": "9.3.6",
       "targets": [
         {
+          "refId": "A",
+          "expr": "max(data_drift_score{component=\"llm_embeddings\"}) or vector(0)",
+          "legendFormat": "llm_embeddings",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "max(data_drift{name=\"llm_embeddings_drift_detected\"} or 0)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
+          }
         }
       ],
-      "title": "LLM Embedding Drift Detected",
+      "title": "LLM embedding drift score",
       "type": "gauge"
     },
     {
@@ -451,23 +357,6 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "green",
-                  "index": 0,
-                  "text": "No"
-                },
-                "1": {
-                  "color": "red",
-                  "index": 1,
-                  "text": "Yes"
-                }
-              },
-              "type": "value"
-            }
-          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -476,15 +365,13 @@
                 "value": null
               },
               {
-                "color": "orange",
-                "value": 0.5
-              },
-              {
                 "color": "red",
-                "value": 1
+                "value": 0.15
               }
             ]
-          }
+          },
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },
@@ -510,18 +397,16 @@
       "pluginVersion": "9.3.6",
       "targets": [
         {
+          "refId": "A",
+          "expr": "max(data_drift_score{component=\"llm_performance\"}) or vector(0)",
+          "legendFormat": "llm_performance",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "max(data_drift{name=\"llm_performance_drift_detected\"} or 0)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
+          }
         }
       ],
-      "title": "LLM Performance Drift Detected",
+      "title": "LLM performance drift score",
       "type": "gauge"
     },
     {
@@ -621,30 +506,16 @@
       "pluginVersion": "9.3.6",
       "targets": [
         {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, model_name, task_type) (rate(ml_model_latency_seconds_bucket[5m])))",
+          "legendFormat": "{{model_name}} {{task_type}}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "model_latency{model=\"gpt-4\"}",
-          "legendFormat": "LLM Latency",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "model_latency{model=\"gpt-4_embedding\"}",
-          "hide": false,
-          "legendFormat": "Embedding Latency",
-          "range": true,
-          "refId": "B"
+          }
         }
       ],
-      "title": "Model Latency",
+      "title": "Model latency (p95)",
       "type": "timeseries"
     },
     {
@@ -731,30 +602,16 @@
       "pluginVersion": "9.3.6",
       "targets": [
         {
+          "refId": "A",
+          "expr": "sum by (model_name) (rate(ml_model_predictions_total{status=\"error\"}[5m])) * 60",
+          "legendFormat": "{{model_name}}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "model_error_rate{model=\"gpt-4\"}",
-          "legendFormat": "LLM Error Rate",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "model_error_rate{model=\"gpt-4_embedding\"}",
-          "hide": false,
-          "legendFormat": "Embedding Error Rate",
-          "range": true,
-          "refId": "B"
+          }
         }
       ],
-      "title": "Model Error Rates",
+      "title": "Model errors per minute",
       "type": "timeseries"
     },
     {
@@ -839,42 +696,16 @@
       "pluginVersion": "9.3.6",
       "targets": [
         {
+          "refId": "A",
+          "expr": "sum by (provider, type) (rate(llm_tokens_total[5m])) * 60",
+          "legendFormat": "{{provider}} {{type}}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "model_token_usage_prompt{model=\"gpt-4\"}",
-          "legendFormat": "Prompt Tokens",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "model_token_usage_completion{model=\"gpt-4\"}",
-          "hide": false,
-          "legendFormat": "Completion Tokens",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "model_token_usage_total{model=\"gpt-4\"}",
-          "hide": false,
-          "legendFormat": "Total Tokens",
-          "range": true,
-          "refId": "C"
+          }
         }
       ],
-      "title": "LLM Token Usage",
+      "title": "LLM tokens per minute",
       "type": "timeseries"
     },
     {
@@ -961,18 +792,16 @@
       "pluginVersion": "9.3.6",
       "targets": [
         {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, doc_type) (rate(document_processing_latency_seconds_bucket[5m])))",
+          "legendFormat": "{{doc_type}}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "document_processing_time{process=\"document_processing\"}",
-          "legendFormat": "Document Processing Time",
-          "range": true,
-          "refId": "A"
+          }
         }
       ],
-      "title": "Document Processing Time",
+      "title": "Document processing time (p95)",
       "type": "timeseries"
     }
   ],
@@ -997,5 +826,6 @@
   "title": "Model Drift Dashboard",
   "uid": "model-drift",
   "version": 1,
-  "weekStart": ""
-} 
+  "weekStart": "",
+  "description": "Drift scores from the drift detectors (data_drift_score, one series per detector) and the model and document metrics they watch. Gauges turn red at each detector's threshold. Series appear once the backend has made model calls or processed documents."
+}

@@ -138,3 +138,44 @@ def test_complete_reply_is_not_flagged(monkeypatch, caplog):
         make_llm().invoke("Short question")
 
     assert "max_tokens limit" not in caplog.text
+
+
+async def test_rate_limits_are_retried(monkeypatch):
+    # Seen on the 3.5.2 stack: Together answered 429 and the direct answer failed at once,
+    # reported as "invalid payload", because 4xx counted as a bad request.
+    monkeypatch.setattr(together_llm, "ClientSession", lambda **kw: FakeSession(FakeAsyncResponse(status=429)))
+
+    with pytest.raises(Exception, match="Error 429") as error:
+        await make_llm().ainvoke("q")
+    assert _is_transient_error(error.value)
+    assert "invalid payload" not in str(error.value)
+
+
+def _requests(status):
+    from app.core.metrics import WEBAGENT_REGISTRY
+
+    return WEBAGENT_REGISTRY.get_sample_value(
+        "llm_requests_total", {"provider": "together", "model": make_llm().model, "status": status}
+    ) or 0
+
+
+def test_each_call_is_counted_with_its_tokens(monkeypatch):
+    # Before 3.5.3 llm_requests_total and llm_tokens_total were never written in production.
+    from app.core.metrics import WEBAGENT_REGISTRY
+
+    monkeypatch.setattr(together_llm.requests, "post", lambda *a, **k: FakeResponse())
+    tokens = {"provider": "together", "model": make_llm().model, "type": "completion"}
+    before_ok = _requests("success")
+    before_tokens = WEBAGENT_REGISTRY.get_sample_value("llm_tokens_total", tokens) or 0
+    make_llm().invoke("q")
+    assert _requests("success") == before_ok + 1
+    assert (WEBAGENT_REGISTRY.get_sample_value("llm_tokens_total", tokens) or 0) > before_tokens
+
+
+async def test_failed_calls_are_counted_as_errors(monkeypatch):
+    monkeypatch.setattr(together_llm, "ClientSession", lambda **kw: FakeSession(FakeAsyncResponse(status=429)))
+    before = _requests("error")
+    with pytest.raises(Exception):
+        await make_llm().ainvoke("q")
+    assert _requests("error") == before + 1
+

@@ -136,20 +136,23 @@ code: all automated checks pass (backend pytest, `ruff`, Jest with coverage floo
 `check-types`, `lint`, `next build`), and every test file the tasks name exists. The review's
 fixes are listed under 3.5.0 in `CHANGELOG.md`.
 
+Done since then: task 1.11 (spending caps recorded in `PRODUCTION_READINESS.md`, 2026-10-15) and
+task 3.14 (3.5.3: the Grafana 11.4 dashboards were checked on the local stack; the check found
+the dashboards weren't mounted, the drift dashboard queried metrics that don't exist, and model
+calls weren't recorded, all fixed in 3.5.3).
+
 Still open: these need a person, a uat environment or an external account, so they can't be
 done in code.
 
 | Task | What is left | Requirement |
 |---|---|---|
 | 1.3 | Turn on branch protection for `main` (both CI jobs required) and try one failing PR | IMP-001 |
-| 1.11 | Set the Together AI and Tavily spending caps and fill in the table in `PRODUCTION_READINESS.md` (still "not set yet") | IMP-013 |
-| 1.18 | Before/after answer comparison in uat (5 research, 5 routine questions) for the per-agent temperatures | IMP-NFR-07 |
-| 1.26 | Release check: sign in on `next start` and a Vercel preview; two sessions with separate limits; production build without a code answers 503 | IMP-010–IMP-012 |
-| 2.10 | Measure `tokens_used` on 10 agentic runs and set `WEBAGENT_TASK_TOKEN_BUDGET` (it ships as 0, off) | IMP-042 |
+| 1.18 | Before/after answer comparison for the per-agent temperatures. Decided 2026-10-15: no dedicated runs (the Together key has $25 in total); answers are read during the next shadow week and compared only if one looks worse | IMP-NFR-07 |
+| 1.26 | Release check: sign in on `next start` and a Vercel preview; two sessions with separate limits; production build without a code answers 503. When the web app is first deployed to Vercel | IMP-010–IMP-012 |
+| 2.10 | Measure `tokens_used` on 10 agentic runs and set `WEBAGENT_TASK_TOKEN_BUDGET` (it ships as 0, off). From the next shadow week's research runs | IMP-042 |
 | 2.17 | Apply the manifests in a uat cluster and check `/metrics` from outside (404) and from Prometheus (scraped); there is no uat cluster yet | IMP-063 |
 | 2.18 | One restore drill in uat, with its date recorded in `docs/RUNBOOK.md` | IMP-073 |
-| 2.24 | Timing run of the 5 research questions on the new release | IMP-NFR-04 |
-| 3.14 | `npm run stack:up` and check the Grafana dashboards render on Grafana 11.4 | IMP-102 |
+| 2.24 | Run times on the new release (target 2.5–3.5 minutes). From the next shadow week's research runs | IMP-NFR-04 |
 | 3.20 | Playwright browser-to-backend test and `e2e.yml` (IMP-113, a *should*): not built; moves to the next release | IMP-113 |
 
 ## Requirement coverage

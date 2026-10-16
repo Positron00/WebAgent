@@ -8,8 +8,11 @@ data:
     apiVersion: 1
     datasources:
     - name: Prometheus
+      # Fixed uid: the dashboards refer to it.
+      uid: prometheus
       type: prometheus
-      url: http://prometheus-server.monitoring.svc.cluster.local
+      # The prometheus-server Service listens on 9090 (prometheus.yaml); without the port Grafana tried 80.
+      url: http://prometheus-server.monitoring.svc.cluster.local:9090
       access: proxy
       isDefault: true
       editable: false

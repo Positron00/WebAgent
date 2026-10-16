@@ -6,6 +6,7 @@ request and returns the token counts in `llm_output["token_usage"]`, where LangC
 callbacks and LangSmith read them.
 """
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -14,7 +15,7 @@ from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackMana
 from langchain_core.outputs import Generation, LLMResult
 from langchain_together import Together
 
-from app.services import task_budget
+from app.services import llm_call_metrics, task_budget
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,10 @@ def _check_status(status: int, body: str) -> None:
     # Same messages as langchain_together; llm._is_transient_error matches "Error 5xx".
     if status >= 500:
         raise Exception(f"Together Server: Error {status}")
+    if status == 429:
+        # A rate limit is temporary: "Error 429" makes llm._is_transient_error retry it. It used
+        # to fall into the 4xx branch below as "invalid payload" and fail the task at once.
+        raise Exception(f"Together Server: Error 429 (rate limited): {body[:300]}")
     if status >= 400:
         raise ValueError(f"Together received an invalid payload: {body}")
     if status != 200:
@@ -83,11 +88,18 @@ class TogetherWithUsage(Together):
         for prompt in prompts:
             task_budget.check()
             headers, payload = self._request_parts(prompt, stop, kwargs)
-            response = requests.post(
-                self.base_url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
-            )
-            _check_status(response.status_code, response.text)
-            data = response.json()
+            started = time.perf_counter()
+            try:
+                response = requests.post(
+                    self.base_url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
+                )
+                _check_status(response.status_code, response.text)
+                data = response.json()
+            except Exception:
+                llm_call_metrics.record("together", self.model, time.perf_counter() - started, ok=False)
+                raise
+            llm_call_metrics.record("together", self.model, time.perf_counter() - started, ok=True,
+                                    usage=data.get("usage"))
             _warn_if_cut_off(data, self.model, self.max_tokens)
             texts.append(self._format_output(data))
             _add_usage(usage, data)
@@ -105,9 +117,16 @@ class TogetherWithUsage(Together):
             for prompt in prompts:
                 task_budget.check()
                 headers, payload = self._request_parts(prompt, stop, kwargs)
-                async with session.post(self.base_url, json=payload, headers=headers) as response:
-                    _check_status(response.status, await response.text())
-                    data = await response.json()
+                started = time.perf_counter()
+                try:
+                    async with session.post(self.base_url, json=payload, headers=headers) as response:
+                        _check_status(response.status, await response.text())
+                        data = await response.json()
+                except Exception:
+                    llm_call_metrics.record("together", self.model, time.perf_counter() - started, ok=False)
+                    raise
+                llm_call_metrics.record("together", self.model, time.perf_counter() - started, ok=True,
+                                        usage=data.get("usage"))
                 _warn_if_cut_off(data, self.model, self.max_tokens)
                 texts.append(self._format_output(data))
                 _add_usage(usage, data)

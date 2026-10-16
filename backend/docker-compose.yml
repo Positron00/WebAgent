@@ -73,10 +73,12 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
+      # The dashboard provider (provisioning/dashboards/dashboards.yaml) reads this folder;
+      # without this mount the stack started with no dashboards.
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env.local and start with npm run stack:up}
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
     networks:
       - webagent-network
     depends_on:

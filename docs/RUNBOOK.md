@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.5.2 -t <registry>/webagent-backend:3.5.2 backend/
-   docker push <registry>/webagent-backend:3.5.2
+   docker build --build-arg APP_VERSION=3.5.3 -t <registry>/webagent-backend:3.5.3 backend/
+   docker push <registry>/webagent-backend:3.5.3
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.5.2 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.5.3 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -102,6 +102,21 @@ endpoints.
 **LangSmith:** agent tracing is unchanged (`LANGCHAIN_TRACING_V2` / project settings).
 **Chat routing:** production runs still use `app/services/llm.py` only; `llm_service.py` feeds
 the observability API and drift detectors, not user-facing chat.
+
+**Grafana dashboards:** `backend/grafana/dashboards/` holds two dashboards, provisioned into
+the local stack (`npm run stack:up`, Grafana on `127.0.0.1:3001`, folder "WebAgent"):
+- *WebAgent Backend Dashboard*: HTTP traffic, model requests, duration and tokens, tasks, triage.
+- *Model Drift Dashboard*: drift scores per detector (`data_drift_score{component}`; gauges turn
+  red at each detector's threshold), model latency (p95), model errors and tokens per minute,
+  document processing time.
+
+Model-call panels fill from real calls: each Together (or self-hosted) request records
+`llm_requests_total`, `llm_request_duration_seconds`, `llm_tokens_total` and
+`ml_model_latency_seconds` once (`app/services/llm_call_metrics.py`). Drift-score panels stay
+empty until a detector has data, and document panels until a document is processed. Both stacks
+provision the Prometheus data source with uid `prometheus`, which the dashboards refer to.
+The Kubernetes Grafana (`backend/kubernetes/monitoring/grafana.yaml`) still carries its own older
+copy of the backend dashboard and not the drift dashboard.
 
 Grafana dashboard helpers and MLflow experiment logging for model metrics are documented in
 `backend/demos/README.md` and `backend/README.md` (demos section).
