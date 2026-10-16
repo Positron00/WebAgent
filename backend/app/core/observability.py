@@ -127,9 +127,32 @@ DATA_QUALITY_SCORE = Gauge(
 
 DATA_DRIFT_SCORE = Gauge(
     "data_drift_score",
-    "Data drift score (0-1, higher means more drift)",
+    "Drift score per detector (0-1, higher means more drift; 0 without enough data)",
     ["component"],
-    registry=WEBAGENT_REGISTRY
+    registry=WEBAGENT_REGISTRY,
+    multiprocess_mode="max",  # set from the shared drift state, so every worker agrees
+)
+
+# Drift and alert state (3.6.0), set by every worker from data/drift/state.json each tick.
+ALERT_ACTIVE = Gauge(
+    "webagent_alert_active", "1 while an observability alert is active", ["alert", "severity"],
+    registry=WEBAGENT_REGISTRY, multiprocess_mode="max",
+)
+DRIFT_DETECTED = Gauge(
+    "webagent_drift_detected", "1 while a drift detector reports drift", ["detector"],
+    registry=WEBAGENT_REGISTRY, multiprocess_mode="max",
+)
+DRIFT_ENOUGH_DATA = Gauge(
+    "webagent_drift_enough_data", "1 once a detector has a frozen reference and 30 current samples",
+    ["detector"], registry=WEBAGENT_REGISTRY, multiprocess_mode="max",
+)
+DRIFT_CURRENT_SAMPLES = Gauge(
+    "webagent_drift_current_samples", "Current samples per detector (vectors for embeddings)",
+    ["detector"], registry=WEBAGENT_REGISTRY, multiprocess_mode="max",
+)
+DRIFT_SAMPLES = Counter(
+    "webagent_drift_samples_total", "Drift samples recorded (vectors for embeddings)", ["detector"],
+    registry=WEBAGENT_REGISTRY,
 )
 
 # Citation tracking metrics

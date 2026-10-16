@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.5.3).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.6.0).
 
 ## Base URL
 
@@ -230,7 +230,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.5.3",
+  "version": "3.6.0",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -401,7 +401,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.5.3"
+  "version": "3.6.0"
 }
 ```
 
@@ -414,7 +414,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.5.3",
+  "version": "3.6.0",
   "environment": "prod"
 }
 ```
@@ -431,7 +431,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.5.3"
+    "version": "3.6.0"
   },
   "llm_service": {
     "status": "ok",
@@ -461,12 +461,37 @@ Needs `X-API-Key`. Prometheus `/metrics` and LangSmith tracing are separate and 
 
 | Endpoint | What it returns |
 |---|---|
-| `GET /observability/metrics` | Observability registries: model latency and token use, document processing |
-| `GET /observability/drift` | Drift statistics for model calls and document processing |
-| `GET /observability/alerts` | Current alerts derived from those metrics |
-| `GET /observability/health` | Health summary from the same metrics |
-| `POST /observability/llm/reset_baseline` | Reset the model drift baseline |
-| `POST /observability/doc/reset_baseline` | Reset the document drift baseline |
+| `GET /observability/metrics` | `model_metrics` (provider, requests, errors and rate limits in the last hour, tokens in the last 24 hours, `by_label`), `document_metrics` (loads and errors in the last 24 hours), `system_metrics`, `timestamp`; `pipeline_metrics` and `data_quality_metrics` are empty |
+| `GET /observability/drift` | `computed_at`; `detectors` (see below); `global_drift_stats` (same content, the 3.5 key); `llm_service_drift` and `doc_service_drift` (baseline status and the highest-scoring detector of each kind); `retrain_recommendations` (always `[]`) |
+| `GET /observability/alerts` | Active alerts: `name`, `severity` (`warning` or `critical`), `service` (`llm` or `document_processing`), `message`, `since`, `timestamp` (equals `since`) |
+| `GET /observability/health` | `overall_status` (`unhealthy` with a critical alert, `degraded` with a warning, else `healthy`), `alert_counts` (`critical`, `warning`, `total`; also `high`/`medium`/`low` as in 3.5), `services.llm` and `services.document_processing` (status and figures), `components` (the 3.5 shape) |
+| `POST /observability/llm/reset_baseline` | Start new references for the model detectors from the next samples |
+| `POST /observability/doc/reset_baseline` | Start new references for the document detectors from the next samples |
+
+All answers come from the shared drift store (`/app/data/drift/`), computed once a minute, so
+every worker gives the same answer. With `WEBAGENT_DRIFT_ENABLED=false` they answer as if nothing
+had been recorded.
+
+A detector in `detectors` (names such as `llm_speed:supervisor`, `llm_tokens:judge`,
+`embeddings:openai`, `doc_processing_time`, `doc_size`, `doc_type`):
+
+```json
+{
+  "group": "llm",
+  "kind": "ks",
+  "enough_data": true,
+  "score": 0.97,
+  "drift": true,
+  "reference_count": 50,
+  "current_count": 42,
+  "reference_start": "2026-10-16T09:12:03.120",
+  "last_drift_at": "2026-10-17T14:02:00.000"
+}
+```
+
+`score` is `1 − p` for the KS and chi-square detectors (drift above 0.95) and `1 − cosine
+similarity` for embeddings (drift above 0.7); it is `null` without enough data (a frozen
+reference and at least 30 current samples). The stored reference values are not returned.
 
 ## Errors
 

@@ -7,8 +7,10 @@ Paths are relative to `backend/`. Requirement IDs refer to [`requirements.md`](r
 | File | New? | Purpose | Approx. size |
 |---|---|---|---|
 | `app/core/drift_store.py` | new | `add`, `add_aggregate`, `reset`, `compute_once`, `load_state`, `compute_loop`, `apply_gauges`, `cleanup` | ~190 lines |
-| `app/core/drift_alerts.py` | new | `evaluate(samples, detectors, now) -> list[Alert]`: the six alert rules | ~90 lines |
+| `app/core/drift_alerts.py` | new | `figures(samples, now)` and `evaluate(figures, detectors, token_limit)`: the six alert rules | ~100 lines |
+| `app/core/drift_reference.py` | new (in implementation) | Detector table, `update_detector` (reference freeze, current window, scoring), `public()`; split out so `drift_store.py` stays near 200 lines | ~125 lines |
 | `app/core/drift_detection.py` | changed | Pure scoring functions; detector classes, module registry, `get_all_drift_stats`, `should_retrain_any_model` and MLflow calls removed | −700 / +80 |
+| `demos/drift_detectors.py` | new (in implementation) | The old detector classes, kept for `demos/ml_observability_demo.py` only | moved |
 | `app/services/drift_embeddings.py` | new | `DriftRecordingEmbeddings`: wraps an embeddings object, records aggregates | ~70 lines |
 | `app/services/llm_call_metrics.py` | changed | `record(..., call_label=…)` also adds drift samples | +25 lines |
 | `app/services/together_llm.py` | changed | `call_label` field; pass it to `record`; base URL from `TOGETHER_API_BASE` | +10 lines |
@@ -186,7 +188,8 @@ def cleanup(retention_days: int, now: datetime | None = None) -> int
      embeddings), score with the kind's function; otherwise `enough_data` false, no score, no
      drift.
    - Set `last_drift_at` when `drift` turns true.
-4. `alerts = drift_alerts.evaluate(samples, detectors, now)`; keep `since` for alerts already
+4. `figures = drift_alerts.figures(samples, now)` (step 5);
+   `alerts = drift_alerts.evaluate(figures, detectors, settings.TOKEN_ALERT_DAILY)`; keep `since` for alerts already
    active; log WARNING once for each new alert and each new drift; one MLflow metric per new drift
    (`log_to_mlflow`, experiment `drift_detection`).
 5. Compute `figures` (model requests, errors and rate limits over the last hour; tokens over the
@@ -197,11 +200,9 @@ def cleanup(retention_days: int, now: datetime | None = None) -> int
 ## 6. Alerts (`app/core/drift_alerts.py`)
 
 ```python
-@dataclass
-class Alert:
-    name: str; severity: str; service: str; message: str; since: str | None = None
-
-def evaluate(samples: list[Sample], detectors: dict, now: datetime) -> list[Alert]
+def figures(samples: list[Sample], now: datetime) -> dict      # {"llm": {...}, "doc": {...}}
+def evaluate(figs: dict, detectors: dict, token_limit: int) -> list[dict]
+# each alert: {"name", "severity", "service", "message"}; compute_once adds "since"
 ```
 
 Rules exactly as OBS-012. Shares are computed over `ts > now - 1 h` (model) or `24 h` (documents and
@@ -393,7 +394,7 @@ It answers `POST /v1/completions` with a Together-shaped body (`choices[0].text`
 | `tests/test_drift_scoring.py` (new) | `ks_score`, `chi2_score`, `centroid_score`: same vs. shifted distributions, seeded (OBS-007) |
 | `tests/test_drift_store.py` (new) | add/compute; 29 vs 30 samples (OBS-006); reference freeze surviving retention (OBS-008); reset (OBS-009); two instances and a restart (OBS-005); two loops, one write per tick, one log per transition (OBS-010); retention (OBS-011); bad lines skipped |
 | `tests/test_drift_alerts.py` (new) | Each alert fires, stays, clears; no "retrain" in any message (OBS-012) |
-| `tests/test_drift_feeding.py` (new) | Model samples per label and outcome with fake Together replies 200/429/500 (OBS-001); document samples via upload and `load_directory` (OBS-002); embeddings aggregates (OBS-003); timing (OBS-014); base URL (OBS-021) |
+| `tests/test_drift_feeding.py` (new) | Model samples per label and outcome with fake Together replies 200/429/500 (OBS-001); document samples via upload and `batch_load_documents` (OBS-002); embeddings aggregates (OBS-003); timing (OBS-014); base URL (OBS-021) |
 | `tests/test_drift_privacy.py` (new) | Marker text never in `data/drift/`; every aggregate has `n ≥ 30` (OBS-004) |
 | `tests/test_observability_api.py` (extended) | Contract per route (OBS-013, OBS-NFR-03) |
 | `tests/test_metrics_multiprocess.py` (extended) | New gauges, one series per label with two workers (OBS-015) |

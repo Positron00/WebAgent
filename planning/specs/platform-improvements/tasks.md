@@ -123,7 +123,7 @@ phase 4 about 24 h (3 d).
 | 4.1 | Repair imports: align `llm_service`, document drift (`document_ingestion_service`), and `observability` routes with `app.core.observability` | IMP-128 | 3.22 | `test_import_all_modules.py` has no `xfail` for the observability set | 6 h |
 | 4.2 | Merge document drift into `document_ingestion_service.py` (`doc_ingestion_service` alias); remove `doc_ingestion_service.py` | IMP-128 | 4.1 | Observability `/drift` and doc baseline routes still work | 4 h |
 | 4.3 | Mount `api/routes/observability` on `/api/v1` (API key); document vs `/metrics` and LangSmith | IMP-128 | 4.1 | `test_observability_api.py` passes | 3 h |
-| 4.4 | Wire drift hooks from production LLM calls where appropriate (no duplicate chat routing) | IMP-128 | 4.1 | pytest with fakes; RUNBOOK section | 4 h |
+| 4.4 | Wire drift hooks from production LLM calls where appropriate (no duplicate chat routing). Done in 3.6.0 (`planning/specs/observability-drift/`) | IMP-128 | 4.1 | pytest with fakes; RUNBOOK section | 4 h |
 | 4.5 | Self-hosted LLM Docker entrypoint and README aligned with repaired stack | IMP-128 | 4.1 | `docker run … id -u` non-root; health check passes | 2 h |
 | 4.6 | CHANGELOG; version 3.5.0 | IMP-NFR-08 | 4.1–4.5 | Reviewed | 1 h |
 
@@ -139,14 +139,16 @@ fixes are listed under 3.5.0 in `CHANGELOG.md`.
 Done since then: task 1.11 (spending caps recorded in `PRODUCTION_READINESS.md`, 2026-10-15) and
 task 3.14 (3.5.3: the Grafana 11.4 dashboards were checked on the local stack; the check found
 the dashboards weren't mounted, the drift dashboard queried metrics that don't exist, and model
-calls weren't recorded, all fixed in 3.5.3).
+calls weren't recorded, all fixed in 3.5.3). Task 4.4 (3.6.0, 2026-10-16): drift and alerts come
+from real model calls, document loads and embeddings, shared by all workers; specified in
+`planning/specs/observability-drift/`. With it IMP-128 is complete.
 
 Still open: these need a person, a uat environment or an external account, so they can't be
 done in code.
 
 | Task | What is left | Requirement |
 |---|---|---|
-| 1.3 | Turn on branch protection for `main` (both CI jobs required) and try one failing PR | IMP-001 |
+| 1.3 | Branch protection for `main` is on (confirmed 2026-10-16); try one failing PR | IMP-001 |
 | 1.18 | Before/after answer comparison for the per-agent temperatures. Decided 2026-10-15: no dedicated runs (the Together key has $25 in total); answers are read during the next shadow week and compared only if one looks worse | IMP-NFR-07 |
 | 1.26 | Release check: sign in on `next start` and a Vercel preview; two sessions with separate limits; production build without a code answers 503. When the web app is first deployed to Vercel | IMP-010–IMP-012 |
 | 2.10 | Measure `tokens_used` on 10 agentic runs and set `WEBAGENT_TASK_TOKEN_BUDGET` (it ships as 0, off). From the next shadow week's research runs | IMP-042 |

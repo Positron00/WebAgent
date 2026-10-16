@@ -1,6 +1,6 @@
 # Observability and model-service plan (3.6.0)
 
-Status: decided; reviewed against the spec 2026-10-16; specified in [`specs/observability-drift/`](specs/observability-drift/README.md), which wins where the two differ · Base: `main` at v3.5.3 (`cac70c6`) · 2026-10-15 ·
+Status: implemented in 3.6.0 (2026-10-16); specified in [`specs/observability-drift/`](specs/observability-drift/README.md), which wins where the two differ · Base: `main` at v3.5.3 (`cac70c6`) · 2026-10-15 ·
 Release: 3.6.0, **before** the next shadow week (so the week also produces real drift data)
 
 ## 1. Summary
@@ -33,7 +33,7 @@ which 3.5.0 left undone.
 | Model drift detectors | 4 detectors (latency, tokens, embeddings, performance) fed **only** by `LLMService.generate_response` | `app/services/llm_service.py:80-105` |
 | `LLMService.generate_response` | **Simulation**: sleeps 0.1 s, returns "This is a simulated response…", counts words as tokens, fixed accuracy 0.95. **No caller** in `app`, demos, tests or scripts | `llm_service.py:62-73`; grep |
 | Document drift detectors | 4 detectors (processing time, size, type, quality) fed **only** by `DocumentProcessingObservability.process_document` | `document_ingestion_service.py:656-700` |
-| `DocumentProcessingObservability.process_document` | **Simulation**: sleeps 0.1 s, invents entities and a quality score. **No caller**. Real loads go through `DocumentLoaderService.load_document` (upload API, `ingest_documents`, `load_directory`, `scripts/batch_document_loader.py`) | `document_ingestion_service.py:665-676`; grep |
+| `DocumentProcessingObservability.process_document` | **Simulation**: sleeps 0.1 s, invents entities and a quality score. **No caller**. Real loads go through `DocumentLoaderService.load_document` (upload API, `ingest_documents`, `batch_load_documents`, `scripts/batch_document_loader.py`) | `document_ingestion_service.py:665-676`; grep |
 | Drift state | In-process `deque`s and a module-level registry (`get_all_drift_stats`): each of the 2 workers has its own; lost on restart | `app/core/drift_detection.py:46-53, 762, 829` |
 | Drift scores | Numerical and categorical: `1 − p-value`, drift when p < 0.05 (score > 0.95). Embedding: `1 − cosine similarity`, drift when similarity < 0.3 (score > 0.7). Performance: weighted relative change, drift when > 0.15 | `drift_detection.py:181-215, 293-330, 429-445, 576-641` |
 | Drift dashboard gauges (3.5.3) | Red at 0.05 / 0.3 / 0.15 as score thresholds: **wrong** for the KS-based detectors and for embeddings | `backend/grafana/dashboards/model-drift-dashboard.json` |

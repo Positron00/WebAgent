@@ -43,6 +43,7 @@ chromadb>=0.4.22
 # Data processing
 pandas>=2.1.1
 numpy>=1.26.0
+scipy>=1.11  # drift scoring and ContextDefender; pinned in constraints.txt
 protobuf>=4.24.0
 
 # Web search

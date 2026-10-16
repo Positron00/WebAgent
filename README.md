@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.5.3-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.6.0-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2026--10--14-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent platform for web research and document processing.
@@ -61,6 +61,8 @@ WebAgent is an advanced multi-agent AI platform that orchestrates specialized ag
   - Full LangSmith traces of each run, including token counts
   - Finished task reports saved to `backend/data/results/`, and deleted after `WEBAGENT_RESULTS_RETENTION_DAYS` (30)
   - Prometheus metrics on `/metrics`; drift, alerts and model metrics on `/api/v1/observability/*` (API key needed); see [docs/RUNBOOK.md](docs/RUNBOOK.md)
+  - Drift measured from real traffic: model speed and tokens per agent, embeddings, and document time, size and type, each compared with a frozen reference
+  - Six alerts (model drift, model errors, rate limits, token use, document drift, document errors) on the Model Drift dashboard and in Grafana's alert list
 
 - **Reliability**: Temporary Together AI errors (rate limits, 5xx) are retried, and the server keeps answering while tasks run
   - Each agent's model output can be capped in its YAML settings, and a reply cut off at its limit is logged; a typical agentic run takes about 2.5–3.5 minutes

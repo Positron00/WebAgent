@@ -40,7 +40,7 @@ self-hosted model adds:
 `doc_processing_time` (seconds), one `doc_size` (bytes), one `doc_type` (lower-case file extension)
 and one `doc_outcome` (`ok` or `error`). A file refused before loading (unsupported type, 415) adds
 nothing. Loading a directory adds one set per file.
-- Check: pytest through `POST /api/v1/documents/upload` and `load_directory` with temp files.
+- Check: pytest through `POST /api/v1/documents/upload` and `batch_load_documents` with temp files.
 
 **OBS-003 Embeddings (must; should if the 5 ms limit of OBS-014 can't be met).** Vectors computed
 by the embeddings object `vectordb.get_embeddings()` returns are summed in memory; each time a

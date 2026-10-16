@@ -34,6 +34,12 @@ services:
       - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
       - WEBAGENT_SECURITY_SECRET_KEY=${WEBAGENT_SECURITY_SECRET_KEY:-}
       - WEBAGENT_API_KEY=${WEBAGENT_API_KEY:-}
+      # Drift and alerts (3.6.0); empty means the code default.
+      - TOGETHER_API_BASE=${TOGETHER_API_BASE:-}
+      - WEBAGENT_DRIFT_ENABLED=${WEBAGENT_DRIFT_ENABLED:-true}
+      - WEBAGENT_DRIFT_WINDOW=${WEBAGENT_DRIFT_WINDOW:-}
+      - WEBAGENT_DRIFT_INTERVAL_SECONDS=${WEBAGENT_DRIFT_INTERVAL_SECONDS:-}
+      - WEBAGENT_TOKEN_ALERT_DAILY=${WEBAGENT_TOKEN_ALERT_DAILY:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)"]
       interval: 30s

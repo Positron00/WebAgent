@@ -33,16 +33,22 @@ _LOCAL_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 @lru_cache(maxsize=1)
 def get_embeddings():
-    """Single entry point for embedding models (IMP-086, IMP-095)."""
+    """Single entry point for embedding models (IMP-086, IMP-095), recording drift aggregates (OBS-003)."""
     provider = (settings.EMBEDDINGS_PROVIDER or "openai").lower()
     if provider == "local":
         from langchain_huggingface import HuggingFaceEmbeddings
 
-        return HuggingFaceEmbeddings(
+        inner = HuggingFaceEmbeddings(
             model_name=_LOCAL_EMBEDDING_MODEL,
             cache_folder="/opt/models",
         )
-    return OpenAIEmbeddings(api_key=settings.OPENAI_API_KEY)
+    else:
+        inner = OpenAIEmbeddings(api_key=settings.OPENAI_API_KEY)
+    if not settings.DRIFT_ENABLED:
+        return inner
+    from app.services.drift_embeddings import DriftRecordingEmbeddings
+
+    return DriftRecordingEmbeddings(inner, provider)
 
 
 class VectorDBService:

@@ -71,7 +71,7 @@ def _cache_key(state: WorkflowState, action: ToolAction, args: Dict[str, Any]) -
 def _invoke_llm(prompt: str) -> str:
     from app.services.llm import get_trusted_llm
 
-    reply = get_trusted_llm().invoke(prompt)
+    reply = get_trusted_llm(call_label="judge").invoke(prompt)
     return reply if isinstance(reply, str) else str(getattr(reply, "content", reply))
 
 

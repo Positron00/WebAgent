@@ -210,7 +210,7 @@ Require `X-API-Key` when API-key auth is on (always in uat/prod):
 - **POST /api/v1/documents/upload** (415 for an unsupported file type), **POST /api/v1/documents/search**, **GET /api/v1/documents/document/{document_id}**, **GET /api/v1/documents/related/{document_id}**: Documents (IDs are UUIDs)
 - **GET /api/v1/status**: LLM and service status
 - **GET /api/v1/health/detailed**: Detailed service health
-- **GET /api/v1/observability/metrics**, **/drift**, **/alerts**, **/health**; **POST /api/v1/observability/llm/reset_baseline**, **/doc/reset_baseline**: model and document drift, alerts and observability metrics (see [docs/RUNBOOK.md](../docs/RUNBOOK.md))
+- **GET /api/v1/observability/metrics**, **/drift**, **/alerts**, **/health**; **POST /api/v1/observability/llm/reset_baseline**, **/doc/reset_baseline**: drift per detector, active alerts (`name`, `severity`, `service`, `message`, `since`), health from the alerts and model/document figures, all from the shared drift store (fields in [docs/api_reference.md](docs/api_reference.md); alerts and resets in [docs/RUNBOOK.md](../docs/RUNBOOK.md) "Drift and alerts")
 
 Errors carry `"error": {"code": "...", "message": "..."}`; `HTTPException` and validation errors also keep FastAPI's `detail`. Intake-guard refusals (403, 409) keep their own flat shape, which the web app reads.
 
@@ -409,7 +409,12 @@ Key environment variables used by the application:
 | WEBAGENT_MODEL_REGISTRY_PATH | Model registry state file | backend/data/registry/models_registry.json |
 | WEB_CONCURRENCY | Uvicorn workers in the Docker image (task status is shared through `data/results`) | 4 |
 | WEBAGENT_ALLOW_FAKE_LLM | Placeholder reply when every provider fails | false |
-| WEBAGENT_DATA_DIR | Data folder (vector DB, artifacts, results) | backend/data |
+| WEBAGENT_DATA_DIR | Data folder (vector DB, artifacts, results, drift samples) | backend/data |
+| WEBAGENT_DRIFT_ENABLED | Record drift samples from real model calls and document loads, and compute drift and alerts | true |
+| WEBAGENT_DRIFT_WINDOW | Reference size, and the most current samples compared with it (minimum 30) | 50 |
+| WEBAGENT_DRIFT_INTERVAL_SECONDS | Seconds between drift and alert computations | 60 |
+| WEBAGENT_TOKEN_ALERT_DAILY | `token_usage` alert above this many tokens in 24 hours (0 = off) | 0 |
+| TOGETHER_API_BASE | Together API address; dev only, for `scripts/fake_together.py` | https://api.together.xyz/v1 |
 
 `.env.local.example` in the repo root lists every setting with comments.
 

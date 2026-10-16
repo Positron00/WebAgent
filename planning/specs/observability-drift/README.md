@@ -1,6 +1,6 @@
 # Spec: real drift and alerts (3.6.0)
 
-Status: draft v2 (aligned with the plan, 2026-10-16) · Source plan: [`planning/observability-plan-3.6.0.md`](../../observability-plan-3.6.0.md) ·
+Status: implemented in 3.6.0 (2026-10-16; deviations below) · Source plan: [`planning/observability-plan-3.6.0.md`](../../observability-plan-3.6.0.md) ·
 Base: `main` at v3.5.3 (`cac70c6`) · 2026-10-15 · Release: 3.6.0, before the next shadow week
 
 ## What this work does
@@ -78,7 +78,7 @@ Checked in the code on 2026-10-15; details in the plan's section 2.
 
 1. `LLMService.generate_response` and `DocumentProcessingObservability.process_document` are
    simulations with no caller in `app`, demos, tests or scripts. Real document loads all go through
-   `DocumentLoaderService.load_document` (upload API, `ingest_documents`, `load_directory`,
+   `DocumentLoaderService.load_document` (upload API, `ingest_documents`, `batch_load_documents`,
    `scripts/batch_document_loader.py`).
 2. The judge (`security/judge.py`) and the triage tie-breaker (`services/triage.py`) use
    `get_trusted_llm()`, the same Together client as the agents, so model samples must be labelled
@@ -98,6 +98,31 @@ Checked in the code on 2026-10-15; details in the plan's section 2.
 9. `TOGETHER_API_BASE` is read in `llm.py` but never passed to the Together client, which always
    posts to `api.together.xyz`; honouring it makes the local check possible without real credit
    (OBS-021).
+
+## Implementation notes (3.6.0)
+
+Where the code differs from the designs, or adds to them:
+
+- `drift_alerts` exposes `figures(samples, now)` and `evaluate(figures, detectors, token_limit)`
+  instead of `evaluate(samples, detectors, now)`, so the figures are computed once and stored.
+- The per-detector reference and scoring logic is in a helper module, `app/core/drift_reference.py`,
+  to keep `drift_store.py` near the size limit (OBS-NFR-05).
+- The detector classes left `app/core/drift_detection.py` as planned, but `demos/ml_observability_demo.py`
+  used them, so they moved to `backend/demos/drift_detectors.py` for the demo only.
+- The directory loader is `DocumentLoaderService.batch_load_documents` (the designs said
+  `load_directory`; they now use the real name).
+- `SelfHostedChatModel` declares its settings as model fields: building it failed before
+  ("object has no field base_url"), found while adding `call_label`.
+- Docker Compose passes `TOGETHER_API_BASE` and the four drift settings to the backend (the local
+  check needs them); an empty `TOGETHER_API_BASE` means Together's address.
+- `load_document` also observes `document_processing_latency_seconds`: the local check found the
+  dashboard's document-time panel empty because uploads never fed it.
+- Local check (task 15, 2026-10-16): a real model call and a real upload recorded samples;
+  with `scripts/fake_together.py`, `model_drift`, `model_errors`, `rate_limited` and
+  `document_drift` (from real uploads) fired in `/observability/alerts`, `/metrics` and Grafana's
+  alert list, and cleared again. It also showed that the speed detector flags shifts of about 10%
+  when latencies are steady (KS at p < 0.05 on 30–50 samples), so `model_drift` may fire often on
+  real traffic: watch it in the shadow week.
 
 ## Traceability
 
