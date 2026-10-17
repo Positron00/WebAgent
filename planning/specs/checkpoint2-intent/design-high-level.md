@@ -30,12 +30,13 @@ flowchart LR
 | `app/security/intent.py` | Intent record; plan check (`plan::rewrite`, `plan::subgoal`); declared tools | new |
 | `app/security/egress.py` | Salted 8-word shingles of private text; `egress_overlap` of a search | new |
 | `app/security/signals.py` | Scores a call or subgoal against the intent: phase A (encoder and ContextDefender in parallel) or phase B (classifier) | new |
-| `app/security/alignment_model.py` | Loads and runs the classifier; gate check; fallback | new (phase B) |
+| `app/security/alignment_model.py` | Loads and runs the classifier; gate check; thresholds; judge band; fallback | new (phase B) |
+| `app/core/startup_checks.py` | uat/prod refuse an ungated classifier in the model folder | changed (phase B) |
 | `app/security/tool_guard.py` | Adds the new signals to checkpoint 2's context | changed |
 | `app/security/{ledger,judge,thresholds,decision,records}.py` | Ledger fields and merge; judge prompt; thresholds; context defaults; collection | changed |
 | `config/security/{policies.cedar,schema.cedarschema,policy_tests.yaml,patterns.json}` | New actions, fields, shadow rules, test rows, code-request keywords | changed |
 | `app/services/task_manager.py`, `app/agents/{supervisor,senior_research,internal_research,document_extraction_agent,coding_review}.py` | Hook points | changed |
-| `scripts/{build_alignment_dataset,generate_alignment_calls,train_alignment_model,eval_alignment_model,eval_alignment_suites}.py` | Phase B data, training, gate, evaluation | new |
+| `scripts/{fetch_alignment_sources,build_alignment_dataset,generate_alignment_calls,train_alignment_model,eval_alignment_model,eval_alignment_suites,bench_checkpoint2}.py` and helpers (`alignment_{sources,data,pairs,agent_pairs,eval_pairs,training}.py`) | Phase B data, training, gate, evaluation; checkpoint 2 latency | new |
 
 ## 2. Who decides what
 

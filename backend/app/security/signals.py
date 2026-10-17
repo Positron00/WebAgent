@@ -102,7 +102,8 @@ def intent_harm(state: Optional[WorkflowState]) -> int:
     return int(record.get("harm") or 0)
 
 
-def _classifier_signals(state: WorkflowState, text: str, action: str) -> Optional[TextSignals]:
+def _classifier_signals(state: WorkflowState, text: str, action: str,
+                        classifier_text: Optional[str] = None) -> Optional[TextSignals]:
     """SEC-126: the classifier's alignment and risk, plus the MiniLM task alignment; None without a
     gated model or on any failure (phase A is used)."""
     model = alignment_model.get_model()
@@ -110,7 +111,8 @@ def _classifier_signals(state: WorkflowState, text: str, action: str) -> Optiona
     if model is None or record is None:
         return None
     try:
-        p_aligned, risk = model.score_pair(record["text"], f"{action}: {text}" if action else text)
+        call = classifier_text if classifier_text else text
+        p_aligned, risk = model.score_pair(record["text"], f"{action}: {call}" if action else call)
     except Exception as exc:  # noqa: BLE001
         _warn_once("classifier", exc)
         return None
@@ -126,15 +128,18 @@ def _classifier_signals(state: WorkflowState, text: str, action: str) -> Optiona
     )
 
 
-def score_text(state: WorkflowState, text: str, action: str = "") -> TextSignals:
+def score_text(state: WorkflowState, text: str, action: str = "",
+               classifier_text: Optional[str] = None) -> TextSignals:
     """Intent alignment, task alignment and harm of ``text`` (an argument or a subgoal).
 
     ``action`` is the classifier's action word (``web_search``, ``internal_retrieve``,
-    ``execute_code``, ``plan``); the pair it scores is ``"<action>: <text>"``. Phase A ignores it."""
+    ``execute_code``, ``plan``); the pair it scores is ``"<action>: <text>"``. Phase A ignores it.
+    ``classifier_text`` replaces ``text`` for the classifier only: code calls are scored on the code
+    itself (capped), as in its training rows, while phase A scores the coding assistant's explanation."""
     text = (text or "").strip()
     if not text:
         return TextSignals()
-    phase_b = _classifier_signals(state, text, action)
+    phase_b = _classifier_signals(state, text, action, classifier_text)
     if phase_b is not None:
         return phase_b
     harm_future = _POOL.submit(harm_of, text)

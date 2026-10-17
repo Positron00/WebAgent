@@ -6,16 +6,17 @@ Paths are relative to `backend/`. Requirement IDs refer to [`requirements.md`](r
 
 | File | New? | Purpose | Approx. size |
 |---|---|---|---|
-| `app/security/intent.py` | new | `record_intent`, `check_plan`, `check_follow_ups`, `declared_for`, `code_requested` | ~170 lines |
-| `app/security/signals.py` | new | `score_text(state, text)` → `TextSignals`: intent alignment, task alignment, harm; phase A in parallel, phase B classifier | ~120 lines |
+| `app/security/intent.py` | new | `record_intent`, `check_plan` (also warms the intent), `check_follow_ups`, `declared_for`, `code_requested` | ~205 lines |
+| `app/security/signals.py` | new | `score_text(state, text, action="", classifier_text=None)` → `TextSignals` (intent alignment, task alignment, harm; phase B adds `risk`, `p_aligned`, `classifier`); `warm_intent`, `call_risk`; phase A in parallel, phase B classifier | ~200 lines |
 | `app/security/egress.py` | new | `remember(state, text)`, `overlap(state, query)`; salted shingles | ~80 lines |
-| `app/security/alignment_model.py` | new (phase B) | Load, gate check, `score_pair(intent, call_text)` | ~150 lines |
+| `app/security/alignment_model.py` | new (phase B) | `load(d, require_gate=True)`, `get_model`, `score_pair(intent, call_text)`, `current_thresholds`, `band_outcome`, `siamese_embed`; the on-disk format in its docstring | ~260 lines |
 | `app/security/tool_guard.py` | changed | `_build_context` adds the new fields; drift counter; scored text per action | +40 lines |
 | `app/security/alignment.py` | changed | `encode(text)` shared by `signals.py`; `cosine_alignment` unchanged | +15 lines |
 | `app/security/ledger.py` | changed | `intent`, `egress` and `low_alignment_calls` keys; merge | +20 lines |
 | `app/security/judge.py` | changed | Checkpoint 2 prompt with markers, intent, subgoals, last calls | ±30 lines |
 | `app/security/thresholds.py` | changed | New threshold defaults (§5) | +10 lines |
-| `app/security/decision.py` | changed | `CONTEXT_DEFAULTS` for the new fields (SEC-110) | +15 lines |
+| `app/security/decision.py` | changed | `CONTEXT_DEFAULTS` for the new fields (SEC-110); matched policies sorted (SNFR-14); context keys starting with `_` (the guard's own, e.g. `_p_aligned`) never reach Cedar | +25 lines |
+| `app/core/startup_checks.py`, `main.py` | changed (phase B) | uat/prod refuse an ungated model in `alignment_model_dir`; the model is warmed at startup when present | +25 lines |
 | `app/security/records.py` | changed | New collection fields (SEC-113) | +10 lines |
 | `app/security/types.py` | changed | `PlanAction = Literal["plan::rewrite", "plan::subgoal"]` | +3 lines |
 | `app/core/config_def.py`, `app/core/config.py` | changed | `plan_check`, `alignment_model_dir`; `WEBAGENT_GUARD_PLAN_CHECK` | +8 lines |
@@ -74,6 +75,13 @@ def score_text(state, text: str) -> TextSignals:
 
 - One MiniLM-L6 encode of the text gives both cosines (against the intent embedding and the
   cached task-text embedding).
+- `action` (`web_search`, `internal_retrieve`, `execute_code`, `plan`) and `classifier_text` are for
+  the classifier only: it scores `"<action>: <classifier_text or text>"`; for code calls
+  `tool_guard` passes the code (capped at 1,000 characters), since the training rows are code.
+- With a gated classifier: `intent_alignment = round(100 × P(aligned))`, `harm` and `risk` are its
+  risk (0–100), `risk_above_intent` is that risk as-is (`call_risk`), no ContextDefender call per
+  text (the intent's own harm is still scored once per task), and `task_alignment` still comes from
+  the MiniLM encode.
 - `harm_of` calls `context_defender.score([ContextItem("user_turn", text)])` and returns the harm
   axis: arguments and the intent go through the same route, so their scores are comparable;
   ContextDefender's per-worker cache makes repeats free.
@@ -103,7 +111,8 @@ async def check_follow_ups(state, questions: list[str]) -> list[str]:
   thread, calls `decision.decide(principal, action, task_id, context, shadow=tool_mode == "shadow")`
   with `principal` = the agent that wrote the subgoal (`supervisor` or `senior_research`),
   records metrics and collection, and logs like checkpoint 2.
-- `_effective`: shadow → allow; `verify` → the judge if on (`ALIGNED` → allow), else decline;
+- `_effective`: shadow → allow; `verify` → `tool_guard.resolve_verify` (the judge if on, with the
+  classifier's band of SEC-127; `ALIGNED` → allow), else decline;
   `escalate` → `records.record_escalation` and `GuardStop` (stops the task as SEC-046).
 - `_filter` keeps allowed subgoals. In act mode only, a removed one is added to
   `ledger["skipped"]` as `{"action": "plan::subgoal", "origin": ..., "outcome": ..., "policy_ids":
@@ -293,11 +302,17 @@ def load(model_dir) -> Optional[AlignmentModel]   # CrossEncoder + heads; None i
 def score_pair(intent: str, call_text: str) -> Tuple[float, int]   # P(aligned), risk 0-100
 ```
 
-Loaded once per worker, warmed at startup when present; its own lock (`lock_for`). The startup
-check (`startup_checks.py`) refuses uat/prod when the directory exists and `metadata.json["test"]["passed"]`
-is not true. `signals.score_text` uses it when loaded: `intent_alignment = round(100 × P(aligned))`,
-`risk_above_intent` from the risk head; harm for subgoals from the risk head; no ContextDefender
-call per tool call.
+Loaded once per worker (a failed load is retried after 60 s), warmed at startup when present; its
+own lock (`lock_for`); it doesn't change torch's thread count (the gate measures one thread through
+`OMP_NUM_THREADS=1`). `load(require_gate=True)` returns None for an ungated model; the gate script
+uses `require_gate=False`. The startup check (`startup_checks.check_alignment_model_gate`) refuses
+uat/prod when the directory holds a `metadata.json` whose `test.passed` is not true (no folder or
+no metadata is fine). `signals.score_text` uses it when loaded (§3). `current_thresholds()` gives
+the model's intent thresholds (clamped by `thresholds.merged`), added to both Cedar contexts.
+`band_outcome(p)` and `tool_guard.resolve_verify` implement SEC-127: only when the judge is on, the
+call has a classifier score and every matched policy is one of `off-intent-search-verify`,
+`call-risk-above-intent-verify`, `undeclared-tool-verify`, `rewrite-drift-verify`; below the band
+decline, above allow, inside the judge.
 
 ## 12. Tests
 
@@ -311,4 +326,7 @@ call per tool call.
 | `tests/test_security_records.py`, `test_security_guard_config.py`, metrics test (extended) | SEC-112 – SEC-114 |
 | `tests/test_security_ledger_merge.py` (new or extended) | SEC-115 |
 | `tests/test_security_judge_prompt.py` (new) | Markers, intent, injected "ALIGNED" (SEC-111) |
-| `tests/test_alignment_model.py` (phase B) | Fixture model load, gate refusal, fallback, judge band (SEC-123 – SEC-127) |
+| `tests/test_security_intent_checkpoint2.py` (new) | Checkpoint 2 with the intent fields end to end, egress and code rows, signals-down fallback, judge prompt, config switch, metrics, plan rows without text |
+| `tests/test_generate_alignment_calls.py` (new) | Generation: estimate, resume, stop rule, code mode (SEC-122) |
+| `tests/test_alignment_model.py` (phase B) | Fixture model load, gate refusal, fallback, judge band, code calls scored on the code (SEC-123 – SEC-127) |
+| `tests/test_build_alignment_dataset.py`, `tests/test_train_alignment_model.py` (phase B) | Builder filters and split rules; thresholds, gate report, a tiny train-and-gate round trip, evaluation suites |

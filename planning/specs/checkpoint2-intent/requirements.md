@@ -83,7 +83,8 @@ when it set `requires_document_extraction`. For `execute_code` it is true when t
 code, a chart or a calculation (the `code_request` regex list in the new
 `config/security/intent.json`, matched on the intent only); its scored text for SEC-103 and
 SEC-104 is the coding assistant's `explanation`, passed to the guard only (never to the tool or a
-log outside dev). With no `research_plan` (for example a document-only task), `declared` is true.
+log outside dev); a phase B classifier scores the code itself instead (capped at 1,000 characters),
+as its training rows are code (SEC-126). With no `research_plan` (for example a document-only task), `declared` is true.
 - Check: pytest table per tool.
 
 **SEC-108 Drift counter (must).** `low_alignment_calls` counts this task's search and retrieval
@@ -148,15 +149,18 @@ SEC-102 on or off (`WEBAGENT_GUARD_PLAN_CHECK` overrides it); `security_guard.al
 `data/security/alignment/{train,test,probe}.jsonl` (Git LFS), plus git-ignored
 `data/security/alignment/local/` files for gated and no-train sources (the repository is public;
 SEC-121), of rows `{intent, call, action,
-labels: {aligned: yes|no, risk: none|low|high}, origin, role}` from the sources and roles in the
-model-and-data design §2 only. Splits follow ContextDefender's rules: near-duplicate clusters
+labels: {aligned: yes|no, risk: none|low|high}, origin, role, split, groups, sources, cluster}`
+(`action` one of `web_search`, `internal_retrieve`, `execute_code`, `plan`, `function`; `groups` are
+the split units, `sources` the licences' datasets) from the sources and roles in the model-and-data
+design §2 only. Splits follow ContextDefender's rules: near-duplicate clusters
 (MiniLM cosine ≥ 0.9) and attack templates never cross splits; evaluation-only sources appear only
 in `test` or `probe`, never in `train`. `--check-data` validates schema, duplicates, leakage, licence mixing and a minimum of 50
 rows per label and action family. The data README records every source, licence and use.
 - Check: `--check-data` passes; pytest of the builder on fixture rows.
 
 **SEC-121 Source conditions (must).** The builder refuses to include: saroku rows until
-`data/security/alignment/QUALITY.md` records its quality check as passed; Agent-SafetyBench cases
+`data/security/alignment/QUALITY.md` records its quality check as passed (and then only the rows its
+conditions allow); Agent-SafetyBench cases
 derived from AdvBench, AgentDojo or InjecAgent; ASQ rows whose source question set isn't on the
 accepted list; any row from a no-train source (AgentHarm, SHADE-Arena, OS-Harm, TraceSafe) in
 `train`; AgentDAM outside `test`; DeCompBench at all (skipped); and any row from a gated source
@@ -168,7 +172,8 @@ repository.
 **SEC-122 Generated benign calls (must).** `scripts/generate_alignment_calls.py` runs WebAgent's
 supervisor planning (one model call per question) over benign questions from approved sets and
 records the rewrite and plan questions as aligned calls; for coding questions it also runs the
-coding assistant's generation (never executing the code) for benign code rows. It first runs 50
+coding assistant's generation (`--code`, never executing the code) for benign code rows, written to
+`generated/webagent_gen_code.jsonl`. It first runs 50
 questions and reports
 the tokens and cost; a full run stops before it would leave less than half of the credit that was
 left when it started. Generated rows are labelled `origin: webagent-gen`.
@@ -195,7 +200,9 @@ baseline ships.
 - Check: `scripts/eval_alignment_model.py`; startup check (SEC-126).
 
 **SEC-126 Runtime (must).** With a gated model present, `intent_alignment` and `risk_above_intent`
-(and `subgoal_harm` for subgoals) come from the classifier instead of the phase A sources, and
+(and `subgoal_harm` for subgoals) come from the classifier instead of the phase A sources (it reads
+`"<action>: <text>"`, and for code calls the code itself), its metadata's intent thresholds replace
+the defaults in the Cedar context, and
 `classifier_available` is true. Without it (missing, failed gate, load error) the phase A sources
 are used and `classifier_available` is false. In uat and prod startup fails if the configured
 model exists but hasn't passed its gate.

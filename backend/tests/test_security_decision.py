@@ -93,3 +93,15 @@ def test_invalid_shadow_annotation_fails_loading(tmp_path):
     (tmp_path / "policies.cedar").write_text(text)
     with pytest.raises(PolicyLoadError, match="invalid @shadow"):
         load_policy_engine(tmp_path)
+
+
+def test_every_intent_rule_is_shadow_only():
+    """checkpoint2-intent SEC-109: the nine intent rules record and never decide until SEC-130."""
+    engine = load_policy_engine()
+    intent_rules = {"rewrite-drift-verify", "subgoal-harm-decline", "subgoal-off-intent-decline",
+                    "call-risk-above-intent-decline", "call-risk-above-intent-verify", "off-intent-search-verify",
+                    "private-egress-decline", "undeclared-tool-verify", "drift-escalate"}
+    by_id = {a.policy_id: a for a in engine.annotations.values()}
+    assert intent_rules <= set(by_id)
+    assert all(by_id[p].shadow for p in intent_rules)
+    assert not any(a.shadow for p, a in by_id.items() if p not in intent_rules)

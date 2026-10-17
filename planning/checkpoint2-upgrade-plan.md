@@ -184,7 +184,8 @@ phase A, `declared` for `execute_code` is true when the intent asks for code, a 
 calculation (the `code_request` regex list in a new `config/security/intent.json`; its hit rate is
 measured in shadow), and alignment and risk are scored on the coding assistant's `explanation`,
 passed to the guard only. In phase B the classifier scores the
-`explanation` plus the code's comments against the intent; code keeps its AST checks either way.
+code itself (capped at 1,000 characters), as its training rows are code; code keeps its AST checks
+either way.
 
 ### 7.4 Policies (all `@shadow("true")` until phase C)
 
@@ -451,7 +452,8 @@ the starting thresholds); before phase B's dataset build: that token and the sar
 
 The spec's designs list every file; in short:
 
-- Backend: new `app/security/{intent,signals,egress}.py` and (phase B) `alignment_model.py`;
+- Backend: new `app/security/{intent,signals,egress}.py` and (phase B) `alignment_model.py` and
+  `app/core/startup_checks.py`'s classifier gate check;
   changed `app/security/{tool_guard,alignment,ledger,judge,thresholds,decision,records,types}.py`,
   `app/core/{config_def,config,metrics}.py`, `app/services/task_manager.py` (intent record),
   `app/agents/supervisor.py` and `senior_research.py` (plan check), `internal_research.py` and
@@ -459,7 +461,9 @@ The spec's designs list every file; in short:
 - Config: `config/security/{policies.cedar,schema.cedarschema,policy_tests.yaml}`, new
   `config/security/intent.json`, `config/{dev,uat,prod}.yaml` (`plan_check`).
 - Scripts and data (phase B): `scripts/{fetch_alignment_sources,generate_alignment_calls,
-  build_alignment_dataset,train_alignment_model,eval_alignment_model,eval_alignment_suites}.py`,
+  build_alignment_dataset,train_alignment_model,eval_alignment_model,eval_alignment_suites}.py` with
+  helpers `alignment_{sources,data,pairs,agent_pairs,eval_pairs,training}.py`, and
+  `scripts/bench_checkpoint2.py` (latency),
   `scripts/eval_checkpoint2_injecagent.py` (`--untainted`), `data/security/alignment/` (Git LFS, plus
   git-ignored `local/`), `models/security/alignment/`, `.gitattributes`, `.gitignore`.
 - Tests: plan check, each new field, each new policy row, shadow behaviour, judge prompt markers,

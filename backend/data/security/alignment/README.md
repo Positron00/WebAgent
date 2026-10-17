@@ -18,6 +18,7 @@ text from published research datasets. They are classifier data only. No row was
 | `counts.json` | — | Manifest: rows per source, role, label, action, split, committed or local; dropped rows; quotas |
 | `QUALITY.md` | — | The saroku quality check (passed, with conditions and its label mapping) |
 | `generated/webagent_gen.jsonl` | 50 tasks | Our own planner's rewrites and plan questions (`scripts/generate_alignment_calls.py`) |
+| `generated/webagent_gen_code.jsonl` | none yet | Our coding assistant's code for coding questions (`generate_alignment_calls.py --code`; the code is never run), read as aligned `execute_code` rows when present |
 
 Each row:
 

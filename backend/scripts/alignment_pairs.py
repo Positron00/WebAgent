@@ -115,6 +115,17 @@ def gen_rows(ctx: Ctx, rows: List[dict], rewrite_score: Callable[[str, str], int
     return [r for r in out if r], review
 
 
+CODE_CALL_CHARS = 1000  # the classifier reads code calls as the code itself, capped (runtime: tool_guard)
+
+
+def gen_code_rows(ctx: Ctx, rows: List[dict]) -> List[dict]:
+    """webagent-gen code rows: the coding assistant's code is an aligned execute_code call for its
+    question (benign twins for RedCode's risky code; the code is never run)."""
+    out = [ctx.row(r["question"], r["code"][:CODE_CALL_CHARS], "execute_code", "yes", "none", "webagent-gen:code",
+                   [f"gen:{r['question_hash']}"], ["webagent-gen"]) for r in rows if (r.get("code") or "").strip()]
+    return [r for r in out if r]
+
+
 def asq_rows(ctx: Ctx, rows: List[dict], accepted: Dict[str, dict], n: int, per_question: int = 3) -> List[dict]:
     out = []
     for r in rows:

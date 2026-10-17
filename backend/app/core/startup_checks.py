@@ -109,7 +109,7 @@ def check_alignment_model_gate() -> None:
     if not alignment_model.gate_passed(alignment_model.read_metadata(d)):
         raise RuntimeError(
             f"The alignment classifier in {d} has not passed the release gate (metadata.json "
-            "test.passed is not true; run scripts/eval_alignment_model.py --write-metadata). "
+            "test.passed is not true; run scripts/eval_alignment_model.py on it). "
             "Remove it, set security_guard.alignment_model_dir to a gated model, or set "
             "WEBAGENT_GUARD_ENABLED=false."
         )

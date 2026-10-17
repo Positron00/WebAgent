@@ -1,7 +1,8 @@
 # Tasks: checkpoint 2 checked against the user's intent
 
 Status (2026-10-16): phase A released as 3.7.0. Phase B built for 3.8.0 (B1, B2, B4–B8, B10); B3's
-full generation run waits for the Together credit figure; no candidate passed the gate (B6), so B9
+script has both modes (plans, and `--code` for benign code rows) but its full runs wait for the
+Together credit figure (and, for code, a coding-questions file from the fetch step); no candidate passed the gate (B6), so B9
 (footprint of an installed model) doesn't apply yet and the classifier is not installed. Results are
 in the README's implementation notes. Phase C needs the shadow week's data.
 

@@ -78,3 +78,23 @@ def test_full_run_stops_before_half_the_credit(monkeypatch, tmp_path):
     _install_fake_supervisor(monkeypatch, chain)
     report = asyncio.run(module.run(_args(module, tmp_path, 50, credit_left=1.0)))
     assert report["cost_usd"] <= 0.5 and chain.calls == 5
+
+
+def test_code_mode_records_code_and_explanation(monkeypatch, tmp_path):
+    module = _load()
+    monkeypatch.setattr(observability, "_model_token_totals", {})
+
+    class FakeCoder:
+        async def run(self, state):
+            observability.record_model_token_usage("together", 100, 50)
+            state.reports["coding_assistant"] = {"code": "print(1)", "explanation": "prints one"}
+            return state
+
+    fake = types.ModuleType("app.agents.coding_assistant")
+    fake.CodingAssistantAgent = FakeCoder
+    monkeypatch.setitem(sys.modules, "app.agents.coding_assistant", fake)
+    args = _args(module, tmp_path, 3, estimate=2)
+    args.code = True
+    report = asyncio.run(module.run(args))
+    rows = [json.loads(line) for line in (tmp_path / "out.jsonl").read_text().splitlines()]
+    assert report["questions_written"] == 2 and rows[0]["code"] == "print(1)" and rows[0]["kind"] == "code"

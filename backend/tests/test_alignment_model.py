@@ -229,3 +229,16 @@ def test_startup_accepts_a_missing_or_gated_model(monkeypatch, tmp_path, passed)
         (tmp_path / "m").mkdir()
         (tmp_path / "m" / "metadata.json").write_text(json.dumps({"test": {"passed": True}}), encoding="utf-8")
     startup_checks.check_security_guard_files()
+
+
+def test_code_calls_are_scored_on_the_code_itself(monkeypatch, tmp_path):
+    """Code rows in training are the code itself; the runtime scores the same, capped (not the explanation)."""
+    guard_on(monkeypatch, tmp_path)
+    model = FakeModel()
+    alignment_model.set_model_for_tests(model)
+    code = "print('placeholder')\n" * 100
+    asyncio.run(tool_guard.guard_tool("tool::execute_code", {"code": code}, _state("plot a chart"),
+                                      scored_text="a placeholder explanation"))
+    intent_text, call = model.pairs[-1]
+    assert call.startswith("execute_code: print('placeholder')") and "explanation" not in call
+    assert len(call) <= len("execute_code: ") + tool_guard.CODE_CALL_CHARS

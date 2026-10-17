@@ -48,7 +48,10 @@ def _scored_text(action: ToolAction, args: Dict[str, Any], scored_text: Optional
     return ""  # document extraction: an ID, checked by provenance (SEC-042)
 
 
-def _intent_fields(action: ToolAction, text: str, state: WorkflowState) -> Dict[str, Any]:
+CODE_CALL_CHARS = 1000  # the classifier reads code calls as the code itself, as in its training rows
+
+
+def _intent_fields(action: ToolAction, text: str, state: WorkflowState, code: Optional[str] = None) -> Dict[str, Any]:
     """Checkpoint2-intent SEC-103 – SEC-108: the call against the user's intent."""
     fields: Dict[str, Any] = {
         "declared": intent.declared_for(state, action),
@@ -60,7 +63,8 @@ def _intent_fields(action: ToolAction, text: str, state: WorkflowState) -> Dict[
         fields["intent_harm"] = signals.intent_harm(state)
         return fields
     # Phase A also fills the intent's harm the first time (in parallel); phase B scores one pair.
-    sig = signals.score_text(state, text, action=action.split("::", 1)[-1])
+    sig = signals.score_text(state, text, action=action.split("::", 1)[-1],
+                             classifier_text=code[:CODE_CALL_CHARS] if code else None)
     fields.update(
         intent_harm=signals.intent_harm(state),
         signals_available=sig.available,
@@ -87,7 +91,8 @@ def _build_context(
     align = 100
 
     user_turn = state.query
-    extra = _intent_fields(action, _scored_text(action, args, scored_text), state)
+    extra = _intent_fields(action, _scored_text(action, args, scored_text), state,
+                           code=str(args.get("code") or "") if action == "tool::execute_code" else None)
     task_alignment = extra.pop("task_alignment", None)
     if action in ("tool::web_search", "tool::internal_retrieve"):
         query = str(args.get("query") or "")
