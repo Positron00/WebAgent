@@ -132,7 +132,6 @@ def _load_cross_encoder(d: Path, meta: Dict[str, Any], calibrators: Dict[str, An
     enc_dir = d / "encoder"
     if not (d / "heads.pt").is_file() or not (enc_dir / "config.json").is_file():
         return None
-    torch.set_num_threads(1)
     blob = torch.load(d / "heads.pt", map_location="cpu", weights_only=True)
     if blob.get("pooling", "mean") != "mean":
         raise ValueError(f"unsupported pooling {blob.get('pooling')!r}")

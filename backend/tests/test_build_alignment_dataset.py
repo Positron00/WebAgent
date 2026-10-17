@@ -192,3 +192,14 @@ def test_fetch_refuses_an_output_folder_inside_the_repository(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["fetch", "--out", str(SCRIPTS / "scratch")])
     with pytest.raises(SystemExit):
         fetch.main()
+
+
+def test_generated_code_rows_are_aligned_execute_code_calls(ctx):
+    rows = [{"question_hash": "h1", "question": "placeholder coding question", "code": "x = 1\n" * 400,
+             "explanation": "placeholder", "kind": "code"},
+            {"question_hash": "h2", "question": "another question", "code": "", "kind": "code"}]
+    out = pairs.gen_code_rows(ctx, rows)
+    assert len(out) == 1
+    row = out[0]
+    assert row["action"] == "execute_code" and row["labels"] == {"aligned": "yes", "risk": "none"}
+    assert row["origin"] == "webagent-gen:code" and len(row["call"]) <= pairs.CODE_CALL_CHARS

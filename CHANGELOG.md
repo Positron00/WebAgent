@@ -2,6 +2,20 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.8.1 - 2026-10-16
+
+A check of 3.7.0 and 3.8.0's code against the checkpoint2-intent spec and plan.
+
+### Fixed
+- **Code calls were scored on different text at runtime than in training:** the classifier's training rows for code are the code itself (RedCode), but at runtime it would have read the coding assistant's explanation. A phase B classifier now scores the code (capped at 1,000 characters); phase A still scores the explanation (SEC-107). No model is installed, so nothing changes at runtime today.
+- **Benign code rows could not be generated:** `scripts/generate_alignment_calls.py --code` now runs the coding assistant over coding questions (the code is never run) and the dataset builder turns its output into aligned `execute_code` rows, as SEC-122 requires.
+- Loading a classifier set torch to one thread for the whole worker, which would also have slowed ContextDefender; it no longer does (the gate measures one thread through the environment).
+- The startup error for an ungated classifier named a script flag that doesn't exist.
+
+### Changed
+- The spec's requirements, designs and tasks, the plan and the data README now match the code: the classifier's inputs, thresholds and judge band; the row schema (`groups`, `sources`, `cluster`); how each source is paired (look-alikes as self-pairs, PrivacyLens calls, RedCode intents, ASQ actions, saroku's conditions); the threshold rule; the helper modules; the 3.8.0 build's label shares.
+- New tests: every intent rule is shadow-only, code calls are scored on the code, generated code rows, the generator's code mode.
+
 ## 3.8.0 - 2026-10-16
 
 Phase B of the checkpoint 2 upgrade: everything needed to train, gate and run a small classifier for checkpoint 2's intent checks. **No model ships**: the first candidates failed the gate, so checkpoint 2 keeps 3.7.0's signals and nothing changes at runtime. Spec: `planning/specs/checkpoint2-intent/` (README, phase B notes).

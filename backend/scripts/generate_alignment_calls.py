@@ -11,6 +11,9 @@ generation questions don't land in the dev collection or drift samples.
     python scripts/generate_alignment_calls.py --estimate 50 --out <file>
     # full run: stops before spending would leave less than half of the credit entered
     python scripts/generate_alignment_calls.py --credit-left 18.40 --out <file>
+    # benign code rows: the coding assistant over coding questions (the code is never run)
+    python scripts/generate_alignment_calls.py --code --questions <coding questions .jsonl> --estimate 50 \
+        --out data/security/alignment/generated/webagent_gen_code.jsonl
 
 Prices default to the configured Together model's ($ per million tokens, read from Together's
 models list on 2026-10-16); pass --price-input / --price-output if they change.
@@ -78,10 +81,25 @@ async def plan_for(agent, question: str) -> Dict:
     return {"rewrite": plan.standalone_query, "questions": [q for q in plan.questions if isinstance(q, str)]}
 
 
-async def run(args) -> Dict:
-    from app.agents.supervisor import SupervisorAgent
+async def code_for(agent, question: str) -> Dict:
+    """The coding assistant's answer for one question: its code and explanation (never executed)."""
+    from app.models.task import WorkflowState
 
-    agent = SupervisorAgent()
+    state = await agent.run(WorkflowState(query=question, context={"task_id": f"gen-{question_hash(question)}"}))
+    report = state.reports.get("coding_assistant") or {}
+    return {"code": str(report.get("code") or ""), "explanation": str(report.get("explanation") or ""),
+            "kind": "code"}
+
+
+async def run(args) -> Dict:
+    if getattr(args, "code", False):
+        from app.agents.coding_assistant import CodingAssistantAgent
+
+        agent, generate = CodingAssistantAgent(), code_for
+    else:
+        from app.agents.supervisor import SupervisorAgent
+
+        agent, generate = SupervisorAgent(), plan_for
     questions = load_questions(args.questions, args.estimate or 0)
     skip = done_hashes(args.out)
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -97,7 +115,7 @@ async def run(args) -> Dict:
             print(f"Stopping: the next question would leave less than half of ${args.credit_left:.2f}")
             break
         try:
-            plan = await plan_for(agent, question)
+            plan = await generate(agent, question)
         except Exception as exc:  # noqa: BLE001 - one failed question doesn't stop the run
             errors += 1
             print(f"error on {qh}: {type(exc).__name__}")
@@ -125,6 +143,7 @@ def main() -> int:
     ap.add_argument("--questions", type=Path, default=DEFAULT_QUESTIONS, help="JSONL with a 'text' field")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--estimate", type=int, default=0, help="run only this many questions and report")
+    ap.add_argument("--code", action="store_true", help="generate benign code rows with the coding assistant")
     ap.add_argument("--credit-left", type=float, default=None, help="Together credit left ($), for the stop rule")
     ap.add_argument("--price-input", type=float, default=PRICE_INPUT)
     ap.add_argument("--price-output", type=float, default=PRICE_OUTPUT)
