@@ -214,3 +214,14 @@ def test_asq_quota_is_split_evenly_between_accepted_sets(ctx):
     out = pairs.asq_rows(ctx, rows, accepted, 60)
     origins = [r["groups"][0].split(":")[1] for r in out]
     assert origins.count("set-a") == origins.count("set-b") == 30
+
+
+def test_tracesafe_record_reads_the_real_layout():
+    r = {"mutation_category": "GROUP", "new_trace": {"user_query": "placeholder request", "trace": [
+        {"role": "user", "content": "placeholder request"},
+        {"role": "agent", "content": {"name": "placeholder_tool", "arguments": {"a": 1}}},
+        {"role": "tool", "content": "placeholder result"}, {"role": "agent", "content": "done"}]}}
+    out = fetch.tracesafe_record(r, "golden_3_PromptInjectionOut.jsonl", "PromptInjectionOut")
+    assert out["user"] == "placeholder request" and out["label"] == "PromptInjectionOut"
+    assert json.loads(out["step"])["name"] == "placeholder_tool" and out["group"] == "GROUP"
+    assert fetch.tracesafe_record({"new_trace": {}}, "f", "benign")["step"] is None

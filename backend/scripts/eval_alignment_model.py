@@ -6,10 +6,13 @@ Scores `test` (gated) and `probe` (reported) rows through the runtime loader
 pair at a time on one thread, and compares candidates: the cross-encoder ships only if its
 off-intent recall beats the siamese baseline's (each at its own thresholds, chosen under the same
 false-positive rule); otherwise the baseline ships. Writes `metadata.json["test"]` into every
-candidate; `--install` copies the one that ships to `models/security/alignment/`. Counts only.
+candidate; `--install` copies the one that ships to `models/security/alignment/`. When none passes,
+`--install-shadow` installs the candidate with the best off-intent recall there as shadow-only
+(SEC-128: `metadata.json["deployment"] = "shadow"`): its scores are recorded and never decide.
+Counts only.
 
     python scripts/eval_alignment_model.py --model models/security/alignment-candidates/l6 \
-        --model models/security/alignment-candidates/siamese [--install]
+        --model models/security/alignment-candidates/siamese [--install | --install-shadow]
 """
 from __future__ import annotations
 
@@ -119,6 +122,8 @@ def main() -> int:
     ap.add_argument("--model", type=Path, action="append", required=True)
     ap.add_argument("--data", type=Path, default=DATA_DIR)
     ap.add_argument("--install", action="store_true", help="copy the model that ships to models/security/alignment")
+    ap.add_argument("--install-shadow", action="store_true",
+                    help="when none passes, install the best candidate as shadow-only (SEC-128)")
     args = ap.parse_args()
     results = {str(m): evaluate(m, args.data) for m in args.model}
     siamese = [r for r in results.values() if r["kind"] == "siamese"]
@@ -137,12 +142,23 @@ def main() -> int:
         meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"shipping": shipping, "results": results}, indent=2, default=str))
     if args.install and shipping:
-        if INSTALL_DIR.exists():
-            for item in INSTALL_DIR.iterdir():  # overwrite in place (the repository lives in Dropbox)
-                shutil.rmtree(item) if item.is_dir() else item.unlink()
-        shutil.copytree(shipping, INSTALL_DIR, dirs_exist_ok=True)
-        print(f"installed {shipping} -> {INSTALL_DIR}")
+        _install(Path(shipping), deployment="gated")
+    elif args.install_shadow and not shipping and results:
+        best = max(results, key=lambda p: results[p]["test"]["off_intent_recall"] or 0)
+        _install(Path(best), deployment="shadow")
     return 0 if shipping else 1
+
+
+def _install(model_dir: Path, *, deployment: str) -> None:
+    if INSTALL_DIR.exists():
+        for item in INSTALL_DIR.iterdir():  # overwrite in place (the repository lives in Dropbox)
+            shutil.rmtree(item) if item.is_dir() else item.unlink()
+    shutil.copytree(model_dir, INSTALL_DIR, dirs_exist_ok=True)
+    meta_path = INSTALL_DIR / "metadata.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    meta["deployment"] = deployment
+    meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    print(f"installed {model_dir} -> {INSTALL_DIR} ({deployment})")
 
 
 if __name__ == "__main__":

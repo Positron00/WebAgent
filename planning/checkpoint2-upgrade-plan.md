@@ -233,6 +233,9 @@ and the existing rules stay.
   `ac-YYYY-MM-DD-N`, data hash, thresholds, gate results), like `models/security/`.
 - **Failure:** model unavailable → phase A signals (cosine and ContextDefender), recorded as
   `classifier_available: false`.
+- **Shadow-only (2026-10-17):** a model that fails the gate may be installed shadow-only
+  (`--install-shadow`). It is scored next to phase A on every call and subgoal, and its scores are
+  collected and observed but never decide (SEC-128). The shadow week then measures it on real calls.
 
 ### 7.6 Judge (T7)
 
@@ -381,7 +384,7 @@ End to end, before any rule acts:
 | Phase | Release (proposed) | Contents | Ends when |
 |---|---|---|---|
 | A | 3.7.0, **before the shadow week** (D6) | Intent record; plan check; new context fields from existing models, scored in parallel; egress shingles; run counter; judge prompt; new shadow rules; metrics and collection fields; the 50-question generation estimate and starting thresholds; latency measured | Tests pass; shadow metrics flowing; checkpoint 2 p95 < 20 ms (`webagent_guard_tool_seconds`) in the container, or < 30 ms with the reason recorded (D5), with the caveat that arm64 Docker on a Mac isn't server hardware |
-| B | 3.8.0 | Dataset (after approvals), classifier, gate, probe; classifier in the context (shadow) | Gate passes; p95 back under 20 ms. **3.8.0 shipped the pipeline; its first candidates failed the gate** (spec README), so phase A's signals stay until a retrained model passes |
+| B | 3.8.0 | Dataset (after approvals), classifier, gate, probe; classifier in the context (shadow) | Gate passes; p95 back under 20 ms. **3.8.0 shipped the pipeline; its first candidates failed the gate** (spec README), so phase A's signals stay until a retrained model passes. **3.9.0** rebuilt the data and retrained L6, which still fails; it is installed shadow-only (SEC-128) |
 | C | per rule | Thresholds from shadow data; rules switched from shadow to acting one at a time (`tool_mode: act` already required) | Each rule's shadow false-positive rate within target |
 
 ## 11. Risks and limits
@@ -445,8 +448,11 @@ And from §8.2 (2026-10-16):
 - **Researchy Questions** (corbyrosset/researchy_questions, CDLA-Permissive-2.0; 2026-10-17): approved
   for training and test as ASQ source questions, sharing ASQ's quota evenly with HotpotQA.
 
+- **Ungated classifier (2026-10-17):** shadow-record its scores; the gate still decides whether it
+  acts (SEC-128).
+
 No questions are open. TraceSafe access and xLAM's terms were granted on your Hugging Face account
-(2026-10-16); this machine still needs a read token (`hf auth login`, stored outside the
+(2026-10-16), and this machine has a Hugging Face token (2026-10-17, stored outside the
 repository). The 50-question cost estimate for our own generation runs in phase A (its calls set
 the starting thresholds); before phase B's dataset build: that token and the saroku quality check.
 

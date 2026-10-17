@@ -41,6 +41,9 @@ class TextSignals:
     risk: Optional[int] = None  # phase B: the classifier's risk (0-100), used as-is for risk above intent
     p_aligned: Optional[float] = None  # phase B: calibrated P(aligned), for the judge band (SEC-127)
     classifier: bool = False
+    # SEC-128: a shadow-only classifier's scores, recorded next to phase A's and never used to decide.
+    shadow_p_aligned: Optional[float] = None
+    shadow_risk: Optional[int] = None
 
 
 def _warn_once(kind: str, exc: BaseException) -> None:
@@ -142,6 +145,7 @@ def score_text(state: WorkflowState, text: str, action: str = "",
     phase_b = _classifier_signals(state, text, action, classifier_text)
     if phase_b is not None:
         return phase_b
+    shadow_future = _submit_shadow(state, text, action, classifier_text)
     harm_future = _POOL.submit(harm_of, text)
     vec = None
     try:
@@ -153,12 +157,13 @@ def score_text(state: WorkflowState, text: str, action: str = "",
         harm = harm_future.result(timeout=HARM_TIMEOUT_SEC)
     except Exception as exc:  # noqa: BLE001
         _warn_once("harm", exc)
+    shadow_p, shadow_risk = _shadow_result(shadow_future)
     if vec is None or harm is None:
         if vec is None:
             _warn_once("encoder", RuntimeError("no encoder"))
         if harm is None:
             _warn_once("harm", RuntimeError("no ContextDefender model"))
-        return TextSignals(available=False)
+        return TextSignals(available=False, shadow_p_aligned=shadow_p, shadow_risk=shadow_risk)
     intent_alignment = cos100(vec, intent_embedding(state))
     task_alignment = cos100(vec, alignment.task_embedding(state))
     return TextSignals(
@@ -166,7 +171,29 @@ def score_text(state: WorkflowState, text: str, action: str = "",
         task_alignment=100 if task_alignment is None else task_alignment,
         harm=harm,
         available=intent_alignment is not None,
+        shadow_p_aligned=shadow_p, shadow_risk=shadow_risk,
     )
+
+
+def _submit_shadow(state: WorkflowState, text: str, action: str, classifier_text: Optional[str]):
+    """SEC-128: score the pair with a shadow-only classifier on the pool, in parallel with phase A."""
+    model = alignment_model.get_shadow_model()
+    record = _intent_record(state)
+    if model is None or record is None:
+        return None
+    call = classifier_text if classifier_text else text
+    return _POOL.submit(model.score_pair, record["text"], f"{action}: {call}" if action else call)
+
+
+def _shadow_result(future):
+    if future is None:
+        return None, None
+    try:
+        p, risk = future.result(timeout=HARM_TIMEOUT_SEC)
+        return float(p), int(risk)
+    except Exception as exc:  # noqa: BLE001 - a shadow score never affects a call
+        _warn_once("shadow classifier", exc)
+        return None, None
 
 
 def warm_intent(state: WorkflowState) -> None:

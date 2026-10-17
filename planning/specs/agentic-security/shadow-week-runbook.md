@@ -1,4 +1,4 @@
-# Shadow week runbook (release 3.8.2, uat)
+# Shadow week runbook (release 3.9.0, uat)
 
 Goal: run the security guard on real uat traffic for about a week in shadow mode (it checks everything and records what it would do, but blocks nothing), then decide whether checkpoint 1 can act. Triage runs its own pending shadow week at the same time (decided 2026-10-13; see section 7). Tasks 3.8 and 5.1–5.3 in [`tasks.md`](tasks.md); targets in [`requirements.md`](requirements.md) (SEC-028, SNFR-01, SNFR-05).
 
@@ -15,20 +15,20 @@ The week runs either on one machine with Docker (how the 2026-10-13 week ran: th
 
 ### On one machine (Docker)
 
-- [ ] Build: `docker build --build-arg APP_VERSION=3.8.2 -t webagent-backend:3.8.2 backend/`.
+- [ ] Build: `docker build --build-arg APP_VERSION=3.9.0 -t webagent-backend:3.9.0 backend/`.
 - [ ] Put the environment above in a file outside the repo, readable only by you (`chmod 600`), e.g. `~/webagent-uat.env`.
 - [ ] Run, keeping the data on disk, in a new folder for each week (the stopped 3.2.5 week's files are in `~/webagent-uat-data`):
   ```bash
   docker run -d --name webagent-uat --restart unless-stopped -p 127.0.0.1:8000:8000 --memory 3g \
-    --env-file ~/webagent-uat.env -v ~/webagent-uat-data-3.5.0:/app/data webagent-backend:3.8.2
+    --env-file ~/webagent-uat.env -v ~/webagent-uat-data-3.5.0:/app/data webagent-backend:3.9.0
   ```
 - [ ] Web app: in the repo's `.env.local`, `WEBAGENT_BACKEND_URL=http://127.0.0.1:8000` (the default) and the same `WEBAGENT_API_KEY`; then `npm run dev` (add `-- -p 3001` if port 3000 is taken) and set Agentic to **Always** (section 7).
 - [ ] There's no Prometheus: read the same series from `curl localhost:8000/metrics`, and the collection from `security/collected` and `triage/collected` in that folder. Latency and memory measured on a laptop don't stand in for the server: measure them once on the real host before act mode in prod.
 
 ### In Kubernetes
 
-- [ ] Build and push to a registry the cluster can pull from: `docker build --build-arg APP_VERSION=3.8.2 -t <registry>/webagent-backend:3.8.2 backend/`, `docker push ...`.
-- [ ] With the keys and `GRAFANA_ADMIN_PASSWORD` exported, from `backend/kubernetes/`: `./deploy.sh -e uat -n webagent-uat -v 3.8.2 -r <registry>/webagent-backend -H <uat host> -i <ingress controller namespace>` (default `ingress-nginx`). Before 3.2.6 the script ignored `-e` (the pod ran prod settings) and kept `/app/data` in an `emptyDir`; use 3.2.6 or later. Since 3.3.0 it also applies `networkpolicy.yaml` (only the ingress controller and `monitoring` reach the pod), and the public Ingress answers 404 for `/metrics`.
+- [ ] Build and push to a registry the cluster can pull from: `docker build --build-arg APP_VERSION=3.9.0 -t <registry>/webagent-backend:3.9.0 backend/`, `docker push ...`.
+- [ ] With the keys and `GRAFANA_ADMIN_PASSWORD` exported, from `backend/kubernetes/`: `./deploy.sh -e uat -n webagent-uat -v 3.9.0 -r <registry>/webagent-backend -H <uat host> -i <ingress controller namespace>` (default `ingress-nginx`). Before 3.2.6 the script ignored `-e` (the pod ran prod settings) and kept `/app/data` in an `emptyDir`; use 3.2.6 or later. Since 3.3.0 it also applies `networkpolicy.yaml` (only the ingress controller and `monitoring` reach the pod), and the public Ingress answers 404 for `/metrics`.
 - [ ] What it sets up: one replica, memory limit 3 GiB (request 2 GiB; two workers peaked at 1.81 GiB in the simulated week), CPU limit 2, `/app/data` on a 5 GiB persistent volume so the collection survives restarts, `/tmp` writable for the workers' metrics.
 - [ ] Web app on Vercel or locally with `WEBAGENT_BACKEND_URL=https://<uat host>` and the same `WEBAGENT_API_KEY`. A production build (Vercel, `next start`) also needs `WEBAGENT_ACCESS_CODE` and `WEBAGENT_SESSION_SECRET` (since 3.2.7), or every API route answers 503; `npm run dev` stays open without them.
 
@@ -53,6 +53,7 @@ Prometheus (adjust the range to the period):
 | Calls against the user's intent (3.7.0) | `histogram_quantile(0.1, sum by (le, action) (rate(webagent_guard_intent_alignment_bucket[1d])))` | sets `search_align_at` and `drift_align_at` (checkpoint2-intent SEC-130) |
 | Risk above intent (3.7.0) | `histogram_quantile(0.99, sum by (le, action) (rate(webagent_guard_risk_above_intent_bucket[1d])))` | sets `risk_verify_at` / `risk_decline_at`; real tasks should sit near 0 |
 | Private-text egress (3.7.0) | `histogram_quantile(0.99, sum by (le) (rate(webagent_guard_egress_overlap_bucket[1d])))` | how often searches copy 8+ words of retrieved or uploaded text |
+| Shadow-only classifier (3.9.0) | `histogram_quantile(0.1, sum by (le, action) (rate(webagent_guard_shadow_classifier_alignment_bucket[1d])))` and `..._risk_bucket` at 0.99; collection rows' `shadow_classifier_alignment` and `shadow_classifier_risk` next to `intent_alignment` | the ungated classifier on real calls (SEC-128): never decides; reviewed calls with both scores are the next training round's aligned rows |
 | Plan check (3.7.0) | `sum by (action, outcome) (increase(webagent_guard_decisions_total{action=~"plan::.*"}[1d]))` | rewrites and subgoals checked; shadow matches in the row above |
 | Memory per pod | `container_memory_working_set_bytes` (or `kubectl top pod`); per worker: `memory_usage_bytes{type="rss"}` (one series per `pid`) | ≤ 2.4 GiB per pod (3 GiB with 20% headroom, SNFR-05) |
 | Unlabelled LLM calls | `increase(webagent_guard_unlabelled_total[1d])` | 0 |

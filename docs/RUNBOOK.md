@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.8.2 -t <registry>/webagent-backend:3.8.2 backend/
-   docker push <registry>/webagent-backend:3.8.2
+   docker build --build-arg APP_VERSION=3.9.0 -t <registry>/webagent-backend:3.9.0 backend/
+   docker push <registry>/webagent-backend:3.9.0
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.8.2 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.9.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -186,7 +186,15 @@ Since 3.8.0 the intent signals can come from a small classifier in `backend/mode
 (`security_guard.alignment_model_dir`). It is used only if its `metadata.json` records a passed gate
 (`scripts/eval_alignment_model.py`); in uat and prod the server **refuses to start** if that folder
 holds a model whose gate didn't pass (an empty or missing folder is fine: phase A's signals are used).
-3.8.0 ships no model: its first candidates failed the gate. Nothing new is stored:
+3.8.0 ships no model: its first candidates failed the gate.
+
+Since 3.9.0 a model that failed its gate can be installed **shadow-only**
+(`scripts/eval_alignment_model.py --install-shadow` writes `"deployment": "shadow"` into its
+`metadata.json`). Its scores are recorded (`webagent_guard_shadow_classifier_alignment`,
+`webagent_guard_shadow_classifier_risk`, and `shadow_classifier_*` in collection rows) but never
+decide, and uat and prod start with it. 3.9.0 ships the retrained MiniLM-L6 this way (88 MB, LFS:
+`git lfs pull` before building the image). To turn it off, point `security_guard.alignment_model_dir`
+at an empty folder. Nothing new is stored:
 private text is kept only as salted hashes in memory for the task, and outside dev no intent or
 subgoal text is logged or collected.
 

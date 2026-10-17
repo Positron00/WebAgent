@@ -73,6 +73,7 @@ Phase A: about 38 h.
 | B8 | `eval_alignment_suites.py` and InjecAgent `--untainted` with the model | SEC-131 | B7 | Counts per suite in the PR | 3 h |
 | B9 | Footprint: image size, memory with two workers, latency in the container | SNFR-11, SNFR-12 | B8 | Within limits, in the PR | 2 h |
 | B10 | Docs (data README, RUNBOOK, CHANGELOG) and release 3.8.0 | SNFR-19 | B9 | `v3.8.0` tagged | 3 h |
+| B11 | Shadow-only classifier: `--install-shadow`, scores recorded and observed, never deciding; rebuilt data (Researchy Questions, xLAM, TraceSafe, code calls) and the retrained L6 installed shadow-only; release 3.9.0 | SEC-128 | B10 | `test_alignment_model.py` shadow tests pass; `v3.9.0` tagged | 6 h |
 
 Phase B: about 40 h, plus the generation run.
 
@@ -103,6 +104,7 @@ Phase B: about 40 h, plus the generation run.
 | SEC-123, SEC-124 | B5 |
 | SEC-125 | B6 |
 | SEC-126, SEC-127 | B7 |
+| SEC-128 | B11 |
 | SEC-130 | C1 |
 | SEC-131 | A10, B8, C2 |
 | SNFR-10 | A11 |
@@ -121,7 +123,7 @@ Phase B: about 40 h, plus the generation run.
 | 7.2 Plan check | SEC-101, SEC-102 |
 | 7.3 Per-call signals | SEC-103 – SEC-108, SEC-110 |
 | 7.4 Policies | SEC-109, SEC-130 |
-| 7.5 Classifier | SEC-123 – SEC-127 |
+| 7.5 Classifier | SEC-123 – SEC-128 |
 | 7.6 Judge | SEC-111, SEC-127 |
 | 7.7 Metrics, records, configuration | SEC-112 – SEC-115 |
 | 8 Data, 8.1, 8.2 | SEC-120 – SEC-122, model-and-data design §2 |

@@ -3,8 +3,8 @@
 Status: draft v2 (aligned with the plan, 2026-10-16) · Source plan:
 [`planning/checkpoint2-upgrade-plan.md`](../../checkpoint2-upgrade-plan.md) · Base: `main` at v3.6.1
 (`beea5d3`) · Extends: [`../agentic-security/`](../agentic-security/README.md) (checkpoint 2:
-SEC-040 – SEC-047) · Releases: 3.7.0 (phase A, before the shadow week), 3.8.0 (phase B), then one
-release per rule that starts acting (phase C)
+SEC-040 – SEC-047) · Releases: 3.7.0 (phase A, before the shadow week), 3.8.0 (phase B), 3.9.0
+(rebuilt data, shadow-only classifier, SEC-128), then one release per rule that starts acting (phase C)
 
 ## What this work does
 
@@ -145,6 +145,44 @@ Checked in the code on 2026-10-16.
   89% of required ones (web actions read as off-intent searches).
 - The threshold rule now uses the look-alikes' point rate (a fold has only tens of them, so a Wilson
   bound on them alone could never reach 2%), bounded by all benign rows.
+
+## Implementation notes (3.9.0, task B11)
+
+- **Decision (2026-10-17): shadow-record an ungated classifier** (SEC-128). The gate still decides
+  whether a model acts; a model that fails it may be installed with `--install-shadow`, and its
+  scores go into collection rows (`shadow_classifier_alignment`, `shadow_classifier_risk`) and two
+  histograms, next to phase A's signals. The shadow week measures it on real calls.
+- **Rebuilt dataset:** 45,650 rows (39,291 committed; 6,359 local). New since 3.8.0: Researchy
+  Questions sharing ASQ's quota evenly with HotpotQA; xLAM (3,974 calls, local) and TraceSafe (528
+  rows, local, evaluation only) with the Hugging Face token; 2,496 generated planner tasks (5,980
+  aligned rows, $2.20 of Together credit) and the first 388 generated code rows. 223 of the
+  generated tasks were excluded because the planner's rewrite scored below `rewrite_at` (listed by
+  id in `counts.json`). The TraceSafe adapter's field names were guesses and gave empty rows; it
+  now reads the real schema (the mutated trace's user query and its first agent turn, whose
+  content is structured).
+- **Retrained L6 (`ac-2026-10-17-1`), still failing the gate.** On `test` (10,188 rows):
+
+  | Check | Result | Target |
+  |---|---|---|
+  | Off-intent and injected-goal recall | 0.51 | ≥ 0.95 |
+  | Aligned real calls held (upper bound) | 0.94% (15 of 2,438) | ≤ 1% ✓ |
+  | Risk recall | 0.44 | ≥ 0.90 |
+  | Look-alikes held | 10% (11 of 110) | ≤ 2% |
+  | ECE aligned / risk | 0.062 / 0.108 | ≤ 0.05 |
+  | p95 per pair, one thread | 9.15 ms idle; 12.25 ms while the generation run used the CPU | < 10 ms |
+
+  AUC rose from 0.888 to 0.922 (aligned); risk AUC 0.875. The thresholds hold real calls under 1%, so
+  recall is low: at 95% off-intent recall it would hold 8.8% of real calls. It is installed
+  shadow-only in `backend/models/security/alignment/` (88 MB, LFS); in a test call it loads, keeps
+  `classifier_available` false and returns no thresholds.
+- **Footprint (arm64 Docker on a Mac, `--cpus 2`, 2026-10-17):** checkpoint 2 p95 28.7 ms with the
+  shadow model and 25.4 ms without (one busy neighbour: 67.9 and 53.2 ms), so the parallel shadow
+  score costs about 3 ms at p95 when idle. Two workers at rest: 1.07 GiB with the model and 1.11 GiB
+  without (no measurable difference; the weights are memory-mapped). The uat startup check accepts
+  the shadow model, and each worker logs its warm-up (about 35 ms).
+- **The code-generation run continues** (1,500 questions, within half the Together credit). The
+  next build will have more aligned `execute_code` rows, and with the shadow week's reviewed calls,
+  another training round.
 
 ## Traceability
 

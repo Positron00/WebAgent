@@ -295,7 +295,7 @@ so they appear in `webagent_guard_decisions_total` and the shadow-policy counter
 `egress_overlap`, `declared`, `low_alignment_calls`, `subgoal_origin`, `signals_available` and
 `classifier_available` to the `context` dict.
 
-## 11. Phase B runtime (`alignment_model.py`, SEC-123 – SEC-127)
+## 11. Phase B runtime (`alignment_model.py`, SEC-123 – SEC-128)
 
 ```python
 def load(model_dir) -> Optional[AlignmentModel]   # CrossEncoder + heads; None if missing or gate failed
@@ -314,6 +314,18 @@ call has a classifier score and every matched policy is one of `off-intent-searc
 `call-risk-above-intent-verify`, `undeclared-tool-verify`, `rewrite-drift-verify`; below the band
 decline, above allow, inside the judge.
 
+Shadow-only (SEC-128): the worker loads the installed model once with `load(allow_shadow=True)`;
+`model.gated` is `gate_passed(meta)` and `model.shadow` is `deployment == "shadow"` and not gated.
+`get_model()` returns only a gated model and `get_shadow_model()` only a shadow one;
+`current_thresholds()` and `band_outcome()` use only a gated one. In the phase A path,
+`signals.score_text` submits the shadow pair score to the signal pool before the harm score and
+waits for it with the same 2 s timeout; the result goes into `TextSignals.shadow_p_aligned` and
+`shadow_risk` (None on any failure, logged once). `tool_guard._intent_fields` carries them as
+`_shadow_classifier_alignment` and `_shadow_classifier_risk` (underscore keys, which
+`decision.build_context` drops, so Cedar never sees them); the collection row and the metrics get
+them under the plain names. `intent._decide_text` adds the same two fields to plan rows. The startup
+check accepts a shadow-only model in uat and prod.
+
 ## 12. Tests
 
 | File | Covers |
@@ -328,5 +340,5 @@ decline, above allow, inside the judge.
 | `tests/test_security_judge_prompt.py` (new) | Markers, intent, injected "ALIGNED" (SEC-111) |
 | `tests/test_security_intent_checkpoint2.py` (new) | Checkpoint 2 with the intent fields end to end, egress and code rows, signals-down fallback, judge prompt, config switch, metrics, plan rows without text |
 | `tests/test_generate_alignment_calls.py` (new) | Generation: estimate, resume, stop rule, code mode (SEC-122) |
-| `tests/test_alignment_model.py` (phase B) | Fixture model load, gate refusal, fallback, judge band, code calls scored on the code (SEC-123 – SEC-127) |
+| `tests/test_alignment_model.py` (phase B) | Fixture model load, gate refusal, fallback, judge band, code calls scored on the code, shadow-only model recorded and never deciding (SEC-123 – SEC-128) |
 | `tests/test_build_alignment_dataset.py`, `tests/test_train_alignment_model.py` (phase B) | Builder filters and split rules; thresholds, gate report, a tiny train-and-gate round trip, evaluation suites |

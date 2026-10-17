@@ -8,7 +8,8 @@ from typing import Any, Dict, List, Optional, Set
 
 from app.core.config import settings
 from app.core.metrics import (GUARD_ALIGNMENT, GUARD_EGRESS_OVERLAP, GUARD_INTENT_ALIGNMENT,
-                              GUARD_RISK_ABOVE_INTENT, GUARD_TOOL_SECONDS, record_guard_decision)
+                              GUARD_RISK_ABOVE_INTENT, GUARD_SHADOW_CLASSIFIER_ALIGNMENT,
+                              GUARD_SHADOW_CLASSIFIER_RISK, GUARD_TOOL_SECONDS, record_guard_decision)
 from app.models.task import WorkflowState
 from app.security import alignment_model, code_checks, egress, intent, patterns, signals
 from app.security.decision import decide
@@ -74,6 +75,9 @@ def _intent_fields(action: ToolAction, text: str, state: WorkflowState, code: Op
         risk_above_intent=signals.call_risk(state, sig),
         task_alignment=sig.task_alignment,
         _p_aligned=sig.p_aligned,
+        # SEC-128: a shadow-only classifier's scores ("_" keys never reach Cedar; collected below).
+        _shadow_classifier_alignment=None if sig.shadow_p_aligned is None else int(round(100 * sig.shadow_p_aligned)),
+        _shadow_classifier_risk=sig.shadow_risk,
     )
     return fields
 
@@ -160,8 +164,20 @@ def alignment_for_action(action: str, args: Dict[str, Any], state: WorkflowState
     return alignment.alignment_for_action(action, args, state)
 
 
+def _shadow_fields(context: Dict[str, Any]) -> Dict[str, Any]:
+    """The shadow-only classifier's scores for collection rows (SEC-128), when present."""
+    out = {}
+    for key in ("shadow_classifier_alignment", "shadow_classifier_risk"):
+        if context.get(f"_{key}") is not None:
+            out[key] = context[f"_{key}"]
+    return out
+
+
 def _observe_intent_signals(action: str, context: Dict[str, Any], state: WorkflowState) -> None:
-    """Metrics for the intent signals (SEC-112) and the drift counter (SEC-108)."""
+    """Metrics for the intent signals (SEC-112), a shadow classifier (SEC-128) and the drift counter (SEC-108)."""
+    if context.get("_shadow_classifier_alignment") is not None:
+        GUARD_SHADOW_CLASSIFIER_ALIGNMENT.labels(action=action).observe(context["_shadow_classifier_alignment"])
+        GUARD_SHADOW_CLASSIFIER_RISK.labels(action=action).observe(context.get("_shadow_classifier_risk") or 0)
     if not context.get("signals_available", True):
         return
     if action in ("tool::web_search", "tool::internal_retrieve", "tool::execute_code"):
@@ -281,8 +297,9 @@ async def _guard_tool(
         decision=decision,
         state_context=state.context,
         args=args,
-        context={k: context.get(k) for k in ("alignment", "tainted", "pattern_hits", "code_findings",
+        context={**{k: context.get(k) for k in ("alignment", "tainted", "pattern_hits", "code_findings",
                                                "approved_tools", "declined_actions_in_task", *_INTENT_FIELDS)},
+                 **_shadow_fields(context)},
     )
 
     effective = decision.outcome

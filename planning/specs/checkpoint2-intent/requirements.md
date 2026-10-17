@@ -196,7 +196,8 @@ baseline ships.
 **SEC-125 Gate (must).** On `test` (and reported on `probe`): off-intent and injected-goal recall
 ≥ 0.95; aligned real calls held ≤ 1% (upper confidence bound); risk recall (to verify or decline)
 ≥ 0.90; look-alikes held ≤ 2%; expected calibration error ≤ 0.05 per head. Recorded in
-`metadata.json["test"]`; a model that fails is not loaded in uat or prod.
+`metadata.json["test"]`; a model that fails never decides, and is loaded in uat or prod only as a
+shadow-only model (SEC-128).
 - Check: `scripts/eval_alignment_model.py`; startup check (SEC-126).
 
 **SEC-126 Runtime (must).** With a gated model present, `intent_alignment` and `risk_above_intent`
@@ -205,13 +206,24 @@ baseline ships.
 the defaults in the Cedar context, and
 `classifier_available` is true. Without it (missing, failed gate, load error) the phase A sources
 are used and `classifier_available` is false. In uat and prod startup fails if the configured
-model exists but hasn't passed its gate.
+model exists but hasn't passed its gate, unless it is installed as shadow-only (SEC-128).
 - Check: pytest both ways; startup check test.
 
 **SEC-127 Judge band (should).** When the judge is on, a `verify` whose classifier `aligned`
 probability lies in the model's uncertain band (`metadata.json`) goes to the judge; outside the
 band the classifier's side decides (above: allow; below: decline).
 - Check: pytest with a fake model and judge.
+
+**SEC-128 Shadow-only classifier (should).** A model that failed the gate may be installed with
+`metadata.json["deployment"] = "shadow"` (`eval_alignment_model.py --install-shadow`). It is then
+scored on every checkpoint 2 call and subgoal in parallel with phase A, and its scores are recorded
+as `shadow_classifier_alignment` (100 × P(aligned)) and `shadow_classifier_risk` in collection rows
+and as the `webagent_guard_shadow_classifier_alignment` and `..._risk` histograms. They never reach
+the Cedar context, the thresholds or the judge band, `classifier_available` stays false, and a
+shadow-model failure changes nothing. A model that passed the gate is gated whatever its label.
+Purpose: shadow-week data on the classifier next to phase A, for the next training round and gate.
+- Check: pytest with a fake shadow model (recorded, never decides; failure is silent; startup
+  accepts it in uat).
 
 ## 5. Acting and evaluation (phase C)
 

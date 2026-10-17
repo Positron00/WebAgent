@@ -139,20 +139,30 @@ def xlam_rows(cap: int, token: str) -> Iterator[dict]:
 
 
 def tracesafe_rows(cap: int, token: str) -> Iterator[dict]:
-    """CyCraftAI/TraceSafe (Apache-2.0, gated; evaluation only): per mutation file, the trace's user
-    turn and the mutated step. The adapter reads common field names; rows it can't read are counted."""
+    """CyCraftAI/TraceSafe (Apache-2.0, gated; evaluation only): per mutation file, the mutated
+    trace's user request (`new_trace.user_query`) and its first agent turn (the tool call; the trace
+    runs user, agent, tool, agent). Field names checked against the files on 2026-10-17."""
     from huggingface_hub import HfApi
 
     files = [s.rfilename for s in HfApi().dataset_info("CyCraftAI/TraceSafe", token=token).siblings if s.rfilename.endswith(".jsonl")]
     for path in sorted(files):
         label = path.split("_", 2)[-1].rsplit(".", 1)[0]
         for line in open(hf_file("CyCraftAI/TraceSafe", path, token), encoding="utf-8"):
-            r = json.loads(line)
-            msgs = r.get("messages") or r.get("conversation") or r.get("trace") or []
-            user = next((m.get("content") for m in msgs if isinstance(m, dict) and m.get("role") == "user"), None)
-            step = r.get("mutated_step") or r.get("step") or r.get("tool_call")
-            yield {"file": path, "label": label, "user": user if isinstance(user, str) else None,
-                   "step": json.dumps(step, ensure_ascii=False) if step is not None else None}
+            yield tracesafe_record(json.loads(line), path, label)
+
+
+def tracesafe_record(r: dict, path: str, label: str) -> dict:
+    """One TraceSafe record: the mutated trace's request and its first agent turn (the tool call)."""
+    trace = r.get("new_trace") or {}
+    user = trace.get("user_query")
+    step = next((m.get("content") for m in trace.get("trace") or []
+                 if isinstance(m, dict) and m.get("role") == "agent"), None)
+    if isinstance(step, (dict, list)):  # most agent turns are structured tool calls
+        step = json.dumps(step, ensure_ascii=False)
+    # The file name carries the mutation (e.g. PromptInjectionOut); `mutation_category` is its group.
+    return {"file": path, "label": label, "group": r.get("mutation_category"),
+            "user": user if isinstance(user, str) and user.strip() else None,
+            "step": step if isinstance(step, str) and step.strip() else None}
 
 
 def agentharm_rows(cap: int) -> Iterator[dict]:

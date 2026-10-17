@@ -66,7 +66,7 @@ async def _startup(app: FastAPI) -> None:
     if guard_cfg and guard_cfg.enabled:
         await run_in_threadpool(get_engine)
         await run_in_threadpool(warm_up_context_defender)
-        await run_in_threadpool(warm_up_alignment_model)  # phase B, when a gated model ships
+        await run_in_threadpool(warm_up_alignment_model)  # phase B: a gated or shadow-only model (SEC-126, SEC-128)
     # Overrides are collected even with triage disabled, so retention cleanup always runs.
     triage_collect.cleanup()
     security_records.cleanup()

@@ -1,0 +1,221 @@
+{
+  "kind": "cross_encoder",
+  "version": "ac-2026-10-17-1",
+  "base_encoder": "sentence-transformers/all-MiniLM-L6-v2",
+  "max_length": 128,
+  "data_hash": "8e9fdd8db77d99c8",
+  "trained_rows": 31085,
+  "thresholds": {
+    "search_align_at": 12,
+    "subgoal_align_at": 12,
+    "drift_align_at": 12,
+    "risk_verify_at": 92,
+    "risk_decline_at": 92
+  },
+  "uncertain_band": [
+    0.12,
+    0.92
+  ],
+  "epochs": 3,
+  "lr": 3e-05,
+  "test": {
+    "rows": 10188,
+    "off_intent_recall": 0.5078,
+    "real_aligned_held": 15,
+    "real_aligned": 2438,
+    "real_aligned_held_upper": 0.0094,
+    "risk_recall": 0.4431,
+    "lookalikes_held": 0.1,
+    "lookalikes": 110,
+    "ece_aligned": 0.0619,
+    "ece_risk": 0.1075,
+    "held_by_source": {
+      "aegis": {
+        "rows": 185,
+        "held": 183
+      },
+      "agent-safetybench": {
+        "rows": 122,
+        "held": 43
+      },
+      "agentdam": {
+        "rows": 731,
+        "held": 263
+      },
+      "agentdojo": {
+        "rows": 513,
+        "held": 410
+      },
+      "agentharm": {
+        "rows": 180,
+        "held": 87
+      },
+      "asq": {
+        "rows": 1643,
+        "held": 197
+      },
+      "glaive": {
+        "rows": 497,
+        "held": 70
+      },
+      "harmbench": {
+        "rows": 7,
+        "held": 7
+      },
+      "injecagent": {
+        "rows": 90,
+        "held": 90
+      },
+      "notinject": {
+        "rows": 67,
+        "held": 0
+      },
+      "os-harm": {
+        "rows": 140,
+        "held": 71
+      },
+      "privacylens": {
+        "rows": 228,
+        "held": 228
+      },
+      "redcode": {
+        "rows": 369,
+        "held": 351
+      },
+      "saroku": {
+        "rows": 1139,
+        "held": 117
+      },
+      "shade-arena": {
+        "rows": 2,
+        "held": 1
+      },
+      "tasktracker": {
+        "rows": 266,
+        "held": 265
+      },
+      "toolace": {
+        "rows": 852,
+        "held": 63
+      },
+      "toolemu": {
+        "rows": 47,
+        "held": 43
+      },
+      "tracesafe": {
+        "rows": 494,
+        "held": 6
+      },
+      "webagent-gen": {
+        "rows": 1368,
+        "held": 91
+      },
+      "xlam": {
+        "rows": 1048,
+        "held": 89
+      },
+      "xstest": {
+        "rows": 200,
+        "held": 74
+      }
+    },
+    "probe": {
+      "rows": 924,
+      "off_intent_recall": 0.4092,
+      "real_aligned_held": 1,
+      "real_aligned": 282,
+      "real_aligned_held_upper": 0.0157,
+      "risk_recall": 0.3224,
+      "lookalikes_held": 0.2727,
+      "lookalikes": 11,
+      "ece_aligned": 0.0301,
+      "ece_risk": 0.0763,
+      "held_by_source": {
+        "aegis": {
+          "rows": 1,
+          "held": 0
+        },
+        "agent-safetybench": {
+          "rows": 16,
+          "held": 6
+        },
+        "agentdojo": {
+          "rows": 48,
+          "held": 34
+        },
+        "agentharm": {
+          "rows": 28,
+          "held": 11
+        },
+        "asq": {
+          "rows": 193,
+          "held": 31
+        },
+        "glaive": {
+          "rows": 31,
+          "held": 3
+        },
+        "notinject": {
+          "rows": 7,
+          "held": 1
+        },
+        "privacylens": {
+          "rows": 14,
+          "held": 14
+        },
+        "saroku": {
+          "rows": 125,
+          "held": 16
+        },
+        "tasktracker": {
+          "rows": 38,
+          "held": 38
+        },
+        "toolace": {
+          "rows": 102,
+          "held": 10
+        },
+        "toolemu": {
+          "rows": 10,
+          "held": 10
+        },
+        "tracesafe": {
+          "rows": 34,
+          "held": 0
+        },
+        "webagent-gen": {
+          "rows": 170,
+          "held": 12
+        },
+        "xlam": {
+          "rows": 107,
+          "held": 6
+        }
+      }
+    },
+    "latency": {
+      "median_ms": 6.94,
+      "p95_ms": 12.25
+    },
+    "checks": {
+      "off_intent_recall": false,
+      "real_aligned_held_upper": true,
+      "risk_recall": false,
+      "lookalikes_held": false,
+      "ece_aligned": false,
+      "ece_risk": false,
+      "latency_p95_ms": false
+    },
+    "passed": false,
+    "targets": {
+      "off_intent_recall": 0.95,
+      "real_aligned_held_upper": 0.01,
+      "risk_recall": 0.9,
+      "lookalikes_held": 0.02,
+      "ece_aligned": 0.05,
+      "ece_risk": 0.05,
+      "latency_p95_ms": 10.0
+    }
+  },
+  "deployment": "shadow"
+}
