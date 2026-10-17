@@ -44,7 +44,7 @@ Out of scope:
 
 - Retraining or switching models automatically; answer-quality drift (no ground truth at run time).
 - Notifications (email, Slack). Grafana can add a contact point later without code changes.
-- OpenAI calls (the coding agents when `OPENAI_API_KEY` is set) are not measured, as in 3.5.3:
+- OpenAI calls (the coding agents when `OPENAI_API_KEY` is set; since 3.8.2 only with `provider: openai` in their config) are not measured, as in 3.5.3:
   only the Together client and the self-hosted model record per-call metrics.
 - A time-series database or any new service (improvement plan, decision 3).
 - The security guard and triage (their own specs).

@@ -263,7 +263,7 @@ in dependency order, about 43 h (5.5 days), from the scoring functions to the re
   $25. The drift and the alerts are forced with the fake Together server, not real spend.
 - **Embedding threshold.** The existing similarity threshold (0.3) is loose; it may need tuning once
   real centroids exist.
-- **OpenAI calls** (the coding agents, when an OpenAI key is set) are not measured.
+- **OpenAI calls** (the coding agents, when an OpenAI key is set) are not measured. Since 3.8.2 the coding agents use OpenAI only with `provider: openai` in their YAML config; otherwise they use the configured Together model and are measured.
 
 ## 10. Open questions
 

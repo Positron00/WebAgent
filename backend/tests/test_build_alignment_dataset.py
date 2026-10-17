@@ -203,3 +203,14 @@ def test_generated_code_rows_are_aligned_execute_code_calls(ctx):
     row = out[0]
     assert row["action"] == "execute_code" and row["labels"] == {"aligned": "yes", "risk": "none"}
     assert row["origin"] == "webagent-gen:code" and len(row["call"]) <= pairs.CODE_CALL_CHARS
+
+
+def test_asq_quota_is_split_evenly_between_accepted_sets(ctx):
+    accepted = {"set-a": {"licence": "x"}, "set-b": {"licence": "y"}}
+    rows = [{"qid": f"{s}{i}", "set": s, "question": f"placeholder question {s} {i}",
+             "queries": [f"placeholder query {s} {i} {j}" for j in range(3)]}
+            for s in ("set-a", "set-b") for i in range(40)]
+    rows.append({"qid": "z", "set": "not-accepted", "question": "q", "queries": ["x"]})
+    out = pairs.asq_rows(ctx, rows, accepted, 60)
+    origins = [r["groups"][0].split(":")[1] for r in out]
+    assert origins.count("set-a") == origins.count("set-b") == 30

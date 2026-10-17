@@ -257,7 +257,7 @@ Compose binds ports to `127.0.0.1` from 3.2.7. Every new variable goes into
   in a thread finishes in the background after a cancel or timeout (at most Tavily's
   own 100 s).
 - **Only Together tokens count toward the budget.** OpenAI calls (coding agents, when
-  configured) aren't counted.
+  configured with `provider: openai`; since 3.8.2 an OpenAI key alone no longer switches them) aren't counted.
 - **A restart loses runs in progress** (decision 5). Their records turn into
   "interrupted".
 - **Progress is per node,** so a long node (web research) shows the same step for up to

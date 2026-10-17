@@ -641,10 +641,11 @@ def _agent_config(agents_config, agent_name: str):
 
 
 def _build_llm_for_agent(agent_name: str, model: Optional[str], provider: Optional[str]):
-    """Resolve the inner model for a named agent (OpenAI for coding when configured)."""
+    """Resolve the inner model for a named agent: OpenAI only with `provider: openai` in its YAML
+    config (agentic-security design), else the configured provider and model. (Until 3.8.2 the
+    coding agents switched to OpenAI whenever an OpenAI key was set, sending OpenAI the YAML's
+    Together model name, which it rejects.)"""
     if provider and provider.lower() == "openai":
-        return get_openai_llm(model)
-    if agent_name in ("coding_assistant", "coding_review") and settings.OPENAI_API_KEY:
         return get_openai_llm(model or settings.OPENAI_MODEL)
     return _build_llm(model, call_label=agent_name)
 

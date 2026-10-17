@@ -2,6 +2,20 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.8.2 - 2026-10-17
+
+### Security
+- **The coding assistant bypassed the guard.** Its first attempt at every request was a direct HTTP call to Together with its own copy of the API key. That skipped checkpoint 1, the per-task token budget, the model-call metrics and drift samples, `TOGETHER_API_BASE` and retries (SEC-001). It is removed: every request goes through the guarded model from `services/llm.py`. A new test bans direct model-provider URLs in the agents.
+
+### Fixed
+- **The coding agents' guarded model was misconfigured.** With an OpenAI key set, `get_agent_llm("coding_assistant"/"coding_review")` built an OpenAI client but gave it the YAML's Together model name, which OpenAI rejects. The direct call above hid this. The coding agents now use OpenAI only with `provider: openai` in their config, as the agentic-security design says; otherwise they use the configured model (Together, as the direct call did).
+
+### Upgrade notes
+- With an OpenAI key set and no `provider: openai` in `agents.coding`, the coding agents now run on the configured Together model and count toward `WEBAGENT_TASK_TOKEN_BUDGET`. To keep OpenAI for them, set `provider: openai` and an OpenAI `model` in that section.
+
+### Changed
+- Checkpoint 2 classifier data: Researchy Questions (CDLA-Permissive-2.0, approved 2026-10-17) joins HotpotQA as an ASQ source, the quota split evenly; the next dataset build uses it.
+
 ## 3.8.1 - 2026-10-16
 
 A check of 3.7.0 and 3.8.0's code against the checkpoint2-intent spec and plan.

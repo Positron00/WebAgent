@@ -73,8 +73,8 @@ async def test_assistant_tries_next_method_after_a_failure(monkeypatch):
         return None
 
     monkeypatch.setattr("asyncio.sleep", no_sleep)
-    monkeypatch.setattr(agent, "_try_direct_api", broken)
-    monkeypatch.setattr(agent, "_try_langchain_agenerate", working)
+    monkeypatch.setattr(agent, "_try_langchain_agenerate", broken)
+    monkeypatch.setattr(agent, "_try_langchain_invoke", working)
 
     assert await agent._generate_with_retry("prompt") == "ok"
     assert calls == ["broken", "working"]
@@ -90,7 +90,7 @@ async def test_assistant_returns_error_json_when_every_method_fails(monkeypatch)
         return None
 
     monkeypatch.setattr("asyncio.sleep", no_sleep)
-    for name in ("_try_direct_api", "_try_langchain_agenerate", "_try_langchain_invoke", "_try_fallback"):
+    for name in ("_try_langchain_agenerate", "_try_langchain_invoke", "_try_fallback"):
         monkeypatch.setattr(agent, name, broken)
 
     reply = json.loads(await agent._generate_with_retry("prompt"))
