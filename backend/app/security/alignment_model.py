@@ -18,7 +18,9 @@ the returned risk is ``round(100 * that)``. ``metadata.json`` holds ``kind``, ``
 (``ac-YYYY-MM-DD-N``), ``base_encoder``, ``max_length``, ``thresholds`` (0-100, the intent keys of
 ``thresholds.DEFAULT_THRESHOLDS``), ``uncertain_band`` ([lo, hi] probabilities, SEC-127),
 ``data_hash`` and, after the gate, ``test.passed``. The runtime never uses a model whose gate has
-not passed (SEC-125).
+not passed to decide anything (SEC-125). A model that failed it may be installed as shadow-only
+(``"deployment": "shadow"``, written by ``eval_alignment_model.py --install-shadow``; SEC-128): its
+scores are then recorded next to phase A's signals and never reach a decision.
 """
 from __future__ import annotations
 
@@ -64,6 +66,11 @@ def gate_passed(meta: Optional[Dict[str, Any]]) -> bool:
     return bool(meta and (meta.get("test") or {}).get("passed") is True)
 
 
+def is_shadow(meta: Optional[Dict[str, Any]]) -> bool:
+    """SEC-128: installed to be recorded only (an ungated model never decides)."""
+    return bool(meta and meta.get("deployment") == "shadow" and not gate_passed(meta))
+
+
 def _calibrate(calibrator: Any, raw: float) -> float:
     if calibrator is None:
         return float(np.clip(raw, 0.0, 1.0))
@@ -77,6 +84,8 @@ class AlignmentModel:
                  encoder: Any = None, tokenizer: Any = None, heads: Any = None, max_length: int = 128):
         self.kind = kind
         self.metadata = metadata
+        self.gated = gate_passed(metadata)
+        self.shadow = is_shadow(metadata)
         self.version = str(metadata.get("version") or "")
         self._calibrators = calibrators or {}
         self._encoder = encoder
@@ -182,16 +191,18 @@ def _load_siamese(d: Path, meta: Dict[str, Any], calibrators: Dict[str, Any]) ->
     return AlignmentModel("siamese", meta, calibrators, encoder=encoder, heads=joblib.load(d / "heads.joblib"))
 
 
-def load(d: Optional[Path] = None, *, require_gate: bool = True) -> Optional[AlignmentModel]:
+def load(d: Optional[Path] = None, *, require_gate: bool = True,
+         allow_shadow: bool = False) -> Optional[AlignmentModel]:
     """The model in ``d``; None when missing, incomplete, of an unknown kind or (with
-    ``require_gate``, always so at runtime) not gated. The gate script passes ``require_gate=False``."""
+    ``require_gate``) not gated, unless ``allow_shadow`` and it is installed as shadow-only. The gate
+    script passes ``require_gate=False``; the runtime loads gated or shadow models."""
     import joblib
 
     d = Path(d) if d is not None else model_dir()
     meta = read_metadata(d)
     if meta is None or not (d / "calibrators.joblib").is_file():
         return None
-    if require_gate and not gate_passed(meta):
+    if require_gate and not gate_passed(meta) and not (allow_shadow and is_shadow(meta)):
         logger.warning("Alignment classifier %s has not passed its gate; phase A signals are used",
                        meta.get("version", "?"))
         return None
@@ -204,8 +215,9 @@ def load(d: Optional[Path] = None, *, require_gate: bool = True) -> Optional[Ali
     return loader(d, meta, calibrators)
 
 
-def get_model() -> Optional[AlignmentModel]:
-    """The gated model of this worker, loaded once; a failed load is retried after a backoff."""
+def _installed() -> Optional[AlignmentModel]:
+    """The installed model of this worker (gated or shadow-only), loaded once; a failed load is
+    retried after a backoff."""
     global _cached, _failed_until
     now = time.time()
     if _cached is not None or now < _failed_until:
@@ -214,7 +226,7 @@ def get_model() -> Optional[AlignmentModel]:
         if _cached is not None:
             return _cached
         try:
-            model = load()
+            model = load(allow_shadow=True)
         except Exception as exc:  # noqa: BLE001 - phase A signals are used instead (SEC-126)
             logger.error("Could not load the alignment classifier: %s", exc)
             model = None
@@ -225,12 +237,24 @@ def get_model() -> Optional[AlignmentModel]:
         return _cached
 
 
+def get_model() -> Optional[AlignmentModel]:
+    """The gated model, the only one whose scores decide (SEC-126); None otherwise."""
+    model = _installed()
+    return model if model is not None and model.gated else None
+
+
+def get_shadow_model() -> Optional[AlignmentModel]:
+    """The shadow-only model, whose scores are only recorded (SEC-128); None otherwise."""
+    model = _installed()
+    return model if model is not None and model.shadow else None
+
+
 def current_thresholds() -> Dict[str, int]:
-    """The loaded model's intent thresholds, clamped by ``thresholds.merged``; {} without a model.
+    """The gated model's intent thresholds, clamped by ``thresholds.merged``; {} without one.
     Never loads a model."""
     from app.security.thresholds import merged
 
-    if _cached is None:
+    if _cached is None or not _cached.gated:
         return {}
     full = merged(_cached.thresholds())
     return {k: full[k] for k in INTENT_THRESHOLD_KEYS}
@@ -239,7 +263,7 @@ def current_thresholds() -> Dict[str, int]:
 def band_outcome(p_aligned: Optional[float]) -> str:
     """SEC-127: "judge" inside the loaded model's uncertain band, "allow" above, "decline" below;
     "judge" without a model or a score."""
-    if _cached is None or p_aligned is None:
+    if _cached is None or not _cached.gated or p_aligned is None:
         return "judge"
     lo, hi = _cached.uncertain_band()
     return "allow" if p_aligned > hi else "decline" if p_aligned < lo else "judge"
@@ -254,8 +278,12 @@ def set_model_for_tests(model: Optional[AlignmentModel]) -> None:
 
 def warm_up() -> None:
     try:
-        model = get_model()
+        model = _installed()
         if model is not None:
+            started = time.perf_counter()
             model.score_pair("warm-up request", "web_search: warm-up query")
+            logger.info("Alignment classifier warm-up complete (version=%s, %s, %d ms)",
+                        model.metadata.get("version"), "gated" if model.gated else "shadow-only",
+                        int(1000 * (time.perf_counter() - started)))
     except Exception as exc:  # noqa: BLE001
         logger.warning("Alignment classifier warm-up failed: %s", exc)

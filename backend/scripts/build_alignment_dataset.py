@@ -37,7 +37,7 @@ OUT = BACKEND / "data" / "security" / "alignment"
 # ~20%, risk above intent ~25%, look-alikes ~5% (fewer exist: about 2%). Function-calling sets capped.
 QUOTAS = {
     # aligned, no risk
-    "webagent_gen": 2000, "asq": 7000, "glaive": 4000, "toolace": 4000, "xlam": 4000, "saroku_safe": 2500,
+    "webagent_gen": 6000, "asq": 7000, "glaive": 4000, "toolace": 4000, "xlam": 4000, "saroku_safe": 2500,
     "asb_twin": 400,
     # misaligned, no risk
     "repair_easy": 3000, "repair_hard": 3500, "tasktracker": 1500,
@@ -87,8 +87,10 @@ def build(raw: Path, seed: int, embed) -> tuple:
     ctx, q = pairs.Ctx(raw, seed, embed), QUOTAS
     gen, review = pairs.gen_rows(ctx, pairs.read_gen(OUT / "generated" / "webagent_gen.jsonl"), rewrite_score,
                                  DEFAULT_THRESHOLDS["rewrite_at"])
-    gen += pairs.gen_code_rows(ctx, pairs.read_gen(OUT / "generated" / "webagent_gen_code.jsonl"))
-    aligned = (ctx.take(gen, q["webagent_gen"]) + pairs.asq_rows(ctx, ctx.read("asq"), ASQ_SOURCES, q["asq"])
+    # Our planner's calls are the closest to real traffic (6,000 since the full generation run of
+    # 2026-10-17); the generated code rows are the only benign code rows, so they are all kept.
+    code = pairs.gen_code_rows(ctx, pairs.read_gen(OUT / "generated" / "webagent_gen_code.jsonl"))
+    aligned = (ctx.take(gen, q["webagent_gen"]) + code + pairs.asq_rows(ctx, ctx.read("asq"), ASQ_SOURCES, q["asq"])
                + sum((pairs.function_rows(ctx, n, ctx.read(n), q[n]) for n in ("glaive", "toolace", "xlam")), []))
     saroku: List[dict] = []
     if agent.saroku_passed(OUT / "QUALITY.md"):

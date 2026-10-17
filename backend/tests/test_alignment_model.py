@@ -46,9 +46,12 @@ def write_fixture(d, *, passed=True, kind="cross_encoder", **meta_extra):
 
 
 class FakeModel(alignment_model.AlignmentModel):
-    def __init__(self, p=0.9, risk=10, band=(0.3, 0.7), thresholds=None, fail=False):
-        super().__init__("cross_encoder", {"version": "ac-test", "uncertain_band": list(band),
-                                           "thresholds": thresholds or {}}, {})
+    def __init__(self, p=0.9, risk=10, band=(0.3, 0.7), thresholds=None, fail=False, shadow=False):
+        meta = {"version": "ac-test", "uncertain_band": list(band), "thresholds": thresholds or {},
+                "test": {"passed": not shadow}}
+        if shadow:
+            meta["deployment"] = "shadow"
+        super().__init__("cross_encoder", meta, {})
         self.p, self.risk, self.fail, self.pairs = p, risk, fail, []
 
     def score_pair(self, intent_text, call_text):
@@ -242,3 +245,53 @@ def test_code_calls_are_scored_on_the_code_itself(monkeypatch, tmp_path):
     intent_text, call = model.pairs[-1]
     assert call.startswith("execute_code: print('placeholder')") and "explanation" not in call
     assert len(call) <= len("execute_code: ") + tool_guard.CODE_CALL_CHARS
+
+
+def test_a_shadow_model_is_recorded_and_never_decides(monkeypatch, tmp_path):
+    """SEC-128: an ungated shadow model is scored next to phase A, collected and observed, never used."""
+    guard_on(monkeypatch, tmp_path)
+    model = FakeModel(p=0.12, risk=65, thresholds={"search_align_at": 90}, shadow=True)
+    alignment_model.set_model_for_tests(model)
+    assert alignment_model.get_model() is None and alignment_model.get_shadow_model() is model
+    assert alignment_model.current_thresholds() == {}
+    state = _state()
+    sig = signals.score_text(state, "paris weather tomorrow", action="web_search")
+    assert sig.classifier is False and sig.risk is None and sig.p_aligned is None
+    assert (sig.shadow_p_aligned, sig.shadow_risk) == (0.12, 65)
+    assert sig.intent_alignment > 12  # phase A's MiniLM score, not the shadow model's
+    assert asyncio.run(tool_guard.guard_tool("tool::web_search", {"query": "paris weather tomorrow"}, state))
+    ctx = _rows(tmp_path)[-1]["context"]
+    assert ctx["classifier_available"] is False
+    assert ctx["shadow_classifier_alignment"] == 12 and ctx["shadow_classifier_risk"] == 65
+    built = tool_guard._build_context("tool::web_search", {"query": "paris rain"}, state, tool_mode="shadow")
+    assert "search_align_at" not in built or built["search_align_at"] != 90
+    assert built["_p_aligned"] is None
+    intent._decide_text(state, "plan::subgoal", "paris rain", "plan", "supervisor")
+    ctx = _rows(tmp_path)[-1]["context"]
+    assert ctx["shadow_classifier_alignment"] == 12 and ctx["subgoal_harm"] != 65
+
+
+def test_a_failing_shadow_model_changes_nothing(monkeypatch, tmp_path):
+    guard_on(monkeypatch, tmp_path)
+    alignment_model.set_model_for_tests(FakeModel(fail=True, shadow=True))
+    sig = signals.score_text(_state(), "paris weather tomorrow", action="web_search")
+    assert sig.available and sig.shadow_p_aligned is None and sig.shadow_risk is None
+    assert asyncio.run(tool_guard.guard_tool("tool::web_search", {"query": "paris weather"}, _state()))
+    assert "shadow_classifier_alignment" not in _rows(tmp_path)[-1]["context"]
+
+
+def test_load_marks_an_installed_shadow_model(tmp_path):
+    d = write_fixture(tmp_path / "m", passed=False, deployment="shadow")
+    assert alignment_model.load(d) is None
+    model = alignment_model.load(d, allow_shadow=True)
+    assert model.shadow and not model.gated
+    gated = alignment_model.load(write_fixture(tmp_path / "g", deployment="shadow"), allow_shadow=True)
+    assert gated.gated and not gated.shadow  # a passed gate wins over the shadow label
+
+
+def test_startup_accepts_a_shadow_model_in_uat(monkeypatch, tmp_path):
+    _uat_guard(monkeypatch, tmp_path, tmp_path / "m")
+    (tmp_path / "m").mkdir()
+    (tmp_path / "m" / "metadata.json").write_text(
+        json.dumps({"test": {"passed": False}, "deployment": "shadow"}), encoding="utf-8")
+    startup_checks.check_security_guard_files()

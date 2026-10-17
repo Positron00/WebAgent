@@ -105,7 +105,7 @@ The classifier replaces the two encoder passes for intent alignment and risk (on
 |---|---|---|
 | Base encoder unavailable | No alignment signals | Defaults (match no rule), `signals_available` false, logged once (SEC-110) |
 | ContextDefender unavailable | No harm signals | Same |
-| Classifier missing or not gated | — | Phase A signals, `classifier_available` false; uat/prod refuse to start with an ungated model present (SEC-126) |
+| Classifier missing or not gated | — | Phase A signals, `classifier_available` false; uat/prod refuse to start with an ungated model present unless it is installed shadow-only, whose scores are only recorded (SEC-126, SEC-128) |
 | Plan check error | — | Subgoals kept unchanged (fail open, as search and retrieval at SEC-061), error logged |
 | Judge timeout or error | — | `NOT_ALIGNED`, as SEC-045 |
 | Shingle store grows large | Memory per task | Capped at 20,000 hashes per task (oldest dropped); egress is a shadow signal |

@@ -96,6 +96,14 @@ def declared_for(state: WorkflowState, action: str) -> bool:
     return bool(plan.get(flag, True))
 
 
+def _shadow_fields(sig: "signals.TextSignals") -> Dict[str, Any]:
+    """A shadow-only classifier's scores for the collection row (SEC-128); never decide."""
+    if sig.shadow_p_aligned is None:
+        return {}
+    return {"shadow_classifier_alignment": int(round(100 * sig.shadow_p_aligned)),
+            "shadow_classifier_risk": sig.shadow_risk}
+
+
 def _decide_text(state: WorkflowState, action: str, text: str, origin: str, principal: str) -> Tuple[str, Decision]:
     """Decide one rewrite or subgoal; returns (effective outcome, decision). Raises GuardStop on escalate."""
     cfg = _cfg()
@@ -125,9 +133,10 @@ def _decide_text(state: WorkflowState, action: str, text: str, origin: str, prin
     records.record_collection(
         checkpoint=2, action=action, decision=decision, state_context=state.context,
         args={"text": text[:500]} if dev else {},
-        context={k: context.get(k) for k in ("subgoal_origin", "signals_available", "classifier_available",
+        context={**{k: context.get(k) for k in ("subgoal_origin", "signals_available", "classifier_available",
                                               "intent_harm", "rewrite_alignment", "intent_alignment", "subgoal_harm")
                  if k in context},
+                 **_shadow_fields(sig)},
     )
     effective = decision.outcome
     if decision.error or shadow:

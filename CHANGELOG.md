@@ -2,6 +2,31 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.9.0 - 2026-10-17
+
+The checkpoint 2 classifier, retrained on a larger dataset, runs in shadow. It still fails the gate, so it never decides: its scores are recorded next to phase A's signals for the shadow week (checkpoint2-intent SEC-128, task B11).
+
+### Added
+- **Shadow-only classifier (SEC-128).** `scripts/eval_alignment_model.py --install-shadow` installs the best candidate that failed the gate with `"deployment": "shadow"` in its `metadata.json`. It scores every checkpoint 2 call and plan subgoal in parallel with phase A. Its scores go into collection rows (`shadow_classifier_alignment`, `shadow_classifier_risk`) and two new histograms (`webagent_guard_shadow_classifier_alignment{action}`, `webagent_guard_shadow_classifier_risk{action}`). They never reach Cedar, the thresholds or the judge band, `classifier_available` stays false, and a failing shadow model changes nothing.
+- The retrained MiniLM-L6 cross-encoder (`ac-2026-10-17-1`, 88 MB, LFS) ships shadow-only in `backend/models/security/alignment/`. On the gate's test split, real aligned calls held are 0.94% (target ≤ 1%, passes). It fails the rest: off-intent recall 0.51, risk recall 0.44, look-alikes held 10%, calibration error 0.062 and 0.108, and p95 of 12.3 ms while the machine was busy (9.2 ms idle).
+
+### Changed
+- **Rebuilt classifier dataset:** 45,650 rows (39,291 committed; 6,359 local and git-ignored). New since 3.8.0:
+  - Researchy Questions, sharing ASQ's quota evenly with HotpotQA.
+  - xLAM and TraceSafe, now read with the Hugging Face token (local only).
+  - 2,496 generated planner tasks.
+  - The first 388 generated code rows (`webagent_gen_code.jsonl`), scored as the runtime scores them: the code itself, capped at 1,000 characters.
+
+  223 generated tasks whose rewrite drifted from the question are excluded and listed by id.
+- The startup check accepts a shadow-only model in uat and prod. An ungated model without the shadow label is still refused.
+
+### Fixed
+- The TraceSafe adapter guessed its field names and produced no rows. It now reads the real schema: the mutated trace's user query and its first agent turn.
+
+### Upgrade notes
+- Run `git lfs pull` before building the image; otherwise the model folder holds LFS pointer files. The worker then logs the load failure and keeps phase A's signals.
+- Each worker loads the shadow model (about 90 MB more per worker). To turn it off, point `security_guard.alignment_model_dir` at an empty folder.
+
 ## 3.8.2 - 2026-10-17
 
 ### Security

@@ -11,14 +11,14 @@ text from published research datasets. They are classifier data only. No row was
 
 | File | Rows | Use |
 |---|---|---|
-| `train.jsonl` | 26,760 | Training and calibration |
-| `test.jsonl` | 7,213 | Release gate (`scripts/eval_alignment_model.py`) |
-| `probe.jsonl` | 630 | Second check, reported and not gated |
-| `local/{train,test,probe}.jsonl` | 0 / 322 / 28 here | **Git-ignored.** Rows from gated and no-train sources, built on the machine (see below) |
+| `train.jsonl` | 30,361 | Training and calibration |
+| `test.jsonl` | 8,194 | Release gate (`scripts/eval_alignment_model.py`) |
+| `probe.jsonl` | 736 | Second check, reported and not gated |
+| `local/{train,test,probe}.jsonl` | 4,177 / 1,994 / 188 here | **Git-ignored.** Rows from gated and no-train sources, built on the machine (see below) |
 | `counts.json` | — | Manifest: rows per source, role, label, action, split, committed or local; dropped rows; quotas |
 | `QUALITY.md` | — | The saroku quality check (passed, with conditions and its label mapping) |
-| `generated/webagent_gen.jsonl` | 50 tasks | Our own planner's rewrites and plan questions (`scripts/generate_alignment_calls.py`) |
-| `generated/webagent_gen_code.jsonl` | none yet | Our coding assistant's code for coding questions (`generate_alignment_calls.py --code`; the code is never run), read as aligned `execute_code` rows when present |
+| `generated/webagent_gen.jsonl` | 2,496 tasks | Our own planner's rewrites and plan questions (`scripts/generate_alignment_calls.py`) |
+| `generated/webagent_gen_code.jsonl` | 388 in this build (the run continues) | Our coding assistant's code for coding questions (`generate_alignment_calls.py --code`; the code is never run), read as aligned `execute_code` rows when present |
 
 Each row:
 
@@ -37,50 +37,54 @@ Each row:
   environment, toolkit, generation batch, function name); `sources`: every dataset whose text is in
   the row (licence checks); `cluster`: the near-duplicate cluster.
 
-## Composition (34,953 rows: 34,603 committed, 350 local)
+## Composition (45,650 rows: 39,291 committed, 6,359 local; build of 2026-10-17)
 
 Target shares (the builder's `QUOTAS`, the single source of the numbers): aligned with no risk
 about 50%, misaligned with no risk 20%, risk above intent 25%, look-alikes 5% (only about 2% exist).
 
 | Group | Rows | Origin |
 |---|---|---|
-| Aligned, no risk | 16,913 | ASQ agent queries for HotpotQA questions (7,000), ToolACE calls (3,990), Glaive calls (2,115), saroku safe actions (2,499), Agent-SafetyBench benign twins (322), WebAgent's own rewrites and plan questions (228), AgentDAM required content (173, test only); look-alikes: NotInject prompts (336) and XSTest safe prompts (250) |
-| Misaligned, no risk | 7,661 | Re-pairs of aligned calls under another question of the same split, random (easy: 2,985) and nearest by MiniLM below cosine 0.8 (hard: 3,176); TaskTracker secondary tasks under SQuAD questions (1,500) |
-| Risk above intent (high) | 9,620 | Aegis 2.0 dangerous-category prompts (1,664) and HarmBench behaviours (84) under the nearest benign question (cosine ≥ 0.5); RedCode-Exec code (1,296); PrivacyLens leaking final actions (1,000); saroku unsafe actions of high severity and its injection rows (2,741); InjecAgent attacker instructions (570); Agent-SafetyBench unfulfillable cases (399); ToolEmu risky actions (247); XSTest unsafe contrasts (150); AgentDojo injection goals (561, evaluation only); AgentDAM unneeded sensitive data (558, test only); AgentHarm (208), OS-Harm (140) and SHADE-Arena (2), local only |
-| Risk above intent (low) | 759 | saroku actions of medium or low severity (goal drift, scope and policy violations) |
+| Aligned, no risk | 27,028 | ASQ agent queries for HotpotQA and Researchy Questions, split evenly (6,985), WebAgent's own rewrites and plan questions (5,980), ToolACE calls (3,990), xLAM calls (3,974, local), Glaive calls (2,058), saroku safe actions (2,499), WebAgent's own generated code (388), Agent-SafetyBench benign twins (322), AgentDAM required content (173, test only), TraceSafe unmutated traces (73, local, evaluation only); look-alikes: NotInject prompts (336) and XSTest safe prompts (250) |
+| Misaligned, no risk | 7,778 | Re-pairs of aligned calls under another question of the same split, random (easy: 2,998) and nearest by MiniLM below cosine 0.8 (hard: 3,280); TaskTracker secondary tasks under SQuAD questions (1,500) |
+| Risk above intent (high) | 9,753 | Aegis 2.0 dangerous-category prompts (1,668) and HarmBench behaviours (90) under the nearest benign question (cosine ≥ 0.5); RedCode-Exec code (1,296); PrivacyLens leaking final actions (1,000); saroku unsafe actions of high severity and its injection rows (2,741); InjecAgent attacker instructions (570); Agent-SafetyBench unfulfillable cases (399); ToolEmu risky actions (247); XSTest unsafe contrasts (150); AgentDojo injection goals (561, evaluation only); AgentDAM unneeded sensitive data (558, test only); AgentHarm (208), OS-Harm (140) and SHADE-Arena (2), local only; part of TraceSafe's mutated traces |
+| Risk above intent (low) | 1,091 | saroku actions of medium or low severity (goal drift, scope and policy violations); the rest of TraceSafe's mutated traces (455 in all, low or high by mutation category, local, evaluation only) |
 
 By split and label (committed; local in brackets):
 
 | Label | train | test | probe |
 |---|---|---|---|
-| aligned yes, risk none | 13,439 | 3,145 | 329 |
-| aligned no, risk none | 6,199 | 1,310 | 152 |
-| aligned no, risk high | 4,740 | 1,610 (272) | 88 (28) |
-| aligned yes, risk high | 1,775 | 1,010 (50) | 47 |
-| aligned no, risk low | 407 | 104 | 11 |
-| aligned yes, risk low | 200 | 34 | 3 |
+| aligned yes, risk none | 18,180 (3,020) | 4,352 (938) | 449 (89) |
+| aligned no, risk none | 5,047 (1,157) | 1,089 (313) | 135 (37) |
+| aligned no, risk high | 4,778 | 1,592 (295) | 92 (28) |
+| aligned yes, risk high | 1,781 | 1,021 (117) | 46 (3) |
+| aligned no, risk low | 395 | 96 | 11 |
+| aligned yes, risk low | 180 | 44 (331) | 3 (31) |
 
-By action (committed, all splits): `function` 18,712, `web_search` 6,473, `internal_retrieve`
-5,367, `plan` 2,755, `execute_code` 1,296. `execute_code` has risky rows only until the coding
-assistant's generated code rows exist (task B3); its aligned cells are not required yet.
+By action (committed; local in brackets): `function` 17,062 (5,724), `plan` 9,648 (478),
+`web_search` 5,955 (88), `internal_retrieve` 4,857 (61), `execute_code` 1,769 (8). `execute_code`
+now has aligned rows from the coding assistant's generated code (388 in this build); the generation
+run is still adding rows.
 
 ## How it is built
 
-- **Lengths:** rows with an intent over 2,000 characters or a call over 1,000 are dropped (391).
+- **Lengths:** rows with an intent over 2,000 characters or a call over 1,000 are dropped (395).
 - **WebAgent generation:** the rewrite and each plan question are aligned calls for their question,
   except tasks whose rewrite scores below `rewrite_at` (40) against the question with the base
-  encoder (`signals.cos100` of `alignment.encode`): the planner replaced the user's goal there (2 of
-  50 tasks, listed in `counts.json` under `review_rewrite_below_rewrite_at`).
+  encoder (`signals.cos100` of `alignment.encode`): the planner replaced the user's goal there (223 of
+  2,496 tasks, listed by id in `counts.json` under `review_rewrite_below_rewrite_at`). Code rows are
+  the coding assistant's code (capped at 1,000 characters, as the runtime scores it) under its coding
+  question, kept in full outside the generation quota.
 - **ASQ:** only source question sets in `ASQ_SOURCES` (`scripts/alignment_data.py`): HotpotQA's test
-  questions (via BEIR, CC BY-SA 4.0). Up to 3 queries per question; half the questions are labelled
+  questions (via BEIR, CC BY-SA 4.0) and Researchy Questions (CDLA-Permissive-2.0), the quota split
+  evenly between them. Up to 3 queries per question; half the questions are labelled
   `internal_retrieve` (the agents searched a local corpus), half `web_search`.
-- **Function calling:** Glaive v2 and ToolACE (and xLAM when a token is available): the first user
+- **Function calling:** Glaive v2, ToolACE and xLAM (local; needs the Hugging Face token): the first user
   turn and the first call, each capped at 4,000 rows; split by function name.
 - **Re-pairs:** an aligned call under another question of the same split: random, or the nearest
   question by MiniLM that is not a paraphrase (cosine < 0.8) and shares no group.
 - **Harmful requests:** each Aegis 2.0 dangerous-category prompt (as ContextDefender's `aegis_group`,
   no jailbreak wording) and HarmBench standard behaviour is paired with the nearest benign question
-  of the same split (aligned rows' intents and Aegis safe prompts; cosine ≥ 0.5), or dropped (1,191).
+  of the same split (aligned rows' intents and Aegis safe prompts; cosine ≥ 0.5), or dropped (1,114).
 - **XSTest:** safe prompts as intents with the unsafe contrast prompts of the matching category;
   safe prompts and NotInject prompts also as look-alike calls for themselves (aligned, no risk).
 - **Agent-SafetyBench:** the release has no per-case source field, so derived cases are dropped by
@@ -103,7 +107,7 @@ assistant's generated code rows exist (task B3); its aligned cells are not requi
 - **Splits:** each group's split comes from a hash (about 80/18/2; evaluation-only groups 90/10 test
   and probe); a row whose groups fall in different splits is dropped (514). Rows whose intents and
   calls both have MiniLM cosine ≥ 0.9 form a cluster kept in its most common split; other members are
-  dropped (79). Exact duplicates are dropped (2,236).
+  dropped (123). Exact duplicates are dropped (2,843).
 - `--check-data` passes: schema, duplicates, groups and near-duplicate clusters crossing splits,
   evaluation-only rows in train, AgentDAM outside test, gated or no-train rows in a committed file,
   CC BY-SA and CC BY-NC text in one row, at least 50 rows per required (action, label) cell, and a
@@ -124,7 +128,8 @@ The repository is public. Rows from gated sources (xLAM, TraceSafe) and from sou
 ask that they not be trained on (AgentHarm, SHADE-Arena, OS-Harm; all carry canary strings) are
 written only to `local/`, never committed or pushed. Training and the gate read both folders; a build
 without a Hugging Face token has no xLAM or TraceSafe rows, and the gate reports them as missing.
-This build had no token: xLAM and TraceSafe were skipped.
+This build (2026-10-17) had the token: xLAM (4,911 rows with its re-pairs) and TraceSafe (528) are in
+`local/`.
 
 ## Sources, licences, roles and attribution
 
@@ -153,13 +158,12 @@ This build had no token: xLAM and TraceSafe were skipped.
 | [AgentHarm](https://huggingface.co/datasets/ai-safety-institute/AgentHarm) | MIT + clause limiting use to AI safety and security; no-train | E | **yes** (no-train) | Harmful and matched benign behaviours. Andriushchenko et al., ICLR 2025 |
 | [SHADE-Arena](https://github.com/jkutaso/SHADE-Arena) public split | MIT; no-train | E | **yes** (no-train) | Main task and side task of each pair (4 of 5 parsed; 2 within the length limits) |
 | [OS-Harm](https://github.com/tml-epfl/os-harm) | Apache-2.0; no-train | E | **yes** (no-train) | Task configs: injection goals, misbehaviour explanations, misuse requests. Kuntz et al., 2025 |
-| [TraceSafe](https://huggingface.co/datasets/CyCraftAI/TraceSafe) | Apache-2.0, gated; "a benchmark, not a training set" | E | **yes** (gated, no-train) | Access granted on the user's account; needs a local token; the adapter's field names are unverified until then |
+| [TraceSafe](https://huggingface.co/datasets/CyCraftAI/TraceSafe) | Apache-2.0, gated; "a benchmark, not a training set" | E | **yes** (gated, no-train) | Access granted on the user's account; read with the local token. The user query of each mutated trace and its first agent turn, labelled by the mutation's file (benign, or low or high risk by category); grouped by mutation category |
 | [AgentDAM](https://github.com/facebookresearch/ai-agent-privacy) | CC BY-NC 4.0 | E (test only) | no | Non-commercial (WebAgent is non-commercial); never in a row with CC BY-SA text. Zharmagambetov et al., 2025 |
 
 Not used: **DeCompBench** (skipped for now, plan §12); **R-Judge** and **SafeArena** (no licence);
 OpenAgentSafety (licence conflict); ASB, ST-WebAgentBench, ToolSafety, HarmActions (not now);
 HarmfulSkillBench (academic-only terms); Nemotron-AIQ Agentic Safety (evaluation-only licence); MS
-MARCO and Natural Questions; ASQ's MS MARCO and Researchy Questions sets (MS MARCO's research terms;
-Researchy Questions' CDLA-Permissive-2.0 not yet approved); saroku's `template` and `seed` rows and
+MARCO and Natural Questions; ASQ's MS MARCO set (MS MARCO's research terms); saroku's `template` and `seed` rows and
 its 13 long-tail domains (from an unnamed external corpus without a stated licence) and its
 `corrigibility` rows (`QUALITY.md`).

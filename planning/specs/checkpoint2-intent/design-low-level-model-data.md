@@ -133,7 +133,10 @@ entry in the README.
 | Latency per pair, one thread | the image's CPU | < 10 ms p95 |
 
 Both the cross-encoder and the baseline are evaluated; the report names the one that ships
-(SEC-124). `metadata.json["test"]["passed"]` is true only if every gated check passes.
+(SEC-124). `metadata.json["test"]["passed"]` is true only if every gated check passes. `--install`
+copies the shipping model to `models/security/alignment/` with `deployment: "gated"`; when none
+ships, `--install-shadow` copies the candidate with the best off-intent recall there with
+`deployment: "shadow"` (SEC-128), so the shadow week records its scores.
 
 ## 7. Evaluation suites (`eval_alignment_suites.py`, SEC-131)
 

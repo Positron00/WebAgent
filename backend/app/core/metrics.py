@@ -228,6 +228,21 @@ GUARD_RISK_ABOVE_INTENT = Histogram(
     buckets=(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
     registry=WEBAGENT_REGISTRY,
 )
+# A shadow-only alignment classifier's scores (checkpoint2-intent SEC-128): recorded, never decide.
+GUARD_SHADOW_CLASSIFIER_ALIGNMENT = Histogram(
+    "webagent_guard_shadow_classifier_alignment",
+    "Shadow-only classifier: alignment (0-100, 100 x P(aligned)) of a tool call with the user's turns",
+    ["action"],
+    buckets=(10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
+    registry=WEBAGENT_REGISTRY,
+)
+GUARD_SHADOW_CLASSIFIER_RISK = Histogram(
+    "webagent_guard_shadow_classifier_risk",
+    "Shadow-only classifier: risk above intent (0-100) of a tool call",
+    ["action"],
+    buckets=(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
+    registry=WEBAGENT_REGISTRY,
+)
 GUARD_EGRESS_OVERLAP = Histogram(
     "webagent_guard_egress_overlap",
     "Longest run of words a web search shares with private text seen in the task",

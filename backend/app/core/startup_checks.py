@@ -106,11 +106,13 @@ def check_alignment_model_gate() -> None:
     d = alignment_model.model_dir()
     if not (d / "metadata.json").is_file():
         return
-    if not alignment_model.gate_passed(alignment_model.read_metadata(d)):
+    meta = alignment_model.read_metadata(d)
+    if not alignment_model.gate_passed(meta) and not alignment_model.is_shadow(meta):
         raise RuntimeError(
             f"The alignment classifier in {d} has not passed the release gate (metadata.json "
             "test.passed is not true; run scripts/eval_alignment_model.py on it). "
-            "Remove it, set security_guard.alignment_model_dir to a gated model, or set "
+            "Remove it, install it as shadow-only (eval_alignment_model.py --install-shadow; its "
+            "scores are then only recorded), set security_guard.alignment_model_dir to a gated model, or set "
             "WEBAGENT_GUARD_ENABLED=false."
         )
 

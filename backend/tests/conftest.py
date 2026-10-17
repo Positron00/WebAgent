@@ -99,6 +99,20 @@ def _isolate_rate_limit(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _isolate_alignment_model(tmp_path, monkeypatch):
+    """The installed alignment classifier (3.9.0 ships one shadow-only) never reaches unit tests:
+    the configured folder is an empty one. Tests that need a model use a fixture or a fake."""
+    from app.core.config import settings
+    from app.security import alignment_model
+
+    monkeypatch.setattr(settings, "SECURITY_GUARD", settings.SECURITY_GUARD.model_copy(
+        update={"alignment_model_dir": str(tmp_path / "no-alignment-model")}))
+    alignment_model.set_model_for_tests(None)
+    yield
+    alignment_model.set_model_for_tests(None)
+
+
+@pytest.fixture(autouse=True)
 def _isolate_context_defender(monkeypatch):
     from app.security import context_defender
 
