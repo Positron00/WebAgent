@@ -124,8 +124,8 @@ Checked in the code on 2026-10-16.
   SHADE-Arena); `--check-data` passes. xLAM and TraceSafe were skipped (no Hugging Face token on the
   build machine). Agent-SafetyBench has no per-case source field, so derived cases are dropped by
   markers (AdvBench category, failure mode M9, AgentDojo-named environments): conservative, not exact.
-  ASQ uses HotpotQA questions only; Researchy Questions (CDLA-Permissive-2.0) is not on the approved
-  list and is left out pending a decision.
+  The 3.8.0 build used HotpotQA questions only for ASQ; Researchy Questions (CDLA-Permissive-2.0) was
+  approved on 2026-10-17 and shares ASQ's quota evenly with HotpotQA from the next build.
 - **No candidate passed the gate (2026-10-16), so none is installed** and checkpoint 2 keeps phase A's
   signals (SEC-125, SEC-126). On `test` (7,535 rows):
 

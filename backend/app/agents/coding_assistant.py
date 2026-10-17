@@ -370,8 +370,10 @@ class CodingAssistantAgent(BaseAgent):
         import asyncio
         import re
         
+        # Every attempt goes through the guarded model from services/llm.py (SEC-001): checkpoint 1,
+        # the token budget, model-call metrics and drift samples. (A direct HTTP call to Together used
+        # to come first and bypassed all of them; removed in 3.8.2.)
         methods = [
-            self._try_direct_api,
             self._try_langchain_agenerate,
             self._try_langchain_invoke,
             self._try_fallback,
@@ -411,42 +413,6 @@ class CodingAssistantAgent(BaseAgent):
         # If all methods fail, return a basic response
         logger.error("All code generation methods failed")
         return """{"explanation": "Error generating code", "code": "# Error occurred during code generation\\n# Please try again later"}"""
-    
-    async def _try_direct_api(self, prompt):
-        """Try using direct API call."""
-        import requests
-        import os
-        from app.core.config import settings
-        
-        together_api_key = settings.TOGETHER_API_KEY
-        
-        url = "https://api.together.xyz/v1/completions"
-        headers = {
-            "Authorization": f"Bearer {together_api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        data = {
-            "model": "meta-models/Muse-Glimmer-30B",
-            "prompt": prompt,
-            "max_tokens": 2500,
-            "temperature": 0.7,
-        }
-        
-        # Use synchronous request in async function
-        import asyncio
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None, 
-            lambda: requests.post(url, headers=headers, json=data)
-        )
-        
-        response_data = response.json()
-        
-        if "choices" in response_data and len(response_data["choices"]) > 0:
-            return response_data["choices"][0]["text"]
-        else:
-            raise ValueError(f"Unexpected API response: {response_data}")
     
     async def _try_langchain_agenerate(self, prompt):
         """Try using LangChain agenerate."""

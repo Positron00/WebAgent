@@ -172,5 +172,5 @@ failures and rate limits as alerts, not a detector; no simulations left.
   `model_drift` may therefore fire often on real traffic; the shadow week will show how often.
 - **One replica.** The store relies on one shared data volume, as results do (improvement plan,
   decision 5). `flock` works on local and block volumes, not on every network filesystem.
-- **OpenAI calls** (coding agents with an OpenAI key) are not measured.
+- **OpenAI calls** (coding agents with an OpenAI key; since 3.8.2 only with `provider: openai`) are not measured.
 - **Notifications** need a Grafana contact point; none is configured.

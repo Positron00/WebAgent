@@ -442,6 +442,8 @@ And from §8.2 (2026-10-16):
 - **OS-Harm**: approved for evaluation only (its authors ask that it not be trained on).
 - **TraceSafe**: evaluation only, once you have requested and received access (gated).
 - Left out: ST-WebAgentBench, ToolSafety, HarmActions, SafeArena, MS MARCO, Natural Questions.
+- **Researchy Questions** (corbyrosset/researchy_questions, CDLA-Permissive-2.0; 2026-10-17): approved
+  for training and test as ASQ source questions, sharing ASQ's quota evenly with HotpotQA.
 
 No questions are open. TraceSafe access and xLAM's terms were granted on your Hugging Face account
 (2026-10-16); this machine still needs a read token (`hf auth login`, stored outside the

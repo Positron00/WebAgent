@@ -127,15 +127,20 @@ def gen_code_rows(ctx: Ctx, rows: List[dict]) -> List[dict]:
 
 
 def asq_rows(ctx: Ctx, rows: List[dict], accepted: Dict[str, dict], n: int, per_question: int = 3) -> List[dict]:
-    out = []
+    """ASQ agent queries as aligned calls for their source question; the quota `n` is shared evenly
+    between the accepted sets (user decision, 2026-10-17)."""
+    by_set: Dict[str, List[dict]] = {}
     for r in rows:
         if r.get("set") not in accepted:
             ctx.dropped["asq_set_not_accepted"] += 1
             continue
         action = ctx.pick(r["qid"], ("web_search", "internal_retrieve"))  # ASQ agents searched a local corpus
         for q in r["queries"][:per_question]:
-            out.append(ctx.row(r["question"], q, action, "yes", "none", "asq:query", [f"asq:{r['qid']}"], ["asq"]))
-    return ctx.take(out, n)
+            row = ctx.row(r["question"], q, action, "yes", "none", "asq:query", [f"asq:{r['set']}:{r['qid']}"], ["asq"])
+            if row:
+                by_set.setdefault(r["set"], []).append(row)
+    share = n // max(len(by_set), 1)
+    return sum((ctx.take(v, share) for v in by_set.values()), [])
 
 
 def function_rows(ctx: Ctx, name: str, rows: List[dict], n: int) -> List[dict]:

@@ -16,7 +16,7 @@ This directory contains Kubernetes manifests and scripts for deploying the WebAg
 
 - Kubernetes cluster with RBAC enabled
 - kubectl configured to access your cluster
-- Docker image for WebAgent backend (webagent/backend:3.8.1, built from `backend/` with `--build-arg APP_VERSION=3.8.1`)
+- Docker image for WebAgent backend (webagent/backend:3.8.2, built from `backend/` with `--build-arg APP_VERSION=3.8.2`)
 
 ### Using the Deployment Script
 
@@ -24,8 +24,8 @@ Build the image and push it to a registry the cluster can pull from, then run `d
 
 ```bash
 git lfs pull   # the security encoder and dataset are LFS files
-docker build --build-arg APP_VERSION=3.8.1 -t <registry>/webagent-backend:3.8.1 backend/
-docker push <registry>/webagent-backend:3.8.1
+docker build --build-arg APP_VERSION=3.8.2 -t <registry>/webagent-backend:3.8.2 backend/
+docker push <registry>/webagent-backend:3.8.2
 
 # Required
 export OPENAI_API_KEY="your-openai-api-key"
@@ -40,7 +40,7 @@ export LANGSMITH_API_KEY="your-langsmith-api-key"
 #   set -a; . ../../.env.local; set +a
 
 cd backend/kubernetes
-./deploy.sh -e uat -n webagent-uat -v 3.8.1 -r <registry>/webagent-backend -H uat-api.your-domain
+./deploy.sh -e uat -n webagent-uat -v 3.8.2 -r <registry>/webagent-backend -H uat-api.your-domain
 ```
 
 Options:
@@ -48,7 +48,7 @@ Options:
 ```
 -e, --environment  prod or uat: sets WEBAGENT_ENV, so the pod uses config/<env>.yaml (default: prod)
 -n, --namespace    Kubernetes namespace (default: default)
--v, --version      Image tag (default: 3.8.1)
+-v, --version      Image tag (default: 3.8.2)
 -r, --registry     Image repository the cluster pulls from (default: webagent/backend)
 -H, --host         Public host name for the ingress (default: api.webagent.example.com)
 ```

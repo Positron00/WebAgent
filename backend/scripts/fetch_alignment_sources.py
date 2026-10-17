@@ -76,10 +76,21 @@ def asq_rows(cap: int) -> Iterator[dict]:
 
     files = [f.path for f in HfApi().list_repo_tree("AgenticSearchQueryset/ASQ", repo_type="dataset", recursive=True)
              if getattr(f, "path", "").endswith("/iter_queries.tsv")]
-    n = 0
+    per_set = max(1, cap // max(len(ASQ_SOURCES), 1))  # the quota is shared evenly between sets
     for name, meta in ASQ_SOURCES.items():
-        questions = pd.read_parquet(hf_file(*meta["questions"]))
-        text = dict(zip(questions["_id"].astype(str), questions["text"]))
+        n = 0
+        repo, paths = meta["questions"]
+        text: Dict[str, str] = {}
+        for path in paths:
+            local = hf_file(repo, path)
+            if path.endswith(".parquet"):
+                questions = pd.read_parquet(local)
+                text.update(zip(questions["_id"].astype(str), questions["text"]))
+            else:
+                with open(local, encoding="utf-8") as fh:
+                    for line in fh:
+                        r = json.loads(line)
+                        text[str(r["id"])] = r["question"]
         queries: Dict[str, list] = {}
         for path in sorted(f for f in files if f.split("/")[1] == name):
             df = pd.read_csv(hf_file("AgenticSearchQueryset/ASQ", path), sep="\t", dtype=str, quoting=csv.QUOTE_NONE)
@@ -87,7 +98,7 @@ def asq_rows(cap: int) -> Iterator[dict]:
                 q = (q or "").strip() if isinstance(q, str) else ""
                 if q and qid in text and q not in queries.setdefault(qid, []):
                     queries[qid].append(q)
-        for qid in sample(sorted(queries), cap - n):
+        for qid in sample(sorted(queries), per_set - n):
             yield {"qid": qid, "set": name, "licence": meta["licence"], "question": text[qid], "queries": queries[qid][:10]}
             n += 1
 

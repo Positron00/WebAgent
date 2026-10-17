@@ -20,15 +20,21 @@ MAX_INTENT, MAX_CALL = 2000, 1000
 NEAR_DUPLICATE = 0.9
 
 # ASQ source question sets we accept, with their licences (SEC-121). MS MARCO (research terms, no
-# licence tag) was left out in the plan (§8.2); Researchy Questions (CDLA-Permissive-2.0) is not on
-# the approved list. Anything not here is skipped.
-ASQ_SOURCES = {"hotpotqa-test": {"licence": "CC BY-SA 4.0", "questions": ("BeIR/hotpotqa", "queries/queries-00000-of-00001.parquet")}}
+# licence tag) was left out in the plan (§8.2). Researchy Questions (CDLA-Permissive-2.0) was approved
+# by the user on 2026-10-17 for training and test, sharing the ASQ quota evenly with HotpotQA.
+# Anything not here is skipped. `questions`: (dataset, files); parquet with `_id`/`text`, or JSONL
+# with `id`/`question`.
+ASQ_SOURCES = {
+    "hotpotqa-test": {"licence": "CC BY-SA 4.0", "questions": ("BeIR/hotpotqa", ("queries/queries-00000-of-00001.parquet",))},
+    "researchy_all": {"licence": "CDLA-Permissive-2.0", "questions": (
+        "corbyrosset/researchy_questions", ("researchy_questions.train.jsonl", "researchy_questions.test.jsonl"))},
+}
 
 # dataset -> (licence, role, local-only, README name). Local-only: gated (xLAM, TraceSafe) or the
 # authors ask that it not be trained on (AgentHarm, SHADE-Arena, OS-Harm); the repository is public.
 SOURCES: Dict[str, tuple] = {
     "webagent-gen": ("Project data", "T", False, "WebAgent generation"),
-    "asq": ("MIT; HotpotQA CC BY-SA 4.0", "T", False, "ASQ"),
+    "asq": ("MIT; HotpotQA CC BY-SA 4.0; Researchy Questions CDLA-Permissive-2.0", "T", False, "ASQ"),
     "glaive": ("Apache-2.0", "T", False, "glaive-function-calling-v2"),
     "toolace": ("Apache-2.0", "T", False, "ToolACE"),
     "xlam": ("CC BY 4.0, gated", "T", True, "xlam-function-calling-60k"),

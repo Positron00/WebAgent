@@ -132,6 +132,7 @@ This build had no token: xLAM and TraceSafe were skipped.
 |---|---|---|---|---|
 | WebAgent generation (`webagent-gen`) | Project data | T | no | Supervisor planning over triage questions (`data/triage/train.jsonl`), model and date in each row |
 | [ASQ](https://huggingface.co/datasets/AgenticSearchQueryset/ASQ) | MIT | T | no | Agent-written queries; joined to [HotpotQA via BEIR](https://huggingface.co/datasets/BeIR/hotpotqa) questions (CC BY-SA 4.0: rows stay share-alike, never mixed with CC BY-NC). Pezzuti et al., 2026 |
+| [Researchy Questions](https://huggingface.co/datasets/corbyrosset/researchy_questions) | CDLA-Permissive-2.0 | T | no | Source questions for ASQ's `researchy_all` traces (approved 2026-10-17); ASQ's quota is split evenly between HotpotQA and Researchy Questions. Rosset et al., "Researchy Questions", 2024 |
 | [glaive-function-calling-v2](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2) | Apache-2.0 | T | no | First request and call, capped |
 | [ToolACE](https://huggingface.co/datasets/Team-ACE/ToolACE) | Apache-2.0 | T | no | First request and call, capped. Liu et al., 2024 |
 | [xlam-function-calling-60k](https://huggingface.co/datasets/Salesforce/xlam-function-calling-60k) | CC BY 4.0, gated | T | **yes** (gated) | Terms accepted on the user's account; read with the user's token; capped. Liu et al., "APIGen", 2024 |
