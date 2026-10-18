@@ -1,6 +1,6 @@
 # Spec: recurring research with tracked summaries and email alerts
 
-Status: draft v2 (aligned with plan v5, 2026-10-18) · Source plan: [`planning/recurring-research-plan.md`](../../recurring-research-plan.md) · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A: topics, scheduler, history, web app), 3.12.0 (phase B: change summaries, email). Both are deployed after shadow week 2.
+Status: v3, phase A implemented (3.11.0, 2026-10-18) · Source plan: [`planning/recurring-research-plan.md`](../../recurring-research-plan.md) · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A: topics, scheduler, history, web app), 3.12.0 (phase B: change summaries, email). Both are deployed after shadow week 2.
 
 ## What this work does
 
@@ -78,3 +78,28 @@ Requirements say *what*; the designs say *how*; tasks say *in what order*. When 
 | 6.11 Configuration, deployment | REC-118 |
 | 8 Phases | `tasks.md` |
 | 9 Tests | each requirement's check; `design-low-level-*.md` §Tests |
+
+## Implementation notes (phase A, 3.11.0)
+
+- **Built** by four parallel agents on a foundation of config, topic files, models and schedule maths, then integrated and tested together:
+  - the topics API (A2, A8);
+  - the task path (A3, A4);
+  - the scheduler with history, holds, allowance and metrics (A6, A7, A8, A10);
+  - the web app (A9).
+- **Tests:** 1,172 backend and 412 web tests pass, up from 961 and 329.
+- **End-to-end check** (2026-10-18), in containers: backend in uat with 2 workers, the scheduler, the repo's fake Together server, no Tavily key, so no credit was spent.
+  - **The loop:** a topic created through the API, then Run now. The scheduler started the task with its fixed ID, the backend ran it (`origin: schedule`, `route: agentic`, `decided_by: schedule`, usage recorded), and the run was recorded as completed and `first`. A second run compared against it.
+  - **Separation:** triage collected nothing, collection rows carried `topic_create` and `schedule`, and the topic metrics were exported.
+  - **Delete:** removed the topic's folder and its runs' results; the topic answers 404.
+  - **Web app:** the topics page and proxies worked against that backend. A scheduler field sent through the proxy was dropped, and `summarize` isn't reachable from the web.
+- **Measured:** the scheduler uses 39 MiB of resident memory (target under 150 MB).
+- **Found by the end-to-end check and fixed:**
+  1. **A restart refused to start** while the killed scheduler's heartbeat was still fresh, which would make a crash loop after any crash or redeploy. It now waits for the heartbeat to go stale (REC-105).
+  2. **Every research task was counted twice** in `webagent_tasks_total` and `webagent_task_duration_seconds`: the team manager also recorded a completion, with its own step's duration. This existed before 3.11.0; the new `origin` label made it visible. The team manager's calls are removed.
+  3. **A deleted topic's tombstone kept its question, name and addresses** until the daily cleanup. The tombstone is now scrubbed at once (REC-114).
+  4. **Scheduled results had no `route`;** they now record `agentic` and `schedule` (REC-108).
+- **Searches without a key:** a search is counted when it's attempted, so a failed search (here, no Tavily key) also counts toward the cap and the credits. That's conservative for the allowance.
+- **Still open:**
+  - A0: setting the search cap from shadow week 2's counts. Until then the cap stays at today's values (5 in dev and uat, 10 in prod), which a run can't reach anyway (at most 2 searches per pass).
+  - A11's trial week on the local stack, after shadow week 2.
+

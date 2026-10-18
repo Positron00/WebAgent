@@ -1,6 +1,6 @@
 # Plan: recurring research with tracked summaries and email alerts
 
-Status: v5, aligned with the spec 2026-10-18 (spec in `specs/recurring-research/`, which wins where the two differ), decided 2026-10-18 (D1–D8 and the search cap accepted as recommended; §11) · checked against the code three times, gaps fixed in §13 · 2026-10-17 · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A), 3.12.0 (phase B), both deployed after shadow week 2
+Status: v5, phase A implemented as 3.11.0 (2026-10-18), aligned with the spec 2026-10-18 (spec in `specs/recurring-research/`, which wins where the two differ), decided 2026-10-18 (D1–D8 and the search cap accepted as recommended; §11) · checked against the code three times, gaps fixed in §13 · 2026-10-17 · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A), 3.12.0 (phase B), both deployed after shadow week 2
 
 ## 1. Summary
 

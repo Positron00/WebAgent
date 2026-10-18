@@ -1,6 +1,6 @@
 # WebAgent Architecture
 
-How the parts of WebAgent 3.10.1 fit together: the web app, the backend, the research workflow, the security guard, triage, the stores, and observability. Each section names the code that implements it. Feature designs and requirements are in `planning/specs/`.
+How the parts of WebAgent 3.11.0 fit together: the web app, the backend, the research workflow, the security guard, triage, the stores, and observability. Each section names the code that implements it. Feature designs and requirements are in `planning/specs/`.
 
 ## System overview
 
@@ -29,6 +29,8 @@ How the parts of WebAgent 3.10.1 fit together: the web app, the backend, the res
 │                                                                                         │
 │  data/: results/ · vectordb/ · graph · artifacts/ · drift/ · security/ · triage/        │
 │  Observability: /metrics · /api/v1/observability · logs · LangSmith                     │
+│  Topics API · data/topics/ ◄── Scheduler (separate process): due runs → /api/task       │
+│    (scheduler token; topics, schedule state, run history, monthly allowance)            │
 └───────┬───────────────────────┬───────────────────────┬─────────────────────────────────┘
         ▼                       ▼                       ▼
    Together AI             Tavily search          Prometheus + Grafana
@@ -241,10 +243,37 @@ The web app's Agentic control has three modes: Off, Auto and Always. In Auto, a 
   - CI audits both sides (`pip-audit`, `npm audit`), and a new advisory fails the build.
   - The accepted advisories, which need a major-version migration and can't be reached in WebAgent, are explained in `backend/SECURITY_DEPENDENCIES.md`.
 
+## Recurring research (3.11.0; `app/scheduler.py`, `app/services/topics.py`, `app/api/endpoints/topics.py`)
+
+A **topic** is a saved question that's researched again daily or weekly. The parts:
+
+- **Topics API** (`/api/topics`, API key): create, list, pause, resume, Run now, delete, and read runs.
+  - A topic's question passes checkpoint 1 when it's created.
+  - Definitions live in `data/topics/<id>.json`, written only by the backend, under `flock` because it runs two workers.
+- **Scheduler** (`python -m app.scheduler`: a Compose service, or a sidecar in the backend pod): one process that loads no models (about 40 MB).
+  - **Each tick (60 s):**
+    - it picks the due topics, oldest first, 2 at a time;
+    - it checks the daily cap and the monthly allowance (a run starts only if its worst case fits);
+    - it starts each run as `POST /api/task` with a fixed task ID, its own token (`X-WebAgent-Scheduler`) and a token budget.
+  - **After each run** it records a run (report, sources, usage, the source diff against the last runs), the month's usage, counters, and holds (3 failures in a row, or the allowance spent).
+  - **Its own files:** `state.json`, `runs/`, `usage-*.json` and `counters.json`.
+  - **One instance:** a heartbeat lock makes sure only one runs; a restart waits for a dead holder's heartbeat to expire.
+- **The task path for scheduled runs** (`origin: schedule`, accepted only with the scheduler token):
+  - no triage and no triage collection; no embedding drift;
+  - `origin` and `topic_id` on the result, the security collection, the task metrics and LangSmith;
+  - `route: agentic`, `decided_by: schedule`.
+- **Usage for every task:** each task records `usage` (input and output tokens, searches, Tavily credits). `max_searches_per_task` is a real per-task cap, held in the run's `task_budget` counter, which is shared by the parallel research agents.
+- **Web app:**
+  - **Track this** under research answers, prefilled with the supervisor's `standalone_query`;
+  - `/topics` and `/topics/[id]` (the run timeline and stored reports);
+  - `/api/topics/**` proxies, which allow-list routes and fields. The task proxy now forwards only its known fields.
+- **Metrics:** the backend's `/metrics` exports the scheduler's numbers from its files: runs, changes, holds, topics by state, budget used and its limit, heartbeat, run time. There's a "Recurring research" row on the backend dashboard, and a "Scheduler down" alert.
+- **Spec:** `planning/specs/recurring-research/`. Phase B (3.12.0) adds change summaries and email.
+
 ## Limits and what isn't built
 
-- No scheduled or recurring tasks, saved topics, or email and other user notifications. The only alerts are the operator alerts above.
-- No per-user accounts: one shared access code, and shared documents.
+- No email or other user notifications yet (3.12.0 adds email for topics). The operator alerts are above.
+- No per-user accounts: one shared access code, and shared documents and topics.
 - One server's memory holds the rate limits, and one data folder holds the state. Scaling past one machine needs shared storage for `data/` and a shared rate-limit store.
 - No checkpointing of research runs.
 - Images reach only direct answers.

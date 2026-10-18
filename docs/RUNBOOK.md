@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.10.1 -t <registry>/webagent-backend:3.10.1 backend/
-   docker push <registry>/webagent-backend:3.10.1
+   docker build --build-arg APP_VERSION=3.11.0 -t <registry>/webagent-backend:3.11.0 backend/
+   docker push <registry>/webagent-backend:3.11.0
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.10.1 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.11.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -197,6 +197,44 @@ decide, and uat and prod start with it. 3.9.0 ships the retrained MiniLM-L6 this
 at an empty folder. Nothing new is stored:
 private text is kept only as salted hashes in memory for the task, and outside dev no intent or
 subgoal text is logged or collected.
+
+## Recurring research
+
+Topics are questions WebAgent researches again daily or weekly (3.11.0; spec `planning/specs/recurring-research/`). A small **scheduler** process starts their runs through `POST /api/task`, so the guard, the time limit, the token budget and the search cap apply as to any task. Scheduling is **off** in every environment until you turn it on.
+
+**Turning it on:**
+
+1. Pick a token: `openssl rand -hex 32`. Give it to the backend and the scheduler as `WEBAGENT_SCHEDULER_TOKEN`, and never to the web app.
+   - Compose reads it from `.env.local`.
+   - Kubernetes gets it as `scheduler-token` in `webagent-secrets`: export it before `deploy.sh`.
+2. Set `schedule.enabled: true` in `backend/config/<env>.yaml`, or `WEBAGENT_SCHEDULER_ENABLED=true` for the scheduler.
+3. Start the scheduler:
+   - Compose: the `webagent-scheduler` service.
+   - Kubernetes: the `scheduler` sidecar in the backend pod.
+   - By hand: `cd backend && python -m app.scheduler`.
+
+   Without the token the backend logs "scheduling off: no WEBAGENT_SCHEDULER_TOKEN" and refuses scheduled runs. The scheduler, when enabled, refuses to start without the token or a reachable backend.
+4. Check it: `python -m app.scheduler --health` exits 0 while the heartbeat in `data/topics/.scheduler.lock` is under 180 s old. `webagent_scheduler_heartbeat_timestamp` is on `/metrics`.
+
+**Limits** (`schedule:` in the YAML):
+- 10 active topics, 20 scheduled runs a day, daily at most, 2 runs at a time.
+- A monthly allowance for scheduled runs of 400 Tavily credits and $5 of Together, counted from each run's `usage`. A run starts only if the remaining allowance covers its worst case, so the allowance is never passed.
+- When it runs out, every topic is **held: budget** until the next month. Raise `monthly_tavily_credits` or `monthly_together_usd` to release it sooner; the scheduler checks every minute.
+
+**Holds and skips:**
+- **Held: failures:** 3 failed runs in a row, for example timeouts, guard refusals or an unreachable backend. Each run's `error_code` is on the topic page. **Resume** clears the hold.
+- **Skipped: daily limit:** the day's run cap was reached. The topic runs at its next slot.
+
+**Restarts:** after a crash or a redeploy, a new scheduler waits up to 4 minutes for the old heartbeat to expire, then takes over. Missed slots aren't backfilled: each topic runs once on catch-up, and `webagent_scheduler_missed_slots_total` counts what was missed.
+
+**Alert "Scheduler down":** fires when the heartbeat is older than 10 minutes while scheduling is enabled. Check that the scheduler container is running, read its logs (topic and run IDs only), and run `--health`. If another scheduler holds the lock, only one may run.
+
+**Data:**
+- `data/topics/<id>.json` holds each definition (written by the backend).
+- `data/topics/<id>/state.json` and `runs/` hold the schedule state and the last 20 runs (written by the scheduler).
+- `data/topics/usage-<YYYY-MM>.json` holds the month's spending.
+
+Deleting a topic scrubs its definition at once and removes its runs and their task results. Topics paused for 90 days are deleted. Backups of `/app/data` include all of it.
 
 ## Local uat with Docker Compose
 

@@ -58,7 +58,7 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 - In shadow mode the outcome is recorded and the topic is created.
 - Check: tests in both modes.
 
-**REC-114 Delete (must).** `DELETE` sets `status: deleted` at once (a tombstone), and the API then treats the topic as gone. Afterwards:
+**REC-114 Delete (must).** `DELETE` sets `status: deleted` at once (a tombstone), and the API then treats the topic as gone. The tombstone is scrubbed in the same write: the name and query become `deleted` and the subscribers are removed, so no personal text stays on disk while the files are being removed. Afterwards:
 
 - **The scheduler, on its next tick,** removes the topic's folder and the saved results in `data/results/` of the topic's runs (by task ID).
 - **The backend** removes the definition and the topic's ledger entries once the folder is gone (checked on access and by the daily cleanup).
@@ -83,7 +83,7 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 
 **REC-105 Single runner (must).**
 
-- **Lock:** the scheduler holds `data/topics/.scheduler.lock`, with its PID and a heartbeat refreshed every 60 s. A scheduler that finds a heartbeat under 180 s old exits with a log line; an older one is taken over.
+- **Lock:** the scheduler holds `data/topics/.scheduler.lock`, with its PID and a heartbeat refreshed every 60 s. A scheduler that finds a heartbeat under 180 s old **waits** for it to go stale (checking every 15 s, for up to 240 s) and then takes it over. A holder that keeps beating is never taken over, and the waiting scheduler exits after 240 s. Waiting instead of exiting at once keeps a restart after a crash or a redeploy from becoming a crash loop (found in the end-to-end check, 2026-10-18).
 - **Disabled:** with `schedule.enabled: false` (`WEBAGENT_SCHEDULER_ENABLED`), the scheduler idles and writes a heartbeat with `enabled: false`.
 - Check: tests for a second instance, a stale lock, and disabled.
 
@@ -110,7 +110,8 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 - **Triage:** mode must be `always`. Triage is neither run nor collected (`triage_collect.record` is skipped).
 - **Drift:** `DriftRecordingEmbeddings` doesn't observe the run's query embeddings.
 - **Records:** the saved result and the security collection rows carry `origin` and `topic_id`. `webagent_tasks_total` and `webagent_task_duration_seconds` get an `origin` label (`interactive` or `schedule`). LangSmith runs get `origin` and `topic_id` metadata.
-- **No history:** there are no previous turns.
+- **No history:** there are no previous turns; `previous_messages` sent with `origin` are dropped. `topic_id` is required with `origin`.
+- **Route:** the result records `route: agentic` and `decided_by: schedule`.
 - Check: tests for each effect.
 
 **REC-109 Per-task search cap and usage, for every run (must).**

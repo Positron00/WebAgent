@@ -223,6 +223,8 @@ def test_budget_origin_topic_and_metadata_of_a_scheduled_run(token):
     assert (polled["result"]["origin"], polled["result"]["topic_id"]) == ("schedule", TOPIC)
     saved = result_store.load_result(task_id)
     assert (saved["origin"], saved["topic_id"]) == ("schedule", TOPIC)
+    assert (saved["route"], saved["decided_by"]) == ("agentic", "schedule")
+    assert (polled["result"]["route"], polled["result"]["decided_by"]) == ("agentic", "schedule")
     assert run_origin.topic_run.get() is None  # reset after the run
 
 

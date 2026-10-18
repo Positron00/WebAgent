@@ -760,3 +760,36 @@ def test_logs_carry_ids_not_the_query(env, caplog):
         drive(s, env.clock, 4)
     text = caplog.text
     assert topic_id in text and "what is new in x" not in text and "report text" not in text
+
+
+def test_a_fresh_lock_is_waited_for_until_it_goes_stale(env):
+    """After a crash or a redeploy the new scheduler waits for the old heartbeat to expire (no crash loop)."""
+    files.write_json_atomic(files.scheduler_lock_path(), {
+        "pid": 1, "heartbeat": env.clock().isoformat(), "enabled": True, "owner": "scheduler",
+        "host": "another-host", "instance": "old"})
+    start = env.clock()
+    slept = []
+
+    def sleep(seconds):
+        slept.append(seconds)
+        env.clock.advance(seconds=seconds)
+
+    lock = SchedulerLock(now=env.clock, sleep=sleep, wait_for_holder=240)
+    lock.acquire(True)
+    assert lock.held and sum(slept) >= 180 and (env.clock() - start).total_seconds() < 240
+    assert files.read_json(files.scheduler_lock_path())["instance"] == lock.instance
+
+
+def test_a_live_holder_is_not_taken_over_while_waiting(env):
+    def sleep(seconds):
+        env.clock.advance(seconds=seconds)
+        # the live holder keeps beating
+        files.write_json_atomic(files.scheduler_lock_path(), {
+            "pid": 1, "heartbeat": env.clock().isoformat(), "enabled": True, "owner": "scheduler",
+            "host": "another-host", "instance": "live"})
+
+    sleep(0)
+    lock = SchedulerLock(now=env.clock, sleep=sleep, wait_for_holder=240)
+    with pytest.raises(sched_mod.LockHeld):
+        lock.acquire(True)
+    assert files.read_json(files.scheduler_lock_path())["instance"] == "live"

@@ -296,7 +296,12 @@ async def delete_topic(topic_id: str) -> Response:
     _live(topic_id)
 
     def tombstone(defn: TopicDefinition) -> None:
+        # The tombstone keeps only what the cleanup needs: no question, name or addresses stay on disk
+        # while the files are removed (RNFR-03).
         defn.status = "deleted"
+        defn.name = "deleted"
+        defn.query = "deleted"
+        defn.notify.subscribers = []
 
     await run_in_threadpool(_update, topic_id, tombstone)
     logger.info("Topic %s deleted (tombstone)", topic_id)

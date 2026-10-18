@@ -128,13 +128,15 @@ class SchedulerLock:
     """
 
     def __init__(self, path=None, now: Callable[[], datetime] = files.utcnow,
-                 wait_for_backend: float = STALE_SECONDS, sleep: Callable[[float], None] = time.sleep):
+                 wait_for_backend: float = STALE_SECONDS, sleep: Callable[[float], None] = time.sleep,
+                 wait_for_holder: float = 0.0):
         self.path = path or files.scheduler_lock_path()
         self.now = now
         self.instance = str(uuid.uuid4())
         self.host = socket.gethostname()
         self.pid = os.getpid()
         self.wait_for_backend = wait_for_backend
+        self.wait_for_holder = wait_for_holder
         self.sleep = sleep
         self.held = False
 
@@ -167,6 +169,16 @@ class SchedulerLock:
                 # The backend is finishing a delete for a missing scheduler; it releases soon.
                 self.sleep(5)
                 waited += 5
+                continue
+            if owner != "backend" and waited < self.wait_for_holder:
+                # After a crash or a redeploy the previous scheduler's heartbeat is still fresh. Wait
+                # for it to go stale instead of exiting, so a restart doesn't become a crash loop;
+                # a live holder keeps beating, and this one gives up after wait_for_holder.
+                if waited == 0:
+                    logger.info("Scheduler lock held (heartbeat %s s old); waiting for it to go stale",
+                                "?" if age is None else int(age))
+                self.sleep(15)
+                waited += 15
                 continue
             raise LockHeld(f"another {owner or 'scheduler'} holds the lock (heartbeat {int(age)} s old)")
 
@@ -899,7 +911,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     client = httpx.Client(base_url=settings.BACKEND_URL.rstrip("/"), timeout=GET_TIMEOUT_SECONDS)
     checks(client)
     enabled = bool(settings.SCHEDULE.enabled)
-    lock = SchedulerLock()
+    # Wait up to the stale age plus a minute: long enough for a dead holder's heartbeat to expire.
+    lock = SchedulerLock(wait_for_holder=STALE_SECONDS + 60)
     try:
         lock.acquire(enabled)
     except LockHeld as exc:

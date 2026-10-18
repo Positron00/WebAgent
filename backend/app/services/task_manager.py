@@ -228,6 +228,10 @@ class TaskManager:
             meta["decided_by"] = decision.get("decided_by")
             if decision.get("p_agentic") is not None:
                 meta["p_agentic"] = decision.get("p_agentic")
+        elif ctx.get("origin") == "schedule" or run_origin.topic_run.get():
+            # Scheduled runs skip triage and always research (recurring-research spec REC-108).
+            meta["route"] = "agentic"
+            meta["decided_by"] = "schedule"
         triage = ctx.get("shadow_triage") or decision
         if triage:
             meta["triage"] = triage

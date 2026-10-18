@@ -381,3 +381,15 @@ def test_scheduling_off_logged_once_without_token(monkeypatch, caplog):
     with caplog.at_level(logging.INFO, logger="app.core.startup_checks"):
         startup_checks.check_scheduler_token()
     assert "scheduling off" not in caplog.text
+
+
+
+def test_delete_leaves_no_question_name_or_address_on_disk(client):
+    """The tombstone is scrubbed at once, even while a live scheduler still has to remove the files."""
+    tid = _created(client)["topic_id"]
+    files.write_json_atomic(files.scheduler_lock_path(), {
+        "pid": 1, "heartbeat": files.utcnow().isoformat(), "enabled": True, "owner": "scheduler"})
+    files.write_json_atomic(files.state_path(tid), {"next_due": None})
+    assert client.delete(f"/api/topics/{tid}").status_code == 204
+    raw = files.definition_path(tid).read_text()
+    assert SECRET_QUERY not in raw and SECRET_NAME not in raw and '"deleted"' in raw

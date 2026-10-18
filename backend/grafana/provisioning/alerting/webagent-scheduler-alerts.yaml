@@ -31,4 +31,4 @@ groups:
         labels: {severity: critical, service: scheduler}
         annotations:
           summary: The scheduler's heartbeat is more than 10 minutes old while scheduling is enabled; no scheduled run starts.
-          runbook: docs/RUNBOOK.md#drift-and-alerts
+          runbook: docs/RUNBOOK.md#recurring-research

@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.10.1).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.11.0).
 
 ## Base URL
 
@@ -230,7 +230,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.10.1",
+  "version": "3.11.0",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -276,7 +276,14 @@ These are the endpoints the web app uses. Both need `X-API-Key` when API-key aut
 | `image` | Accepted but not sent to the model on either path; the result then has `image_ignored: true` |
 | `document_id` | Document to extract from, if any |
 
-**Response:** `{"task_id": "...", "status": "processing"}`. Poll `GET /api/task/{task_id}`; the finished `result` includes `route` (`direct` or `agentic`), `decided_by` (`mode`, `rule`, `model`, `fallback`, `config` or `override`), when the classifier ran `p_agentic`, and `tokens_used`.
+**Response:** `{"task_id": "...", "status": "processing"}`. Poll `GET /api/task/{task_id}`. The finished `result` includes:
+
+- `route` (`direct` or `agentic`) and `decided_by` (`mode`, `rule`, `model`, `fallback`, `config`, `override`, or `schedule` for scheduled runs);
+- `p_agentic`, when the classifier ran;
+- `tokens_used`;
+- since 3.11.0, `usage` (`input_tokens`, `output_tokens`, `searches`, `tavily_credits`) and, for research runs, the supervisor's `standalone_query`.
+
+**Scheduler-only fields (3.11.0):** `origin` (`schedule`), `topic_id`, `task_id` and `token_budget` are accepted only with an `X-WebAgent-Scheduler` header matching the backend's `WEBAGENT_SCHEDULER_TOKEN`; otherwise they answer 422 `scheduler_fields_need_token`. The API key isn't enough. A chosen `task_id` that already exists answers 409 `task_exists`. The web app's proxy never forwards these fields.
 
 The intake guard checks the question first. A refusal answers 403 (declined) or 409 (consent needed, with a `consent_token` to send back) in its own flat shape: `{"code": "declined" | "consent_required", "outcome", "reason", "policy_id", "policy_ids"}`, plus `consent_token` on a 409.
 
@@ -404,6 +411,39 @@ Deletes a task and its results.
 }
 ```
 
+## Topics API (3.11.0)
+
+Topics are questions the scheduler researches again daily or weekly. Every route needs `X-API-Key` when keys are on. Unknown or malformed IDs, and deleted topics, answer 404.
+
+| Route | Does |
+|---|---|
+| `GET /api/topics` | Lists topics: `topic_id`, `name`, `query`, `schedule`, `notify.when`, `subscriber_count`, `state` (`active`, `paused`, `held_failures`, `held_budget`), `next_due`, `last_run`, `last_new_sources`, `skipped` |
+| `POST /api/topics` | Creates one; answers 201 with the definition |
+| `GET /api/topics/{id}` | The definition, with the same scheduler fields as a list row |
+| `PATCH /api/topics/{id}` | Changes `name`, `schedule`, `notify.when` or `status` (`active` or `paused`) |
+| `DELETE /api/topics/{id}` | Deletes it, with its runs and their task results; 204 |
+| `POST /api/topics/{id}/run` | Run now: queues one extra run; 202 |
+| `POST /api/topics/{id}/resume` | Sets it active and clears a failures hold; 202 |
+| `GET /api/topics/{id}/runs` | Runs, newest first (at most 20): `run_id`, `status`, `error_code`, times, `change` (`first`, `new_sources` count, `changed`) |
+| `GET /api/topics/{id}/runs/{run_id}` | One run with its stored `report`, `sources`, `usage` and `change` (`new_sources` and `dropped_sources` as URL lists) |
+
+**Create:**
+
+```json
+{"name": "EU AI rules", "query": "What changed in EU AI rules this week?",
+ "schedule": {"every": "week", "weekday": "mon", "time": "07:30", "tz": "Europe/Paris"},
+ "notify": {"when": "changes"}}
+```
+
+- **Fields:**
+  - `name` is 1–80 characters and `query` 1–2,000, with no control characters.
+  - `every` is `day` or `week`; `week` needs `weekday`.
+  - `time` is `HH:MM` in the IANA time zone `tz`.
+- **Errors:**
+  - Invalid fields answer 422 with the field named.
+  - More than 10 active topics answers 409 `topic_limit`, as does re-activating one.
+  - In act mode, a question the security guard refuses answers 403 with the guard's refusal body. A topic can't be created when the question would need consent, because a scheduled run can't ask for it.
+
 ## Documents API
 
 Documents loaded here are searched by the internal research agent. They are shared by every task on the server. IDs are UUIDs.
@@ -471,7 +511,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.10.1"
+  "version": "3.11.0"
 }
 ```
 
@@ -484,7 +524,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.10.1",
+  "version": "3.11.0",
   "environment": "prod"
 }
 ```
@@ -501,7 +541,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.10.1"
+    "version": "3.11.0"
   },
   "llm_service": {
     "status": "ok",
