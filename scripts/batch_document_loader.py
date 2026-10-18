@@ -4,10 +4,11 @@ Batch Document Loader Script
 ============================
 
 This script provides a command-line interface for batch loading documents into the WebAgent system.
-It supports loading from a directory or individual files, and can publish to artifact registries.
+It loads a directory or single files into the vector store, the graph store and the local
+artifacts folder (WEBAGENT_ARTIFACTS_PATH). There is no remote artifact registry.
 
 Usage:
-    python batch_document_loader.py --dir /path/to/documents --pattern "*.pdf" --registry my-registry
+    python batch_document_loader.py --dir /path/to/documents --pattern "*.pdf"
     python batch_document_loader.py --file /path/to/document.pdf --metadata '{"category": "reports"}'
 """
 
@@ -67,13 +68,7 @@ async def load_documents(args):
         try:
             artifact_id = await document_loader.load_document(args.file, metadata)
             logger.info(f"File loaded successfully. Artifact ID: {artifact_id}")
-            
-            # Publish to artifact registry if requested
-            if args.registry and artifact_id:
-                logger.info(f"Publishing artifact {artifact_id} to registry {args.registry}")
-                # TODO: Implement registry publishing
-                logger.info(f"Artifact published to registry {args.registry}")
-                
+
         except Exception as e:
             logger.error(f"Error loading file: {str(e)}")
     else:
@@ -100,13 +95,7 @@ async def load_documents(args):
                 for filename, error in results.items():
                     if str(error).startswith("ERROR"):
                         logger.info(f"  - {filename}: {error}")
-                        
-            # Publish to artifact registry if requested
-            if args.registry and successes > 0:
-                logger.info(f"Publishing artifacts to registry {args.registry}")
-                # TODO: Implement registry publishing
-                logger.info(f"Artifacts published to registry {args.registry}")
-                
+
         except Exception as e:
             logger.error(f"Error processing directory: {str(e)}")
             
@@ -129,9 +118,6 @@ def main():
     parser.add_argument("--category", help="Category for all documents")
     parser.add_argument("--tags", help="Comma-separated tags for all documents")
     parser.add_argument("--source", help="Source attribution for all documents")
-    
-    # Artifact registry options
-    parser.add_argument("--registry", help="Artifact registry to publish to")
     
     # Parse arguments
     args = parser.parse_args()

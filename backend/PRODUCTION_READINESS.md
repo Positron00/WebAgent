@@ -1,8 +1,8 @@
 # WebAgent Backend - Production Readiness
 
-This document summarizes the improvements made to the WebAgent backend to make it production-ready.
+What to check before exposing the backend, and what's already in place. The history is in `CHANGELOG.md`.
 
-## Production checklist (3.10.0)
+## Production checklist (3.10.1)
 
 Before exposing the backend:
 
@@ -28,98 +28,26 @@ Before exposing the backend:
     | `TAVILY_API_KEY` | Tavily | Researcher plan: up to 1,000 API credits a month | 2026-10-15 |
 
     One key of each serves dev, the local uat runs and any deployment, so they share these limits.
+16. **Security guard.** Every environment ships with `input_mode: shadow` and `tool_mode: shadow`: decisions are recorded and nothing is blocked. Switch checkpoint 1 to act only after a shadow week confirms its false-positive rate (`docs/RUNBOOK.md`). Checkpoint 2's nine intent rules stay shadow-only until each one's threshold is measured. The intent classifier in `models/security/alignment/` is installed shadow-only (it hasn't passed its gate) and never decides; to run without it, point `security_guard.alignment_model_dir` at an empty folder.
 
-## Version 2.4.0 Enhancements
+## What's in place
 
-### Security Hardening
-
-- **Rate Limiting**: Implemented rate limiting to prevent abuse
-- **Request Validation**: Added input validation for all API endpoints
-- **JWT Authentication**: Implemented secure authentication with JWT tokens
-- **Password Hashing**: Using bcrypt for secure password storage
-- **Security Headers**: Added security headers middleware to prevent common web vulnerabilities
-- **Request Size Limiting**: Preventing large payload attacks
-- **Non-root Container**: Running containers as non-root user
-- **Read-only Filesystem**: Mounting container filesystem as read-only
-- **Dropped Capabilities**: Removed unnecessary Linux capabilities from containers
-
-### Monitoring & Observability
-
-- **Prometheus Metrics**: Added metrics for HTTP requests, LLM calls, and task execution
-- **Grafana Dashboards**: Created pre-configured dashboards for monitoring
-- **Structured Logging**: Implemented JSON-formatted logs with consistent fields
-- **Health Checks**: Added detailed health check endpoints
-- **Readiness/Liveness Probes**: Kubernetes probes for container health monitoring
-
-### Deployment
-
-- **Kubernetes Manifests**: Created deployment manifests for Kubernetes
-- **Multi-stage Docker Build**: Optimized container images for production
-- **Resource Limits**: Defined CPU and memory limits for containers
-- **Recreate updates**: one replica on a ReadWriteOnce volume, so the old pod stops before the new one starts (a short gap, not zero-downtime)
-- **Deployment Script**: Created a script to simplify deployment
-
-### Documentation
-
-- **API Reference**: Comprehensive API documentation
-- **Deployment Guide**: Instructions for deploying to production
-- **Monitoring Guide**: Documentation for monitoring setup
-- **Local Development**: Guide for local development setup
-- **CHANGELOG**: Detailed changelog for version tracking
-
-## Implementation Details
-
-### Security Implementations
-
-1. **Rate Limiting Middleware**:
-   - Limits requests per minute per client
-   - Identifies the caller by sign-in session (through the web app) or client IP
-
-2. **JWT Authentication**:
-   - Secure token generation and validation
-   - Token expiration and refresh mechanism
-   - Role-based access control
-
-3. **Security Headers**:
-   - Content-Security-Policy
-   - X-Content-Type-Options
-   - X-Frame-Options
-   - X-XSS-Protection
-
-### Monitoring Setup
-
-1. **Prometheus Metrics**:
-   - HTTP request counts, durations, and status codes
-   - LLM request counts, durations, and token usage
-   - Task execution metrics
-   - System metrics (CPU, memory, etc.)
-
-2. **Grafana Dashboards**:
-   - Overview dashboard with key metrics
-   - Detailed LLM usage dashboard
-   - Task execution dashboard
-   - System resources dashboard
-
-3. **Logging**:
-   - Structured JSON logs
-   - Log levels (DEBUG, INFO, WARNING, ERROR)
-   - Request ID tracking across logs
-   - Log rotation and retention
-
-### Deployment Configuration
-
-1. **Kubernetes Resources**:
-   - Deployment with replicas
-   - Service for internal access
-   - Ingress for external access
-   - PersistentVolumeClaim for `/app/data`
-   - Secrets for sensitive data
-
-2. **Docker Optimization**:
-   - Multi-stage build for smaller images
-   - Non-root user for security
-   - Read-only filesystem
-   - Health checks
+- **Access:** `X-API-Key` on every backend route except health and `/metrics`, required in uat and prod. The web app adds a shared access code with signed session cookies. There are no user accounts, passwords or JWTs.
+- **Abuse limits:** rate limits per caller (per sign-in session through the web app), a request size limit, and a per-task time limit and optional token budget.
+- **Security headers:** on the backend (middleware) and the web app (CSP, `X-Frame-Options: DENY`, `nosniff`, HSTS in production).
+- **Security guard:** checkpoints 1 and 2 (`app/security/`), in shadow mode in every environment until the shadow week's numbers support act mode (`docs/RUNBOOK.md`).
+- **Containers:** a non-root user, a read-only root filesystem, all Linux capabilities dropped, and no privilege escalation (Kubernetes). Model-written code runs only in the separate no-network sandbox image.
+- **Dependencies:** exact versions in `constraints.txt`, audited in CI (`pip-audit`, `npm audit`); accepted advisories in `SECURITY_DEPENDENCIES.md`.
+- **Monitoring:**
+  - Prometheus metrics for requests, model calls and tokens, tasks, the guard and triage.
+  - Two Grafana dashboards (WebAgent Backend, Model Drift) and six alert rules.
+  - Plain-text logs tagged with the task ID.
+  - LangSmith traces.
+  - `GET /health` for probes.
+- **Deployment:**
+  - A multi-stage image with the CPU build of torch.
+  - Kubernetes manifests with resource limits, a NetworkPolicy, an Ingress that hides `/metrics`, a persistent volume for `/app/data`, and Recreate updates (a short gap on deploy).
+  - `deploy.sh`.
 
 ## Testing
 

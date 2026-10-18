@@ -2,6 +2,33 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.10.1 - 2026-10-17
+
+All documentation checked against the code and updated, with a few gaps that the check found fixed. The 3.10.0 shadow week keeps running on 3.10.0: nothing here changes what it measures.
+
+### Documentation
+- **README rewritten:**
+  - a new system diagram (web app, backend, security guard, triage, stores, external services);
+  - the research workflow as it's actually built (document extraction is its own branch; research loops through Senior Research; Coding Assistant is followed by Coding Review);
+  - a **Using WebAgent** guide (the web app, loading documents, the HTTP API with `X-API-Key`, reading results);
+  - **What WebAgent doesn't do:** no scheduled research, saved topics or email notifications; no per-user accounts or private documents;
+  - a documentation map.
+- **`backend/docs/ARCHITECTURE.md` rewritten.** It now has sections for the security guard (both checkpoints, outcomes, modes, the shadow intent classifier), triage, tasks, stores and observability. Claims the code doesn't support are gone: Axios, circuit breakers, result caching, JSON logs, Llama 3.3 / GPT-4 as the models, and a Kafka roadmap.
+- **API reference:** adds the Documents API, `POST /api/guard/input`, and `/api/v1/tasks/{id}/result`, `/error` and `/create`.
+- **Runbooks:** a "Local uat with Docker Compose" section, and the shadow-week runbook's one-machine setup uses Compose, so its PromQL queries work.
+- **`backend/README.md`:** the correct workflow diagram, project layout and providers. The production server runs on uvicorn workers; gunicorn was never installed.
+- **`PRODUCTION_READINESS.md`:** a guard checklist item. The "2.4.0" section claimed JWT authentication, password hashing and JSON logs, which don't exist; it's replaced by what's actually in place.
+- **CONTRIBUTING:** what CI runs, and how to change dependencies safely.
+- **LOCAL_DEVELOPMENT, the MLflow docs, the demos and Vercel guides:** updated to match.
+
+### Fixed
+- **`GET /api/v1/tasks/{id}` and `/error` answered 500** for a task another worker ran, or one from before a restart. They read only the worker's memory. Both now fall back to the saved record, as `/api/task/{id}` already did.
+- **`scripts/batch_document_loader.py --registry` logged "Artifact published to registry" and did nothing.** There is no artifact registry; the option is removed.
+- **The MLflow server and UI** need the full `mlflow` package, which 3.10.0 replaced with the client. `requirements-demos.txt` now adds it (2.x).
+
+### Changed
+- `passlib` and the direct `bcrypt` requirement are removed; nothing imports them. bcrypt stays installed for chromadb.
+
 ## 3.10.0 - 2026-10-17
 
 A security refresh of the served package's dependencies, from a scan of the whole codebase. Nothing changes in what the agents do: ContextDefender, triage and the shadow classifier give identical scores on the new versions.

@@ -54,8 +54,6 @@ pillow>=10.2.0
 
 # Security
 cedarpy>=4.8.7
-passlib[bcrypt]>=1.7.4
-bcrypt>=4.1.2
 
 # Document extraction
 nltk>=3.8.1

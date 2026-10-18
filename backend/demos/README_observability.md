@@ -1,5 +1,8 @@
 # ML Observability Demo
 
+> **Since 3.10.0** the backend installs only the MLflow client (`mlflow-skinny`, 2.x). To run the tracking server or the UI described here, install the full package: `pip install -r backend/requirements-demos.txt` (it adds `mlflow` 2.x). The backend itself only logs runs, and only when `MLFLOW_TRACKING_URI` is set. If the tracking store can't be used, it turns tracking off and keeps running.
+
+
 This demo showcases the ML observability features of the WebAgent platform, including metrics collection, drift detection, and performance monitoring.
 
 ## Features Demonstrated

@@ -1,6 +1,6 @@
 # Deploying WebAgent to Vercel
 
-[![version](https://img.shields.io/badge/version-3.10.0-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.10.1-blue.svg)](https://semver.org)
 
 This guide explains how to deploy the WebAgent web app (Next.js) to Vercel. Vercel runs only the web app; the multi-agent FastAPI backend runs on a server you control, and the web app reaches it through `/api/task`.
 
@@ -83,7 +83,7 @@ For production deployments requiring the full backend capabilities:
 - **API Errors**: Check Vercel Function logs for details
 - **Environment Variables**: Ensure all required variables are properly set
 - **Cold Start**: The first request may take longer due to serverless cold start
-- **Agentic answers start with "operating in fallback mode"**: the web app couldn't reach the backend at `WEBAGENT_BACKEND_URL`, or the backend rejected the API key. Check the backend's `/health` and its logs
+- **A research answer says it failed, with Try again and Answer directly instead**: the web app couldn't reach the backend at `WEBAGENT_BACKEND_URL`, or the backend rejected the API key (the message says which). Check the backend's `/health` and its logs
 - **Answers start with "research routing is temporarily unavailable"**: in Auto mode the web app couldn't reach the backend's `/api/triage`, so it answered directly. Check `WEBAGENT_BACKEND_URL` and the backend's `/health`
 - **Every API call returns 503 `access_code_not_configured`**: set `WEBAGENT_ACCESS_CODE` and `WEBAGENT_SESSION_SECRET` (see step 1) and redeploy
 - **Agentic requests return 429**: that session used its budget; see step 3 above. If every user hits it at once, check that `WEBAGENT_API_KEY` matches the backend's, or the backend can't tell sessions apart

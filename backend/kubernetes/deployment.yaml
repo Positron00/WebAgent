@@ -5,7 +5,7 @@ metadata:
   namespace: default
   labels:
     app: webagent-backend
-    version: "3.10.0"
+    version: "3.10.1"
 spec:
   # One replica: task status, results and the security/triage collection live in /app/data,
   # a ReadWriteOnce volume. To run more replicas, use a shared ReadWriteMany volume instead.
@@ -20,7 +20,7 @@ spec:
     metadata:
       labels:
         app: webagent-backend
-        version: "3.10.0"
+        version: "3.10.1"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
@@ -34,7 +34,7 @@ spec:
       containers:
       - name: webagent-backend
         # deploy.sh sets the registry with -r (default: webagent/backend).
-        image: webagent/backend:3.10.0
+        image: webagent/backend:3.10.1
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

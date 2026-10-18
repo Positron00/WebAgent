@@ -25,6 +25,16 @@ logger = logging.getLogger(__name__)
 # A saved "processing" record older than this is reported as interrupted.
 TASK_TIMEOUT_MINUTES = int(os.getenv("WEBAGENT_TASK_TIMEOUT_MINUTES", "30"))
 
+def _saved_time(value: Any) -> Optional[datetime]:
+    """A saved record's timestamp (an ISO string on disk), or None."""
+    if isinstance(value, datetime):
+        return value
+    try:
+        return datetime.fromisoformat(str(value)) if value else None
+    except ValueError:
+        return None
+
+
 class TaskManager:
     """
     Manages the execution and results of workflow tasks.
@@ -475,12 +485,40 @@ class TaskManager:
         return list(self.active_tasks.values())
     
     def get_task_info(self, task_id: str) -> Optional[TaskInfo]:
-        """Get task info by ID."""
-        return self.active_tasks.get(task_id)
-    
+        """Task info from this worker, or from the shared saved record (a task another worker ran,
+        or one from before a restart)."""
+        info = self.active_tasks.get(task_id)
+        if info is not None:
+            return info
+        saved = result_store.load_result(task_id)
+        if saved is None:
+            return None
+        status, result = self._status_from_saved(saved)
+        error = result.get("error") if status == "error" and isinstance(result, dict) else None
+        return TaskInfo(
+            task_id=task_id,
+            status=status,
+            created_at=_saved_time(saved.get("created_at")) or datetime.now(),
+            completed_at=_saved_time(saved.get("completed_at")),
+            message=f"Task {status}",
+            query=str(saved.get("query") or ""),
+            error=error,
+        )
+
     def get_task_error(self, task_id: str) -> Optional[Dict[str, Any]]:
-        """Get detailed error information for a task."""
-        return self.task_errors.get(task_id)
+        """Error details from this worker, or from the shared saved record."""
+        if task_id in self.task_errors:
+            return self.task_errors[task_id]
+        saved = result_store.load_result(task_id)
+        if saved is None:
+            return None
+        status, result = self._status_from_saved(saved)
+        if status != "error" or not isinstance(result, dict):
+            return None
+        details = {"message": result.get("error") or "Unknown error"}
+        if result.get("error_code"):
+            details["error_code"] = result["error_code"]
+        return details
     
     def delete_task(self, task_id: str) -> bool:
         """Delete a task from this worker's memory and its result files (seen by every worker)."""

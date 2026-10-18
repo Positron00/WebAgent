@@ -2,4 +2,6 @@
 -r requirements-dev.txt
 
 # Examples and demo scripts that plot or tune models outside the server image.
-# (Runtime already includes mlflow, torch, and pandas.)
+# The runtime has only the MLflow client (mlflow-skinny). The MLflow tracking server and UI
+# (scripts/start_mlflow_server.py, `mlflow ui`) need the full package, kept on 2.x like the client.
+mlflow>=2.22,<3

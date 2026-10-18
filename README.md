@@ -1,477 +1,265 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.10.0-blue.svg)](https://semver.org)
-[![last-updated](https://img.shields.io/badge/last%20updated-2026--10--14-lightgrey.svg)](https://github.com/Positron00/WebAgent)
+[![version](https://img.shields.io/badge/version-3.10.1-blue.svg)](https://semver.org)
+[![last-updated](https://img.shields.io/badge/last%20updated-2026--10--18-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
-A multi-agent platform for web research and document processing.
+A multi-agent research assistant. Ask a question in the chat. WebAgent then either answers it directly in a few seconds, or sends it to a team of research agents. The agents search the web and your own documents, check each other's work, and return a sourced report in a few minutes. A security guard checks everything the models read and every tool call they make.
 
-## Overview
+WebAgent is non-commercial and licensed under MIT.
 
-WebAgent is an advanced multi-agent AI platform that orchestrates specialized agents to process complex research tasks, document extraction, and data synthesis. It leverages LangGraph for agent workflows and provides both API access and programmatic interfaces for integration.
+## Contents
 
-### Key Features
+- [What it does](#what-it-does)
+- [Architecture](#architecture)
+- [Using WebAgent](#using-webagent)
+- [Setting up and running](#setting-up-and-running)
+- [Deploying](#deploying)
+- [Testing and diagnostics](#testing-and-diagnostics)
+- [Troubleshooting](#troubleshooting)
+- [What WebAgent doesn't do](#what-webagent-doesnt-do)
+- [Documentation map](#documentation-map)
 
-- **Multi-Agent System**: Integrated system of specialized agents working together to solve complex tasks
-  - Supervisor Agent: Analyzes user queries and orchestrates the workflow
-  - Research Agents: Web and internal knowledge retrieval
-  - Senior Research Agent: Evaluates research quality and produces summary reports
-  - Document Extraction Agent: Processes documents and extracts structured data
-  - Team Manager Agent: Synthesizes outputs from multiple agents
-  - Specialized Agents: Data analysis and coding assistance
-- **Agentic triage**: Off / Auto / Always; in Auto a local classifier sends only research questions to the agents
-- **Workflow Logs**: Detailed execution tracking for answers produced by the agent workflow
-  - Records important decision points in the workflow
-  - Shows step-by-step processing of complex queries
-  - Included in final reports for transparency
-  - Fully tested with comprehensive diagnostics
+## What it does
 
-- **Document Processing Pipeline**: Comprehensive document ingestion and knowledge management
-  - Batch document loading with multiple format support (PDF, docx, txt, md, html, csv, json)
-  - A copy of each loaded document kept under `WEBAGENT_ARTIFACTS_PATH` (a local folder; there is no remote artifact registry)
-  - Intelligent document chunking and embedding for vector database storage
-  - Graph database integration for document relationship tracking
-  - Data-as-a-Service API for document operations
+- **Answers or researches, per question.** The **Agentic** control picks the path: **Off** always answers directly, **Always** always researches, and **Auto** lets a local classifier decide in about 10 ms. Each answer is labelled "Answered directly" or "Deep research".
+- **Researches in rounds.** A supervisor plans the research. Web and internal research run in parallel. A senior research agent scores the findings and asks for further rounds until they are good enough, or the round limit is reached: 3 in dev and uat, 5 in prod. A team manager then writes the report, calling a data analyst or a coding assistant when the question needs one. Model-written code runs in a sandbox, never in the server.
+- **Uses your documents.** Documents (PDF, Word, text, Markdown, HTML, CSV, JSON) loaded through the API or the batch loader are chunked into a vector store. Their relationships go into a graph store, and internal research searches them with semantic and keyword (BM25) retrieval.
+- **Guards the models.**
+  - Checkpoint 1 scores every piece of text before a model reads it: the question, earlier turns, web pages, documents and code output. It drops injected web content and declines harmful requests.
+  - Checkpoint 2 checks every tool call and every agent-written subgoal against what the user actually asked.
+  - Both run local classifiers and Cedar policies inside the server. They currently run in **shadow mode**: they record what they would do and block nothing.
+- **Stays observable.**
+  - Prometheus metrics, and drift detection on real traffic (model speed and tokens, embeddings, documents) with six alerts.
+  - LangSmith traces of every run.
+  - Every log line written during a task carries the task's ID.
+  - Saved reports are kept for 30 days.
+- **Is bounded.** A research run stops after 7 minutes, on **Stop**, or when it reaches its token budget (off by default). Temporary provider errors are retried. Outside dev, question text never reaches the logs.
 
-- **LangGraph Integration**: Uses LangGraph (0.2.x) for complex agent workflow orchestration with optimized direct edge routing, comprehensive state management, and proper error handling throughout the workflow
+## Architecture
 
-- **Optional model microservices** (`backend/models/`): a separate gateway/registry toolkit for
-  hosting transformer models. The agent workflow does **not** depend on it; production chat
-  uses Together/OpenAI through `backend/app/services/llm.py`. Use this tree only when you
-  deploy self-hosted model endpoints alongside the main backend.
-
-- **Advanced RAG Architecture**: Sophisticated retrieval and processing with built-in document extraction capabilities, enhanced BM25 lexical retrieval for improved results
-
-- **Document Processing**: Extract, analyze, and synthesize information from PDFs, web pages, and other document formats
-
-- **Research Loop Process**: Iterative research capability that evaluates quality and performs additional research as needed:
-  1. Initial Research: Web and internal knowledge sources are queried based on the research plan
-  2. Research Evaluation: Senior Research Agent evaluates completeness and quality (scoring 1-10)
-  3. Follow-up Research: Additional targeted research based on identified gaps
-  4. Iteration: Process repeats until the quality threshold is met, at most `agents.senior_research.max_follow_up_questions` times (3 in dev and uat, 5 in prod)
-  5. Final Synthesis: Comprehensive findings consolidated into a structured report
-
-- **Comprehensive Security**: Advanced security module with authentication, authorization, rate limiting, input validation, error sanitization, request size limiting, and protection against common vulnerabilities
-  - API keys required in uat/prod; the server won't start there without its secret key and API key
-  - Rate limits apply per end user, even behind the web app's proxy: per sign-in session for the web app
-  - The web app asks for a shared access code (required in production) and sends security headers, including a Content Security Policy
-  - Model-written code runs without access to API keys, and in uat/prod only inside a locked-down container
-
-- **Advanced Observability**: Detailed diagnostics and monitoring capabilities for tracking system health, performance metrics, and execution statistics
-  - Every log line written during a task is tagged `[task <id>]`
-  - Full LangSmith traces of each run, including token counts
-  - Finished task reports saved to `backend/data/results/`, and deleted after `WEBAGENT_RESULTS_RETENTION_DAYS` (30)
-  - Prometheus metrics on `/metrics`; drift, alerts and model metrics on `/api/v1/observability/*` (API key needed); see [docs/RUNBOOK.md](docs/RUNBOOK.md)
-  - Drift measured from real traffic: model speed and tokens per agent, embeddings, and document time, size and type, each compared with a frozen reference
-  - Six alerts (model drift, model errors, rate limits, token use, document drift, document errors) on the Model Drift dashboard and in Grafana's alert list
-
-- **Reliability**: Temporary Together AI errors (rate limits, 5xx) are retried, and the server keeps answering while tasks run
-  - Each agent's model output can be capped in its YAML settings, and a reply cut off at its limit is logged; a typical agentic run takes about 2.5–3.5 minutes
-  - Task status is shared between server workers, so polls work with several workers
-  - Follow-up questions ("what about Europe?") are researched as a complete question using the conversation so far
-  - A research run shows its current step while it works, can be stopped with **Stop**, and is stopped after 7 minutes (`WEBAGENT_TASK_MAX_SECONDS`) or when it reaches its token budget (`WEBAGENT_TASK_TOKEN_BUDGET`, off by default)
-  - If research fails, the chat says why and offers **Try again** or **Answer directly instead**; it never switches to a plain answer on its own
-  - Questions aren't written to the logs outside dev (only their length)
-
-## System Architecture
-
-WebAgent uses a modular architecture with a clear separation of concerns:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              WebAgent Platform                                  │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────-┐   │
-│  │                                                                          │   │
-│  │  ┌───────────┐    ┌───────────────────────────────────────────────--─┐   │   │
-│  │  │           │    │               LangGraph Workflow                 │   │   │
-│  │  │  FastAPI  │    │  ┌───────────┐        ┌───────────────────┐      │   │   │
-│  │  │  Server   │◄───┼─►│ Supervisor│        │ Research Agents   │      │   │   │
-│  │  │           │    │  │  Agent    │───────►│ ┌─────────────┐   │      │   │   │
-│  │  └───────────┘    │  └───────────┘        │ │Web Research │   │      │   │   │ 
-│  │        ▲          │        │              │ └─────────────┘   │      │   │   │
-│  │        │          │        │              │ ┌─────────────┐   │      │   │   │
-│  │        │          │        │              │ │  Internal   │   │      │   │   │
-│  │        │          │        │              │ │  Research   │   │      │   │   │
-│  │        │          │        │              │ └─────────────┘   │      │   │   │
-│  │  ┌───────────┐    │        │              └─────────┬─────────┘      │   │   │
-│  │  │           │    │        │                        │                │   │   │
-│  │  │ Frontend  │    │        │              ┌─────────▼─────────┐      │   │   │
-│  │  │  Client   │◄───┼────────┼──────────────│  Senior Research  │      │   │   │
-│  │  │           │    │        │      ┌───────│      Agent        │      │   │   │
-│  │  └───────────┘    │        │      │       └─────────┬─────────┘      │   │   │
-│  │                   │        │      │                 │                │   │   │
-│  │                   │        │      │       ┌─────────▼─────────┐      │   │   │
-│  │                   │        │      │       │  Specialized      │      │   │   │
-│  │  ┌───────────┐    │        ▼      │       │     Agents        │      │   │   │
-│  │  │           │    │  ┌───────────┐│       │ ┌─────────────┐   │      │   │   │
-│  │  │Observa-   │    │  │ Document  ││       │ │    Data     │   │      │   │   │
-│  │  │bility &   │◄───┼──│Extraction ││       │ │  Analysis   │   │      │   │   │
-│  │  │Monitoring │    │  │   Agent   ││       │ └─────────────┘   │      │   │   │
-│  │  │           │    │  └───────────┘│       │ ┌─────────────┐   │      │   │   │
-│  │  └───────────┘    │        │      │       │ │   Coding    │   │      │   │   │
-│  │                   │        │      │       │ │  Assistant  │   │      │   │   │
-│  │                   │        │      │       │ └─────────────┘   │      │   │   │
-│  │                   │        │      │       └─────────┬─────────┘      │   │   │
-│  │                   │        │      │                 │                │   │   │
-│  │                   │        │      │                 │                │   │   │
-│  │                   │        ▼      ▼                 ▼                │   │   │
-│  │                   │  ┌─────────────────────────────────────────┐     │   │   │
-│  │                   │  │               Team Manager Agent        │     │   │   │
-│  │                   │  └─────────────────────────────────────────┘     │   │   │
-│  │                   │                                                  │   │   │
-│  │                   └──────────────────────────────────────────────────┘   │   │
-│  │                                                                          │   │
-│  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌───────────┐  │   │
-│  │  │ Prometheus  │    │   Grafana   │    │ LangSmith   │    │ Security  │  │   │
-│  │  │  Metrics    │    │ Dashboards  │    │  Tracing    │    │ Module    │  │   │
-│  │  └─────────────┘    └─────────────┘    └─────────────┘    └───────────┘  │   │
-│  │                                                                          │   │
-│  └──────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```text
+  Browser ── sign in with the access code, chat, Agentic: Off · Auto · Always
+     │
+     ▼
+┌─ Web app ─ Next.js 15 · React 19 ─ port 3000 ───────────────────────────────────────┐
+│  middleware: signed session cookie on every page and API route                      │
+│  /api/chat ──── direct answer: guard check (checkpoint 1) ──► Together AI           │
+│  /api/triage, /api/task ── proxy to the backend, adding X-API-Key and the session ─┐ │
+└─────────────────────────────────────────────────────────────────────────────────────┼─┘
+                                                                                      ▼
+┌─ Backend ─ FastAPI ─ port 8000 ─────────────────────────────────────────────────────────┐
+│  API key · rate limit per session · size limit · one error format                       │
+│                                                                                         │
+│  Triage: rules, then a MiniLM classifier ──► direct: one model call                     │
+│                                          └─► research: run supervisor (7 min, budget)   │
+│                                                 │                                       │
+│                                                 ▼                                       │
+│                                   LangGraph research workflow (next diagram)            │
+│                                                                                         │
+│  Security guard, in process: Cedar policies + local classifiers, shadow mode            │
+│    checkpoint 1: every text before a model  ── ContextDefender (injection, harm,        │
+│                                                sensitive data, jailbreak)               │
+│    checkpoint 2: every tool call and subgoal ── intent alignment, risk above intent,    │
+│                                                private-text egress, drift              │
+│                                                                                         │
+│  data/: results/ (task reports) · vectordb/ (Chroma) · graph (Neo4j or NetworkX)        │
+│         artifacts/ (document copies) · drift/ · security/ and triage/ collection        │
+│  Observability: /metrics · /api/v1/observability (drift, alerts) · logs · LangSmith     │
+└───────┬───────────────────────┬───────────────────────┬─────────────────────────────────┘
+        ▼                       ▼                       ▼
+   Together AI             Tavily search          Prometheus + Grafana
+   (OpenAI if set)         (web research)         (Compose or Kubernetes), LangSmith
 ```
 
-### Model Microservices Architecture
+The research workflow, as built in `backend/app/graph/workflows.py`:
 
-`backend/models/` is an **optional, separate** framework for running each model as its own service. The agent workflow doesn't use it: production chat goes through `backend/app/services/llm.py` to Together AI or OpenAI. Use it only if you host model endpoints yourself:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                       Model Microservices Framework                             │
-│                                                                                 │
-│  ┌─────────────┐                                                                │
-│  │   Client    │                                                                │
-│  │ Applications│                                                                │
-│  └──────┬──────┘                                                                │
-│         │                                                                       │
-│         ▼                                                                       │
-│  ┌─────────────────────────┐                                                    │
-│  │                         │                                                    │
-│  │     Model API Gateway   │                                                    │
-│  │                         │                                                    │
-│  └───┬─────────────┬───────┘                                                    │
-│      │             │                                                            │
-│      │             │                 ┌───────────────┐                          │
-│      │             │                 │               │                          │
-│      │             │◄───Discovery───►│ Model Registry│                          │
-│      │             │                 │               │                          │
-│      │             │                 └───────────────┘                          │
-│      │             │                                                            │
-│      ▼             ▼                                                            │
-│  ┌───────────┐ ┌───────────┐         ┌───────────┐        ┌───────────┐         │
-│  │           │ │           │         │           │        │           │         │
-│  │ LLM Model │ │ Embedding │         │ Classifier│        │ Other     │         │
-│  │ Service   │ │ Model     │         │ Model     │        │ Model     │         │
-│  │           │ │ Service   │         │ Service   │        │ Services  │         │
-│  └───────────┘ └───────────┘         └───────────┘        └───────────┘         │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │                                                                         │    │
-│  │                         Model Manager                                   │    │
-│  │                                                                         │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```text
+ question ─► Supervisor ── plans: web? internal? document? ── rewrites follow-ups as full questions
+                 │
+                 ├── document only ──► Document Extraction ──► done
+                 │
+                 └── research ──► ┌─ Web Research ──────┐  (in parallel)
+                        ▲         └─ Internal Research ─┘
+                        │                   │
+                        │                   ▼
+                        └── another round ─ Senior Research ── scores 1–10, asks follow-up questions
+                                            │
+                                            ▼ good enough, or round limit reached
+                                       Team Manager ── writes the report
+                                         │      ▲
+                         needs analysis  ├──► Data Analysis ─────────────────┤
+                         needs code      └──► Coding Assistant ─► Coding Review ┘
+                                            │
+                                            ▼
+                                     report saved to data/results/<task_id>.json
 ```
 
-### Key Components
+Every model call in the workflow passes checkpoint 1. Every web search, internal retrieval, code execution and plan subgoal passes checkpoint 2. Details: [backend/docs/ARCHITECTURE.md](backend/docs/ARCHITECTURE.md).
 
-1. **API Layer**: FastAPI server exposing REST endpoints for client applications
-   - Authentication and authorization middleware
-   - Request validation and rate limiting
-   - Security headers and input sanitization
-   - Swagger documentation with OpenAPI schema
+**Optional, separate:** `backend/models/` is a gateway-and-registry toolkit for hosting your own transformer models. The agent workflow doesn't use it.
 
-2. **Workflow Engine**: LangGraph orchestration of agent interactions
-   - Conditional routing based on context and agent outputs
-   - Web and internal research run in parallel; the other agents run one after another
-   - Feedback loops for iterative refinement
-   - Task status and finished reports saved as JSON files under `data/results/` (no checkpointing: a restart loses runs in progress)
-   - Built on LangGraph 0.2.x
+## Using WebAgent
 
-3. **Agents**: Specialized autonomous agents each with a specific role
-   - Supervisor Agent: Orchestrates the workflow and analyzes queries
-   - Research Agents: Gather information from web and internal sources
-   - Senior Research Agent: Evaluates research quality and requests additional information
-   - Document Extraction Agent: Processes and extracts information from documents
-   - Specialized Agents: Data analysis and code generation
-   - Team Manager Agent: Synthesizes outputs into final response
+### In the web app
 
-4. **Model Microservices (optional, separate)**: Independent model services in `backend/models/`; the agents don't use them
-   - Model Registry: Tracks available models and their status
-   - Model API Gateway: Routes requests to appropriate model services
-   - Base Model Service: Foundation for all model services
-   - Model Manager: Orchestrates model service processes
-   - Configuration System: YAML-based configuration for model services
+1. **Sign in.** If the operator set an access code, `/login` asks for it once per browser session.
+2. **Choose a mode** from the **Agentic** menu in the chat toolbar (it shows the current one, for example "Agentic · Auto"):
+   - **Off**: answers directly through Together AI in seconds. The backend isn't needed except for the guard check.
+   - **Auto**: the backend's triage decides per question. Routine questions get a direct answer, and research questions go to the agents. Hover an answer's label to see why.
+   - **Always**: every question goes to the research agents. A run usually takes 2.5–3.5 minutes.
 
-5. **Document Processing Pipeline**: For extracting and processing document content
-   - PDF, Word, HTML and text document support
-   - Chunking for the vector store, and document relationships in the graph store
-   - Topic extraction (LDA, capped by `WEBAGENT_LDA_MAX_CHARS`) and model-written summaries
-   - Enhanced BM25 lexical search for better keyword matching
+   A mode you pick is remembered in the browser. New users start on `WEBAGENT_DEFAULT_AGENTIC_MODE` (`off` if unset).
+3. **Ask.** Follow-up questions ("what about Europe?") are researched as complete questions, using the conversation so far.
+4. **While research runs**, the chat shows the current step. **Stop** ends the run.
+5. **Read the report.** With source citations on (the citations button), sources appear in a side panel; code blocks appear in a code panel. Under a direct answer in Auto, **Research this in depth** sends the same question to the agents and adds their report below.
+6. **If research fails**, the chat says why, for example "took too long", "budget reached" or "stopped by the security guard". It offers **Try again** or **Answer directly instead**; it never switches to a plain answer on its own.
+7. **Security messages.** In act mode, a request the guard refuses is declined with a reason, and a borderline one asks you to confirm first in the consent dialog. Under a research answer, a short note says when the guard left out web results or skipped a search or retrieval. **Approve** runs the research again with the skipped action allowed and adds the new answer below. In shadow mode, the current setting, none of this appears.
+8. **Other controls:**
+   - attach an image or take a screenshot (images go to direct answers only);
+   - **AI style** (balanced, creative, precise, helpful) and **Knowledge focus** (general, medical, legal, science);
+   - appearance and high-contrast settings;
+   - **New chat**.
 
-6. **Integration Layer**: Connectors to external knowledge sources and APIs
-   - Web search integration (via Tavily)
-   - Internal knowledge base (via vector database)
-   - LLM providers: Together AI (default, `meta-models/Muse-Glimmer-30B`), with OpenAI, Anthropic, Groq and Gemini as fallbacks
-   - LangSmith for tracing and debugging
+### Adding your own documents
 
-7. **Observability & Monitoring**: Tools for system monitoring and performance analysis
-   - Prometheus metrics collection
-   - Grafana dashboards for visualization
-   - Detailed diagnostics for system health
-   - Performance profiling and resource tracking
-   - Security monitoring and alerting
-   - Comprehensive error tracking and reporting
+Internal research searches documents you load. The web app has no document upload, so load them with the batch loader or the API. They are shared by every user of the server, so don't load private documents on a shared instance.
 
-8. **Security Module**: Comprehensive security features
-   - API key authorization (`X-API-Key`) on the backend; a shared access code for the web app
-   - Input validation and sanitization
-   - Rate limiting and request size validation
-   - Error message sanitization to prevent data leakage
-   - Protection against common web vulnerabilities
-   - Secure configuration management
-   - Comprehensive middleware for request protection
+```bash
+# A folder of PDFs, or one file with metadata
+python scripts/batch_document_loader.py --dir /path/to/documents --pattern "*.pdf"
+python scripts/batch_document_loader.py --file report.pdf --category reports --tags "financial,quarterly"
+```
 
-## Running WebAgent
+### From your own code (HTTP API)
 
-Follow these steps to set up and run the WebAgent platform:
+Every endpoint except the health checks and `/metrics` needs `X-API-Key` when API keys are on. They're always on in uat and prod; in dev, set `WEBAGENT_SECURITY_API_KEY_ENABLED=true`.
+
+```bash
+KEY=...   # the backend's WEBAGENT_API_KEY
+
+# Start a research task (mode: off | auto | always) and poll it
+curl -s -X POST localhost:8000/api/task -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"query": "What changed in EU AI rules this year?", "mode": "always"}'
+curl -s localhost:8000/api/task/<task_id> -H "X-API-Key: $KEY"      # processing → completed | failed
+curl -s -X POST localhost:8000/api/task/<task_id>/cancel -H "X-API-Key: $KEY"
+
+# Would this question go to the research agents?
+curl -s -X POST localhost:8000/api/triage -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"query": "Compare the latest open-weight LLM benchmarks"}'
+
+# Documents
+curl -s -X POST localhost:8000/api/v1/documents/upload -H "X-API-Key: $KEY" \
+  -F "file=@report.pdf" -F 'metadata_json={"category": "reports"}'
+curl -s -X POST localhost:8000/api/v1/documents/search -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"query": "quarterly revenue", "limit": 5, "include_content": true}'
+```
+
+A finished task's `result` holds the report, `route` (`direct` or `agentic`), `decided_by` and `tokens_used`. Every endpoint, field and error code is in [backend/docs/api_reference.md](backend/docs/api_reference.md), and the dev server serves Swagger at `http://localhost:8000/api/v1/docs`.
+
+### Reading what happened
+
+- **Saved reports:** `backend/data/results/<task_id>.json` holds each task's question, status, timings and report, written when it starts and again when it ends. They are deleted after `WEBAGENT_RESULTS_RETENTION_DAYS` (30).
+- **Logs:** `backend/logs/webagent-<env>.log`. Follow one task with `grep "\[task 9e6a4965\]"`, using the first 8 characters of its ID.
+- **Traces:** with `LANGSMITH_API_KEY` set, each task is one trace in the LangSmith project `webagent-research` (`LANGSMITH_PROJECT_NAME`), with every agent step and token count. `LANGSMITH_TRACING_ENABLED=false` turns tracing off.
+- **Metrics, drift and alerts:** `/metrics` for Prometheus. `/api/v1/observability/{drift,alerts,health}` need the API key. With the Compose stack, the Grafana dashboards are at `http://localhost:3001`. See [docs/RUNBOOK.md](docs/RUNBOOK.md).
+
+## Setting up and running
 
 ### Prerequisites
 
-- Python 3.12 or higher
-- Node.js 18 or higher (for the web app)
-- Conda for environment management
-- Git for version control
-- A Together AI API key (required) and a Tavily API key (for web research)
+- Python 3.12, Node.js 18.18 or later, Git with Git LFS (the security and triage models are LFS files)
+- A Together AI API key (required) and a Tavily API key (for web research). OpenAI is optional.
+- Docker, for the Compose stack, the image, and the code sandbox in uat and prod
 
-### Setup Environment
+### Install
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Positron00/WebAgent.git
-   cd webagent
-   ```
+```bash
+git clone https://github.com/Positron00/WebAgent.git && cd WebAgent
+git lfs pull                                   # model weights
 
-2. Create and activate conda environment:
-   ```bash
-   conda create -n agents python=3.12
-   conda activate agents
-   ```
+conda create -n agents python=3.12 && conda activate agents
+pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+npm install
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt   # backend (uses backend/constraints.txt pins)
-   npm install                       # web app
-   ```
+cp .env.local.example .env.local               # then set TOGETHER_API_KEY and TAVILY_API_KEY
+```
 
-4. Add your API keys:
-   ```bash
-   cp .env.local.example .env.local
-   # Edit .env.local: set TOGETHER_API_KEY and TAVILY_API_KEY at minimum
-   ```
-   `.env.local` is git-ignored and is read by both the backend and the web app. The template lists every setting with its default.
+- **Python dependencies:** `requirements.txt` installs the backend with the exact versions in `backend/constraints.txt`. The CPU index keeps torch to its CPU build.
+- **`.env.local`:** git-ignored, read by both the backend and the web app, and lists every setting with its default.
+- **Environment settings:** agents, models and limits live in `backend/config/{dev,uat,prod}.yaml`, chosen by `WEBAGENT_ENV`. Each agent under `agents:` can set its own `model` and `max_tokens`.
+- **Sign-in:** to require it, set `WEBAGENT_ACCESS_CODE` (at least 12 characters) and `WEBAGENT_SESSION_SECRET` (at least 32 random characters, e.g. `openssl rand -hex 32`). In development the web app stays open without them, with a warning. **A production build answers 503 on every API route until both are set**, unless `WEBAGENT_ACCESS_CODE_DISABLED=true`.
 
-   To require sign-in, also set `WEBAGENT_ACCESS_CODE` (at least 12 characters) and `WEBAGENT_SESSION_SECRET` (at least 32 random characters, e.g. `openssl rand -hex 32`). People then enter the code once at `/login`. In development the web app stays open without them (with a warning); **a production build answers 503 on every API route until both are set**, unless `WEBAGENT_ACCESS_CODE_DISABLED=true`.
-   Environment-specific settings (agents, models, limits) live in `backend/config/{dev,uat,prod}.yaml`, chosen by `WEBAGENT_ENV`. Each agent under `agents:` can set its own `model` and output limit (`max_tokens`).
+### Run (development)
 
-### Running the Application
+```bash
+python -m backend.main        # backend on http://localhost:8000
+npm run dev                   # web app on http://localhost:3000 (add -- -p 3002 if 3000 is taken)
+```
 
-1. Start the backend (FastAPI on port 8000):
-   ```bash
-   python -m backend.main
-   ```
+| What | Where |
+| --- | --- |
+| Web app | <http://localhost:3000> |
+| API | <http://localhost:8000/api/v1> and <http://localhost:8000/api/task> |
+| Swagger (dev only) | <http://localhost:8000/api/v1/docs> |
+| Health | <http://localhost:8000/health> |
 
-2. In a second terminal, start the web app (Next.js on port 3000):
-   ```bash
-   npm run dev
-   ```
-   The **Agentic** menu in the chat toolbar shows the current mode (for example "Agentic · Auto"); click it to choose one of three:
-   - **Off**: answer directly through Together AI; the backend isn't needed.
-   - **Auto**: the backend's triage decides per question. Routine questions are answered directly in seconds; research questions go to the multi-agent backend.
-   - **Always**: every question goes to the multi-agent backend (a run takes a few minutes). Images are only used by direct answers.
+**Local stack with monitoring.** Add `GRAFANA_ADMIN_PASSWORD` to `.env.local` and run `npm run stack:up`. That starts the backend, Prometheus (`:9090`) and Grafana (`:3001`) in Docker, all on 127.0.0.1. To run it as uat, for example for a shadow week, see [docs/RUNBOOK.md](docs/RUNBOOK.md#local-uat-with-docker-compose).
 
-   Each answer is labelled "Answered directly" or "Deep research"; hover for the reason. In Auto, a direct answer offers **Research this in depth**, which sends the same question to the research agents and adds the new answer below. New users start on the default from `WEBAGENT_DEFAULT_AGENTIC_MODE` in `.env.local` (`off` if unset); a mode you pick is remembered in the browser. See [backend/README.md](backend/README.md#agentic-triage) for the triage service.
+## Deploying
 
-3. Run Model Services (optional):
-   ```bash
-   # Start the model manager
-   python -m backend.models.run_manager
-   
-   # Start a specific model service
-   python -m backend.models.run_model_service --model-id mistral-7b   # any model ID in backend/models/config/models.yaml
-   ```
+- **Docker:** `docker build --build-arg APP_VERSION=3.10.1 -t webagent/backend:3.10.1 backend/`. The image runs as `prod` and as a non-root user, and starts only with `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY` set. Run `git lfs pull` first. See [backend/README.md](backend/README.md#running-with-docker).
+- **Kubernetes:** see [backend/kubernetes/README.md](backend/kubernetes/README.md). `deploy.sh` needs `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD`.
+- **Vercel** (web app only): see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Agentic modes need `WEBAGENT_BACKEND_URL` pointing at a running backend.
+- **Operating it:** deploys, rollback, key rotation, backups, spending caps, alerts and the security guard's modes are covered in [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
-4. Access the application:
-   - Web UI: http://localhost:3000
-   - API: http://localhost:8000/api/v1
-   - Swagger UI: http://localhost:8000/api/v1/docs (dev only; off in uat and prod)
-   - Health check: http://localhost:8000/health
-   - Model API Gateway (only if you started the optional model services): http://localhost:8100
+## Testing and diagnostics
 
-### Deploying
+```bash
+npm test                      # web app (Jest); npm run test:coverage enforces the coverage floor
+npm run check-types && npm run lint
+npm run test:backend          # backend (pytest, in the agents conda env)
+npm run coverage:backend
+npm run lint:backend          # ruff
+python -m backend.diagnostics.runners.run_all     # system diagnostics
+```
 
-- **Docker / Docker Compose**: see [backend/README.md](backend/README.md#running-with-docker) and [backend/LOCAL_DEVELOPMENT.md](backend/LOCAL_DEVELOPMENT.md). The image runs as `prod`. For the local stack (backend, Prometheus, Grafana), add `GRAFANA_ADMIN_PASSWORD` to `.env.local` and run `npm run stack:up`.
-- **Kubernetes**: see [backend/kubernetes/README.md](backend/kubernetes/README.md). `deploy.sh` requires `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD`.
-- **Vercel** (web app only): see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Agentic mode needs `WEBAGENT_BACKEND_URL` pointing at a running backend.
+- **Offline tests:** backend tests fail if one opens a network connection, and they never trace to LangSmith.
+- **Model tests:** tests that need the real model weights are marked `needs_lfs`. CI skips them, and the weekly `models` workflow runs them.
+- **Dependency audits:** CI also audits dependencies (`pip-audit`, `npm audit`), and a new advisory fails the build. See [backend/SECURITY_DEPENDENCIES.md](backend/SECURITY_DEPENDENCIES.md).
+- **More:** [docs/TESTING.md](docs/TESTING.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Testing and Diagnostics
+## Troubleshooting
 
-WebAgent includes comprehensive testing and diagnostic tools.
+1. **An agentic answer says the research failed, or the backend can't be reached.** Check the backend is running at `WEBAGENT_BACKEND_URL` (default `http://127.0.0.1:8000`) with the same `WEBAGENT_API_KEY` as the web app, then read the backend log.
+2. **"Unable to access non-serverless model" (HTTP 400).** Together no longer serves that model on demand. Set `WEBAGENT_LLM_DEFAULT_MODEL` to a serverless model (default `meta-models/Muse-Glimmer-30B`).
+3. **The backend runs as `dev` although you asked for `prod`.** A `WEBAGENT_ENV` in your shell or container wins over `.env.local`. With `docker run --env-file .env.local`, add `-e WEBAGENT_ENV=prod` after it.
+4. **The server refuses to start in uat or prod.** The startup checks name what's missing: a secret key, an API key, the model files (run `git lfs pull`), or a security classifier that hasn't passed its gate and isn't installed shadow-only.
+5. **"The research took too long and was stopped."** The backend stops a run after `WEBAGENT_TASK_MAX_SECONDS` (420 s). In the task's LangSmith trace, look for a model call that stops exactly at its `max_tokens` limit, which the log also reports as "stopped at the max_tokens limit". Adjust that agent's `max_tokens` in `backend/config/{env}.yaml`.
+6. **LangSmith steps stuck as "pending", or traces in another project.** Usually a `LANGSMITH_PROJECT` exported in your shell; the backend overrides it, so restart the backend.
+7. **A backend test fails with "Test tried to open a network connection".** The test reached a real service (LLM, Tavily, LangSmith, Hugging Face, NLTK). Fake it instead; see [docs/TESTING.md](docs/TESTING.md).
 
-### Running Tests
+## What WebAgent doesn't do
 
-1. Run all tests:
-   ```bash
-   npm test                  # web app (Jest)
-   npm run test:backend      # backend (pytest, in the `agents` conda env)
-   ```
-   Backend tests run offline: they fail if any test opens a network connection, and they never trace to LangSmith or modify tracked files.
+- **No scheduled or recurring research, no saved topics, no email or other notifications.** Each research task runs once, on request. The only alerts are the operator alerts in Grafana (drift, errors, rate limits, token use).
+- **No per-user accounts or private document spaces.** The access code is shared, and loaded documents are shared by every user of the server.
+- **No document upload in the web app.** Use the API or the batch loader.
+- **Images are used only by direct answers,** not by the research agents.
+- **Research progress isn't kept across restarts.** A run in progress when the server restarts is lost and later reported as interrupted (after `WEBAGENT_TASK_TIMEOUT_MINUTES`, 30). Finished reports are kept.
 
-2. Run tests with coverage:
-   ```bash
-   npm run test:coverage     # fails if web app coverage drops below the floor in jest.config.js
-   npm run coverage:backend
-   ```
-   See [docs/TESTING.md](docs/TESTING.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for setup and CI details.
+## Documentation map
 
-3. Run the optional model service tests on their own:
-   ```bash
-   python -m pytest backend/tests/test_models.py backend/tests/test_model_services.py backend/tests/test_model_manager.py
-   ```
-
-4. Run diagnostics:
-   ```bash
-   python -m backend.diagnostics.runners.run_all
-   ```
-
-### Diagnostics
-
-1. Check system status:
-   ```bash
-   python -m backend.diagnostics.system_check
-   ```
-
-2. Check model services status (optional model services only):
-   ```bash
-   curl http://localhost:8100/metrics
-   ```
-
-3. View logs:
-   ```bash
-   tail -f backend/logs/webagent-dev.log
-   ```
-   While a task runs, each line is tagged with the first 8 characters of its task ID, so you can follow one task:
-   ```bash
-   grep "\[task 9e6a4965\]" backend/logs/webagent-dev.log
-   ```
-
-4. Read saved task reports:
-   Each task is saved to `backend/data/results/<task_id>.json` when it starts (status `processing`) and again when it finishes, with the question, status, timings and full report. `GET /api/task/<task_id>` reads from there, so any server worker can answer and reports survive a restart.
-
-5. View LangSmith traces (if `LANGSMITH_API_KEY` is set):
-   - Visit LangSmith at https://smith.langchain.com and open the project `webagent-research` (change with `LANGSMITH_PROJECT_NAME`)
-   - Each task is one trace containing every agent step and model call, with token counts
-   - The app's settings override any `LANGSMITH_PROJECT` exported in your shell
-   - Set `LANGSMITH_TRACING_ENABLED=false` to turn tracing off (backend tests always run with tracing off)
-
-### Common Issues and Troubleshooting
-
-1. **Connection Errors with Model Services**
-   - Ensure model services are running and registered correctly
-   - Check ports and host configurations in `backend/models/config/models.yaml`
-   - Verify model paths and accessibility
-
-2. **LangGraph Workflow Issues**
-   - Check for proper agent implementation and integration
-   - Verify state transitions in the workflow
-   - Review LangSmith traces for detailed execution information
-
-3. **Security Test Failures**
-   - Ensure rate limiting is properly configured
-   - Check error message redaction in security module
-   - Verify middleware ordering in FastAPI application
-
-4. **Agentic answer starts with "I'm currently operating in fallback mode"**
-   - The multi-agent task failed or the backend isn't reachable, so the web app answered with plain chat
-   - Check the backend is running on `WEBAGENT_BACKEND_URL` (default `http://127.0.0.1:8000`) and look for errors in `backend/logs/webagent-dev.log`
-
-5. **"Unable to access non-serverless model" (HTTP 400)**
-   - Together AI no longer serves that model on demand; set `WEBAGENT_LLM_DEFAULT_MODEL` to a serverless model (default `meta-models/Muse-Glimmer-30B`)
-
-6. **LangSmith shows steps stuck as "pending" or traces in another project**
-   - Usually a `LANGSMITH_PROJECT` exported in your shell; the backend now overrides it, so restart the backend
-
-7. **Backend runs as `dev` although you asked for `prod`**
-   - A `WEBAGENT_ENV` in your shell or container wins over `.env.local`. With `docker run --env-file .env.local`, add `-e WEBAGENT_ENV=prod` after it
-
-8. **A backend test fails with "Test tried to open a network connection"**
-   - The test reached a real service (LLM, Tavily, LangSmith, Hugging Face, NLTK). Fake it instead; see [docs/TESTING.md](docs/TESTING.md)
-
-9. **Agentic runs are slow, or "The research took too long and was stopped."**
-   - A typical run takes 2.5–3.5 minutes; the backend stops a run after `WEBAGENT_TASK_MAX_SECONDS` (420 s), and the web app waits up to 8 minutes. Open the task's LangSmith trace and compare each model call's completion tokens with its limit: a call that stops exactly at the limit is running away, and the backend log says "stopped at the max_tokens limit"
-   - Lower or raise that agent's `max_tokens` under `agents:` in `backend/config/{env}.yaml`, and check that agent's prompt
-
-## Security
-
-To report a vulnerability, see [SECURITY.md](SECURITY.md). For contributor setup, see [CONTRIBUTING.md](CONTRIBUTING.md). For deploy, rollback, key rotation, backups, and spending caps, see [docs/RUNBOOK.md](docs/RUNBOOK.md).
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+| Document | For |
+| --- | --- |
+| [backend/docs/ARCHITECTURE.md](backend/docs/ARCHITECTURE.md) | How the parts fit: web app, backend, workflow, security guard, triage, stores, observability |
+| [backend/README.md](backend/README.md) | Backend setup, configuration, project layout, adding an agent |
+| [backend/docs/api_reference.md](backend/docs/api_reference.md) | Every endpoint, field and error code |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Deploying and operating: rollback, keys, backups, alerts, the security guard |
+| [backend/LOCAL_DEVELOPMENT.md](backend/LOCAL_DEVELOPMENT.md) | Local development details |
+| [docs/TESTING.md](docs/TESTING.md), [CONTRIBUTING.md](CONTRIBUTING.md) | Tests, CI and contributing |
+| [SECURITY.md](SECURITY.md), [backend/SECURITY_DEPENDENCIES.md](backend/SECURITY_DEPENDENCIES.md) | Reporting a vulnerability; dependency advisories |
+| [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md), [backend/kubernetes/README.md](backend/kubernetes/README.md) | Deploying the web app and the backend |
+| `planning/specs/` | Designs and requirements for each feature (security guard, triage, observability, platform) |
 
 ## Acknowledgments
 
-- LangChain and LangGraph for agent frameworks
-- OpenAI and Anthropic for LLM APIs
-- FastAPI for the backend framework
-- React and Next.js for the frontend framework
-
-## Working with Documents
-
-### Batch Document Loading
-
-WebAgent now includes a powerful batch document loader for ingesting documents into the system. The documents are processed, chunked, and stored in both vector and graph databases for efficient retrieval.
-
-To use the batch document loader from the command line:
-
-```bash
-# Load all PDFs from a directory
-python scripts/batch_document_loader.py --dir /path/to/documents --pattern "*.pdf"
-
-# Load a single document with metadata
-python scripts/batch_document_loader.py --file /path/to/document.pdf --metadata '{"category": "reports", "tags": ["financial", "quarterly"]}'
-
-# Load documents and publish to an artifact registry
-python scripts/batch_document_loader.py --dir /path/to/documents --registry my-registry
-```
-
-### Document Data-as-a-Service API
-
-The platform provides a RESTful API for document operations:
-
-- **Upload a Document**: `POST /api/v1/documents/upload`
-- **Search Documents**: `POST /api/v1/documents/search`
-- **Get Document by ID**: `GET /api/v1/documents/document/{document_id}`
-- **Find Related Documents**: `GET /api/v1/documents/related/{document_id}`
-
-Example API usage with curl:
-
-```bash
-# Upload a document
-curl -X POST "http://localhost:8000/api/v1/documents/upload" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@/path/to/document.pdf" \
-  -F 'metadata_json={"category": "reports", "tags": ["financial"]}'
-
-# Search documents
-curl -X POST "http://localhost:8000/api/v1/documents/search" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "financial report 2024", "limit": 5, "include_content": true}'
-```
-
-### Graph Database Integration
-
-WebAgent now tracks document relationships in a graph database, allowing for sophisticated relationship queries. By default, documents from the same source are linked, and additional relationships can be created programmatically.
-
-The system supports both Neo4j for production use and includes a NetworkX-based fallback for development environments. Configure the graph database URL in your environment settings.
+LangChain and LangGraph, FastAPI, Next.js and React, Together AI, Tavily, Cedar, and the authors of the public datasets the security classifiers are trained on (listed in each model's data README).
