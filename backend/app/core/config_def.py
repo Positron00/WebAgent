@@ -68,6 +68,10 @@ class LLMConfig(BaseModel):
     # Self-hosted LLM specific settings
     self_hosted_url: Optional[str] = Field(default="http://localhost:8080")
     model_path: Optional[str] = Field(default=None, description="Path to the model for self-hosted LLM")
+    # Prices of the configured model, $ per million tokens: scheduled-run allowance and cost reports
+    # (recurring-research spec REC-113).
+    price_input_per_million: float = Field(default=0.35, ge=0.0)
+    price_output_per_million: float = Field(default=1.50, ge=0.0)
 
 
 class WebSearchConfig(BaseModel):
@@ -206,6 +210,36 @@ class TriageConfig(BaseModel):
     short_query_words: int = Field(default=6, gt=0)
 
 
+class ScheduleConfig(BaseModel):
+    """Recurring research: topics and the scheduler (recurring-research spec REC-104 – REC-118)."""
+
+    enabled: bool = Field(default=False)
+    max_active_topics: int = Field(default=10, gt=0)
+    max_runs_per_day: int = Field(default=20, gt=0)
+    max_concurrent_runs: int = Field(default=2, gt=0)
+    history_runs_kept: int = Field(default=20, gt=0)
+    pause_after_failures: int = Field(default=3, gt=0)
+    paused_topic_days: int = Field(default=90, gt=0)
+    monthly_tavily_credits: int = Field(default=400, ge=0)
+    monthly_together_usd: float = Field(default=5.0, ge=0.0)
+    token_budget_default: int = Field(default=60000, gt=0)
+    max_token_budget: int = Field(default=200000, gt=0)
+
+
+class EmailConfig(BaseModel):
+    """Topic email (recurring-research spec REC-132 – REC-137)."""
+
+    enabled: bool = Field(default=False)
+    transport: Literal["log", "smtp"] = Field(default="log")
+    mode: Literal["notice", "summary"] = Field(default="notice")
+    max_subscribers_per_topic: int = Field(default=5, gt=0)
+    max_emails_per_day: int = Field(default=50, gt=0)
+
+
+class NotificationsConfig(BaseModel):
+    email: EmailConfig = Field(default_factory=EmailConfig)
+
+
 class AppConfig(BaseModel):
     """Main application configuration."""
     api: ApiConfig = Field(default_factory=ApiConfig)
@@ -220,6 +254,8 @@ class AppConfig(BaseModel):
     langsmith: LangSmithConfig = Field(default_factory=LangSmithConfig)
     triage: TriageConfig = Field(default_factory=TriageConfig)
     security_guard: SecurityGuardConfig = Field(default_factory=SecurityGuardConfig)
+    schedule: ScheduleConfig = Field(default_factory=ScheduleConfig)
+    notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)
     
     @field_validator('cors')
     @classmethod

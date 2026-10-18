@@ -32,7 +32,7 @@ from pydantic import Field, ConfigDict
 from pydantic_settings import BaseSettings
 from app import __version__
 from app.core.loadEnvYAML import get_config, get_api_config, get_cors_config, get_llm_config, get_database_config
-from app.core.config_def import SecurityGuardConfig, TriageConfig
+from app.core.config_def import NotificationsConfig, ScheduleConfig, SecurityGuardConfig, TriageConfig
 
 # The backend folder holds app/, config/ and data/. In the Docker image it is /app,
 # so data paths are built from BACKEND_DIR rather than from the repo root.
@@ -175,6 +175,18 @@ class Settings(BaseSettings):
     # Together AI for LLM services
     TOGETHER_API_KEY: Optional[str] = os.getenv("TOGETHER_API_KEY")
     TOGETHER_MODEL: Optional[str] = os.getenv("TOGETHER_MODEL", "meta-models/Muse-Glimmer-30B")
+
+    # Recurring research (recurring-research spec REC-107, REC-118). The scheduler token is held only by
+    # the backend and the scheduler; without it scheduling is off. BACKEND_URL is the scheduler's target.
+    SCHEDULER_TOKEN: Optional[str] = os.getenv("WEBAGENT_SCHEDULER_TOKEN") or None
+    BACKEND_URL: str = os.getenv("WEBAGENT_BACKEND_URL", "http://127.0.0.1:8000")
+    PUBLIC_URL: Optional[str] = (os.getenv("WEBAGENT_PUBLIC_URL") or "").rstrip("/") or None
+    SMTP_HOST: Optional[str] = os.getenv("WEBAGENT_SMTP_HOST") or None
+    SMTP_PORT: int = int(os.getenv("WEBAGENT_SMTP_PORT") or 587)
+    SMTP_USERNAME: Optional[str] = os.getenv("WEBAGENT_SMTP_USERNAME") or None
+    SMTP_PASSWORD: Optional[str] = os.getenv("WEBAGENT_SMTP_PASSWORD") or None
+    SMTP_FROM: Optional[str] = os.getenv("WEBAGENT_SMTP_FROM") or None
+    SMTP_TLS: str = (os.getenv("WEBAGENT_SMTP_TLS") or "starttls").lower()   # starttls | ssl
     
     # Data directory settings
     DATA_DIR: str = Field(
@@ -379,8 +391,22 @@ def _attach_triage(settings_obj):
     return settings_obj
 
 
+def _attach_schedule(settings_obj):
+    """SCHEDULE and NOTIFICATIONS from YAML; WEBAGENT_SCHEDULER_ENABLED overrides schedule.enabled."""
+    schedule = getattr(app_config, "schedule", None) if app_config else None
+    schedule = schedule or ScheduleConfig()
+    settings_obj.SCHEDULE = schedule.model_copy(
+        update={"enabled": _triage_bool("WEBAGENT_SCHEDULER_ENABLED", schedule.enabled)})
+    notifications = getattr(app_config, "notifications", None) if app_config else None
+    settings_obj.NOTIFICATIONS = notifications or NotificationsConfig()
+    llm = getattr(app_config, "llm", None) if app_config else None
+    settings_obj.PRICE_INPUT_PER_MILLION = getattr(llm, "price_input_per_million", 0.35)
+    settings_obj.PRICE_OUTPUT_PER_MILLION = getattr(llm, "price_output_per_million", 1.50)
+    return settings_obj
+
+
 def _attach_runtime_config(settings_obj):
-    return _attach_guard(_attach_triage(settings_obj))
+    return _attach_schedule(_attach_guard(_attach_triage(settings_obj)))
 
 
 def _security_setting(yaml_name: str, env_name: str, default):
