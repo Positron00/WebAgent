@@ -353,7 +353,7 @@ images: {
 },
 ```
 
-`'unsafe-inline'` for scripts is needed for Next.js 14's inline bootstrap without nonces
+`'unsafe-inline'` for scripts is needed for Next.js's inline bootstrap without nonces (14 and 15)
 (see known limitations). `connect-src 'self'` means every browser `fetch` must stay on the
 web app origin. **`clientConfig.ts`** always sets `api.baseUrl` to `'/api'` (do not point
 at `NEXT_PUBLIC_VERCEL_URL`, which would break the session cookie and CSP). **`AppContext`**

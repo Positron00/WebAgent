@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useId } from 'react';
+import React, { useId } from "react";
 
 interface TooltipProps {
   text: string;
-  children: React.ReactElement;
+  children: React.ReactElement<React.HTMLAttributes<HTMLElement>>;
   /** `center` sits over the middle of the trigger; `start` lines up with its left edge. */
-  align?: 'center' | 'start';
+  align?: "center" | "start";
 }
 
 /**
@@ -14,13 +14,13 @@ interface TooltipProps {
  * The native `title` tooltip appears only after a delay, never on focus or touch,
  * and not at all in some embedded browsers.
  */
-export function Tooltip({ text, children, align = 'center' }: TooltipProps) {
+export function Tooltip({ text, children, align = "center" }: TooltipProps) {
   const id = useId();
-  const position = align === 'center' ? 'left-1/2 -translate-x-1/2' : 'left-0';
+  const position = align === "center" ? "left-1/2 -translate-x-1/2" : "left-0";
 
   return (
     <span className="relative inline-flex group/tooltip">
-      {React.cloneElement(children, { 'aria-describedby': id })}
+      {React.cloneElement(children, { "aria-describedby": id })}
       <span
         id={id}
         role="tooltip"

@@ -10,6 +10,8 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Built output, coverage and the Python backend are not linted here.
+  { ignores: [".next/**", "out/**", "coverage/**", "backend/**", "public/**", "next-env.d.ts"] },
   ...compat.extends("next/core-web-vitals"),
 ];
 

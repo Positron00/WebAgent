@@ -92,8 +92,11 @@ register_template("internal_research", FOLLOWUP_RESEARCH_PROMPT)
 
 # Experiment tracking configuration
 TRACKING_ENABLED = os.environ.get("MLFLOW_TRACKING_URI") is not None
-if TRACKING_ENABLED:
+
+
+def _prepare_experiment() -> None:
     import mlflow
+
     # Always use settings.MLFLOW_ARTIFACT_LOCATION for artifacts. The first call on an empty store also
     # creates MLflow's default experiment, which several workers can race on: retry once (the image's
     # startup checks prepare the store before the workers start, so this is a second line).
@@ -114,6 +117,16 @@ if TRACKING_ENABLED:
                 raise
     else:
         mlflow.set_experiment("rag_agent_performance")
+
+
+if TRACKING_ENABLED:
+    # Experiment tracking is optional: a tracking store that can't be used turns it off for this
+    # worker instead of stopping the server.
+    try:
+        _prepare_experiment()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("MLflow tracking disabled for internal research: %s", exc)
+        TRACKING_ENABLED = False
 
 
 def _remember_private_text(state: WorkflowState, documents) -> None:

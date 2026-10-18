@@ -1,6 +1,6 @@
 const isProd = process.env.NODE_ENV === "production";
 
-// Next.js 14 bootstraps with inline scripts and we don't use nonces, so scripts need
+// Next.js bootstraps with inline scripts and we don't use nonces, so scripts need
 // 'unsafe-inline'; dev mode (React Refresh) also needs 'unsafe-eval'.
 const contentSecurityPolicy = [
   "default-src 'self'",

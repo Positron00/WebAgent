@@ -2,6 +2,40 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.10.0 - 2026-10-17
+
+A security refresh of the served package's dependencies, from a scan of the whole codebase. Nothing changes in what the agents do: ContextDefender, triage and the shadow classifier give identical scores on the new versions.
+
+### Security
+- **Web app on Next.js 15.5.28 and React 19** (from Next.js 14.2.25 and React 18). 14.2.25 had open advisories up to critical. They include unauthenticated remote code execution through the image optimizer, which the sign-in middleware leaves reachable at `/_next/image`, plus SSRF, cache poisoning and denial of service. `npm audit --omit=dev` now reports none. Next's bundled postcss is overridden to a fixed 8.5 release.
+- **Backend dependencies refreshed:** the image's known advisories drop from 344 in 49 packages to 25 in 12. The fixed packages include those on the request path:
+  - h11 0.14.0 → 0.16.0 (request smuggling);
+  - starlette 0.46 → 1.8 and fastapi 0.115 → 0.143;
+  - pypdf 5 → 6 and pillow 10 → 13 (both parse uploads);
+  - aiohttp, urllib3, requests, jinja2, cryptography and torch 2.5 → 2.14.
+
+  The remaining 25 need a new major version of LangChain, LangGraph, Chroma, transformers, sentence-transformers or nltk. None is reachable in WebAgent; each is explained in `backend/SECURITY_DEPENDENCIES.md`.
+- **mlflow → mlflow-skinny 2.22.5:** the tracking client only. The full package brought a tracking server stack (flask, werkzeug, gitpython, sqlalchemy) that WebAgent never runs.
+- **CI audits dependencies:** `pip-audit` on `backend/constraints.txt` and `npm audit --omit=dev --audit-level=high`. A new advisory fails the build.
+
+### Changed
+- **`backend/constraints.txt` is regenerated** from a clean `python:3.12-slim` resolve of `requirements-dev.txt`: 204 exact versions, replacing a 540-line freeze of a conda environment. The numeric stack the gated models were calibrated with stays as it was (numpy 1.26, pandas 2, scipy 1.13.1, scikit-learn 1.5.2).
+- **CPU torch build in the image:** the Dockerfile installs torch from the CPU wheel index, as CI does. On amd64, PyPI's default would pull the CUDA libraries.
+- Checkpoint 2 classifier data: the generated code rows are complete at 750. Generation was stopped there, since more code rows wouldn't help the gate; the next rebuild uses them.
+- **ESLint 9 with the flat config:** `npm run lint` runs `eslint .`, since `next lint` is deprecated. The duplicate `.eslintrc.json` is removed.
+
+### Fixed
+- **Tracking failures no longer stop the server.** With `MLFLOW_TRACKING_URI` set, a tracking store that couldn't be used made `internal_research.py` raise on import and stopped the server. Now that worker logs a warning and turns tracking off.
+- Next.js 15 changes:
+  - the two task routes await their `params`;
+  - the browser-compatibility warning is lazy-loaded from a client component;
+  - `useDismiss` and `Tooltip` accept React 19's ref and element types.
+
+### Upgrade notes
+- **Local development:** update the Python environment with `pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt` (the root file adds the constraints), and run `npm install`.
+- The web app needs Node.js 18.18 or later (CI uses 20).
+- Measured in Docker on the Mac: checkpoint 2 p95 is 25.6 ms (28.7 ms on 3.9.0), and two workers at rest use 1.16 GiB (1.20 GiB). The image is 4.0 GB (3.8 GB), mostly the newer torch.
+
 ## 3.9.0 - 2026-10-17
 
 The checkpoint 2 classifier, retrained on a larger dataset, runs in shadow. It still fails the gate, so it never decides: its scores are recorded next to phase A's signals for the shadow week (checkpoint2-intent SEC-128, task B11).
