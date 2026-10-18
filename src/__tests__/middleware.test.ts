@@ -104,6 +104,37 @@ describe("middleware with an access code", () => {
   });
 });
 
+describe("topics need sign-in (REC-116)", () => {
+  it.each([
+    "/api/topics",
+    "/api/topics/6f1d3b0e-6c1b-4f7e-9a51-2b7a1c0d9e11/run",
+  ])("answers 401 to %s without a cookie", async (path) => {
+    const response = await middleware(request(path));
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "sign_in_required" });
+  });
+
+  it.each(["/topics", "/topics/6f1d3b0e-6c1b-4f7e-9a51-2b7a1c0d9e11"])(
+    "redirects %s to /login without a cookie",
+    async (path) => {
+      const response = await middleware(request(path));
+      expect(response.status).toBe(307);
+      const location = new URL(response.headers.get("location")!);
+      expect(location.pathname).toBe("/login");
+      expect(location.searchParams.get("next")).toBe(path);
+    },
+  );
+
+  it("passes /api/topics through with the session when signed in", async () => {
+    const session = await createSession(SECRET);
+    const response = await middleware(
+      request("/api/topics", { cookie: session.value }),
+    );
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(forwardedHeader(response, "x-webagent-session")).toBe(session.sid);
+  });
+});
+
 describe("middleware without a working access code", () => {
   it("answers 503 to API calls when the code is too short", async () => {
     setEnv({ WEBAGENT_ACCESS_CODE: "short", WEBAGENT_SESSION_SECRET: SECRET });
@@ -150,6 +181,10 @@ describe("matcher", () => {
     "/api/auth/logout",
     "/api/settings",
     "/some/page",
+    "/topics",
+    "/topics/6f1d3b0e-6c1b-4f7e-9a51-2b7a1c0d9e11",
+    "/api/topics",
+    "/api/topics/6f1d3b0e-6c1b-4f7e-9a51-2b7a1c0d9e11/runs",
   ])("checks %s", (path) => expect(matcher.test(path)).toBe(true));
 
   it.each([

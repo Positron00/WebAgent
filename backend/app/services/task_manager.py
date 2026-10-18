@@ -15,7 +15,8 @@ from app.models.task import TaskInfo, WorkflowState
 from app.core.config import settings
 from app.core.metrics import timing_decorator, track_task_start, track_task_completion
 from app.security.errors import GuardDeclined, GuardStop
-from app.services import progress, result_store, task_budget
+from app.core.loadEnvYAML import get_agents_config
+from app.services import progress, result_store, run_origin, task_budget
 from app.services.run_supervisor import RunSupervisor
 from app.services.task_budget import BUDGET_MESSAGE, TaskBudgetExceeded
 from app.core.log_context import current_task_id
@@ -24,6 +25,22 @@ logger = logging.getLogger(__name__)
 
 # A saved "processing" record older than this is reported as interrupted.
 TASK_TIMEOUT_MINUTES = int(os.getenv("WEBAGENT_TASK_TIMEOUT_MINUTES", "30"))
+
+def _search_cap() -> int:
+    """The per-task search cap (REC-109): agents.web_research.max_searches_per_task, 0 if unset."""
+    try:
+        return int(get_agents_config().web_research.max_searches_per_task)
+    except Exception as exc:  # noqa: BLE001 - a missing config must not stop the run
+        logger.warning(f"No web_research.max_searches_per_task ({exc}); searches are not capped")
+        return 0
+
+
+def _standalone_query(context: Optional[Dict[str, Any]]) -> Optional[str]:
+    """The supervisor's standalone question (REC-110), when the plan has one. Never logged."""
+    plan = (context or {}).get("research_plan")
+    value = plan.get("standalone_query") if isinstance(plan, dict) else None
+    return value if isinstance(value, str) and value.strip() else None
+
 
 def _saved_time(value: Any) -> Optional[datetime]:
     """A saved record's timestamp (an ISO string on disk), or None."""
@@ -54,15 +71,64 @@ class TaskManager:
         self.task_results = {}  # task_id -> result
         self.task_errors = {}   # task_id -> error details
         self.supervisor = RunSupervisor(on_stop=self._mark_stopped)
+        # task_id -> {"origin", "topic_id", "counter"} while the run executes in this worker.
+        self._run_meta: Dict[str, Dict[str, Any]] = {}
         logger.info("Task Manager initialized")
 
-    def start(self, task_id: str, message: str, context: Dict[str, Any], direct: bool) -> None:
+    def start(
+        self, task_id: str, message: str, context: Dict[str, Any], direct: bool,
+        *, origin: Optional[str] = None, topic_id: Optional[str] = None, token_budget: Optional[int] = None,
+    ) -> None:
         """Start a direct or workflow run in the background, under the run time limit.
 
         Must be called from a running event loop (an async endpoint). Call register_pending first.
+        `origin="schedule"`, `topic_id` and `token_budget` mark a scheduled topic run (REC-108).
         """
         run = self.run_direct if direct else self.run_workflow
-        self.supervisor.start(task_id, run(task_id, message, context))
+        if origin is None and topic_id is None and token_budget is None:
+            self.supervisor.start(task_id, run(task_id, message, context))
+        else:
+            self.supervisor.start(
+                task_id, run(task_id, message, context, origin=origin, topic_id=topic_id, token_budget=token_budget)
+            )
+
+    def _enter_run(
+        self, task_id: str, origin: Optional[str], topic_id: Optional[str], token_budget: Optional[int],
+        search_cap: int = 0,
+    ) -> Tuple[Any, ...]:
+        """Set the run's context variables: task ID, budget counter and (scheduled runs) topic_run."""
+        scheduled = origin == "schedule"
+        tokens = (
+            current_task_id.set(task_id),
+            task_budget.start(token_budget or settings.TASK_TOKEN_BUDGET, search_cap=search_cap),
+            run_origin.topic_run.set(topic_id if scheduled else None),
+        )
+        self._run_meta[task_id] = {
+            "origin": "schedule" if scheduled else "interactive",
+            "topic_id": topic_id if scheduled else None,
+            "counter": task_budget.current(),
+        }
+        return tokens
+
+    def _exit_run(self, task_id: str, tokens: Tuple[Any, ...]) -> None:
+        task_id_token, budget_token, topic_token = tokens
+        run_origin.topic_run.reset(topic_token)
+        task_budget.reset(budget_token)
+        current_task_id.reset(task_id_token)
+        self._run_meta.pop(task_id, None)
+
+    def _origin(self, task_id: str) -> str:
+        """Metrics origin label of a run in this worker: "interactive" or "schedule"."""
+        return self._run_meta.get(task_id, {}).get("origin", "interactive")
+
+    def _run_fields(self, task_id: str) -> Dict[str, Any]:
+        """Fields every result gets: usage (REC-109); origin and topic_id for scheduled runs (REC-108)."""
+        meta = self._run_meta.get(task_id) or {}
+        fields: Dict[str, Any] = {"usage": task_budget.usage(meta.get("counter"))}
+        if meta.get("origin") == "schedule":
+            fields["origin"] = "schedule"
+            fields["topic_id"] = meta.get("topic_id")
+        return fields
 
     def _mark_stopped(self, task_id: str, code: str, message: str) -> None:
         """Show a run the supervisor stopped as an error in this worker's memory.
@@ -77,9 +143,24 @@ class TaskManager:
             task_info.current_step = "error"
             task_info.completed_at = datetime.now()
             duration = (task_info.completed_at - task_info.created_at).total_seconds()
-            track_task_completion(task_id, duration, "error")
-        self.task_results[task_id] = {"error": message, "error_code": code}
+            track_task_completion(task_id, duration, "error", self._origin(task_id))
+        fields = self._run_fields(task_id)
+        self.task_results[task_id] = {"error": message, "error_code": code, **fields}
         self.task_errors[task_id] = {"message": message, "error_code": code}
+        self._add_fields_to_stop_record(task_id, code, fields)
+
+    @staticmethod
+    def _add_fields_to_stop_record(task_id: str, code: str, fields: Dict[str, Any]) -> None:
+        """Add usage (and origin, topic_id) to the record the supervisor saved for a stopped run."""
+        try:
+            saved = result_store.load_result(task_id)
+            if not saved or saved.get("error_code") != code:
+                return
+            saved.update(fields)
+            saved["result"] = {**(saved.get("result") or {}), **fields}
+            result_store.save_result(task_id, saved)
+        except Exception as exc:  # noqa: BLE001 - the stop itself is already saved
+            logger.warning(f"Could not add usage to the stopped task {task_id}: {exc}")
         
     def register_pending(self, task_id: str, message: str) -> None:
         """Record a task as processing before its background job starts, so early polls find it.
@@ -147,6 +228,10 @@ class TaskManager:
             meta["decided_by"] = decision.get("decided_by")
             if decision.get("p_agentic") is not None:
                 meta["p_agentic"] = decision.get("p_agentic")
+        elif ctx.get("origin") == "schedule" or run_origin.topic_run.get():
+            # Scheduled runs skip triage and always research (recurring-research spec REC-108).
+            meta["route"] = "agentic"
+            meta["decided_by"] = "schedule"
         triage = ctx.get("shadow_triage") or decision
         if triage:
             meta["triage"] = triage
@@ -198,16 +283,25 @@ class TaskManager:
         task_info.current_step = "error"
         self.task_results[task_id] = {"error": BUDGET_MESSAGE, "error_code": "budget"}
         self.task_errors[task_id] = {"message": BUDGET_MESSAGE, "error_code": "budget"}
-        track_task_completion(task_id, (task_info.completed_at - task_info.created_at).total_seconds(), "error")
+        track_task_completion(
+            task_id, (task_info.completed_at - task_info.created_at).total_seconds(), "error", self._origin(task_id)
+        )
 
     def _save_final_record(
         self, task_id: str, message: str, task_info: TaskInfo, start_time: datetime,
-        context: Optional[Dict[str, Any]],
+        context: Optional[Dict[str, Any]], extra: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Save a finished run's record (skipped by result_store if a stop already wrote one)."""
+        """Save a finished run's record (skipped by result_store if a stop already wrote one).
+
+        The result gets the route fields, `usage` and, for scheduled runs, `origin` and `topic_id`;
+        `extra` adds fields such as `standalone_query`. GET /api/task returns them in `result`.
+        """
         meta = self._result_meta(context)
+        fields = self._run_fields(task_id)
         result = dict(self.task_results.get(task_id) or {})
         result.update(meta)
+        result.update(fields)
+        result.update(extra or {})
         self.task_results[task_id] = result
         payload = {
             "task_id": task_id,
@@ -219,15 +313,18 @@ class TaskManager:
             "tokens_used": task_budget.used(),
             "result": result,
             **meta,
+            **fields,
         }
         if result.get("error_code"):
             payload["error_code"] = result["error_code"]
         result_store.save_final(task_id, **payload)
 
-    async def run_direct(self, task_id: str, message: str, context: Optional[Dict[str, Any]] = None):
+    async def run_direct(
+        self, task_id: str, message: str, context: Optional[Dict[str, Any]] = None,
+        *, origin: Optional[str] = None, topic_id: Optional[str] = None, token_budget: Optional[int] = None,
+    ):
         """One text-only LLM call without building the LangGraph workflow."""
-        task_id_token = current_task_id.set(task_id)
-        budget_token = task_budget.start(settings.TASK_TOKEN_BUDGET)
+        run_tokens = self._enter_run(task_id, origin, topic_id, token_budget)
         start_time = datetime.now()
         ctx = context or {}
         task_info = TaskInfo(
@@ -239,7 +336,7 @@ class TaskManager:
             current_step="direct",
         )
         self.active_tasks[task_id] = task_info
-        track_task_start(task_id)
+        track_task_start(task_id, self._origin(task_id))
         try:
             supervisor = SupervisorAgent()
             content = await supervisor.answer_directly(
@@ -252,14 +349,14 @@ class TaskManager:
             task_info.message = "Task completed successfully"
             task_info.current_step = "completed"
             duration = (datetime.now() - start_time).total_seconds()
-            track_task_completion(task_id, duration, "completed")
+            track_task_completion(task_id, duration, "completed", self._origin(task_id))
         except (GuardStop, GuardDeclined) as stop:
             # GuardStop/GuardDeclined derive from BaseException, so they must be caught explicitly.
             task_info.status = "error"
             task_info.error = stop.decision.reason
             self.task_results[task_id] = self._guard_failure(stop, ctx)
             duration = (datetime.now() - start_time).total_seconds()
-            track_task_completion(task_id, duration, "error")
+            track_task_completion(task_id, duration, "error", self._origin(task_id))
         except TaskBudgetExceeded as exc:
             self._budget_failure(task_id, task_info, exc)
         except Exception as e:
@@ -268,17 +365,19 @@ class TaskManager:
             task_info.error = str(e)
             self.task_results[task_id] = {"error": str(e)}
             duration = (datetime.now() - start_time).total_seconds()
-            track_task_completion(task_id, duration, "error")
+            track_task_completion(task_id, duration, "error", self._origin(task_id))
         finally:
             if task_id in self.active_tasks:
                 self.active_tasks[task_id] = task_info
             if task_info.status in ("completed", "error"):
                 self._save_final_record(task_id, message, task_info, start_time, ctx)
-            task_budget.reset(budget_token)
-            current_task_id.reset(task_id_token)
+            self._exit_run(task_id, run_tokens)
 
     @timing_decorator
-    async def run_workflow(self, task_id: str, message: str, context: Optional[Dict[str, Any]] = None):
+    async def run_workflow(
+        self, task_id: str, message: str, context: Optional[Dict[str, Any]] = None,
+        *, origin: Optional[str] = None, topic_id: Optional[str] = None, token_budget: Optional[int] = None,
+    ):
         """
         Run a workflow task asynchronously.
         
@@ -286,10 +385,16 @@ class TaskManager:
             task_id: The unique ID for this task
             message: The user's message/query
             context: Optional additional context
+            origin, topic_id, token_budget: set for a scheduled topic run (REC-108); its budget
+                is token_budget instead of the global one
         """
-        task_id_token = current_task_id.set(task_id)
-        budget_token = task_budget.start(settings.TASK_TOKEN_BUDGET)
+        run_tokens = self._enter_run(task_id, origin, topic_id, token_budget, search_cap=_search_cap())
         start_time = datetime.now()
+        extra: Dict[str, Any] = {}
+        run_config: Optional[Dict[str, Any]] = None
+        if origin == "schedule":
+            # LangSmith metadata, so scheduled runs can be told apart (REC-108).
+            run_config = {"metadata": {"origin": "schedule", "topic_id": topic_id}}
         
         # Create task info
         task_info = TaskInfo(
@@ -305,7 +410,7 @@ class TaskManager:
         self.active_tasks[task_id] = task_info
         
         # Track task start for metrics
-        track_task_start(task_id)
+        track_task_start(task_id, self._origin(task_id))
         
         try:
             # Get the workflow
@@ -340,12 +445,15 @@ class TaskManager:
             
             # Run the workflow
             logger.info(f"Starting workflow for task {task_id}")
-            result = await self._stream_with_progress(task_id, workflow, initial_state)
+            result = await self._stream_with_progress(task_id, workflow, initial_state, run_config)
             final_state = (
                 result
                 if isinstance(result, WorkflowState)
                 else WorkflowState.model_validate(result)
             )
+            standalone = _standalone_query(final_state.context)
+            if standalone is not None:
+                extra["standalone_query"] = standalone
 
             # Calculate duration for metrics
             duration = (datetime.now() - start_time).total_seconds()
@@ -366,7 +474,7 @@ class TaskManager:
                 report = dict(final_state.final_report)
                 report["security"] = security
                 self.task_results[task_id] = report
-                track_task_completion(task_id, duration, "completed")
+                track_task_completion(task_id, duration, "completed", self._origin(task_id))
             else:
                 task_info.status = "error"
                 task_info.completed_at = datetime.now()
@@ -380,7 +488,7 @@ class TaskManager:
                     "message": error_msg,
                     "workflow_error": final_state.error,
                 }
-                track_task_completion(task_id, duration, "error")
+                track_task_completion(task_id, duration, "error", self._origin(task_id))
 
         except (GuardStop, GuardDeclined) as stop:
             duration = (datetime.now() - start_time).total_seconds()
@@ -395,7 +503,7 @@ class TaskManager:
                 "error_code": self.task_results[task_id]["error_code"],
                 "policy_ids": list(stop.decision.policy_ids),
             }
-            track_task_completion(task_id, duration, "error")
+            track_task_completion(task_id, duration, "error", self._origin(task_id))
 
         except TaskBudgetExceeded as exc:
             self._budget_failure(task_id, task_info, exc)
@@ -424,22 +532,29 @@ class TaskManager:
             self.task_results[task_id] = {"error": str(e)}
             
             # Track error for metrics
-            track_task_completion(task_id, duration, "error")
+            track_task_completion(task_id, duration, "error", self._origin(task_id))
             
         finally:
             # Always update the active tasks
             if task_id in self.active_tasks:
                 self.active_tasks[task_id] = task_info
             if task_info.status in ("completed", "error"):
-                self._save_final_record(task_id, message, task_info, start_time, context)
-            task_budget.reset(budget_token)
-            current_task_id.reset(task_id_token)
+                self._save_final_record(task_id, message, task_info, start_time, context, extra)
+            self._exit_run(task_id, run_tokens)
 
     @staticmethod
-    async def _stream_with_progress(task_id: str, workflow: Any, initial_state: WorkflowState) -> Any:
-        """Run the graph, saving progress after each finished node; returns the final state."""
+    async def _stream_with_progress(
+        task_id: str, workflow: Any, initial_state: WorkflowState, config: Optional[Dict[str, Any]] = None,
+    ) -> Any:
+        """Run the graph, saving progress after each finished node; returns the final state.
+
+        `config` (scheduled runs only) carries LangSmith metadata; interactive runs pass none.
+        """
         final_values = None
-        async for mode, chunk in workflow.astream(initial_state, stream_mode=["updates", "values"]):
+        stream_kwargs: Dict[str, Any] = {"stream_mode": ["updates", "values"]}
+        if config:
+            stream_kwargs["config"] = config
+        async for mode, chunk in workflow.astream(initial_state, **stream_kwargs):
             if mode == "values":
                 final_values = chunk
             elif mode == "updates" and isinstance(chunk, dict) and chunk:

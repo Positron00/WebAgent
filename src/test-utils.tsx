@@ -38,6 +38,7 @@ jest.mock("@heroicons/react/24/outline", () => {
     ArrowPathIcon: MockIcon,
     ChevronDownIcon: MockIcon,
     ChevronUpIcon: MockIcon,
+    ClockIcon: MockIcon,
     // Add any other icons used in your components
   };
 });

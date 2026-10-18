@@ -8,7 +8,12 @@ import { RouteLabel } from "./RouteLabel";
 import { SecuritySummary } from "./SecuritySummary";
 import { ResearchStatus } from "./ResearchStatus";
 import { ResearchFailed } from "./ResearchFailed";
+import {
+  TrackThisDialog,
+  TOPIC_NAME_MAX,
+} from "@/components/topics/TrackThisDialog";
 import ReactMarkdown from "react-markdown";
+import { ArticleMarkdown } from "./ArticleMarkdown";
 import { InformationCircleIcon, BeakerIcon } from "@heroicons/react/24/outline";
 import { CHAT_THEME } from "@/config/chatTheme";
 
@@ -129,85 +134,6 @@ const addCitationReferences = (
   return modifiedContent;
 };
 
-// Enhanced message formatting for article-like appearance
-const formatArticleContent = (content: string): string => {
-  // Check if this message has multiple sections by counting headings
-  const headingCount = (content.match(/^#+\s+.+/gm) || []).length;
-  const hasNumberedSections = (content.match(/^\d+\.\s+.+/gm) || []).length > 2;
-  const hasSectionKeywords =
-    content.toLowerCase().includes("conclusion") ||
-    content.toLowerCase().includes("summary") ||
-    content.toLowerCase().includes("next steps") ||
-    content.toLowerCase().includes("recommendation");
-
-  // Only add introduction if there are multiple sections in the response
-  const hasMultipleSections =
-    headingCount > 1 || hasNumberedSections || hasSectionKeywords;
-
-  // Check if this is a longer, more structured response that needs an introduction
-  const needsIntroduction =
-    content.length > 250 &&
-    hasMultipleSections &&
-    (content.includes("# ") ||
-      content.includes("## ") ||
-      content.includes("1. ") ||
-      content.includes("2. ") ||
-      content.split("\n\n").length > 3);
-
-  // Process markdown to improve article structure
-  return (
-    content
-      // Ensure headings are properly formatted
-      .replace(/^(?!#)(.+?):\s*$/gm, "## $1\n")
-      // Add proper newlines after headings
-      .replace(/^(#+\s.*?)$/gm, "$1\n\n")
-      // Format lists with proper spacing
-      .replace(/(\d+\.\s.*?)\n(\d+\.)/g, "$1\n\n$2")
-      .replace(/([*\-•].*)\n([*\-•])/g, "$1\n\n$2")
-      // Ensure paragraphs have proper spacing
-      .replace(/([^\s])\n([^\s])/g, "$1\n\n$2")
-      // Add introduction section only if needed and not already present
-      .replace(/^(?!#)(.+?)(?:\n\n|\n(?=#))/m, (match, p1) => {
-        // Only add Introduction if needed and if it doesn't already contain "introduction"
-        if (
-          needsIntroduction &&
-          !content.toLowerCase().includes("# introduction") &&
-          !content.toLowerCase().includes("## introduction") &&
-          !p1.toLowerCase().includes("introduction")
-        ) {
-          return `## Introduction\n\n${p1}\n\n`;
-        }
-        return match;
-      })
-      // Add conclusion if there isn't one and content is long enough and has multiple sections
-      .replace(/(.+)$/m, (match) => {
-        if (
-          content.length > 200 &&
-          hasMultipleSections &&
-          !content.includes("# Conclusion") &&
-          !content.includes("## Conclusion")
-        ) {
-          // Find the last paragraph that might be a conclusion
-          const lastParagraphs = content.split("\n\n").slice(-2);
-          if (
-            lastParagraphs.some(
-              (p: string) =>
-                p.toLowerCase().includes("conclusion") ||
-                p.toLowerCase().includes("summary") ||
-                p.toLowerCase().includes("in sum"),
-            )
-          ) {
-            // If there's a paragraph that looks like a conclusion, format it properly
-            return match.replace(/(.+?\n\n)(.+)$/m, "$1## Conclusion\n\n$2");
-          }
-        }
-        return match;
-      })
-      // Make sure there are not too many consecutive newlines
-      .replace(/\n{3,}/g, "\n\n")
-  );
-};
-
 type ConversationTurn = {
   user: ChatMessage;
   assistant?: ChatMessage;
@@ -294,6 +220,11 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
     answerDirectlyInstead,
   } = useChat();
   const latestTurnRef = useRef<HTMLDivElement>(null);
+  const [tracking, setTracking] = useState<{
+    taskId: string;
+    query: string;
+    title?: string;
+  } | null>(null);
   const turns = groupMessagesIntoTurns(messages);
 
   // Keep the latest question visible at the top of the scroll area (Perplexity-style)
@@ -348,60 +279,9 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
 
   // Render article-formatted assistant messages
   const renderArticleContent = (content: string, hasSources: boolean) => {
-    // Format content as an article
-    const articleContent = formatArticleContent(content);
-
     return (
       <div className="relative">
-        <ReactMarkdown
-          components={{
-            p: ({ node, ...props }) => <p {...props} />,
-            h1: ({ node, ...props }) => <h1 {...props} />,
-            h2: ({ node, ...props }) => <h2 {...props} />,
-            h3: ({ node, ...props }) => <h3 {...props} />,
-            h4: ({ node, ...props }) => (
-              <h4 className="text-base font-semibold mb-3 mt-4" {...props} />
-            ),
-            ul: ({ node, ...props }) => <ul {...props} />,
-            ol: ({ node, ...props }) => <ol {...props} />,
-            li: ({ node, ...props }) => <li {...props} />,
-            blockquote: ({ node, ...props }) => (
-              <blockquote
-                className="border-l-2 border-white/20 pl-4 my-4 text-[#c9c9c9]"
-                {...props}
-              />
-            ),
-            strong: ({ node, ...props }) => <strong {...props} />,
-            em: ({ node, ...props }) => (
-              <em className="italic text-[#d4d4d4]" {...props} />
-            ),
-            table: ({ node, ...props }) => (
-              <table
-                className="w-full mb-4 border-collapse border border-white/10"
-                {...props}
-              />
-            ),
-            th: ({ node, ...props }) => (
-              <th
-                className="border border-white/10 p-2 bg-white/5 text-left"
-                {...props}
-              />
-            ),
-            td: ({ node, ...props }) => (
-              <td className="border border-white/10 p-2" {...props} />
-            ),
-            code: ({ node, className, ...props }) => {
-              const isInline = !className || !className.includes("language-");
-              return isInline ? (
-                <code {...props} />
-              ) : (
-                <code className={`block ${className}`} {...props} />
-              );
-            },
-          }}
-        >
-          {articleContent}
-        </ReactMarkdown>
+        <ArticleMarkdown content={content} />
 
         {hasSources && accessibility.citeSources && (
           <div className="absolute top-0 right-0 text-[#8e8e8e] text-xs px-2 py-1 rounded-full border border-white/10 flex items-center">
@@ -535,6 +415,32 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
                                 }}
                               />
                             )}
+                            {assistantMessage.route?.route === "agentic" &&
+                              assistantMessage.task?.id && (
+                                <div className="mt-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setTracking({
+                                        taskId: assistantMessage.task!.id,
+                                        query:
+                                          assistantMessage.task!
+                                            .standaloneQuery ||
+                                          userMessage.content,
+                                        title:
+                                          assistantMessage.task!.title?.slice(
+                                            0,
+                                            TOPIC_NAME_MAX,
+                                          ),
+                                      })
+                                    }
+                                    className="text-xs py-1 px-2 rounded border border-white/15 text-gray-300 hover:text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                                    aria-label="Track this question on a schedule"
+                                  >
+                                    Track this
+                                  </button>
+                                </div>
+                              )}
                             {assistantMessage.security &&
                               assistantMessage.id && (
                                 <SecuritySummary
@@ -608,6 +514,14 @@ export function MessageList({ messages, isLoading, error }: MessageListProps) {
           )
         )}
       </div>
+      {tracking && (
+        <TrackThisDialog
+          taskId={tracking.taskId}
+          query={tracking.query}
+          title={tracking.title}
+          onClose={() => setTracking(null)}
+        />
+      )}
     </div>
   );
 }

@@ -13,7 +13,7 @@ import yaml
 from app.agents import internal_research, senior_research, web_research
 from app.core.config_def import AgentConfig, AgentsConfig
 from app.models.task import WorkflowState
-from app.services import llm as llm_module
+from app.services import llm as llm_module, task_budget
 
 CONFIG_DIR = Path(__file__).resolve().parents[1] / "config"
 ENVS = ("dev", "uat", "prod")
@@ -110,15 +110,19 @@ async def test_web_research_pass_stops_at_the_search_cap(env_config):
 
     agent = web_research.WebResearchAgent()
     agent.llm = SimpleNamespace(ainvoke=_async_reply("## Answer"))
-    agent.max_searches = 1
     state = WorkflowState(query="q", context={
         "research_plan": {"requires_web_search": True},
         "research_iteration": 2,
         "research_feedback": {"research_questions": ["first question?", "second question?"]},
     })
 
-    with patch.object(web_research, "perform_web_search", fake_search):
-        await agent.run(state)
+    # The cap is per task now (REC-109): the run's counter in task_budget holds it.
+    token = task_budget.start(0, search_cap=1)
+    try:
+        with patch.object(web_research, "perform_web_search", fake_search):
+            await agent.run(state)
+    finally:
+        task_budget.reset(token)
 
     assert calls == ["first question?"]
 

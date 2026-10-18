@@ -14,6 +14,9 @@ from app.services.task_manager import TaskManager
 from tests.fakes.workers import separate_task_manager
 from tests.fakes.workflow import StreamingFakeWorkflow
 
+# Every result records the run's usage (REC-109), stopped runs too.
+NO_USAGE = {"input_tokens": 0, "output_tokens": 0, "searches": 0, "tavily_credits": 0}
+
 
 class _FakeWorkflow(StreamingFakeWorkflow):
     def __init__(self, seconds: float):
@@ -64,10 +67,10 @@ async def test_slow_run_is_stopped_and_saved_as_timeout(one_second_limit, monkey
     assert saved["error"] == TIMEOUT_MESSAGE
     assert saved["query"] == "slow question"
     assert workflow.cancelled
-    assert manager.get_task_status(task_id) == ("error", {"error": TIMEOUT_MESSAGE, "error_code": "timeout"})
+    assert manager.get_task_status(task_id) == ("error", {"error": TIMEOUT_MESSAGE, "error_code": "timeout", "usage": NO_USAGE})
     manager.active_tasks.pop(task_id, None)
     manager.task_results.pop(task_id, None)
-    assert manager.get_task_status(task_id) == ("error", {"error": TIMEOUT_MESSAGE, "error_code": "timeout"})
+    assert manager.get_task_status(task_id) == ("error", {"error": TIMEOUT_MESSAGE, "error_code": "timeout", "usage": NO_USAGE})
 
 
 @pytest.mark.asyncio
@@ -151,7 +154,7 @@ async def test_cancel_received_by_another_worker_stops_the_run(monkeypatch, clie
     assert (saved["status"], saved["error"], saved["query"]) == ("error", CANCEL_MESSAGE, "long question")
     assert saved["tokens_used"] == 0
     assert workflow.cancelled
-    expected = ("error", {"error": CANCEL_MESSAGE, "error_code": "cancelled"})
+    expected = ("error", {"error": CANCEL_MESSAGE, "error_code": "cancelled", "usage": NO_USAGE})
     assert other.get_task_status(task_id) == expected
     assert runner.get_task_status(task_id) == expected
     assert client.post(f"/api/task/{task_id}/cancel").status_code == 409

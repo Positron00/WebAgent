@@ -34,6 +34,7 @@ services:
       - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
       - WEBAGENT_SECURITY_SECRET_KEY=${WEBAGENT_SECURITY_SECRET_KEY:-}
       - WEBAGENT_API_KEY=${WEBAGENT_API_KEY:-}
+      - WEBAGENT_SCHEDULER_TOKEN=${WEBAGENT_SCHEDULER_TOKEN:-}
       # Drift and alerts (3.6.0); empty means the code default.
       - TOGETHER_API_BASE=${TOGETHER_API_BASE:-}
       - WEBAGENT_DRIFT_ENABLED=${WEBAGENT_DRIFT_ENABLED:-true}
@@ -50,6 +51,36 @@ services:
       - webagent-network
     depends_on:
       - prometheus
+
+  # Recurring research scheduler (recurring-research spec D1): one process from the same image.
+  # Idle until schedule.enabled (WEBAGENT_SCHEDULER_ENABLED=true); needs WEBAGENT_SCHEDULER_TOKEN,
+  # the same value the backend gets.
+  webagent-scheduler:
+    image: webagent/backend:${APP_VERSION:?set APP_VERSION, e.g. via npm run stack:up}
+    container_name: webagent-scheduler
+    command: ["python", "-m", "app.scheduler"]
+    restart: unless-stopped
+    mem_limit: 192m
+    volumes:
+      - ./config:/app/config
+      - webagent-data:/app/data
+    environment:
+      - WEBAGENT_ENV=${WEBAGENT_ENV:-dev}
+      - LOG_LEVEL=INFO
+      - WEBAGENT_BACKEND_URL=http://webagent-backend:8000
+      - WEBAGENT_API_KEY=${WEBAGENT_API_KEY:-}
+      - WEBAGENT_SCHEDULER_TOKEN=${WEBAGENT_SCHEDULER_TOKEN:-}
+      - WEBAGENT_SCHEDULER_ENABLED=${WEBAGENT_SCHEDULER_ENABLED:-false}
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.scheduler", "--health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    networks:
+      - webagent-network
+    depends_on:
+      - webagent-backend
 
   prometheus:
     image: prom/prometheus:v2.55.1

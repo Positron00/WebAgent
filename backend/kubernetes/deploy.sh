@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 # Default values
 ENVIRONMENT="prod"
 NAMESPACE="default"
-VERSION="3.10.1"
+VERSION="3.11.0"
 REGISTRY="webagent/backend"
 HOST="api.webagent.example.com"
 INGRESS_NAMESPACE="ingress-nginx"
@@ -25,7 +25,7 @@ function print_usage {
   echo "Options:"
   echo "  -e, --environment   prod or uat: sets WEBAGENT_ENV, so the pod uses config/<env>.yaml (default: prod)"
   echo "  -n, --namespace     Kubernetes namespace (default: default)"
-  echo "  -v, --version       Image tag to deploy (default: 3.10.1)"
+  echo "  -v, --version       Image tag to deploy (default: 3.11.0)"
   echo "  -i, --ingress-ns    Namespace of the nginx ingress controller (default: ingress-nginx; also --ingress-namespace)"
   echo "  -r, --registry      Image repository the cluster pulls from (default: webagent/backend)"
   echo "  -H, --host          Public host name for the ingress (default: api.webagent.example.com)"
@@ -35,6 +35,7 @@ function print_usage {
   echo "  OPENAI_API_KEY      OpenAI API key"
   echo "  WEBAGENT_SECURITY_SECRET_KEY  Random secret, at least 32 characters"
   echo "  WEBAGENT_API_KEY              Key clients send in the X-API-Key header"
+  echo "  WEBAGENT_SCHEDULER_TOKEN      Optional: secret shared by the backend and the scheduler (recurring research)"
   echo "  GRAFANA_ADMIN_PASSWORD        Grafana admin password"
   echo ""
   echo "Optional environment variables:"
@@ -181,6 +182,7 @@ kubectl create secret generic webagent-secrets -n "$NAMESPACE" \
   --from-literal=api-key="$WEBAGENT_API_KEY" \
   --from-literal=tavily-api-key="${TAVILY_API_KEY:-}" \
   --from-literal=langsmith-api-key="${LANGSMITH_API_KEY:-}" \
+  --from-literal=scheduler-token="${WEBAGENT_SCHEDULER_TOKEN:-}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Process the deployment template (no secrets in it)

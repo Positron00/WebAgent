@@ -27,6 +27,8 @@ database:
     distance_metric: "cosine"
 # LLM settings
 llm:
+  price_input_per_million: 0.35    # $ per million tokens, the configured Together model (2026-10-16)
+  price_output_per_million: 1.50
   # Provider options: "openai", "together", "self"
   provider: "together"
   default_model: "meta-models/Muse-Glimmer-30B"
@@ -128,4 +130,28 @@ logging:
 security:
   token_expire_minutes: 30
   algorithm: "HS256"
-  password_min_length: 8 
+  password_min_length: 8
+
+# Recurring research (recurring-research spec). Off until an operator turns it on after shadow week 2
+# (RNFR-05); the scheduler runs as its own process (python -m app.scheduler).
+schedule:
+  enabled: false
+  max_active_topics: 10
+  max_runs_per_day: 20
+  max_concurrent_runs: 2
+  history_runs_kept: 20
+  pause_after_failures: 3
+  paused_topic_days: 90
+  monthly_tavily_credits: 400
+  monthly_together_usd: 5.0
+  token_budget_default: 60000    # set to 1.5 x p90 of shadow week 2's tokens_used (task A0)
+  max_token_budget: 200000
+
+notifications:
+  email:
+    enabled: false
+    transport: log               # log (writes the message to the log) | smtp
+    mode: notice                 # notice | summary (summary needs security_guard.input_mode: act)
+    max_subscribers_per_topic: 5
+    max_emails_per_day: 50
+

@@ -183,3 +183,111 @@ describe("/api/task proxy", () => {
     expect(finished.status).toBe(409);
   });
 });
+
+describe("/api/task proxy body allow-list (REC-107)", () => {
+  const post = (body: BodyInit, headers: Record<string, string> = {}) =>
+    postTask(
+      new Request("http://localhost/api/task", {
+        method: "POST",
+        body,
+        headers,
+      }),
+    );
+
+  it("forwards every allow-listed field unchanged", async () => {
+    fetchMock.mockResolvedValue(new Response("{}", { status: 200 }));
+    const allowed = {
+      query: "q",
+      mode: "always",
+      agentic: true,
+      previous_messages: [{ role: "user", content: "hi" }],
+      triage_override: true,
+      image: "data:image/png;base64,AAAA",
+      document_id: "doc-1",
+      consent_token: "ct",
+      approval_tokens: ["a1"],
+    };
+
+    await post(JSON.stringify(allowed));
+
+    expect(JSON.parse(forwarded().init.body)).toEqual(allowed);
+  });
+
+  it("drops scheduler fields and anything else the browser adds", async () => {
+    fetchMock.mockResolvedValue(new Response("{}", { status: 200 }));
+
+    await post(
+      JSON.stringify({
+        query: "q",
+        origin: "schedule",
+        topic_id: "6f1d3b0e-6c1b-4f7e-9a51-2b7a1c0d9e11",
+        task_id: "7a1d3b0e-6c1b-4f7e-9a51-2b7a1c0d9e11",
+        token_budget: 200000,
+        extra: "x",
+      }),
+    );
+
+    const sent = JSON.parse(forwarded().init.body);
+    expect(sent).toEqual({ query: "q" });
+    expect(Object.keys(sent)).toEqual(["query"]);
+  });
+
+  it.each(["{not json", "", "[1,2]", "null", '"text"'])(
+    "answers 400 invalid_json to %p without calling the backend",
+    async (body) => {
+      const response = await post(body);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "invalid_json" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("answers 413 above the request-size limit without calling the backend", async () => {
+    const saved = process.env.WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT;
+    process.env.WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT = "100";
+    try {
+      const big = JSON.stringify({ query: "x".repeat(200) });
+      const response = await post(big);
+      expect(response.status).toBe(413);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      // A streamed body with no Content-Length is cut off too.
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(big));
+          controller.close();
+        },
+      });
+      const streamed = await postTask(
+        new Request("http://localhost/api/task", {
+          method: "POST",
+          body: stream,
+          // @ts-expect-error duplex is required for a stream body in Node
+          duplex: "half",
+        }),
+      );
+      expect(streamed.status).toBe(413);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      fetchMock.mockResolvedValue(new Response("{}", { status: 200 }));
+      const small = await post(JSON.stringify({ query: "ok" }));
+      expect(small.status).toBe(200);
+    } finally {
+      if (saved === undefined)
+        delete process.env.WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT;
+      else process.env.WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT = saved;
+    }
+  });
+
+  it("allows 10 MB by default", async () => {
+    const { requestSizeLimit } = await import("@/app/api/task/body");
+    const saved = process.env.WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT;
+    delete process.env.WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT;
+    try {
+      expect(requestSizeLimit()).toBe(10485760);
+    } finally {
+      if (saved !== undefined)
+        process.env.WEBAGENT_SECURITY_REQUEST_SIZE_LIMIT = saved;
+    }
+  });
+});

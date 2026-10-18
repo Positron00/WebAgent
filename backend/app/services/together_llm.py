@@ -82,7 +82,9 @@ def _add_usage(total: Dict[str, int], data: Dict[str, Any]) -> None:
         value = usage.get(key)
         if isinstance(value, int):
             total[key] = total.get(key, 0) + value
-    task_budget.add(usage.get("total_tokens", 0))
+    task_budget.add(
+        usage.get("total_tokens", 0), usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
+    )
 
 
 class TogetherWithUsage(Together):

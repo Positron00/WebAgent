@@ -40,6 +40,14 @@ export async function forwardToBackend(
       headers,
       cache: "no-store",
     });
+    if (
+      response.status === 204 ||
+      response.status === 205 ||
+      response.status === 304
+    ) {
+      // A null-body status (DELETE /api/topics/{id} answers 204) can't carry a JSON body.
+      return new NextResponse(null, { status: response.status });
+    }
     const body = await response.json().catch(() => ({}));
     return NextResponse.json(body, { status: response.status });
   } catch (error) {

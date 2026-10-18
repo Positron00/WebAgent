@@ -22,7 +22,7 @@ from app.security.guarded_llm import register_template
 from app.agents.base_agent import BaseAgent
 from app.core.config import settings
 from app.core.log_context import describe_text
-from app.core.metrics import timing_decorator, track_task_completion
+from app.core.metrics import timing_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -285,10 +285,8 @@ class TeamManagerAgent(BaseAgent):
                     state.add_log("Team Manager: Requesting code and visualizations")
                     logger.info("Team Manager Agent requesting code/visualization assistance")
 
-            end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            track_task_completion(task_id, duration, "completed")
-
+            # Task metrics are recorded once, by the task manager, for the whole task; this agent used
+            # to count every research task a second time (with its own step's duration).
             return state
             
         except Exception as e:
@@ -305,11 +303,6 @@ class TeamManagerAgent(BaseAgent):
                     "analysis": "An error occurred",
                     "sources": []
                 })
-            
-            # Track error in metrics
-            end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            track_task_completion(task_id, duration, "error")
             
             return state
 

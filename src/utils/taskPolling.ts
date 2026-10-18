@@ -12,7 +12,13 @@ import {
 /** The backend's GET /api/task/<id> reply. */
 export interface TaskStatusReply {
   status?: string;
-  result?: { content?: string; logs?: string[]; security?: unknown } | null;
+  result?: {
+    content?: string;
+    logs?: string[];
+    security?: unknown;
+    title?: string;
+    standalone_query?: string;
+  } | null;
   error?: string | null;
   error_code?: string;
   usage?: ChatCompletionResponse["usage"];
@@ -87,8 +93,17 @@ function progressFrom(
   };
 }
 
-function toResponse(reply: TaskStatusReply): ChatCompletionResponse {
+function toResponse(
+  reply: TaskStatusReply,
+  taskId: string,
+): ChatCompletionResponse {
   const result = reply.result!;
+  const title = typeof result.title === "string" ? result.title : undefined;
+  const standaloneQuery =
+    typeof result.standalone_query === "string" &&
+    result.standalone_query.trim()
+      ? result.standalone_query
+      : undefined;
   const security = normalizeSecuritySummary(reply.security ?? result.security);
   return {
     choices: [
@@ -97,6 +112,11 @@ function toResponse(reply: TaskStatusReply): ChatCompletionResponse {
           role: "assistant",
           content: result.content || JSON.stringify(result),
           ...(result.logs && { logs: result.logs }),
+          task: {
+            id: taskId,
+            ...(title ? { title } : {}),
+            ...(standaloneQuery ? { standaloneQuery } : {}),
+          },
         },
         finish_reason: "stop",
       },
@@ -138,7 +158,8 @@ export async function pollTask(
     }
     if (signal.aborted) throw stoppedError();
 
-    if (reply.status === "completed" && reply.result) return toResponse(reply);
+    if (reply.status === "completed" && reply.result)
+      return toResponse(reply, taskId);
     if (reply.status === "failed") throw failureFor(reply);
 
     onProgress?.(progressFrom(reply, Date.now() - started));

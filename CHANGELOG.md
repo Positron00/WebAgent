@@ -2,6 +2,47 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.11.0 - 2026-10-18
+
+Recurring research, phase A: **topics** that WebAgent researches again daily or weekly, with each run's report and new sources kept (recurring-research spec, `planning/specs/recurring-research/`). Scheduling is **off** in every environment; turn it on after shadow week 2 (`docs/RUNBOOK.md`, "Recurring research"). Email notifications come in 3.12.0.
+
+### Added
+- **Topics:**
+  - **Track this** under research answers, prefilled with the question the research used.
+  - `/topics` lists them, with state, next and last run, Run now, pause and resume, and delete.
+  - `/topics/[id]` shows the runs, newest first, with the new sources and the stored report.
+  - The backend API is `/api/topics` (API key). A topic's question passes the security guard's checkpoint 1 when it's created.
+- **Scheduler** (`python -m app.scheduler`; a `webagent-scheduler` Compose service and a `scheduler` sidecar on Kubernetes):
+  - One small process (about 40 MB, no models) that starts due runs through `POST /api/task`, so the guard, the time limit, the token budget and the search cap all apply.
+  - **Single runner:** a heartbeat lock, and a restart waits for a dead holder's heartbeat to expire.
+  - **Crash safety:** fixed task IDs, so a crash never runs a slot twice.
+  - **Catch-up:** missed slots aren't backfilled.
+  - **Holds:** after 3 failures in a row.
+- **Caps:**
+  - 10 active topics, 20 scheduled runs a day, daily at most.
+  - A monthly allowance for scheduled runs, 400 Tavily credits and $5 of Together. A run starts only if its worst case fits, so the allowance is never passed.
+- **Scheduler credential:** `WEBAGENT_SCHEDULER_TOKEN`, held only by the backend and the scheduler. The API key alone can't send scheduler fields, because the web app's proxy adds it to browser requests.
+- **Metrics:**
+  - `webagent_topic_*` and `webagent_scheduler_*` from the scheduler's files.
+  - A "Recurring research" dashboard row.
+  - A "Scheduler down" alert rule.
+
+### Changed
+- **Usage on every task:** each task's result records `usage` (input and output tokens, searches, Tavily credits) and, for research runs, the supervisor's `standalone_query`.
+- **A real per-task search cap:** `agents.web_research.max_searches_per_task` was counted per research pass, so it never applied. Its value will be set from shadow week 2's search counts; today's (5 in dev and uat, 10 in prod) is above what a run can make.
+- **Origin labels:** `webagent_tasks_total` and `webagent_task_duration_seconds` have an `origin` label (`interactive` or `schedule`). Scheduled runs skip triage and its collection and embedding drift. Their results, collection rows and LangSmith runs carry `origin` and `topic_id`.
+- **Web proxy allow-list:** the task proxy forwards only the fields the backend knows; invalid JSON is a 400 and an oversized body a 413. The proxy now also passes 204 responses through.
+- **The chat's Markdown renderer** is one shared component, used for chat answers and stored reports (no raw HTML).
+- **Config:** a `schedule:` and `notifications:` block, and `llm.price_input_per_million` and `llm.price_output_per_million`.
+
+### Fixed
+- **Every research task was counted twice** in `webagent_tasks_total`, and its duration recorded twice. The team manager agent also recorded a completion, with its own step's duration.
+- **Validation errors with a custom message** (for example an unknown time zone) made the 422 handler fail with a 500.
+
+### Upgrade notes
+- Nothing runs on a schedule until `schedule.enabled` and `WEBAGENT_SCHEDULER_TOKEN` are set. Deploy with `WEBAGENT_SCHEDULER_TOKEN` exported to `deploy.sh` when you want scheduling; without it the sidecar idles.
+- Task metric queries that filter on labels other than `status` should add `origin` or sum over it. The provided dashboards already sum.
+
 ## 3.10.1 - 2026-10-17
 
 All documentation checked against the code and updated, with a few gaps that the check found fixed. The 3.10.0 shadow week keeps running on 3.10.0: nothing here changes what it measures.

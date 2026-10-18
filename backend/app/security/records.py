@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 from app.core.config import settings
 from app.core.metrics import GUARD_ESCALATIONS
 from app.security.types import Decision, ToolAction
+from app.services import run_origin
 
 logger = logging.getLogger(__name__)
 _lock = threading.Lock()
@@ -84,6 +85,14 @@ def record_collection(
         "args": args or {},
         **_text_field(state_context.get("query")),
     }
+    topic_id = run_origin.topic_run.get()
+    if topic_id:
+        row["origin"] = "schedule"
+        row["topic_id"] = topic_id
+    elif state_context.get("origin") == "topic_create":
+        # The intake check when a topic is created (recurring-research spec REC-103).
+        row["origin"] = "topic_create"
+        row["topic_id"] = state_context.get("topic_id")
     if item is not None:
         row["item"] = item
     if context is not None:

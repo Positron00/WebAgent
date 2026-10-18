@@ -13,6 +13,7 @@ from langchain.schema.output_parser import StrOutputParser
 
 from app.models.task import WorkflowState
 from app.models.research_plan import research_query
+from app.services import task_budget
 from app.services.llm import get_agent_llm
 from app.services.web_search import SearchError, perform_web_search
 from app.agents.base_agent import BaseAgent
@@ -172,7 +173,6 @@ class WebResearchAgent(BaseAgent):
                 search_query = feedback.get("search_query", query)
                 _log_text("Using feedback search query", search_query)
                 
-        searches_made = 0
         search_errors: List[Dict[str, Any]] = []
 
         def record_search_error(search_text: str, error: SearchError) -> None:
@@ -187,12 +187,14 @@ class WebResearchAgent(BaseAgent):
             return report
 
         async def capped_search(**kwargs) -> List[Dict[str, Any]]:
-            """perform_web_search, until this pass has made max_searches_per_task searches."""
-            nonlocal searches_made
-            if searches_made >= self.max_searches:
-                logger.info(f"Search limit reached ({self.max_searches} per pass); skipping search")
+            """perform_web_search, until the task has made max_searches_per_task searches (REC-109).
+
+            The count is the run's counter in task_budget, shared by every pass and by the parallel
+            agents. Outside a run (no counter started) searches are not capped.
+            """
+            if not task_budget.charge_search(kwargs.get("search_depth", "basic")):
+                logger.info(f"Search limit reached ({task_budget.search_cap()} per task); skipping search")
                 return []
-            searches_made += 1
             return await perform_web_search(**kwargs)
 
         # Perform the web search

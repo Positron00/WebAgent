@@ -66,14 +66,14 @@ REQUESTS_IN_PROGRESS = Gauge(
 TASK_COUNT = Counter(
     "webagent_tasks_total",
     "Total number of WebAgent tasks",
-    ["status"],
+    ["status", "origin"],  # origin: interactive or schedule (REC-108)
     registry=WEBAGENT_REGISTRY
 )
 
 TASK_DURATION = Histogram(
     "webagent_task_duration_seconds",
     "Duration of WebAgent tasks in seconds",
-    ["status"],
+    ["status", "origin"],
     buckets=(1, 5, 10, 30, 60, 120, 300, 600, 1800, 3600),
     registry=WEBAGENT_REGISTRY
 )
@@ -447,15 +447,23 @@ def track_llm_request(provider: str, model: str):
     return decorator
 
 # Task tracking functions
-def track_task_start(task_id: str):
-    """Track the start of a task."""
-    TASK_COUNT.labels(status="started").inc()
+TASK_ORIGINS = ("interactive", "schedule")
+
+
+def _task_origin(origin: str) -> str:
+    return origin if origin in TASK_ORIGINS else "interactive"
+
+
+def track_task_start(task_id: str, origin: str = "interactive"):
+    """Track the start of a task. `origin` is "interactive" or "schedule" (a topic run)."""
+    TASK_COUNT.labels(status="started", origin=_task_origin(origin)).inc()
     logger.debug(f"Started task: {task_id}")
 
-def track_task_completion(task_id: str, duration: float, status: str = "completed"):
-    """Track the completion of a task."""
-    TASK_COUNT.labels(status=status).inc()
-    TASK_DURATION.labels(status=status).observe(duration)
+def track_task_completion(task_id: str, duration: float, status: str = "completed", origin: str = "interactive"):
+    """Track the completion of a task. `origin` is "interactive" or "schedule" (a topic run)."""
+    origin = _task_origin(origin)
+    TASK_COUNT.labels(status=status, origin=origin).inc()
+    TASK_DURATION.labels(status=status, origin=origin).observe(duration)
     logger.debug(f"Completed task: {task_id} with status: {status} in {duration:.2f}s")
 
 # Configuration validation tracking
@@ -523,8 +531,16 @@ def metrics_payload() -> bytes:
     if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
         registry = CollectorRegistry()
         multiprocess.MultiProcessCollector(registry)
+        # Topic metrics come from the scheduler's files, not from worker values (REC-117).
+        registry.register(TOPIC_COLLECTOR)
         return generate_latest(registry)
     return generate_latest(WEBAGENT_REGISTRY)
+
+
+# Recurring research (recurring-research spec REC-117): one collector, reading the scheduler's files.
+from app.core.topic_metrics import register_topic_collector  # noqa: E402
+
+TOPIC_COLLECTOR = register_topic_collector(WEBAGENT_REGISTRY)
 
 # Dictionary to store execution times for functions
 _execution_times = {}

@@ -55,6 +55,29 @@ async function run(
 }
 
 describe("pollTask", () => {
+  it("keeps the task ID, the report title and the standalone question for Track this", async () => {
+    jest.useFakeTimers();
+    try {
+      const { value } = await run([
+        {
+          status: "completed",
+          result: {
+            content: "# Report",
+            title: "Database comparison",
+            standalone_query: "Compare Postgres and MySQL in 2026",
+          },
+        },
+      ]);
+      expect(value?.choices[0].message.task).toEqual({
+        id: "t1",
+        title: "Database comparison",
+        standaloneQuery: "Compare Postgres and MySQL in 2026",
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
 
@@ -73,6 +96,7 @@ describe("pollTask", () => {
       role: "assistant",
       content: "# Report",
       logs: ["done"],
+      task: { id: "t1" },
     });
     expect(getStatus).toHaveBeenCalledTimes(3);
     expect(onProgress).toHaveBeenCalledTimes(2);

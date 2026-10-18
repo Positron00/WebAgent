@@ -10,6 +10,7 @@ import numpy as np
 from langchain_core.embeddings import Embeddings
 
 from app.core import drift_store
+from app.services import run_origin
 
 
 class DriftRecordingEmbeddings(Embeddings):
@@ -46,6 +47,8 @@ class DriftRecordingEmbeddings(Embeddings):
         return vector
 
     def _observe(self, vectors: List[List[float]]) -> None:
+        if run_origin.topic_run.get():
+            return  # scheduled runs repeat the same question; they would skew the drift (REC-108)
         try:
             batch = np.asarray(vectors, dtype=np.float64)
             if batch.ndim != 2 or not len(batch):
