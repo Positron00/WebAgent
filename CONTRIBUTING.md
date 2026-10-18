@@ -52,6 +52,22 @@ Thank you for improving WebAgent. This guide covers local setup, tests, and what
 Backend tests must stay **offline**: no real network calls to LLMs, Tavily, LangSmith, or Hugging Face.
 See [docs/TESTING.md](docs/TESTING.md).
 
+## What CI runs
+
+`ci` runs on every push and pull request to `main` and `release/*`:
+
+- **web:** `npm ci`, `npm audit --omit=dev --audit-level=high`, lint, type check, Jest with coverage, and `next build`.
+- **backend:** install with the constraints, NLTK data, `ruff check`, `pip-audit` on `backend/constraints.txt`, and pytest without the real-model tests, with a coverage floor.
+
+`models` runs the tests marked `needs_lfs` and `real_triage_model` against the real LFS weights, every Monday and when started by hand (`workflow_dispatch`).
+
+## Changing dependencies
+
+- **Python:** change `backend/requirements.txt`, then regenerate `backend/constraints.txt` in a clean `python:3.12-slim` container with the CPU torch index. Don't freeze it from your own environment. Keep the major-version caps listed at the top of the file.
+- **Model scores:** after a change to torch, transformers, sentence-transformers or the numeric stack, compare the real models' scores before and after (ContextDefender, triage, the alignment classifier), not just the tests.
+- **Advisories:** if `pip-audit` reports something that can't be fixed without a major upgrade and isn't reachable, add it with its reason to `backend/SECURITY_DEPENDENCIES.md`, and to the ignore list in `.github/workflows/ci.yml`.
+- **npm:** `npm install <package>@<version>`. If the lock file has to be rebuilt from scratch, do it in a clean `node:20` container (`npm install --package-lock-only`). Rebuilt on a Mac over an existing `node_modules`, it can drop optional platform packages, and `npm ci` in CI then fails.
+
 ## Pull requests
 
 - Target `main` or `release/*` branches; CI runs on both.

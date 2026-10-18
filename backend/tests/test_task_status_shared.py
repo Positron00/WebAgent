@@ -52,3 +52,45 @@ def test_finished_task_is_visible_to_another_worker():
     _as_other_worker(manager, task_id)
 
     assert manager.get_task_status(task_id) == ("completed", {"content": "Answer"})
+
+
+def _saved_failure(task_id: str) -> None:
+    result_store.save_result(task_id, {
+        "task_id": task_id, "query": "What is an example?", "status": "error",
+        "created_at": datetime.now(), "completed_at": datetime.now(),
+        "result": {"error": "The research took too long and was stopped.", "error_code": "timeout"},
+    })
+
+
+def test_task_info_and_error_come_from_the_saved_record_on_another_worker():
+    """GET /api/v1/tasks/{id} and /error used to crash (500) for a task run by another worker."""
+    manager = TaskManager()
+    task_id = str(uuid4())
+    _saved_failure(task_id)
+
+    info = manager.get_task_info(task_id)
+    assert info is not None and info.status == "error" and info.query == "What is an example?"
+    assert info.error == "The research took too long and was stopped."
+    assert manager.get_task_error(task_id) == {
+        "message": "The research took too long and was stopped.", "error_code": "timeout"}
+    assert manager.get_task_info(str(uuid4())) is None
+
+
+def test_legacy_task_routes_answer_for_a_saved_task(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    import main
+    from app.api.endpoints import tasks as tasks_endpoint
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "API_KEY_ENABLED", False)
+    manager = TaskManager()
+    monkeypatch.setattr(tasks_endpoint, "task_manager", manager)
+    task_id = str(uuid4())
+    _saved_failure(task_id)
+
+    client = TestClient(main.app)
+    info = client.get(f"/api/v1/tasks/{task_id}")
+    assert info.status_code == 200 and info.json()["status"] == "error"
+    error = client.get(f"/api/v1/tasks/{task_id}/error")
+    assert error.status_code == 200 and error.json()["error_code"] == "timeout"

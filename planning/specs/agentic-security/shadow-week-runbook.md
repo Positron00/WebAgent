@@ -2,7 +2,9 @@
 
 Goal: run the security guard on real uat traffic for about a week in shadow mode (it checks everything and records what it would do, but blocks nothing), then decide whether checkpoint 1 can act. Triage runs its own pending shadow week at the same time (decided 2026-10-13; see section 7). Tasks 3.8 and 5.1–5.3 in [`tasks.md`](tasks.md); targets in [`requirements.md`](requirements.md) (SEC-028, SNFR-01, SNFR-05).
 
-**Status (2026-10-14):** the first week ran locally on 3.2.5 from 2026-10-13 and was stopped on 2026-10-14 to make way for releases 3.2.7–3.5.0, after 9 tasks (120 web results judged, 9 triage questions recorded). That is far short of the ~2,000 untrusted items section 5 needs, so it can't decide act mode. Its data stays in `~/webagent-uat-data` for reference. The next week starts from scratch on 3.5.0.
+**Status (2026-10-14):** the first week ran locally on 3.2.5 from 2026-10-13 and was stopped on 2026-10-14 to make way for releases 3.2.7–3.5.0, after 9 tasks (120 web results judged, 9 triage questions recorded). That is far short of the ~2,000 untrusted items section 5 needs, so it can't decide act mode. Its data stays in `~/webagent-uat-data` for reference.
+
+**Status (2026-10-17):** the second week started on **3.10.0**, on the Mac with Docker Compose (below). Data is in `~/webagent-uat-data-3.10.0`, Prometheus is at `:9090`, Grafana at `:3001` and the web app at `:3002`. Besides checkpoint 1, this week records checkpoint 2's intent signals, the nine shadow-only intent rules (3.7.0), and the shadow-only intent classifier (3.9.0).
 
 ## 1. Before deploying
 
@@ -13,17 +15,31 @@ The week runs either on one machine with Docker (how the 2026-10-13 week ran: th
 - Environment: `WEBAGENT_ENV=uat`, `WEB_CONCURRENCY=2`, a real `WEBAGENT_SECURITY_SECRET_KEY` (signs consent and approval tokens) and `WEBAGENT_API_KEY` (the web app sends the same key), plus the Together, Tavily and OpenAI keys. The guard itself uses `OPENAI_API_KEY` only if the harm judge is turned on.
 - `git lfs pull` first: the ContextDefender encoder and dataset are LFS files; without them the image has pointer files and the guard can't score.
 
-### On one machine (Docker)
+### On one machine (Docker Compose)
 
-- [ ] Build: `docker build --build-arg APP_VERSION=3.10.0 -t webagent-backend:3.10.0 backend/`.
-- [ ] Put the environment above in a file outside the repo, readable only by you (`chmod 600`), e.g. `~/webagent-uat.env`.
-- [ ] Run, keeping the data on disk, in a new folder for each week (the stopped 3.2.5 week's files are in `~/webagent-uat-data`):
-  ```bash
-  docker run -d --name webagent-uat --restart unless-stopped -p 127.0.0.1:8000:8000 --memory 3g \
-    --env-file ~/webagent-uat.env -v ~/webagent-uat-data-3.5.0:/app/data webagent-backend:3.10.0
+This is how the 3.10.0 week runs. There is no uat cluster yet. Compose brings Prometheus and Grafana, so the PromQL queries in section 3 work as written.
+
+- [ ] `git lfs pull`, then put the week's settings in a Compose override **outside the repo**, for example `~/webagent-uat-compose.yml`:
+  ```yaml
+  services:
+    webagent-backend:
+      environment:
+        - LOG_LEVEL=INFO        # uat: no DEBUG lines with model output
+        - WEB_CONCURRENCY=2
+      volumes:
+        - ${HOME}/webagent-uat-data-3.10.0:/app/data   # a new folder each week
   ```
-- [ ] Web app: in the repo's `.env.local`, `WEBAGENT_BACKEND_URL=http://127.0.0.1:8000` (the default) and the same `WEBAGENT_API_KEY`; then `npm run dev` (add `-- -p 3001` if port 3000 is taken) and set Agentic to **Always** (section 7).
-- [ ] There's no Prometheus: read the same series from `curl localhost:8000/metrics`, and the collection from `security/collected` and `triage/collected` in that folder. Latency and memory measured on a laptop don't stand in for the server: measure them once on the real host before act mode in prod.
+- [ ] From the repo root, start it in uat. The keys come from `.env.local`, and `WEBAGENT_ENV` from the shell wins:
+  ```bash
+  WEBAGENT_ENV=uat APP_VERSION=3.10.0 docker compose -f backend/docker-compose.yml \
+    -f ~/webagent-uat-compose.yml --env-file .env.local up -d --build
+  ```
+- [ ] Check it: `curl localhost:8000/api/v1/health/` says `production` (uat runs prod-like). `/api/v1/health/detailed` answers 401 without the key. `docker logs webagent-backend` shows `Environment: uat` and the ContextDefender, triage and alignment-classifier warm-ups. Prometheus (`localhost:9090/targets`) shows `webagent-backend` up.
+- [ ] Web app: `nohup npx next dev -p 3002 -H 127.0.0.1 > ~/webagent-uat-web.log 2>&1 &`. Port 3000 is a local Grafana and 3001 is the stack's. It uses `WEBAGENT_BACKEND_URL` (default `http://127.0.0.1:8000`) and the same `WEBAGENT_API_KEY` from `.env.local`. Set Agentic to **Always** (section 7).
+- [ ] Stop at the end of the week: `docker compose -f backend/docker-compose.yml down` (the data folder stays), and `pkill -f "next dev -p 3002"`.
+- [ ] Read the collection from `security/collected` and `triage/collected` in the data folder. Latency and memory measured on a laptop don't stand in for the server: measure them once on the real host before act mode in prod.
+
+The older single-container way still works without Prometheus: `docker run -d --name webagent-uat -p 127.0.0.1:8000:8000 --memory 3g --env-file ~/webagent-uat.env -v ~/webagent-uat-data-<version>:/app/data webagent-backend:<version>`. Then read the series from `curl localhost:8000/metrics`.
 
 ### In Kubernetes
 

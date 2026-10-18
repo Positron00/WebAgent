@@ -2,6 +2,8 @@
 
 This directory contains demo scripts that showcase the features and capabilities of the WebAgent platform.
 
+> The demos call the real services (Together AI, Tavily), so they use API credits, and CI doesn't run them. Some predate the security guard and triage. For using WebAgent day to day, see "Using WebAgent" in the [main README](../../README.md#using-webagent).
+
 ## Available Demos
 
 - **`multiagent_workflow_demo.py`**: Demonstrates the complete LangGraph multiagent workflow with agentic mode toggle, showing how multiple agents collaborate to solve complex research tasks.
@@ -16,9 +18,9 @@ This directory contains demo scripts that showcase the features and capabilities
 
 ### Prerequisites
 
-- Properly configured environment variables (check `.env.example` at the project root)
+- API keys in `.env.local` at the repo root (see `.env.local.example`)
 - Conda environment activated: `conda activate agents`
-- Required dependencies installed: `pip install -r ../requirements.txt`
+- Dependencies installed from the repo root: `pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt`, plus `-r backend/requirements-demos.txt` for the MLflow and plotting demos
 
 ### Execution
 
@@ -87,7 +89,7 @@ Before running the demo, make sure you have:
 
 1. Installed the required dependencies:
    ```bash
-   pip install mlflow torch transformers
+   pip install -r backend/requirements-demos.txt   # adds the full mlflow package (server and UI)
    ```
 
 2. Set up MLflow (optional, will use a local SQLite database by default):

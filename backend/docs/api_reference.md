@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.10.0).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.10.1).
 
 ## Base URL
 
@@ -230,7 +230,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.10.0",
+  "version": "3.10.1",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -370,6 +370,22 @@ Gets details about a specific task.
 }
 ```
 
+`status` is `processing`, `completed` or `error` here (`/api/task` calls the last one `failed`). Any worker can answer: a task another worker ran, or one from before a restart, is read from its saved record.
+
+### Get a Task's Result or Error
+
+**Endpoints:** `GET /tasks/{task_id}/result` and `GET /tasks/{task_id}/error`
+
+- `/result` returns the finished report. It answers 400 while the task is still running, or if it failed.
+- `/error` returns `{"message": "...", "error_code": "timeout" | "budget" | "cancelled" | "escalated"}` for a failed task. It answers 400 if the task hasn't failed.
+- Both answer 404 for an unknown task.
+
+### Create a Task (deprecated)
+
+**Endpoint:** `POST /tasks/create` with `{"query": "...", "context": {"document_id": "..."}}`. Use `POST /api/task` instead.
+
+It starts a research run in Always mode through the same intake guard and limits. The response is `{"task_id", "status": "processing", "message"}`, or an intake-guard refusal (403 or 409). `POST /chat` is the same.
+
 ### Delete Task
 
 Deletes a task and its results.
@@ -388,6 +404,60 @@ Deletes a task and its results.
 }
 ```
 
+## Documents API
+
+Documents loaded here are searched by the internal research agent. They are shared by every task on the server. IDs are UUIDs.
+
+### Upload a Document
+
+**Endpoint:** `POST /documents/upload` (multipart form)
+
+| Field | Meaning |
+|---|---|
+| `file` | The document: `.pdf`, `.docx`, `.txt`, `.md`, `.html`, `.csv` or `.json`. Other types answer 415 |
+| `metadata_json` | Optional JSON object, for example `{"category": "reports", "tags": ["financial"]}`. Invalid JSON answers 400 |
+
+**Response:** `{"id", "filename", "metadata", "upload_time", "content_preview"}`.
+
+The document is parsed, summarised, chunked into the vector store, linked in the graph store, and copied to `WEBAGENT_ARTIFACTS_PATH`. The request size limit applies.
+
+### Search Documents
+
+**Endpoint:** `POST /documents/search`
+
+```json
+{"query": "quarterly revenue", "limit": 5, "include_content": true}
+```
+
+`limit` is 1–50 (default 10). **Response:** a list of `{"id", "score", "metadata", "content"}`, where `content` is present only with `include_content`.
+
+### Get a Document
+
+**Endpoint:** `GET /documents/document/{document_id}?include_content=false`
+
+**Response:** as for upload. Unknown documents answer 404.
+
+### Related Documents
+
+**Endpoint:** `GET /documents/related/{document_id}?relationship_type=&depth=1&limit=10`
+
+`depth` is 1–3 and `limit` is 1–50. **Response:** a list of documents as for upload, from the graph store.
+
+## Direct Chat Guard
+
+**Endpoint:** `POST /api/guard/input`
+
+This is checkpoint 1 of the security guard, for chats that don't run a task. The web app's direct answers call it before calling the model.
+
+```json
+{"messages": [{"role": "user", "content": "..."}], "has_image": false, "consent_token": null}
+```
+
+- **Fields:** `messages` holds 1–60 messages of at most 100,000 characters each, and the last `user` message is the one checked. Send `consent_token` back after the user confirmed a `consent` outcome.
+- **200:** `{"outcome": "allow" | "verify", "reason", "policy_ids", "decision_id"}`. Go ahead; `verify` means a borderline case was noted.
+- **403** (declined or escalated) and **409** (consent needed): the flat refusal body, `{"code", "outcome", "reason", "policy_id", "policy_ids", "decision_id"}`. A 409 also carries `consent_token`; ask the user, then send the same messages again with that token.
+- **Shadow mode** (the current setting): the would-be outcome is recorded in metrics, logs and collection, and the response is `allow`.
+
 ## Health API
 
 ### Liveness Probe
@@ -401,7 +471,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.10.0"
+  "version": "3.10.1"
 }
 ```
 
@@ -414,7 +484,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.10.0",
+  "version": "3.10.1",
   "environment": "prod"
 }
 ```
@@ -431,7 +501,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.10.0"
+    "version": "3.10.1"
   },
   "llm_service": {
     "status": "ok",
