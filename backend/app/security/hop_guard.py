@@ -205,6 +205,15 @@ def _drop_entry(item: ContextItem, decision: Decision, partial: bool = False) ->
     return entry
 
 
+def _shadow_flag_entry(item: ContextItem, decision: Decision) -> Dict[str, Any]:
+    """A would-be drop in shadow mode: no reason or text, only what the notice email needs."""
+    return {
+        "source": item.source,
+        "ref": item.ref,
+        "policy_id": decision.policy_ids[0] if decision.policy_ids else "",
+    }
+
+
 def check_hop(
     agent: str,
     items: List[ContextItem],
@@ -264,6 +273,7 @@ def _check_hop(
     kept: List[ContextItem] = []
     decisions: List[Decision] = []
     dropped: List[Dict[str, Any]] = []
+    shadow_flagged: List[Dict[str, Any]] = []
     hop_tainted = ledger.is_tainted(state) or bool(state and state.context.get("consented"))
 
     for item, scores in zip(items, scores_list):
@@ -304,6 +314,12 @@ def _check_hop(
             kept.append(item)
             continue
 
+        if shadow:
+            # Recurring-research B0 (REC-135): shadow mode keeps the item, but records what act mode
+            # would have dropped, so notice emails can leave those sources' domains out.
+            would_be = "decline" if decision.outcome == "consent" else decision.outcome
+            if would_be in ("decline", "escalate"):
+                shadow_flagged.append(_shadow_flag_entry(item, decision))
         if effective == "consent":
             effective = "decline"  # the policy lint forbids this; treat it as decline if it happens
         if effective == "allow":
@@ -335,6 +351,8 @@ def _check_hop(
         })
         if dropped:
             ledger.get_ledger(state)["dropped"].extend(dropped)
+        if shadow_flagged:
+            ledger.get_ledger(state)["shadow_flagged"].extend(shadow_flagged)
 
     mark_hop(agent, decisions)
     return HopResult(items=kept, decisions=decisions, tainted=hop_tainted, dropped=dropped)

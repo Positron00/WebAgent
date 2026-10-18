@@ -15,6 +15,7 @@ def _empty_ledger() -> Dict[str, Any]:
         "declined_actions_in_task": 0,
         "hops": [],
         "dropped": [],
+        "shadow_flagged": [],   # would-be drops in shadow mode (recurring-research B0)
         "skipped": [],
         "approvals": [],
     }
@@ -96,6 +97,7 @@ def merge(into: WorkflowState, branches: List[WorkflowState]) -> None:
             continue
         ledger["hops"].extend(other.get("hops", []))
         ledger["dropped"].extend(other.get("dropped", []))
+        ledger["shadow_flagged"].extend(other.get("shadow_flagged", []))
         ledger["skipped"].extend(other.get("skipped", []))
         ledger["approvals"].extend(other.get("approvals", []))
         ledger["tainted"] = bool(ledger.get("tainted")) or bool(other.get("tainted"))

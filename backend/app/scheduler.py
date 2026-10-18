@@ -10,9 +10,16 @@ once, so a freed slot is used without waiting for the next minute (RNFR-01).
 `python -m app.scheduler --health` only reads `.scheduler.lock` and exits 0 when its heartbeat is
 under 180 s old (the container health check); it takes no lock and starts no loop.
 
+Phase B (REC-130, REC-131, REC-138): after a completed run with an earlier completed run, the
+scheduler asks the backend for a change summary (`POST /api/topics/{id}/summarize`), then decides
+whether to notify (`POST /api/topics/{id}/notify`); a topic put on a failures hold, or 7 days from
+its 90-day deletion, gets a notice too. Only topics with a confirmed subscriber are notified. A
+failed summary or notify call is logged by ID and never changes the run or the schedule.
+
 Imports stay light: config, the topic file helpers, `topics` (models and reads), `schedule_math`,
 `topic_runs`, `result_store`, `httpx` and the standard library. Never agents, the security guard or
-an ML library (RNFR-02). Logs carry topic and run IDs only, never a query, name or report (RNFR-03).
+an ML library (RNFR-02). Logs carry topic and run IDs only, never a query, name, report or summary
+(RNFR-03).
 """
 from __future__ import annotations
 
@@ -47,6 +54,10 @@ STALE_SECONDS = 180
 SUMMARY_TOKENS = 8000          # phase B's change summary, reserved in the worst case (REC-113)
 CREDITS_PER_PASS = 3           # two searches per pass, at most one advanced (REC-113)
 DELETE_RETRY = timedelta(hours=1)
+SUMMARY_TIMEOUT_SECONDS = 120  # one model call of at most 600 output tokens, behind the guard
+NOTIFY_TIMEOUT_SECONDS = 600   # the backend sends to up to 5 subscribers, each with a 20 s timeout and
+                               # 2 retries (2 s, 8 s backoff): up to about 5 minutes; this runs off the tick
+DELETION_NOTICE_DAYS = 7       # the deletion notice goes out this long before the 90-day deletion (REC-138)
 RUN_SECONDS_BUCKETS = (30, 60, 120, 180, 300, 600, 900, 1800)
 
 
@@ -87,6 +98,20 @@ def _usage_numbers(usage: Any) -> Dict[str, int]:
         except (TypeError, ValueError):
             out[key] = 0
     return out
+
+
+def _has_confirmed_subscriber(defn: topics.TopicDefinition) -> bool:
+    return any(sub.confirmed_at is not None for sub in defn.notify.subscribers)
+
+
+def should_notify_run(status: str, change: Optional[Dict[str, Any]], when: str) -> bool:
+    """REC-131: a failed run never notifies; a first run always does; `always` after every completed
+    run; `changes` only when the run changed (new sources, or a material summary)."""
+    if status != "completed" or not isinstance(change, dict):
+        return False
+    if change.get("first") or when == "always":
+        return True
+    return bool(change.get("changed"))
 
 
 def _bump(counter: Dict[str, Any], *path: str, by: float = 1) -> None:
@@ -278,6 +303,7 @@ class Scheduler:
         self._mu = threading.RLock()
         self.jobs: Dict[str, Job] = {}            # run_id -> job, polled now
         self.late: Dict[str, Dict[str, Any]] = {}  # run_id -> {topic_id, task_id, after}: one more poll
+        self._deletion_notices: List[str] = []     # topics whose deletion notice this tick sends
         if max_follow_up_questions is None or search_cap is None:
             agents = _agents_config()
             if max_follow_up_questions is None:
@@ -446,12 +472,16 @@ class Scheduler:
         now = now or self.now()
         deletions: List[str] = []
         late_polls: List[str] = []
+        self._deletion_notices: List[str] = []
         with self._mu:
             try:
                 deletions, late_polls = self._plan_and_start(now)
             except OSError as exc:              # disk full and the like: skip this tick (design §4)
                 logger.error("Scheduler tick failed: %s", type(exc).__name__)
                 return
+        notices, self._deletion_notices = self._deletion_notices, []
+        if notices:
+            self._background(lambda: [self.notify(topic_id, "deletion") for topic_id in notices])
         for run_id in late_polls:
             self._late_poll(run_id, now)
         for topic_id in deletions:
@@ -487,15 +517,23 @@ class Scheduler:
                     changed = True
                 since = files.parse_time(state.get("paused_since"))
                 asked = files.parse_time(state.get("deletion_requested_at"))
-                if since and now - since >= timedelta(days=self.cfg.paused_topic_days) \
-                        and (asked is None or now - asked >= DELETE_RETRY):
+                deletion_due = bool(since and now - since >= timedelta(days=self.cfg.paused_topic_days))
+                if deletion_due and (asked is None or now - asked >= DELETE_RETRY):
                     deletions.append(topic_id)
+                notice_after = timedelta(days=max(self.cfg.paused_topic_days - DELETION_NOTICE_DAYS, 0))
+                if since and not deletion_due and now - since >= notice_after \
+                        and not state.get("deletion_notice_at") and _has_confirmed_subscriber(defn):
+                    # Recorded before the call, so the notice goes out once (REC-138).
+                    state["deletion_notice_at"] = _iso(now)
+                    self._deletion_notices.append(topic_id)
+                    changed = True
                 if changed:
                     self._save_state(topic_id, state)
                 continue
             if state.get("paused_since"):
                 state["paused_since"] = None
                 state.pop("deletion_requested_at", None)
+                state.pop("deletion_notice_at", None)
                 state["next_due"] = _iso(self._next(defn, now))   # resume from the next slot
                 changed = True
             # 4. resume
@@ -709,15 +747,24 @@ class Scheduler:
 
     def finish_run(self, job: Job, outcome: Outcome) -> None:
         now = self.now()
+        follow_up = None
         with self._mu:
             self.jobs.pop(job.run_id, None)
             try:
-                self._finish(job, outcome, now)
+                follow_up = self._finish(job, outcome, now)
             except Exception as exc:  # noqa: BLE001 - never leave the job half-finished twice
                 logger.error("Recording run %s failed: %s", job.run_id, type(exc).__name__)
         self._wake.set()
+        if follow_up:
+            # Outside the lock: the summary and the email take seconds, and the tick mustn't wait.
+            try:
+                self._after_finish(follow_up)
+            except Exception as exc:  # noqa: BLE001 - phase B never affects the run or the schedule
+                logger.error("Summary or notice for run %s failed: %s", job.run_id, type(exc).__name__)
 
-    def _finish(self, job: Job, outcome: Outcome, now: datetime) -> None:
+    def _finish(self, job: Job, outcome: Outcome, now: datetime) -> Optional[Dict[str, Any]]:
+        """Record a finished run (design §9 step 9). Returns what's left to do outside the lock:
+        the change summary and the notices (phase B), or None."""
         result = outcome.result or {}
         usage = _usage_numbers(result.get("usage"))
         self._add_spending(now, usage)       # always counted, even for a deleted topic (REC-106)
@@ -730,7 +777,7 @@ class Scheduler:
         if defn is None or defn.status == "deleted":
             result_store.delete_result(job.task_id)
             logger.info("Run %s finished after topic %s was deleted", job.run_id, job.topic_id)
-            return
+            return None
 
         record = topic_runs.load(job.topic_id, job.run_id) or topic_runs.new_record(
             job.topic_id, job.run_id, job.started_at, "slot")
@@ -750,8 +797,14 @@ class Scheduler:
             record["sources"] = topic_runs.clean_sources(result.get("sources"))
             earlier = [r for r in topic_runs.list_records(job.topic_id) if r.get("run_id") != job.run_id]
             record["change"] = topic_runs.diff(record["sources"], earlier)
+            record["change"]["summary"] = None
             if record["change"]["new_sources"] and not record["change"]["first"]:
                 self._count("changes", "new_sources")
+            previous = topic_runs.previous_completed(earlier, job.run_id)
+            # Refs checkpoint 1 flagged, so the notice email leaves their domains out (REC-135).
+            record["flagged_refs"] = topic_runs.flagged_refs(result)
+        else:
+            previous = None
         topic_runs.save(record)
 
         state = topics.load_state(job.topic_id) or self._new_state(defn, now)
@@ -762,6 +815,7 @@ class Scheduler:
             "completed_at": record["completed_at"],
             "new_sources": len((record.get("change") or {}).get("new_sources") or []),
         }
+        newly_held = False
         if outcome.status == "completed":
             state["failures_in_a_row"] = 0
         else:
@@ -769,6 +823,7 @@ class Scheduler:
             if state["failures_in_a_row"] >= self.cfg.pause_after_failures \
                     and state.get("hold") != "failures":
                 self._set_hold(job.topic_id, state, "failures", now)
+                newly_held = True
         self._save_state(job.topic_id, state)
         logger.info("Run %s of topic %s %s%s", job.run_id, job.topic_id, outcome.status,
                     f" ({outcome.error_code})" if outcome.error_code else "")
@@ -778,6 +833,121 @@ class Scheduler:
             if task_id:
                 result_store.delete_result(task_id)
             self.late.pop(old.get("run_id"), None)
+
+        return {
+            "topic_id": job.topic_id,
+            "run_id": job.run_id,
+            "status": outcome.status,
+            "previous_run_id": previous.get("run_id") if previous else None,
+            "when": defn.notify.when,
+            "subscribed": _has_confirmed_subscriber(defn),
+            "hold_notice": newly_held,
+            "change": record.get("change"),
+        }
+
+    # -- phase B: summary and notices (REC-130, REC-131, REC-138) --------------------------------
+
+    def _background(self, work: Callable[[], Any]) -> None:
+        """Run `work` off the main loop (threaded mode) so a slow call can't stall the heartbeat."""
+        def guarded():
+            try:
+                work()
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Background notice failed: %s", type(exc).__name__)
+        if self.threaded:
+            threading.Thread(target=guarded, name="notify", daemon=True).start()
+        else:
+            guarded()
+
+    def _after_finish(self, follow: Dict[str, Any]) -> None:
+        topic_id, run_id = follow["topic_id"], follow["run_id"]
+        change = follow.get("change")
+        if follow["status"] == "completed" and follow.get("previous_run_id"):
+            change = self.summarize(topic_id, run_id, follow["previous_run_id"])
+        if follow["subscribed"] and should_notify_run(follow["status"], change, follow["when"]):
+            self.notify(topic_id, "run", run_id)
+        if follow["subscribed"] and follow["hold_notice"]:
+            self.notify(topic_id, "hold")
+
+    def _call_summarize(self, topic_id: str, run_id: str, previous_run_id: str):
+        """(summary, changed, tokens, error) from the backend; never raises."""
+        body = {"run_id": run_id, "previous_run_id": previous_run_id}
+        try:
+            response = self.client.post(f"/api/topics/{topic_id}/summarize", json=body,
+                                        headers=self._headers(), timeout=SUMMARY_TIMEOUT_SECONDS)
+        except httpx.HTTPError as exc:
+            logger.warning("Run %s: summary call failed (%s)", run_id, type(exc).__name__)
+            return None, False, {}, "backend_unreachable"
+        if response.status_code != 200:
+            logger.warning("Run %s: summary call answered %d", run_id, response.status_code)
+            return None, False, {}, f"http_{response.status_code}"
+        try:
+            data = response.json()
+        except ValueError:
+            data = None
+        if not isinstance(data, dict):
+            return None, False, {}, "bad_response"
+        tokens = data.get("tokens") if isinstance(data.get("tokens"), dict) else {}
+        summary = data.get("summary") if isinstance(data.get("summary"), str) else None
+        error = data.get("error") if isinstance(data.get("error"), str) else None
+        if summary is None and error is None:
+            error = "no_summary"
+        return summary, bool(data.get("changed")), tokens, error
+
+    def summarize(self, topic_id: str, run_id: str, previous_run_id: str) -> Optional[Dict[str, Any]]:
+        """Ask for the change summary and store it on the run's `change`; returns the change."""
+        summary, changed, tokens, error = self._call_summarize(topic_id, run_id, previous_run_id)
+        now = self.now()
+        with self._mu:
+            spent = {"input_tokens": 0, "output_tokens": 0, "tavily_credits": 0}
+            for ours, theirs in (("input_tokens", "input"), ("output_tokens", "output")):
+                try:
+                    spent[ours] = max(int(tokens.get(theirs) or 0), 0)
+                except (TypeError, ValueError):
+                    pass
+            if spent["input_tokens"] or spent["output_tokens"]:
+                self._add_spending(now, spent)    # counts toward the allowance (REC-130)
+            defn = topics.load_definition(topic_id)
+            record = topic_runs.load(topic_id, run_id)
+            if defn is None or defn.status == "deleted" or record is None \
+                    or record.get("status") != "completed" or not isinstance(record.get("change"), dict):
+                return None
+            change = record["change"]
+            if topic_runs.apply_summary(change, summary, changed, error):
+                self._count("changes", "summary_changed")
+            topic_runs.save(record)
+        if error:
+            logger.info("Run %s of topic %s: no summary (%s)", run_id, topic_id, change.get("summary_error"))
+        else:
+            logger.info("Run %s of topic %s: summary stored (%d chars, changed=%s)", run_id, topic_id,
+                        len(summary or ""), change.get("changed"))
+        return change
+
+    def notify(self, topic_id: str, kind: str, run_id: Optional[str] = None) -> bool:
+        """`POST /api/topics/{id}/notify` (design §12a). A failure is logged by ID only and never
+        changes the run or the schedule. True when the backend answered 200."""
+        body: Dict[str, Any] = {"kind": kind}
+        if run_id:
+            body["run_id"] = run_id
+        try:
+            response = self.client.post(f"/api/topics/{topic_id}/notify", json=body,
+                                        headers=self._headers(), timeout=NOTIFY_TIMEOUT_SECONDS)
+        except Exception as exc:  # noqa: BLE001 - email never affects a run
+            logger.warning("Topic %s: %s notice call failed (%s)", topic_id, kind, type(exc).__name__)
+            return False
+        if response.status_code != 200:
+            logger.warning("Topic %s: %s notice call answered %d", topic_id, kind, response.status_code)
+            return False
+        try:
+            data = response.json()
+        except ValueError:
+            data = {}
+        data = data if isinstance(data, dict) else {}
+        reason = data.get("reason") if isinstance(data.get("reason"), str) else None
+        logger.info("Topic %s: %s notice%s sent %s, skipped %s%s", topic_id, kind,
+                    f" for run {run_id}" if run_id else "", data.get("sent", 0), data.get("skipped", 0),
+                    f" ({reason[:40]})" if reason else "")
+        return True
 
     def _late_poll(self, run_id: str, now: datetime) -> None:
         """One more poll of a run that timed out, so the spending of a task that ran is counted."""

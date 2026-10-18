@@ -2,6 +2,31 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.12.0 - 2026-10-18
+
+Recurring research, phase B: **change summaries** and **email** for topics (recurring-research spec, tasks B0–B7). Email is off until an operator sets it up (`docs/RUNBOOK.md`, "Recurring research"); while the security guard is in shadow mode, emails carry a notice only.
+
+### Added
+- **What changed:** after a run with a previous one, a model call compares the two reports, with both scored by checkpoint 1 as untrusted input. It writes up to 5 bullets citing sources, or "No material change". It shows on each run in the topic's timeline and counts toward the monthly allowance.
+- **Email for topics:**
+  - **Subscribing:** an optional address in Track this and on the topic page, up to 5 per topic, with double opt-in.
+  - **Confirm and unsubscribe:** pages that change nothing until you press the button, because mail scanners open links. Plus RFC 8058 one-click unsubscribe.
+  - **Sending:** plain-text messages over SMTP (STARTTLS or TLS), with caps per run, per address and per day. Notices are sent on changes, or on every run.
+  - **Hold and deletion notices:** when a topic is held after failures, and 7 days before a long-paused topic is deleted.
+- **Notice and summary modes:** a notice lists only the domains of new sources that checkpoint 1 didn't flag. The summary goes into emails only with `security_guard.input_mode: act`, enforced at startup.
+- **`security.shadow_flagged`:** in shadow mode, checkpoint 1 now records the sources it would have dropped. Notices use it.
+- **Metrics and alerts:** `webagent_email_sent_total{kind, outcome}`, and a "Scheduled budget 80%" alert rule.
+
+### Security
+- **Tokens are redacted in logs:** credential query parameters (`token=`) in the backend's request log, uvicorn's access log and httpx's log. Confirm and unsubscribe tokens carry a keyed hash of the address, not the address.
+
+### Fixed (found by the end-to-end check, before release)
+- **`List-Unsubscribe` was MIME-encoded on the wire,** so mail clients couldn't use one-click unsubscribe. Messages now use the SMTP line limit.
+
+### Upgrade notes
+- **Config:** `notifications.email` (`enabled`, `transport: log|smtp`, `mode: notice|summary`) and the `WEBAGENT_SMTP_*` and `WEBAGENT_PUBLIC_URL` settings. The backend refuses to start with SMTP enabled and no host, From address or public URL, and with `mode: summary` while `input_mode` isn't `act`.
+- **Still to do** before real use: choose a provider and From address, set up SPF and DKIM, and check delivery with your own address.
+
 ## 3.11.0 - 2026-10-18
 
 Recurring research, phase A: **topics** that WebAgent researches again daily or weekly, with each run's report and new sources kept (recurring-research spec, `planning/specs/recurring-research/`). Scheduling is **off** in every environment; turn it on after shadow week 2 (`docs/RUNBOOK.md`, "Recurring research"). Email notifications come in 3.12.0.

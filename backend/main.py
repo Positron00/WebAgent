@@ -31,6 +31,9 @@ from app.api.endpoints.task import router as task_router
 from app.api.endpoints.guard import router as guard_router
 from app.api.endpoints.triage import router as triage_router
 from app.api.endpoints.topics import router as topics_router
+from app.api.endpoints.topic_notify import router as topic_notify_router
+from app.api.endpoints.topic_summary import router as topic_summary_router
+from app.api.endpoints.notify import router as notify_router
 from starlette.concurrency import run_in_threadpool
 from app.services import result_store, topics, triage_collect
 from app.security import records as security_records
@@ -123,6 +126,11 @@ app = FastAPI(
 # First add the metrics middleware to ensure all requests are tracked
 app.add_middleware(PrometheusMiddleware)
 
+# uvicorn's access log records full paths; confirm/unsubscribe tokens in them are redacted.
+from app.core.log_context import install_access_log_redaction  # noqa: E402
+
+install_access_log_redaction()
+
 # CORS, security headers, request logging and the request size limit, each added once.
 setup_middlewares(app)
 
@@ -159,6 +167,24 @@ app.include_router(
     topics_router,
     prefix="/api/topics",
     tags=["topics"],
+    dependencies=[Depends(require_api_key)],
+)
+app.include_router(
+    topic_summary_router,  # scheduler-only: require_scheduler on the router as well
+    prefix="/api/topics",
+    tags=["topics"],
+    dependencies=[Depends(require_api_key)],
+)
+app.include_router(
+    topic_notify_router,   # scheduler-only: require_scheduler on the route as well
+    prefix="/api/topics",
+    tags=["topics"],
+    dependencies=[Depends(require_api_key)],
+)
+app.include_router(
+    notify_router,
+    prefix="/api/notify",
+    tags=["notify"],
     dependencies=[Depends(require_api_key)],
 )
 

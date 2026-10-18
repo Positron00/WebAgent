@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { TopicActions } from "@/components/topics/TopicList";
 import { TopicState } from "@/components/topics/TopicState";
 import { TopicTimeline } from "@/components/topics/TopicTimeline";
+import { SubscriberList } from "@/components/topics/SubscriberList";
 import { topicsApi } from "@/utils/topicsApi";
 import { useVisibleInterval } from "@/hooks/useVisibleInterval";
 import {
@@ -45,7 +46,12 @@ export default function TopicDetailPage() {
     const fromList = list.ok
       ? list.value.find((t) => t.topicId === topicId)
       : undefined;
-    setTopic(fromList ?? one.value);
+    // Only the definition lists the subscribers, so they're taken from it.
+    setTopic(
+      fromList
+        ? { ...fromList, subscribers: one.value?.subscribers }
+        : one.value,
+    );
     setError(one.value || fromList ? null : "This topic couldn't be read.");
     if (history.ok) setRuns(history.value);
   }, [topicId]);
@@ -111,6 +117,11 @@ export default function TopicDetailPage() {
                 onDeleted={() => router.push("/topics")}
               />
             </header>
+            <SubscriberList
+              topicId={topic.topicId}
+              subscribers={topic.subscribers ?? []}
+              onChanged={() => void load()}
+            />
             <h2 className="text-lg font-medium text-gray-200 mb-4">Runs</h2>
             <TopicTimeline topicId={topic.topicId} runs={runs} />
           </>

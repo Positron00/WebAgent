@@ -90,6 +90,10 @@ agents:
   team_manager:
     model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.4
+  topic_summary:
+    model: "meta-models/Muse-Glimmer-30B"
+    # The change summary between two scheduled runs: at most 5 bullets (REC-130).
+    max_tokens: 600
 
 security_guard:
   enabled: true

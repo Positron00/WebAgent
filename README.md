@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.11.0-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.12.0-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2026--10--18-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent research assistant. Ask a question in the chat. WebAgent then either answers it directly in a few seconds, or sends it to a team of research agents. The agents search the web and your own documents, check each other's work, and return a sourced report in a few minutes. A security guard checks everything the models read and every tool call they make.
@@ -23,7 +23,7 @@ WebAgent is non-commercial and licensed under MIT.
 
 - **Answers or researches, per question.** The **Agentic** control picks the path: **Off** always answers directly, **Always** always researches, and **Auto** lets a local classifier decide in about 10 ms. Each answer is labelled "Answered directly" or "Deep research".
 - **Researches in rounds.** A supervisor plans the research. Web and internal research run in parallel. A senior research agent scores the findings and asks for further rounds until they are good enough, or the round limit is reached: 3 in dev and uat, 5 in prod. A team manager then writes the report, calling a data analyst or a coding assistant when the question needs one. Model-written code runs in a sandbox, never in the server.
-- **Tracks topics.** **Track this** under a research answer turns its question into a topic that WebAgent researches again daily or weekly. Each run's report is kept with the sources that are new since the last runs. A small scheduler starts the runs through the normal task path; it's off until an operator turns it on, and a monthly allowance caps what scheduled runs can spend.
+- **Tracks topics.** **Track this** under a research answer turns its question into a topic that WebAgent researches again daily or weekly. Each run's report is kept with the sources that are new since the last runs and a short summary of what changed. Confirmed subscribers can get an email. A small scheduler starts the runs through the normal task path; it's off until an operator turns it on, and a monthly allowance caps what scheduled runs can spend.
 - **Uses your documents.** Documents (PDF, Word, text, Markdown, HTML, CSV, JSON) loaded through the API or the batch loader are chunked into a vector store. Their relationships go into a graph store, and internal research searches them with semantic and keyword (BM25) retrieval.
 - **Guards the models.**
   - Checkpoint 1 scores every piece of text before a model reads it: the question, earlier turns, web pages, documents and code output. It drops injected web content and declines harmful requests.
@@ -126,8 +126,8 @@ Every model call in the workflow passes checkpoint 1. Every web search, internal
 ### Tracking a topic
 
 1. Under a research answer, choose **Track this**. The form fills in the question the research used.
-2. Pick daily or weekly, a day and time (in your browser's time zone), and whether to notify on every run or only when something changes. Notifications by email come in 3.12.0.
-3. **Topics** (the clock link in the chat toolbar) lists every topic with its state, next and last run. Each topic's page shows its runs, newest first, with the new sources and the full stored report.
+2. Pick daily or weekly, a day and time (in your browser's time zone), and whether to notify on every run or only when something changes. Optionally add an email address. WebAgent sends a confirmation link first, and nothing else until it's confirmed. Every email has an unsubscribe link.
+3. **Topics** (the clock link in the chat toolbar) lists every topic with its state, next and last run. Each topic's page shows its runs, newest first, with the new sources, a short **what changed** summary of each run against the one before, and the full stored report. Email addresses are managed there too.
 4. From the list:
    - **Run now** queues an extra run.
    - **Pause** stops the schedule.
@@ -229,7 +229,7 @@ npm run dev                   # web app on http://localhost:3000 (add -- -p 3002
 
 ## Deploying
 
-- **Docker:** `docker build --build-arg APP_VERSION=3.11.0 -t webagent/backend:3.11.0 backend/`. The image runs as `prod` and as a non-root user, and starts only with `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY` set. Run `git lfs pull` first. See [backend/README.md](backend/README.md#running-with-docker).
+- **Docker:** `docker build --build-arg APP_VERSION=3.12.0 -t webagent/backend:3.12.0 backend/`. The image runs as `prod` and as a non-root user, and starts only with `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY` set. Run `git lfs pull` first. See [backend/README.md](backend/README.md#running-with-docker).
 - **Kubernetes:** see [backend/kubernetes/README.md](backend/kubernetes/README.md). `deploy.sh` needs `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD`.
 - **Vercel** (web app only): see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Agentic modes need `WEBAGENT_BACKEND_URL` pointing at a running backend.
 - **Operating it:** deploys, rollback, key rotation, backups, spending caps, alerts and the security guard's modes are covered in [docs/RUNBOOK.md](docs/RUNBOOK.md).
@@ -262,7 +262,7 @@ python -m backend.diagnostics.runners.run_all     # system diagnostics
 
 ## What WebAgent doesn't do
 
-- **No email or other notifications yet.** Topics are researched on schedule and their history is kept (3.11.0), but email arrives in 3.12.0. The operator alerts are in Grafana (drift, errors, rate limits, token use, scheduler down).
+- **Email is a notice while the guard is in shadow mode.** Topic emails say a topic has a new report and list the new sources' domains, with a link back. The what-changed summary goes into emails only once the security guard's checkpoint 1 acts, because until then injected web content isn't removed. Email is the only notification channel. The operator alerts are in Grafana (drift, errors, rate limits, token use, scheduler down, scheduled budget).
 - **No per-user accounts or private spaces.** The access code is shared, and loaded documents and topics are shared by every user of the server.
 - **No document upload in the web app.** Use the API or the batch loader.
 - **Images are used only by direct answers,** not by the research agents.

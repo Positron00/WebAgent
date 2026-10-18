@@ -262,17 +262,23 @@ describe("/api/topics proxies", () => {
           notify: { when: "always" },
           status: "paused",
           add_subscriber: "a@example.com",
+          remove_subscriber: "b@example.com",
+          subscribers: [{ email: "c@example.com", confirmed_at: "now" }],
           resumes: 5,
           query: "changed",
         }),
       }),
       ctx({ topicId: TOPIC }),
     );
+    // Phase B adds add_subscriber and remove_subscriber; a subscriber list (which could mark an
+    // address confirmed) is never forwarded
     expect(JSON.parse(forwarded().init.body)).toEqual({
       name: "n",
       schedule: { every: "day", time: "08:00", tz: "UTC" },
       notify: { when: "always" },
       status: "paused",
+      add_subscriber: "a@example.com",
+      remove_subscriber: "b@example.com",
     });
   });
 

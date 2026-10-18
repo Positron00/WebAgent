@@ -115,6 +115,50 @@ def diff(sources: List[Any], previous_runs: List[Dict[str, Any]]) -> Dict[str, A
     return {"first": False, "new_sources": new, "dropped_sources": dropped, "changed": bool(new)}
 
 
+NO_CHANGE = "No material change"     # the change summary's answer when nothing material changed
+
+
+def previous_completed(records: List[Dict[str, Any]], run_id: str) -> Optional[Dict[str, Any]]:
+    """The newest completed run other than `run_id` (records newest first), or None."""
+    for record in records:
+        if record.get("run_id") != run_id and record.get("status") == "completed":
+            return record
+    return None
+
+
+def apply_summary(change: Dict[str, Any], summary: Optional[str], summary_changed: bool,
+                  error: Optional[str]) -> bool:
+    """Put the change summary (REC-130) on a run's `change`; True when the summary itself reports
+    a material change. `change.changed` becomes true also for a summary other than "No material
+    change" (REC-131). A failed call keeps the source diff, with `summary_error`."""
+    if error or not isinstance(summary, str):
+        change["summary"] = None
+        change["summary_error"] = str(error or "no_summary")[:100]
+        return False
+    change["summary"] = summary
+    change.pop("summary_error", None)
+    material = bool(summary_changed) and summary.strip() != NO_CHANGE
+    if material:
+        change["changed"] = True
+    return material
+
+
+def flagged_refs(result: Any) -> List[str]:
+    """Refs checkpoint 1 flagged in a task result: `security.dropped` (act mode) and
+    `security.shadow_flagged` (shadow mode), in order and without duplicates (REC-135)."""
+    security = result.get("security") if isinstance(result, dict) else None
+    if not isinstance(security, dict):
+        return []
+    out: List[str] = []
+    for key in ("dropped", "shadow_flagged"):
+        rows = security.get(key)
+        for row in rows if isinstance(rows, list) else []:
+            ref = row.get("ref") if isinstance(row, dict) else None
+            if isinstance(ref, str) and ref.strip() and ref not in out:
+                out.append(ref)
+    return out
+
+
 # --- records --------------------------------------------------------------------------------------
 
 def _iso(moment: datetime) -> str:
@@ -138,6 +182,7 @@ def new_record(topic_id: str, run_id: str, started_at: datetime, trigger: str) -
         "report": None,
         "sources": [],
         "change": None,
+        "flagged_refs": [],
     }
 
 

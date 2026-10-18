@@ -254,7 +254,22 @@ def verify(token: str, purpose: str) -> Optional[Tuple[str, str]]   # (topic_id,
 - **Notice domains:** they come from the run's sources whose URL isn't in the result's `security.dropped` refs (act mode) or `security.shadow_flagged` refs (shadow mode).
   - `security.shadow_flagged` is new (task B0). Today `hop_guard.check_hop` records nothing per item in shadow mode, because the effective outcome is `allow`.
   - B0 adds `{source, ref, policy_id}` entries for items whose would-be outcome was `decline` or `escalate`, to the ledger and the security block. `ledger.merge` must carry the list across the parallel agents.
-- **Routes:** `GET /api/notify/lookup?token=…` verifies a confirm or unsubscribe token and returns only `{topic_name, purpose}`. It is read-only, and the web app's notify pages use it to show the name. `POST /api/notify/confirm` and `POST /api/notify/unsubscribe` take `{token}`. The one-click route also takes a form-encoded `List-Unsubscribe=One-Click` body with the token in the query. All are public: no API key, rate-limited per caller.
+- **Routes:** `GET /api/notify/lookup?token=…` verifies a confirm or unsubscribe token and returns only `{topic_name, purpose}`. It is read-only, and the web app's notify pages use it to show the name. `POST /api/notify/confirm` and `POST /api/notify/unsubscribe` take `{token}`. The one-click route also takes a form-encoded `List-Unsubscribe=One-Click` body with the token in the query. They need the API key (§12a): they're public only in the web app, whose proxies add it.
+
+## 12a. Phase B contracts (fixed before the phase B work, 2026-10-18)
+
+| Interface | Shape |
+|---|---|
+| `POST /api/topics/{id}/summarize` | Scheduler token and API key. Body `{run_id, previous_run_id}`. Response `{summary: str or null, changed: bool, tokens: {input, output}, error?: str}`. Module `app/api/endpoints/topic_summary.py` |
+| `POST /api/topics/{id}/notify` | Scheduler token and API key. Body `{kind: "run", "hold" or "deletion", run_id?}`. Response `{sent: int, skipped: int, reason?: str}`. Module `app/api/endpoints/topic_notify.py`. A backend-side failure is a 200 with `reason`; a run never fails because of email |
+| `GET /api/notify/lookup?token=…` | API key (the web app's server adds it). Response `{topic_name, purpose: "confirm" or "unsubscribe"}`, or 404 for an invalid or expired token. Read-only |
+| `POST /api/notify/confirm` | API key. Body `{token}`. Response `{status: "confirmed"}`; 404 if invalid, used or expired |
+| `POST /api/notify/unsubscribe` | API key. Body `{token}` (JSON), or form `List-Unsubscribe=One-Click` with `?token=` in the query. Response `{status: "unsubscribed"}`, idempotent; 404 if invalid |
+| `PATCH /api/topics/{id}` | Adds `add_subscriber: "<email>"` and `remove_subscriber: "<email>"`. Adding answers 409 `subscriber_limit` past 5, and sends one confirmation (§12) |
+| Run record, written by the scheduler | `change.summary` (str or null), `change.summary_error` (str, when the call failed), `change.changed` (now also true for a summary other than "No material change"), and `flagged_refs` (a list of URLs). `flagged_refs` are the refs from the result's `security.dropped` and `security.shadow_flagged`, so the notice email can leave those domains out |
+| `security.shadow_flagged` | A list of `{source, ref, policy_id}`, added by `hop_guard.check_hop` in shadow mode for untrusted items whose would-be outcome was `decline` or `escalate`. Merged by `ledger.merge`, and returned by `TaskManager._security_block` |
+
+The backend's public notify routes require the API key. They're public only in the web app, whose proxies add the key. A mail client's one-click POST goes to the web app's `/api/notify/unsubscribe`, which forwards it.
 
 ## 13. Configuration (`config_def.py`)
 

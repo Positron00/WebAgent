@@ -9,6 +9,7 @@ This module provides various middleware including:
 import time
 import uuid
 from typing import Callable, Dict
+from app.core.log_context import redact_url
 
 from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -53,7 +54,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # Log request details
         client_host = request.client.host if request.client else "unknown"
         method = request.method
-        url = str(request.url)
+        url = redact_url(str(request.url))   # confirm/unsubscribe tokens are credentials
         
         logger.info(
             f"Request: {method} {url} - Client: {client_host} - ID: {request_id}"

@@ -4,7 +4,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Modal } from "./Modal";
 import { topicsApi } from "@/utils/topicsApi";
+import { CONFIRMATION_HINT } from "./SubscriberList";
 import {
+  INVALID_EMAIL_MESSAGE,
+  isPlausibleEmail,
   WEEKDAYS,
   WEEKDAY_NAMES,
   type NotifyWhen,
@@ -67,12 +70,19 @@ export function TrackThisDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailResult, setEmailResult] = useState<
+    { ok: true; address: string } | { ok: false; message: string } | null
+  >(null);
 
+  const address = email.trim();
+  const emailInvalid = address.length > 0 && !isPlausibleEmail(address);
   const canSubmit =
     !busy &&
     name.trim().length > 0 &&
     query.trim().length > 0 &&
-    /^\d{2}:\d{2}$/.test(time);
+    /^\d{2}:\d{2}$/.test(time) &&
+    !emailInvalid;
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -91,13 +101,31 @@ export function TrackThisDialog({
       notify: { when: notifyWhen },
       created_from_task: taskId,
     });
-    setBusy(false);
-    if (result.ok) {
-      setCreated(true);
-      onCreated?.();
-    } else {
+    if (!result.ok) {
+      setBusy(false);
       setError(result.message);
+      return;
     }
+    // Phase B: the address goes in a second call, the PATCH that sends the confirmation (REC-133).
+    if (address) {
+      const topicId =
+        result.value &&
+        typeof result.value === "object" &&
+        typeof (result.value as { topic_id?: unknown }).topic_id === "string"
+          ? (result.value as { topic_id: string }).topic_id
+          : null;
+      const added = topicId
+        ? await topicsApi.addSubscriber(topicId, address)
+        : ({ ok: false, message: "The topic's ID was missing." } as const);
+      setEmailResult(
+        added.ok
+          ? { ok: true, address }
+          : { ok: false, message: added.message },
+      );
+    }
+    setBusy(false);
+    setCreated(true);
+    onCreated?.();
   };
 
   const inputClass =
@@ -117,7 +145,18 @@ export function TrackThisDialog({
             Topics
           </Link>
           .
+          {emailResult?.ok &&
+            ` A confirmation link was sent to ${emailResult.address}.`}
         </p>
+        {emailResult && !emailResult.ok && (
+          <p
+            role="alert"
+            className="text-sm text-amber-200 bg-amber-900/30 rounded px-2 py-1.5 mb-5"
+          >
+            The topic was created, but the email address wasn&apos;t added:{" "}
+            {emailResult.message} You can add it on the topic&apos;s page.
+          </p>
+        )}
         <div className="flex justify-end">
           <button
             type="button"
@@ -251,6 +290,25 @@ export function TrackThisDialog({
             </label>
           </div>
         </fieldset>
+        <div>
+          <label htmlFor="track-email" className={labelClass}>
+            Email (optional)
+          </label>
+          <input
+            id="track-email"
+            type="email"
+            autoComplete="email"
+            className={inputClass}
+            value={email}
+            maxLength={254}
+            aria-describedby="track-email-hint"
+            aria-invalid={emailInvalid || undefined}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <p id="track-email-hint" className="mt-1 text-xs text-gray-400">
+            {emailInvalid ? INVALID_EMAIL_MESSAGE : CONFIRMATION_HINT}
+          </p>
+        </div>
         {error && (
           <p
             role="alert"
