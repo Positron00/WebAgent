@@ -32,3 +32,26 @@ groups:
         annotations:
           summary: The scheduler's heartbeat is more than 10 minutes old while scheduling is enabled; no scheduled run starts.
           runbook: docs/RUNBOOK.md#recurring-research
+      - uid: webagent-scheduled-budget-80
+        title: Scheduled budget 80%
+        condition: C
+        data:
+          # 1 when either kind (credits or dollars) has used 80% of this month's allowance (REC-139); else 0.
+          # A zero limit is left out (no allowance configured), and no topic metrics also give 0.
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: '(max((webagent_topic_budget_used / on(kind) (webagent_topic_budget_limit > 0)) >= bool 0.8)) or vector(0)'
+              instant: true
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        labels: {severity: warning, service: scheduler}
+        annotations:
+          summary: Scheduled runs have used 80% or more of this month's allowance (Tavily credits or Together dollars); at 100% every topic is held.
+          runbook: docs/RUNBOOK.md#recurring-research

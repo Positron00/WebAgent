@@ -20,7 +20,7 @@ const invalidJson = () =>
   NextResponse.json({ error: "invalid_json" }, { status: 400 });
 
 /** Reads the body as text, stopping as soon as it passes `limit` bytes. */
-async function readLimited(
+export async function readLimited(
   req: Request,
   limit: number,
 ): Promise<string | null> {

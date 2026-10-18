@@ -41,6 +41,17 @@ export interface TopicLastRun {
   runId?: string;
 }
 
+/** An email subscriber (phase B); only the single-topic reply (the definition) lists them. */
+export interface TopicSubscriber {
+  email: string;
+  confirmed: boolean;
+  addedAt?: string;
+  confirmedAt?: string;
+}
+
+/** The backend's cap (`max_subscribers_per_topic`). */
+export const MAX_SUBSCRIBERS = 5;
+
 export interface TopicSummary {
   topicId: string;
   name: string;
@@ -55,6 +66,8 @@ export interface TopicSummary {
   skipped?: { reason: SkipReason; at?: string };
   /** True when the backend says a run is starting or running. */
   running: boolean;
+  /** Present when the reply listed `notify.subscribers` (the definition does; the list doesn't). */
+  subscribers?: TopicSubscriber[];
 }
 
 export interface RunChange {
@@ -139,6 +152,26 @@ const RUNNING_STATUSES = new Set([
   "queued",
 ]);
 
+function parseSubscriber(data: unknown): TopicSubscriber | null {
+  if (!isObj(data)) return null;
+  const email = str(data.email);
+  if (!email) return null;
+  const confirmedAt = str(data.confirmed_at) || undefined;
+  return {
+    email,
+    confirmed: data.confirmed === true || !!confirmedAt,
+    ...(str(data.added_at) ? { addedAt: str(data.added_at) } : {}),
+    ...(confirmedAt ? { confirmedAt } : {}),
+  };
+}
+
+export function parseSubscribers(data: unknown): TopicSubscriber[] | undefined {
+  if (!Array.isArray(data)) return undefined;
+  return data
+    .map(parseSubscriber)
+    .filter((s): s is TopicSubscriber => s !== null);
+}
+
 export function parseTopicSummary(data: unknown): TopicSummary | null {
   if (!isObj(data)) return null;
   const topicId = str(data.topic_id);
@@ -158,6 +191,7 @@ export function parseTopicSummary(data: unknown): TopicSummary | null {
         ? "paused"
         : "active";
   const lastRun = parseLastRun(data.last_run);
+  const subscribers = parseSubscribers(notify.subscribers);
   const skipped =
     isObj(data.skipped) &&
     (data.skipped.reason === "daily_cap" || data.skipped.reason === "budget")
@@ -170,7 +204,7 @@ export function parseTopicSummary(data: unknown): TopicSummary | null {
     query: str(data.query) ?? "",
     schedule,
     notifyWhen,
-    subscriberCount: num(data.subscriber_count) ?? 0,
+    subscriberCount: num(data.subscriber_count) ?? subscribers?.length ?? 0,
     state,
     nextDue: str(data.next_due),
     lastRun,
@@ -179,6 +213,7 @@ export function parseTopicSummary(data: unknown): TopicSummary | null {
     running:
       data.running === true ||
       (!!lastRun?.status && RUNNING_STATUSES.has(lastRun.status)),
+    ...(subscribers ? { subscribers } : {}),
   };
 }
 
@@ -275,6 +310,10 @@ export function parseRunDetail(data: unknown): TopicRunDetail | null {
 
 export const TOPIC_LIMIT_MESSAGE =
   "You have 10 active topics; pause or delete one first.";
+export const SUBSCRIBER_LIMIT_MESSAGE = `This topic already has ${MAX_SUBSCRIBERS} email addresses; remove one first.`;
+export const EMAIL_DISABLED_MESSAGE =
+  "Email isn't turned on for this WebAgent, so addresses can't be added.";
+export const INVALID_EMAIL_MESSAGE = "That email address isn't valid.";
 
 /** The backend's error body may be top-level or wrapped in FastAPI's `detail`. */
 function errorBody(body: unknown): Obj {
@@ -287,8 +326,17 @@ const GUARD_CODES = new Set(["declined", "escalated", "consent_required"]);
 /** A user-facing sentence for a failed topic call. */
 export function topicErrorMessage(status: number, body: unknown): string {
   const b = errorBody(body);
-  const code = str(b.code);
+  // The code may be `code`, `error` or a bare string `detail` (FastAPI's HTTPException).
+  const code =
+    str(b.code) ??
+    str(b.error) ??
+    (typeof b.detail === "string" && /^[a-z_]+$/.test(b.detail)
+      ? b.detail
+      : undefined);
   if (code === "topic_limit") return TOPIC_LIMIT_MESSAGE;
+  if (code === "subscriber_limit") return SUBSCRIBER_LIMIT_MESSAGE;
+  if (code === "email_disabled") return EMAIL_DISABLED_MESSAGE;
+  if (code === "invalid_email") return INVALID_EMAIL_MESSAGE;
   if ((code && GUARD_CODES.has(code)) || (status === 403 && str(b.reason))) {
     const reason = (str(b.reason) || "it was blocked")
       .trim()
@@ -378,4 +426,14 @@ export function changeInWords(change?: RunChange): string {
   if (change.summary?.length) return change.summary.join(" · ");
   const n = change.newSources;
   return n === 1 ? "1 new source" : `${n} new sources`;
+}
+
+/** The backend's rule (one @, a domain with a dot, at most 254 characters), checked early. */
+export function isPlausibleEmail(value: string): boolean {
+  const v = value.trim();
+  if (!v || v.length > 254 || /\s/.test(v)) return false;
+  const parts = v.split("@");
+  if (parts.length !== 2 || !parts[0]) return false;
+  const domain = parts[1];
+  return /^[^.]+(\.[^.]+)+$/.test(domain);
 }

@@ -72,7 +72,10 @@ describe("TrackThisDialog", () => {
     expect(screen.getByLabelText("Weekday")).toHaveValue("wed");
     expect(screen.getByLabelText("Time")).toHaveValue("07:30");
     expect(screen.getByLabelText("Something changes")).toBeChecked();
-    expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Email (optional)")).toHaveValue("");
+    expect(
+      screen.getByText("We'll send a confirmation link first."),
+    ).toBeInTheDocument();
   });
 
   it("shows the browser's time zone read-only", () => {
@@ -170,6 +173,80 @@ describe("TrackThisDialog", () => {
     expect(onCreated).not.toHaveBeenCalled();
     // The form stays open so the user can change it
     expect(screen.getByRole("button", { name: "Create topic" })).toBeEnabled();
+  });
+
+  it("sends no subscriber call without an email", async () => {
+    fetchMock.mockResolvedValue(reply(201, { topic_id: "t1" }));
+    const { onCreated } = renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Create topic" }));
+    await waitFor(() => expect(onCreated).toHaveBeenCalled());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).notify).toEqual({
+      when: "changes",
+    });
+  });
+
+  it("adds the email with a PATCH after the topic is created", async () => {
+    const TOPIC = "6f1d3b0e-6c1b-4f7e-9a51-2b7a1c0d9e11";
+    fetchMock
+      .mockResolvedValueOnce(reply(201, { topic_id: TOPIC }))
+      .mockResolvedValueOnce(reply(200, { topic_id: TOPIC }));
+    const { onCreated } = renderDialog({ title: "DB comparison" });
+    fireEvent.change(screen.getByLabelText("Email (optional)"), {
+      target: { value: " me@example.org " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create topic" }));
+
+    await waitFor(() => expect(onCreated).toHaveBeenCalled());
+    const [createUrl, createInit] = fetchMock.mock.calls[0];
+    expect(createUrl).toBe("/api/topics");
+    // The address isn't part of the create body
+    expect(JSON.parse(createInit.body)).not.toHaveProperty("add_subscriber");
+    expect(JSON.parse(createInit.body).notify).toEqual({ when: "changes" });
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(url).toBe(`/api/topics/${TOPIC}`);
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(init.body)).toEqual({ add_subscriber: "me@example.org" });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "A confirmation link was sent to me@example.org.",
+    );
+  });
+
+  it.each([
+    [{ code: "email_disabled" }, "Email isn't turned on for this WebAgent"],
+    [{ code: "subscriber_limit" }, "already has 5 email addresses"],
+  ])(
+    "says the topic was made when adding the email fails with %j",
+    async (body, message) => {
+      fetchMock
+        .mockResolvedValueOnce(reply(201, { topic_id: "t1" }))
+        .mockResolvedValueOnce(reply(409, body));
+      const { onCreated } = renderDialog();
+      fireEvent.change(screen.getByLabelText("Email (optional)"), {
+        target: { value: "me@example.org" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Create topic" }));
+      await waitFor(() => expect(onCreated).toHaveBeenCalled());
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveTextContent(
+        "The topic was created, but the email address wasn't added",
+      );
+      expect(alert).toHaveTextContent(message);
+      expect(screen.getByRole("status")).not.toHaveTextContent(
+        "confirmation link",
+      );
+    },
+  );
+
+  it("won't submit an address that isn't valid", () => {
+    renderDialog();
+    fireEvent.change(screen.getByLabelText("Email (optional)"), {
+      target: { value: "me@nowhere" },
+    });
+    expect(
+      screen.getByText("That email address isn't valid."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create topic" })).toBeDisabled();
   });
 
   it("won't submit an empty question", () => {

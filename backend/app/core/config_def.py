@@ -133,6 +133,8 @@ class AgentsConfig(BaseModel):
     coding: CodingAgentConfig = Field(default_factory=CodingAgentConfig)
     team_manager: AgentConfig = Field(default_factory=AgentConfig)
     document_extraction: AgentConfig = Field(default_factory=AgentConfig)
+    # The change summary between two scheduled runs (recurring-research REC-130): short output.
+    topic_summary: AgentConfig = Field(default_factory=lambda: AgentConfig(max_tokens=600))
 
 
 class LoggingConfig(BaseModel):

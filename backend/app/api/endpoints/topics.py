@@ -7,7 +7,7 @@ name or addresses (RNFR-03). Phase B adds the scheduler-only `summarize` and `no
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import JSONResponse
@@ -22,6 +22,7 @@ from app.models.task import WorkflowState
 from app.security.errors import GuardStop
 from app.security.hop_guard import check_hop
 from app.security.types import ContextItem
+from app.services import notify_email
 from app.services import topic_files as files
 from app.services import topics
 from app.services.topics import Schedule, TopicDefinition
@@ -71,6 +72,8 @@ class TopicPatch(BaseModel):
     schedule: Optional[Schedule] = None
     notify: Optional[NotifySettings] = None
     status: Optional[Literal["active", "paused"]] = None
+    add_subscriber: Optional[str] = None       # phase B (REC-133): an unconfirmed entry and one confirmation
+    remove_subscriber: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -82,6 +85,17 @@ class TopicPatch(BaseModel):
             raise ValueError("name must not be empty")
         return value
 
+    @field_validator("add_subscriber", "remove_subscriber")
+    @classmethod
+    def _address(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        # The same rules as stored subscribers: one @, a domain with a dot, at most 254 characters.
+        value = value.strip().lower()
+        if len(value) > 254 or not topics._EMAIL.match(value) or topics._CONTROL.search(value):
+            raise ValueError("not a valid email address")
+        return value
+
 
 # --- helpers ---------------------------------------------------------------------------------------
 
@@ -91,6 +105,10 @@ class _Gone(Exception):
 
 class _TopicLimit(Exception):
     """Activating the topic would pass `schedule.max_active_topics`."""
+
+
+class _SubscriberLimit(Exception):
+    """Adding the address would pass `notifications.email.max_subscribers_per_topic`."""
 
 
 def _not_found() -> HTTPException:
@@ -268,10 +286,19 @@ async def get_topic(topic_id: str) -> Dict[str, Any]:
     return {**defn.model_dump(mode="json"), **await run_in_threadpool(_schedule_view, defn)}
 
 
+def _email_error(status: int, code: str, message: str, **extra: Any) -> JSONResponse:
+    return JSONResponse(status_code=status, content={**error_body(code, message), "code": code, **extra})
+
+
 @router.patch("/{topic_id}")
 async def patch_topic(topic_id: str, req: TopicPatch):
     _live(topic_id)
     fields = req.model_dump(exclude_unset=True)
+    adding = req.add_subscriber
+    if adding is not None and not notify_email.email_enabled():
+        return _email_error(409, "email_disabled", "Email notifications are turned off on this instance")
+    limit = settings.NOTIFICATIONS.email.max_subscribers_per_topic
+    confirm_needed: List[bool] = []
 
     def change(defn: TopicDefinition) -> None:
         if req.name is not None:
@@ -282,13 +309,39 @@ async def patch_topic(topic_id: str, req: TopicPatch):
             defn.notify.when = req.notify.when
         if req.status is not None:
             defn.status = req.status
+        if req.remove_subscriber is not None:
+            defn.notify.subscribers = [s for s in defn.notify.subscribers if s.email != req.remove_subscriber]
+        if adding is not None:
+            now = files.utcnow()
+            # Expired unconfirmed entries don't hold a place (REC-115).
+            defn.notify.subscribers = [
+                s for s in defn.notify.subscribers if not notify_email.expired_unconfirmed(s, now)
+            ]
+            existing = next((s for s in defn.notify.subscribers if s.email == adding), None)
+            if existing is not None:
+                if existing.confirmed_at is None:   # asked again: one more confirmation (capped per day)
+                    existing.added_at = now
+                    confirm_needed.append(True)
+                return
+            if len(defn.notify.subscribers) >= limit:
+                raise _SubscriberLimit()
+            defn.notify.subscribers.append(topics.Subscriber(email=adding, added_at=now))
+            confirm_needed.append(True)
 
     try:
         updated = await run_in_threadpool(_update, topic_id, change, activates=req.status == "active")
     except _TopicLimit:
         return _topic_limit_response()
+    except _SubscriberLimit:
+        return _email_error(409, "subscriber_limit", f"At most {limit} addresses per topic", limit=limit)
     logger.info("Topic %s updated (%s)", topic_id, ",".join(sorted(fields)) or "nothing")
-    return {**updated.model_dump(mode="json"), **await run_in_threadpool(_schedule_view, updated)}
+    body = {**updated.model_dump(mode="json"), **await run_in_threadpool(_schedule_view, updated)}
+    if adding is not None:
+        body["confirmation"] = (
+            await run_in_threadpool(notify_email.send_confirmation, topic_id, updated.name, adding)
+            if confirm_needed else "not_needed"
+        )
+    return body
 
 
 @router.delete("/{topic_id}", status_code=204)

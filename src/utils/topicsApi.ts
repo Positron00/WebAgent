@@ -70,6 +70,13 @@ export const topicsApi = {
     }>,
   ): Promise<TopicResult<unknown>> =>
     call(one(id), json("PATCH", change), (b) => b),
+  addSubscriber: (id: string, email: string): Promise<TopicResult<unknown>> =>
+    call(one(id), json("PATCH", { add_subscriber: email }), (b) => b),
+  removeSubscriber: (
+    id: string,
+    email: string,
+  ): Promise<TopicResult<unknown>> =>
+    call(one(id), json("PATCH", { remove_subscriber: email }), (b) => b),
   remove: (id: string): Promise<TopicResult<null>> =>
     call(one(id), { method: "DELETE" }, () => null),
   runNow: (id: string): Promise<TopicResult<unknown>> =>

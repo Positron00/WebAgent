@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { NextRequest } from "next/server";
-import { config, middleware } from "@/middleware";
+import { config, middleware, NOTIFY_PUBLIC_PATHS } from "@/middleware";
 import { createSession } from "@/utils/session";
 import { safeNextPath } from "@/utils/safeNext";
 
@@ -198,6 +198,73 @@ describe("matcher", () => {
     "/manifest.json",
     "/logo.svg",
   ])("leaves %s open", (path) => expect(matcher.test(path)).toBe(false));
+});
+
+describe("public notify routes (REC-134, RNFR-06)", () => {
+  const matcher = new RegExp(`^${config.matcher[0]}$`);
+
+  it("pins the list of public notify routes", () => {
+    expect([...NOTIFY_PUBLIC_PATHS]).toEqual([
+      "/notify/confirm",
+      "/notify/unsubscribe",
+      "/api/notify/confirm",
+      "/api/notify/unsubscribe",
+    ]);
+    // And the matcher's exclusions are exactly the known ones plus these four
+    const exclusions = config.matcher[0]
+      .replace(/^\/\(\(\?!/, "")
+      .replace(/\)\.\*\)$/, "")
+      .split("|");
+    expect(exclusions).toEqual([
+      "_next/static",
+      "_next/image",
+      "favicon.ico",
+      "icons/",
+      "manifest.json",
+      ".*\\.svg$",
+      "login",
+      "api/auth/login",
+      "api/health",
+      "notify/confirm$",
+      "notify/unsubscribe$",
+      "api/notify/confirm$",
+      "api/notify/unsubscribe$",
+    ]);
+  });
+
+  it.each([...NOTIFY_PUBLIC_PATHS])("leaves %s open", (path) =>
+    expect(matcher.test(path)).toBe(false),
+  );
+
+  it.each([
+    "/notify",
+    "/notify/",
+    "/notifyx",
+    "/notify/confirmx",
+    "/notify/confirm/",
+    "/notify/confirm/extra",
+    "/notify/unsubscribe2",
+    "/notify/lookup",
+    "/notify/other",
+    "/api/notify",
+    "/api/notify/lookup",
+    "/api/notify/confirmx",
+    "/api/notify/confirm/x",
+    "/api/notify/unsubscribe/",
+    "/api/notify/unsubscribe/x",
+    "/api/notifyx/confirm",
+    "/api/topics/6f1d3b0e-6c1b-4f7e-9a51-2b7a1c0d9e11/notify",
+    "/x/notify/confirm",
+    "/api/x/notify/confirm",
+    "/topics/notify/confirm",
+  ])("still checks %s", (path) => expect(matcher.test(path)).toBe(true));
+
+  it("still asks for sign-in on look-alikes when the middleware runs", async () => {
+    const api = await middleware(request("/api/notify/lookup?token=t"));
+    expect(api.status).toBe(401);
+    const page = await middleware(request("/notifyx"));
+    expect(page.status).toBe(307);
+  });
 });
 
 describe("safeNextPath", () => {

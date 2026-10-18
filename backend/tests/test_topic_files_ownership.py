@@ -9,7 +9,9 @@ from pathlib import Path
 
 BACKEND = Path(__file__).resolve().parents[1]
 
-BACKEND_MODULES = ["app/services/topics.py", "app/api/endpoints/topics.py"]
+BACKEND_MODULES = ["app/services/topics.py", "app/api/endpoints/topics.py", "app/services/notify_email.py",
+                   "app/services/notify_tokens.py", "app/api/endpoints/notify.py",
+                   "app/api/endpoints/topic_notify.py", "app/api/endpoints/topic_summary.py"]
 SCHEDULER_MODULES = ["app/scheduler.py", "app/services/topic_runs.py"]
 
 SCHEDULER_FILES = ("state_path", "run_path", "runs_dir", "usage_path", "counters_path")

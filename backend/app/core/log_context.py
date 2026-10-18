@@ -4,6 +4,7 @@ Set `current_task_id` at the start of a task. Python copies context variables in
 asyncio tasks and `asyncio.to_thread` workers, so agents running in parallel keep
 their own task's ID.
 """
+import re
 import logging
 from contextvars import ContextVar
 from typing import Optional
@@ -42,3 +43,31 @@ def install_task_id_logging() -> None:
 
 
 install_task_id_logging()
+
+
+# Query parameters that carry bearer credentials (recurring-research confirm and unsubscribe tokens).
+_SECRET_PARAMS = re.compile(r"((?:^|[?&])(?:token|api_key|key)=)[^&#\s]*", re.IGNORECASE)
+
+
+def redact_url(url: str) -> str:
+    """`url` with the values of credential query parameters replaced, for logs."""
+    return _SECRET_PARAMS.sub(r"\1[redacted]", url or "")
+
+
+class RedactAccessLogFilter(logging.Filter):
+    """Redacts credential query parameters in URL-carrying log records: uvicorn's access log (its args
+    hold the path) and httpx's request log (its args hold the URL)."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args
+        if isinstance(args, tuple):
+            record.args = tuple(redact_url(a) if isinstance(a, str) else
+                                (redact_url(str(a)) if type(a).__name__ == "URL" else a) for a in args)
+        return True
+
+
+def install_access_log_redaction() -> None:
+    for name in ("uvicorn.access", "httpx"):
+        target = logging.getLogger(name)
+        if not any(isinstance(f, RedactAccessLogFilter) for f in target.filters):
+            target.addFilter(RedactAccessLogFilter())

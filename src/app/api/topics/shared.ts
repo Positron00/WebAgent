@@ -21,6 +21,9 @@ export const TOPIC_PATCH_FIELDS = [
   "schedule",
   "notify",
   "status",
+  // Phase B (REC-133): one address per call; the backend validates it and sends the confirmation.
+  "add_subscriber",
+  "remove_subscriber",
 ] as const;
 
 export function isUuid(value: unknown): value is string {

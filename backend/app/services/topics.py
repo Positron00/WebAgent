@@ -311,6 +311,7 @@ def cleanup_deleted(now: Optional[datetime] = None, topic_ids: Optional[List[str
             if files.topic_dir(topic_id).exists():
                 leftover.append(topic_id)
             elif _remove_definition(topic_id):
+                _forget_ledger(topic_id)
                 removed += 1
         if leftover:
             with _backend_owns_scheduler_lock(now) as owned:
@@ -321,6 +322,7 @@ def cleanup_deleted(now: Optional[datetime] = None, topic_ids: Optional[List[str
                             continue
                         _remove_topic_files(topic_id)
                         if _remove_definition(topic_id):
+                            _forget_ledger(topic_id)
                             removed += 1
     except Exception as exc:  # noqa: BLE001 - a cleanup must never take a worker down
         logger.warning("Topic cleanup failed: %s", type(exc).__name__)
@@ -329,8 +331,57 @@ def cleanup_deleted(now: Optional[datetime] = None, topic_ids: Optional[List[str
     return removed
 
 
+def _forget_ledger(topic_id: str) -> None:
+    """Remove a deleted topic's entries from the email ledgers (REC-114, phase B). Never raises."""
+    try:
+        from app.services import notify_email   # lazy: the scheduler imports this module (RNFR-02)
+
+        notify_email.forget_topic(topic_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Ledger cleanup for topic %s failed: %s", topic_id, type(exc).__name__)
+
+
+def expire_unconfirmed(now: Optional[datetime] = None) -> int:
+    """Remove unconfirmed subscribers added more than 48 h ago (REC-115). Returns how many. Never raises."""
+    now = now or files.utcnow()
+    removed = 0
+    try:
+        from app.services.notify_email import expired_unconfirmed   # lazy (RNFR-02)
+
+        for defn in list_definitions():
+            if not any(expired_unconfirmed(s, now) for s in defn.notify.subscribers):
+                continue
+            dropped: List[int] = []
+
+            def drop(d: TopicDefinition) -> None:
+                kept = [s for s in d.notify.subscribers if not expired_unconfirmed(s, now)]
+                dropped.append(len(d.notify.subscribers) - len(kept))
+                d.notify.subscribers = kept
+
+            update_definition(defn.topic_id, drop)
+            removed += sum(dropped)
+    except Exception as exc:  # noqa: BLE001 - a cleanup must never take a worker down
+        logger.warning("Subscriber expiry failed: %s", type(exc).__name__)
+    if removed:
+        logger.info("Subscriber expiry removed %d unconfirmed entries", removed)
+    return removed
+
+
+def _cleanup_notify(now: Optional[datetime] = None) -> None:
+    """Phase B's part of the daily cleanup: unconfirmed subscribers and old email ledgers. Never raises."""
+    expire_unconfirmed(now)
+    try:
+        from app.services import notify_email
+
+        notify_email.cleanup_ledgers(now)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Ledger retention cleanup failed: %s", type(exc).__name__)
+
+
 async def cleanup_daily(interval_sec: float = 24 * 3600) -> None:
-    """Run `cleanup_deleted` now and then once a day, as `result_store.cleanup_daily` (REC-114)."""
+    """Run `cleanup_deleted` now and then once a day, as `result_store.cleanup_daily` (REC-114), with
+    the expiry of unconfirmed subscribers and the email ledgers' retention (REC-115, phase B)."""
     while True:
         await asyncio.to_thread(cleanup_deleted)
+        await asyncio.to_thread(_cleanup_notify)
         await asyncio.sleep(interval_sec)

@@ -35,7 +35,8 @@ class Clock:
 
 
 class FakeBackend:
-    """The backend contract: POST /api/task, GET /api/task/{id}, DELETE /api/topics/{id}, /health."""
+    """The backend contract: POST /api/task, GET /api/task/{id}, DELETE /api/topics/{id}, /health,
+    and phase B's POST /api/topics/{id}/summarize and /notify (design §12a)."""
 
     def __init__(self, clock, duration=timedelta(minutes=3)):
         self.clock = clock
@@ -48,6 +49,12 @@ class FakeBackend:
         self.final = {}               # task_id -> (status, error_code), instead of completing
         self.usage = {"input_tokens": 1000, "output_tokens": 500, "searches": 3, "tavily_credits": 4}
         self.sources = [{"url": "https://a.org/x", "title": "A"}, {"url": "https://b.org", "title": "B"}]
+        self.security = {}
+        self.summaries = []           # (topic_id, body, headers)
+        self.summary_reply = (200, {"summary": "- Something new [1]", "changed": True,
+                                    "tokens": {"input": 2000, "output": 100}})
+        self.notifies = []            # (topic_id, body, headers)
+        self.notify_reply = (200, {"sent": 1, "skipped": 0})
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path
@@ -78,9 +85,21 @@ class FakeBackend:
             if self.clock() - task["created"] < self.duration:
                 return httpx.Response(200, json={"status": "processing", "result": None})
             result = {"title": "Report", "content": "report text", "sources": list(self.sources),
-                      "usage": dict(self.usage), "security": {}}
+                      "usage": dict(self.usage), "security": dict(self.security)}
             result_store.save_result(task_id, {"task_id": task_id, "status": "completed", "result": result})
             return httpx.Response(200, json={"status": "completed", "result": result})
+        if request.method == "POST" and path.startswith("/api/topics/") and path.endswith("/summarize"):
+            self.summaries.append((path.split("/")[3], json.loads(request.content), dict(request.headers)))
+            if isinstance(self.summary_reply, Exception):
+                raise self.summary_reply
+            status, reply = self.summary_reply
+            return httpx.Response(status, json=reply)
+        if request.method == "POST" and path.startswith("/api/topics/") and path.endswith("/notify"):
+            self.notifies.append((path.split("/")[3], json.loads(request.content), dict(request.headers)))
+            if isinstance(self.notify_reply, Exception):
+                raise self.notify_reply
+            status, reply = self.notify_reply
+            return httpx.Response(status, json=reply)
         if request.method == "DELETE" and path.startswith("/api/topics/"):
             self.deletes.append((path.rsplit("/", 1)[1], dict(request.headers)))
             return httpx.Response(204)
@@ -270,8 +289,8 @@ def test_a_completed_run_records_report_sources_usage_and_change(env):
     edit(topic_id, run_requests=1)
     drive(s, env.clock, 5)
     newest = runs(topic_id)[0]
-    assert newest["change"] == {"first": False, "new_sources": ["https://c.org"],
-                                "dropped_sources": ["https://b.org"], "changed": True}
+    assert {k: newest["change"][k] for k in ("first", "new_sources", "dropped_sources", "changed")} == {
+        "first": False, "new_sources": ["https://c.org"], "dropped_sources": ["https://b.org"], "changed": True}
     assert counters()["changes"]["new_sources"] == 1
 
 
@@ -793,3 +812,258 @@ def test_a_live_holder_is_not_taken_over_while_waiting(env):
     with pytest.raises(sched_mod.LockHeld):
         lock.acquire(True)
     assert files.read_json(files.scheduler_lock_path())["instance"] == "live"
+
+
+# --- phase B: change summary, notify decision, notices (REC-130, REC-131, REC-138) ----------------
+
+def subscribed(when="changes", confirmed=True):
+    sub = {"email": "reader@example.org", "added_at": (T0 - timedelta(days=1)).isoformat(),
+           "confirmed_at": (T0 - timedelta(days=1)).isoformat() if confirmed else None}
+    return {"when": when, "subscribers": [sub]}
+
+
+def run_once(s, env, topic_id, minutes=5):
+    defn = topics.load_definition(topic_id)
+    edit(topic_id, run_requests=defn.run_requests + 1)
+    drive(s, env.clock, minutes)
+    return runs(topic_id)[0]
+
+
+def run_kinds(env):
+    return [(t, b["kind"], b.get("run_id")) for t, b, _ in env.backend.notifies]
+
+
+def test_the_first_run_is_not_summarised_and_the_second_is_stored(env):
+    topic_id = add_topic()
+    s = env.make()
+    s.tick()
+    first = run_once(s, env, topic_id)
+    assert env.backend.summaries == []
+    assert first["change"]["summary"] is None and "summary_error" not in first["change"]
+
+    env.backend.sources = list(env.backend.sources)   # same sources: no new ones
+    second = run_once(s, env, topic_id)
+    [(tid, body, headers)] = env.backend.summaries
+    assert tid == topic_id and body == {"run_id": second["run_id"], "previous_run_id": first["run_id"]}
+    assert headers["x-webagent-scheduler"] == TOKEN and headers["x-api-key"] == "api-key-test"
+    assert second["change"]["summary"] == "- Something new [1]"
+    assert second["change"]["new_sources"] == [] and second["change"]["changed"] is True
+    assert counters()["changes"]["summary_changed"] == 1
+    # The summary's tokens count toward the month (two runs plus one summary).
+    usage = files.read_json(files.usage_path("2026-10"))
+    run_dollars = 1000 * 0.35 / 1e6 + 500 * 1.5 / 1e6
+    assert usage["dollars"] == pytest.approx(2 * run_dollars + 2000 * 0.35 / 1e6 + 100 * 1.5 / 1e6)
+    assert usage["credits"] == 8
+
+
+def test_the_worst_case_reserves_the_summary(env):
+    s = env.make(token_budget_default=60000)
+    assert s.worst_case()["dollars"] == pytest.approx((60000 + 8000) * 1.5 / 1e6)
+
+
+def test_no_material_change_leaves_changed_false_without_new_sources(env):
+    topic_id = add_topic()
+    s = env.make()
+    s.tick()
+    run_once(s, env, topic_id)
+    env.backend.summary_reply = (200, {"summary": "No material change", "changed": False,
+                                       "tokens": {"input": 10, "output": 3}})
+    second = run_once(s, env, topic_id)
+    assert second["change"]["summary"] == "No material change"
+    assert second["change"]["changed"] is False
+    assert "summary_changed" not in counters().get("changes", {})
+
+
+def test_new_sources_keep_changed_true_whatever_the_summary(env):
+    topic_id = add_topic()
+    s = env.make()
+    s.tick()
+    run_once(s, env, topic_id)
+    env.backend.sources = [{"url": "https://c.org"}]
+    env.backend.summary_reply = (200, {"summary": "No material change", "changed": False,
+                                       "tokens": {"input": 10, "output": 3}})
+    second = run_once(s, env, topic_id)
+    assert second["change"]["changed"] is True and second["change"]["new_sources"] == ["https://c.org"]
+
+
+@pytest.mark.parametrize("reply, code", [
+    ((200, {"summary": None, "changed": False, "tokens": {"input": 50, "output": 0}, "error": "model_failed"}),
+     "model_failed"),
+    ((500, {"detail": "boom"}), "http_500"),
+    (httpx.ConnectError("down"), "backend_unreachable"),
+])
+def test_a_failed_summary_keeps_the_diff_and_records_the_error(env, reply, code):
+    topic_id = add_topic()
+    s = env.make()
+    s.tick()
+    run_once(s, env, topic_id)
+    env.backend.summary_reply = reply
+    second = run_once(s, env, topic_id)
+    assert second["status"] == "completed"
+    assert second["change"]["summary"] is None and second["change"]["summary_error"] == code
+    assert second["change"]["changed"] is False and second["change"]["first"] is False
+    state = topics.load_state(topic_id)
+    assert state["failures_in_a_row"] == 0 and state["hold"] is None
+
+
+def test_flagged_refs_come_from_dropped_and_shadow_flagged(env):
+    topic_id = add_topic()
+    env.backend.security = {
+        "dropped": [{"source": "web_result", "ref": "https://a.org/x", "policy_id": "p"}],
+        "shadow_flagged": [{"source": "web_result", "ref": "https://b.org", "policy_id": "p"},
+                           {"source": "web_result", "ref": "https://a.org/x", "policy_id": "p"},
+                           {"source": "retrieved_doc", "ref": None, "policy_id": "p"}],
+    }
+    s = env.make()
+    s.tick()
+    record = run_once(s, env, topic_id)
+    assert record["flagged_refs"] == ["https://a.org/x", "https://b.org"]
+
+
+@pytest.mark.parametrize("status, change, when, expected", [
+    ("completed", {"first": True, "changed": True}, "changes", True),
+    ("completed", {"first": True, "changed": True}, "always", True),
+    ("completed", {"first": False, "changed": True}, "changes", True),
+    ("completed", {"first": False, "changed": False}, "changes", False),
+    ("completed", {"first": False, "changed": False}, "always", True),
+    ("failed", None, "always", False),
+    ("failed", {"first": True, "changed": True}, "always", False),
+])
+def test_the_notify_decision_table(status, change, when, expected):
+    assert sched_mod.should_notify_run(status, change, when) is expected
+
+
+def test_notify_runs_for_changes_only_with_a_confirmed_subscriber(env):
+    topic_id = add_topic(notify=subscribed("changes"))
+    s = env.make()
+    s.tick()
+    first = run_once(s, env, topic_id)
+    assert run_kinds(env) == [(topic_id, "run", first["run_id"])]          # first run notifies
+    _, _, headers = env.backend.notifies[0]
+    assert headers["x-webagent-scheduler"] == TOKEN and headers["x-api-key"] == "api-key-test"
+
+    env.backend.summary_reply = (200, {"summary": "No material change", "changed": False,
+                                       "tokens": {"input": 1, "output": 1}})
+    run_once(s, env, topic_id)
+    assert len(env.backend.notifies) == 1                                   # nothing changed
+
+    env.backend.summary_reply = (200, {"summary": "- New [1]", "changed": True,
+                                       "tokens": {"input": 1, "output": 1}})
+    third = run_once(s, env, topic_id)
+    assert run_kinds(env)[-1] == (topic_id, "run", third["run_id"])        # a material summary
+
+
+def test_notify_always_after_every_completed_run(env):
+    topic_id = add_topic(notify=subscribed("always"))
+    env.backend.summary_reply = (200, {"summary": "No material change", "changed": False,
+                                       "tokens": {"input": 1, "output": 1}})
+    s = env.make()
+    s.tick()
+    run_once(s, env, topic_id)
+    run_once(s, env, topic_id)
+    assert [k for _, k, _ in run_kinds(env)] == ["run", "run"]
+
+
+@pytest.mark.parametrize("notify", [None, "unconfirmed"])
+def test_no_confirmed_subscriber_means_no_notify_call(env, notify):
+    extra = {} if notify is None else {"notify": subscribed("always", confirmed=False)}
+    topic_id = add_topic(**extra)
+    s = env.make(pause_after_failures=1)
+    s.tick()
+    run_once(s, env, topic_id)
+    env.backend.post_reply = (403, {"code": "declined"})
+    edit(topic_id, run_requests=topics.load_definition(topic_id).run_requests + 1)
+    s.tick()
+    assert topics.load_state(topic_id)["hold"] == "failures"
+    assert env.backend.notifies == []
+
+
+def test_failed_runs_never_notify_and_the_failures_hold_sends_one_notice(env):
+    topic_id = add_topic(notify=subscribed("always"))
+    s = env.make(pause_after_failures=3)
+    s.tick()
+    env.backend.post_reply = (403, {"code": "declined"})
+    for i in range(3):
+        edit(topic_id, run_requests=i + 1)
+        s.tick()
+    assert topics.load_state(topic_id)["hold"] == "failures"
+    assert [(t, b) for t, b, _ in env.backend.notifies] == [(topic_id, {"kind": "hold"})]
+    edit(topic_id, run_requests=4)
+    s.tick()
+    assert len(env.backend.notifies) == 1
+
+
+def test_the_deletion_notice_goes_out_once_seven_days_before(env):
+    topic_id = add_topic(notify=subscribed())
+    s = env.make(paused_topic_days=90)
+    s.tick()
+    edit(topic_id, status="paused")
+    s.tick()
+    env.clock.t = T0 + timedelta(days=82, hours=23)
+    s.tick()
+    assert env.backend.notifies == []
+    env.clock.t = T0 + timedelta(days=83)
+    s.tick()
+    assert [(t, b) for t, b, _ in env.backend.notifies] == [(topic_id, {"kind": "deletion"})]
+    assert files.parse_time(topics.load_state(topic_id)["deletion_notice_at"]) == env.clock.t
+    env.clock.t = T0 + timedelta(days=85)
+    s.tick()
+    env.clock.t = T0 + timedelta(days=90)
+    s.tick()
+    assert len(env.backend.notifies) == 1 and len(env.backend.deletes) == 1
+
+
+def test_resuming_resets_the_deletion_notice(env):
+    topic_id = add_topic(notify=subscribed())
+    s = env.make(paused_topic_days=90)
+    s.tick()
+    edit(topic_id, status="paused")
+    s.tick()
+    env.clock.t = T0 + timedelta(days=84)
+    s.tick()
+    edit(topic_id, status="active")
+    s.tick()
+    assert "deletion_notice_at" not in topics.load_state(topic_id)
+    edit(topic_id, status="paused")
+    s.tick()
+    env.clock.t = T0 + timedelta(days=84 + 83)
+    s.tick()
+    assert [b["kind"] for _, b, _ in env.backend.notifies] == ["deletion", "deletion"]
+
+
+def test_a_long_paused_topic_without_subscribers_gets_no_notice(env):
+    topic_id = add_topic()
+    s = env.make(paused_topic_days=90)
+    s.tick()
+    edit(topic_id, status="paused")
+    s.tick()
+    env.clock.t = T0 + timedelta(days=85)
+    s.tick()
+    assert env.backend.notifies == [] and "deletion_notice_at" not in topics.load_state(topic_id)
+
+
+@pytest.mark.parametrize("reply", [httpx.ConnectError("down"), (500, {"detail": "x"}), (200, {"sent": 0, "skipped": 1, "reason": "email_off"})])
+def test_a_notify_failure_is_harmless(env, reply, caplog):
+    topic_id = add_topic(notify=subscribed("always"))
+    env.backend.notify_reply = reply
+    s = env.make()
+    s.tick()
+    with caplog.at_level("INFO", logger="app.scheduler"):
+        record = run_once(s, env, topic_id)
+    assert record["status"] == "completed"
+    state = topics.load_state(topic_id)
+    assert state["failures_in_a_row"] == 0 and state["hold"] is None and state["current_run"] is None
+    assert len(env.backend.notifies) == 1
+    assert "reader@example.org" not in caplog.text and "report text" not in caplog.text
+    second = run_once(s, env, topic_id)                     # the schedule carries on
+    assert second["status"] == "completed" and len(env.backend.notifies) == 2
+
+
+def test_summary_text_is_not_logged(env, caplog):
+    topic_id = add_topic()
+    s = env.make()
+    s.tick()
+    run_once(s, env, topic_id)
+    with caplog.at_level("DEBUG", logger="app.scheduler"):
+        run_once(s, env, topic_id)
+    assert "Something new" not in caplog.text

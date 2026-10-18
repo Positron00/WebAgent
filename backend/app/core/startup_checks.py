@@ -65,6 +65,41 @@ def check_scheduler_token() -> None:
     logging.getLogger(__name__).info("scheduling off: no WEBAGENT_SCHEDULER_TOKEN")
 
 
+def check_notifications() -> None:
+    """Topic email settings (recurring-research spec REC-132, REC-136), in every environment.
+
+    - `notifications.email.mode: summary` puts model text in email, so it needs checkpoint 1 acting
+      (`security_guard.input_mode: act`).
+    - With email enabled and the SMTP transport: the SMTP host, From address, public URL (the links)
+      and a non-default secret key (the confirm and unsubscribe tokens) must be set.
+    """
+    notifications = getattr(settings, "NOTIFICATIONS", None)
+    cfg = getattr(notifications, "email", None)
+    if cfg is None:
+        return
+    guard = getattr(settings, "SECURITY_GUARD", None)
+    input_mode = getattr(guard, "input_mode", None)
+    if cfg.mode == "summary" and input_mode != "act":
+        raise RuntimeError(
+            "notifications.email.mode is summary, which needs security_guard.input_mode: act "
+            f"(it is {input_mode}). Set notifications.email.mode: notice, or put checkpoint 1 in act mode."
+        )
+    if not cfg.enabled or cfg.transport != "smtp":
+        return
+    missing = [name for name, value in (
+        ("WEBAGENT_SMTP_HOST", settings.SMTP_HOST),
+        ("WEBAGENT_SMTP_FROM", settings.SMTP_FROM),
+        ("WEBAGENT_PUBLIC_URL", settings.PUBLIC_URL),
+    ) if not value]
+    if settings.SECRET_KEY == INSECURE_SECRET_DEFAULT:
+        missing.append("WEBAGENT_SECURITY_SECRET_KEY")
+    if missing:
+        raise RuntimeError(
+            "notifications.email is enabled with transport smtp but these are not set: "
+            + ", ".join(missing) + ". Set them, or set notifications.email.enabled: false."
+        )
+
+
 def server_code_execution_enabled() -> bool:
     """The API server runs generated code only when explicitly enabled."""
     return os.getenv("WEBAGENT_ENABLE_CODE_EXECUTION", "false").lower() == "true"
@@ -187,10 +222,11 @@ def check_security_guard_files() -> None:
 
 
 def check_production_settings(code_execution_enabled: bool) -> None:
-    """Raise RuntimeError if uat/prod settings are unsafe. Does nothing in dev."""
+    """Raise RuntimeError if uat/prod settings are unsafe. In dev only the email check applies."""
     check_triage_files()
     check_security_guard_files()
     check_security_guard()
+    check_notifications()
     if settings.WEBAGENT_ENV not in ("uat", "prod"):
         return
     if settings.SECRET_KEY == INSECURE_SECRET_DEFAULT:

@@ -199,7 +199,7 @@ def test_get_and_patch(client):
     {"name": ""},
     {"query": "can't change the question"},
     {"schedule": {"every": "week", "time": "07:00", "tz": "UTC"}},
-    {"add_subscriber": "a@b.co"},
+    {"add_subscriber": "not-an-address"},
 ])
 def test_patch_validation(client, body):
     tid = _created(client)["topic_id"]

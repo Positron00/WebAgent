@@ -8,10 +8,20 @@ import {
 
 export const config = {
   // Static files the sign-in page needs (public/icons, public/*.svg, the manifest) stay open.
+  // The four notify routes (REC-134) are excluded as exact paths ("$"), so /notifyx,
+  // /notify/confirm/x or /api/notify/lookup still need sign-in; see NOTIFY_PUBLIC_PATHS.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icons/|manifest.json|.*\\.svg$|login|api/auth/login|api/health).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icons/|manifest.json|.*\\.svg$|login|api/auth/login|api/health|notify/confirm$|notify/unsubscribe$|api/notify/confirm$|api/notify/unsubscribe$).*)",
   ],
 };
+
+/** The notify routes the matcher leaves open (REC-134); no other new route is public (RNFR-06). */
+export const NOTIFY_PUBLIC_PATHS = [
+  "/notify/confirm",
+  "/notify/unsubscribe",
+  "/api/notify/confirm",
+  "/api/notify/unsubscribe",
+] as const;
 
 let warnedOpen = false;
 
