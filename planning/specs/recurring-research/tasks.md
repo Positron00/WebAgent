@@ -1,6 +1,6 @@
 # Tasks: recurring research
 
-Status (2026-10-18): phase A built for 3.11.0 (A1–A10, A12; A0 and A11's trial week wait for the end of shadow week 2). Phase B not started. Phase A builds release 3.11.0 and phase B 3.12.0. Both are deployed only after shadow week 2 (RNFR-05); until then `schedule.enabled` stays false everywhere.
+Status (2026-10-18): phase A released as 3.11.0 (A1–A10, A12). Phase B built for 3.12.0 (B0–B6, and B7's docs and release). Waiting: A0 and A11's trial week (after shadow week 2), and B7's provider choice and real-mail trial (the user's decision). Phase A builds release 3.11.0 and phase B 3.12.0. Both are deployed only after shadow week 2 (RNFR-05); until then `schedule.enabled` stays false everywhere.
 
 Each task lists what it covers, what it depends on, and when it's done. Estimates are in hours (h).
 

@@ -210,7 +210,7 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 **REC-133 Double opt-in (must).**
 
 - **Adding an address:** a valid address, at most `max_subscribers_per_topic` (5) per topic, makes an unconfirmed entry and sends one confirmation. That email holds the topic name, a link to `/notify/confirm?token=…`, and nothing else from the topic.
-- **Token:** HMAC-SHA256 with `WEBAGENT_SECURITY_SECRET_KEY`, over `(purpose=confirm, topic_id, address, expiry)`; it's valid 48 h and single-use (used tokens are recorded in the ledger).
+- **Token:** HMAC-SHA256 with `WEBAGENT_SECURITY_SECRET_KEY`, over `(purpose=confirm, topic_id, address hash, expiry)`; it's valid 48 h and single-use (used tokens are recorded in the ledger). The token carries a keyed hash of the address, not the address, because URLs (query strings included) reach request logs. Credential query parameters are also redacted in the backend's request log, uvicorn's access log and httpx's log.
 - **Limits:** at most 3 confirmations per address per day.
 - **Until confirmed:** nothing else is sent to the address.
 - Check: tests on expiry, reuse, tampering, the caps, and nothing sent unconfirmed.

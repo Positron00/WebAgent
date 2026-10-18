@@ -652,3 +652,18 @@ def test_notify_modules_write_only_the_ledger():
             if "write_json_atomic(" in line and "def " not in line:
                 assert "path" in line and "state_path" not in line and "run_path" not in line, f"{module}: {line}"
         assert "usage_path" not in source and "counters_path" not in source and "state_path" not in source
+
+
+def test_list_unsubscribe_header_is_a_literal_url_on_the_wire(monkeypatch):
+    """Mail clients read the raw header; an RFC 2047-encoded URL breaks one-click unsubscribe."""
+    from email import message_from_bytes
+
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "PUBLIC_URL", "https://webagent.example.org")
+
+    msg = notify_email.build_message("hold", topic_id=str(uuid.uuid4()), name=SECRET_NAME, address=ADDRESS)
+    headers = msg.as_bytes().split(b"\r\n\r\n")[0]
+    line = [h for h in headers.split(b"\r\n") if h.startswith(b"List-Unsubscribe:")][0]
+    assert line.startswith(b"List-Unsubscribe: <http") and line.endswith(b">") and b"=?" not in line
+    assert message_from_bytes(msg.as_bytes())["List-Unsubscribe"].startswith("<http")

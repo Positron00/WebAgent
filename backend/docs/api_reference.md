@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.11.0).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.12.0).
 
 ## Base URL
 
@@ -230,7 +230,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.11.0",
+  "version": "3.12.0",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -444,6 +444,25 @@ Topics are questions the scheduler researches again daily or weekly. Every route
   - More than 10 active topics answers 409 `topic_limit`, as does re-activating one.
   - In act mode, a question the security guard refuses answers 403 with the guard's refusal body. A topic can't be created when the question would need consent, because a scheduled run can't ask for it.
 
+### Subscribers and email (3.12.0)
+
+- **`PATCH /api/topics/{id}`** also takes `add_subscriber: "<email>"` and `remove_subscriber: "<email>"`.
+  - Adding sends one confirmation email; the response's `confirmation` is `sent`, `failed`, `capped` or `not_needed`. No other email goes to an address until it's confirmed.
+  - Errors: 409 `subscriber_limit` (5 per topic), 409 `email_disabled` (email is off), 422 for an invalid address.
+- **Scheduler-only routes**, which need `X-WebAgent-Scheduler` as well as the API key:
+  - `POST /api/topics/{id}/summarize` with `{run_id, previous_run_id}` → `{summary, changed, tokens, error?}`;
+  - `POST /api/topics/{id}/notify` with `{kind: run|hold|deletion, run_id?}` → `{sent, skipped, reason?}`.
+
+### Notify routes (3.12.0)
+
+These need the API key. Only the web app's `/notify/*` pages and `/api/notify/confirm` and `/api/notify/unsubscribe` proxies are reachable without signing in, and those add the key. Tokens come from the emails.
+
+| Route | Does |
+|---|---|
+| `GET /api/notify/lookup?token=…` | `{topic_name, purpose}` for a valid token; 404 otherwise. Read-only |
+| `POST /api/notify/confirm` | `{token}` → `{status: "confirmed"}`; 404 for an invalid, used or expired token (confirm tokens last 48 h) |
+| `POST /api/notify/unsubscribe` | `{token}` (JSON) or the RFC 8058 one-click form (`List-Unsubscribe=One-Click`, token in the query) → `{status: "unsubscribed"}`; safe to repeat |
+
 ## Documents API
 
 Documents loaded here are searched by the internal research agent. They are shared by every task on the server. IDs are UUIDs.
@@ -511,7 +530,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.11.0"
+  "version": "3.12.0"
 }
 ```
 
@@ -524,7 +543,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.11.0",
+  "version": "3.12.0",
   "environment": "prod"
 }
 ```
@@ -541,7 +560,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.11.0"
+    "version": "3.12.0"
   },
   "llm_service": {
     "status": "ok",

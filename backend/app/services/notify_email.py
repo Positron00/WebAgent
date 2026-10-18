@@ -21,6 +21,9 @@ import time
 import unicodedata
 from datetime import date, datetime, timedelta, timezone
 from email.message import EmailMessage
+from email.policy import SMTP as _SMTP_POLICY
+
+_MAIL_POLICY = _SMTP_POLICY.clone(max_line_length=998)
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Literal, Optional
 from urllib.parse import urlsplit
@@ -414,7 +417,10 @@ def build_message(kind: Kind, *, topic_id: str, name: str, address: str,
     `EmailMessage` refuses CR and LF in header values, and the name is cleaned first anyway."""
     unsubscribe = notify_tokens.unsubscribe_token(topic_id, address)
     day = _run_date(record, now) if kind in ("notice", "summary") else _today(now)
-    msg = EmailMessage()
+    # SMTP's hard line limit (RFC 5322: 998). With the default 78, the List-Unsubscribe URL (a long
+    # token with no space to fold at) is RFC 2047-encoded, and mail clients can't read it, so
+    # one-click unsubscribe breaks. Found in the end-to-end check, 2026-10-18.
+    msg = EmailMessage(policy=_MAIL_POLICY)
     msg["Subject"] = subject_for(name, day)
     msg["From"] = settings.SMTP_FROM or "webagent@localhost"
     msg["To"] = address

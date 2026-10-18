@@ -1,6 +1,6 @@
 # Spec: recurring research with tracked summaries and email alerts
 
-Status: v3, phase A implemented (3.11.0, 2026-10-18) · Source plan: [`planning/recurring-research-plan.md`](../../recurring-research-plan.md) · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A: topics, scheduler, history, web app), 3.12.0 (phase B: change summaries, email). Both are deployed after shadow week 2.
+Status: v4, phase A released (3.11.0), phase B implemented (3.12.0), 2026-10-18 · Source plan: [`planning/recurring-research-plan.md`](../../recurring-research-plan.md) · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A: topics, scheduler, history, web app), 3.12.0 (phase B: change summaries, email). Both are deployed after shadow week 2.
 
 ## What this work does
 
@@ -102,4 +102,23 @@ Requirements say *what*; the designs say *how*; tasks say *in what order*. When 
 - **Still open:**
   - A0: setting the search cap from shadow week 2's counts. Until then the cap stays at today's values (5 in dev and uat, 10 in prod), which a run can't reach anyway (at most 2 searches per pass).
   - A11's trial week on the local stack, after shadow week 2.
+
+## Implementation notes (phase B, 3.12.0)
+
+- **Built** by three parallel agents against the contracts in `design-low-level-backend.md` §12a, then integrated:
+  - the email subsystem (B2, B3, B4 backend, B6 backend);
+  - change summaries, shadow flags and the scheduler's side (B0, B1, B5, B6);
+  - the web app's notify pages and subscriber management (B4, B5).
+- **Tests:** 1,266 backend and 499 web tests pass.
+- **End-to-end check** (2026-10-18), in containers: backend in uat with email on over **real SMTP with STARTTLS**, to a local sink with a throwaway certificate the container trusts. Plus the scheduler, the web app on its own port, and the fake Together server (no credit spent).
+  - **Confirm:** subscribing sent one plain-text confirmation. Opening its link showed the topic and changed nothing. **Confirm** (a POST) confirmed the address, and reusing the token was refused.
+  - **Notices:** Run now sent a notice email: no model text, the domains-only list, the link, and the footer.
+  - **Second run:** it got a change summary.
+  - **Unsubscribe:** the email's `List-Unsubscribe` one-click POST removed the address.
+  - **Logs:** neither the backend's nor the scheduler's mention the address or a token.
+- **Found by the end-to-end check and fixed:**
+  1. **`List-Unsubscribe` was RFC 2047-encoded on the wire.** The long token has no space to fold at, so Python's email library encoded the header, and mail clients can't read a URL like that. Messages now use the SMTP policy with the 998-character line limit, and a test checks the raw bytes.
+  2. **Tokens in URLs reached the logs** (the request log, uvicorn's access log, httpx). They're now redacted, and tokens carry an address hash, not the address.
+- **Dev only:** `next dev` prints request URLs with tokens; `next start` doesn't log requests (RUNBOOK).
+- **Still open (B7):** the email provider and From address (the user's choice), SPF and DKIM, and a trial with a real mail client.
 

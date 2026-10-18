@@ -1,6 +1,6 @@
 # WebAgent Architecture
 
-How the parts of WebAgent 3.11.0 fit together: the web app, the backend, the research workflow, the security guard, triage, the stores, and observability. Each section names the code that implements it. Feature designs and requirements are in `planning/specs/`.
+How the parts of WebAgent 3.12.0 fit together: the web app, the backend, the research workflow, the security guard, triage, the stores, and observability. Each section names the code that implements it. Feature designs and requirements are in `planning/specs/`.
 
 ## System overview
 
@@ -268,11 +268,20 @@ A **topic** is a saved question that's researched again daily or weekly. The par
   - `/topics` and `/topics/[id]` (the run timeline and stored reports);
   - `/api/topics/**` proxies, which allow-list routes and fields. The task proxy now forwards only its known fields.
 - **Metrics:** the backend's `/metrics` exports the scheduler's numbers from its files: runs, changes, holds, topics by state, budget used and its limit, heartbeat, run time. There's a "Recurring research" row on the backend dashboard, and a "Scheduler down" alert.
-- **Spec:** `planning/specs/recurring-research/`. Phase B (3.12.0) adds change summaries and email.
+- **Change summaries (3.12.0):**
+  - After a run with a previous one, the scheduler calls `POST /api/topics/{id}/summarize` (scheduler only). One model call compares the two reports, with both scored by checkpoint 1 as untrusted `retrieved_doc`, under its own 8,000-token budget.
+  - The answer is at most 5 bullets citing sources, or "No material change".
+- **Email (3.12.0, `notify_email.py`, `notify_tokens.py`, `endpoints/notify.py`, `endpoints/topic_notify.py`):** only the backend sends.
+  - **Transport:** SMTP (STARTTLS or TLS), or `log` in dev.
+  - **Subscribing:** double opt-in. Confirm and unsubscribe are button presses that POST, because mail scanners open links, plus RFC 8058 one-click unsubscribe. Tokens are HMAC-signed and carry a hash of the address, not the address.
+  - **Content:** plain text. Notices list only the domains of sources checkpoint 1 didn't flag. In shadow mode, its would-be drops are recorded as `security.shadow_flagged` for this. Summary emails only in act mode, enforced at startup.
+  - **Caps:** per run, per address and per day. A ledger in `data/notify/` holds hashed addresses only.
+  - **Logs:** credential query parameters (`token=`) are redacted in the request log, uvicorn's access log and httpx's log.
+- **Spec:** `planning/specs/recurring-research/`.
 
 ## Limits and what isn't built
 
-- No email or other user notifications yet (3.12.0 adds email for topics). The operator alerts are above.
+- Email is the only user notification, and carries only a notice until checkpoint 1 acts.
 - No per-user accounts: one shared access code, and shared documents and topics.
 - One server's memory holds the rate limits, and one data folder holds the state. Scaling past one machine needs shared storage for `data/` and a shared rate-limit store.
 - No checkpointing of research runs.
