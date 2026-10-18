@@ -67,7 +67,7 @@ class RedactAccessLogFilter(logging.Filter):
 
 
 def install_access_log_redaction() -> None:
-    for name in ("uvicorn.access", "httpx"):
+    for name in ("uvicorn.access", "httpx", "httpx2", "httpcore", "httpcore2"):
         target = logging.getLogger(name)
         if not any(isinstance(f, RedactAccessLogFilter) for f in target.filters):
             target.addFilter(RedactAccessLogFilter())
