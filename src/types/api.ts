@@ -1,18 +1,18 @@
 export interface MessageContent {
-  type: 'text' | 'image_url';
+  type: "text" | "image_url";
   text?: string;
   // OpenAI-style chat format, which Together expects: {url: 'data:image/png;base64,...'}
   image_url?: { url: string };
 }
 
 export interface ChatRequestMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string | MessageContent[];
 }
 
-import type { RouteInfo } from '@/types/routing';
-import type { Source } from '@/types/chat';
-import type { SecuritySummary } from '@/types/security';
+import type { RouteInfo } from "@/types/routing";
+import type { ResearchTaskRef, Source } from "@/types/chat";
+import type { SecuritySummary } from "@/types/security";
 
 export interface ChatResponseMessage {
   content: string;
@@ -38,6 +38,7 @@ export interface ChatCompletionResponse {
       role: string;
       logs?: string[];
       sources?: Source[];
+      task?: ResearchTaskRef;
     };
     finish_reason: string;
   }[];
@@ -48,4 +49,4 @@ export interface ChatCompletionResponse {
   };
   route?: RouteInfo;
   security?: SecuritySummary;
-} 
+}

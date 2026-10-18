@@ -1,19 +1,21 @@
 """Task API compatible with the Next.js web client (/api/task)."""
 import logging
 from typing import Any, Dict, List, Literal, Optional
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ValidationError
 from starlette.concurrency import run_in_threadpool
 
 from app.api.intake import GuardRefused, refusal_body, run_intake_guard  # noqa: F401 (refusal_body: guard.py)
+from app.core.api_errors import error_body
 from app.core.config import settings
 from app.core.metrics import record_triage_decision
+from app.core.scheduler_auth import scheduler_header_ok
 from app.security import tokens
-from app.services import result_store, triage_collect
+from app.services import result_store, run_origin, triage_collect
 from app.services.routing import choose_route, resolve_mode
 from app.services.task_manager import TaskManager
 from app.services.triage import TriageDecision, classify
@@ -38,6 +40,48 @@ class TaskRequest(BaseModel):
     triage_override: bool = False
     consent_token: Optional[str] = None
     approval_tokens: List[str] = Field(default_factory=list)
+    # Scheduler-only fields (REC-107): accepted only with a valid X-WebAgent-Scheduler header.
+    origin: Optional[Literal["schedule"]] = None
+    topic_id: Optional[str] = None
+    task_id: Optional[str] = None
+    token_budget: Optional[int] = None
+
+
+SCHEDULER_FIELDS = ("origin", "topic_id", "task_id", "token_budget")
+
+
+def _refuse(status: int, code: str, message: str) -> JSONResponse:
+    return JSONResponse(status_code=status, content={"code": code, **error_body(code, message)})
+
+
+def _uuid_or_none(value: Optional[str]) -> Optional[str]:
+    try:
+        return str(UUID(str(value)))
+    except (TypeError, ValueError, AttributeError):
+        return None
+
+
+def _check_scheduler_fields(req: TaskRequest, header_ok: bool) -> Optional[JSONResponse]:
+    """REC-107/REC-108 rules for a request that sets a scheduler field; a refusal, or None.
+
+    The refusals name fields, never values (the token and the question stay out of replies and logs).
+    """
+    if not header_ok:  # also when WEBAGENT_SCHEDULER_TOKEN is unset
+        return _refuse(422, "scheduler_fields_need_token",
+                       "origin, topic_id, task_id and token_budget need the scheduler credential")
+    if req.origin != "schedule":
+        return _refuse(422, "scheduler_field_invalid", "Scheduler fields need origin 'schedule'")
+    if req.mode != "always":
+        return _refuse(422, "scheduler_field_invalid", "A scheduled task needs mode 'always'")
+    if _uuid_or_none(req.topic_id) is None:
+        return _refuse(422, "scheduler_field_invalid", "topic_id must be a UUID")
+    if req.task_id is not None and _uuid_or_none(req.task_id) is None:
+        return _refuse(422, "scheduler_field_invalid", "task_id must be a UUID")
+    cap = settings.SCHEDULE.max_token_budget
+    budget = req.token_budget
+    if budget is None or isinstance(budget, bool) or not 1 <= budget <= cap:
+        return _refuse(422, "scheduler_field_invalid", f"token_budget must be between 1 and {cap}")
+    return None
 
 
 def last_user_question(previous: List[ChatTurn]) -> Optional[str]:
@@ -47,9 +91,14 @@ def last_user_question(previous: List[ChatTurn]) -> Optional[str]:
     return None
 
 
-def _intake_guard(req: TaskRequest, task_id: str) -> bool:
+def _intake_guard(req: TaskRequest, task_id: str, topic_id: Optional[str] = None) -> bool:
     history = [t.model_dump() for t in req.previous_messages]
-    return run_intake_guard(req.query, history, bool(req.image), req.consent_token, task_id)
+    # A scheduled run's intake decisions are collected with origin and topic_id (REC-108).
+    topic_token = run_origin.topic_run.set(topic_id)
+    try:
+        return run_intake_guard(req.query, history, bool(req.image), req.consent_token, task_id)
+    finally:
+        run_origin.topic_run.reset(topic_token)
 
 
 def _approved_tools(req: TaskRequest) -> List[str]:
@@ -64,13 +113,30 @@ def _approved_tools(req: TaskRequest) -> List[str]:
 
 
 @router.post("")
-async def create_task(req: TaskRequest):
-    task_id = str(uuid4())
+async def create_task(req: TaskRequest, request: Request):
+    return await _create_task(req, scheduler_ok=scheduler_header_ok(request))
+
+
+async def _create_task(req: TaskRequest, scheduler_ok: bool = False):
+    scheduled = any(getattr(req, name) is not None for name in SCHEDULER_FIELDS)
+    topic_id: Optional[str] = None
+    if scheduled:
+        refusal = _check_scheduler_fields(req, scheduler_ok)
+        if refusal is not None:
+            return refusal
+        topic_id = _uuid_or_none(req.topic_id)
+        task_id = _uuid_or_none(req.task_id) or str(uuid4())
+        if req.task_id is not None and task_manager.task_exists(task_id):
+            return _refuse(409, "task_exists", "A task with this task_id already exists")
+        # A scheduled run has no previous turns (REC-108).
+        req = req.model_copy(update={"previous_messages": []})
+    else:
+        task_id = str(uuid4())
     prev_q = last_user_question(req.previous_messages)
     has_image = bool(req.image)
 
     try:
-        consented = await run_in_threadpool(_intake_guard, req, task_id)
+        consented = await run_in_threadpool(_intake_guard, req, task_id, topic_id)
     except GuardRefused as refused:
         return JSONResponse(status_code=refused.status, content=refused.body)
 
@@ -91,7 +157,11 @@ async def create_task(req: TaskRequest):
     triage_info: Optional[Dict[str, Any]] = None
     use_direct = False
 
-    if req.triage_override:
+    if scheduled:
+        # Always mode; triage is neither run nor collected (REC-108).
+        context["agentic_toggle"] = True
+        context["chat_mode"] = "always"
+    elif req.triage_override:
         override = TriageDecision("agentic", None, "override", "Research in depth", "none", 0.0)
         record_triage_decision(override)
         triage_collect.record("override", req.query, None, prev_q)
@@ -119,7 +189,14 @@ async def create_task(req: TaskRequest):
     context["triage"] = triage_info
 
     task_manager.register_pending(task_id, req.query)
-    task_manager.start(task_id, req.query, context, direct=use_direct)
+    if scheduled:
+        logger.info(f"Scheduled task {task_id} started for topic {topic_id}")
+        task_manager.start(
+            task_id, req.query, context, direct=False,
+            origin="schedule", topic_id=topic_id, token_budget=req.token_budget,
+        )
+    else:
+        task_manager.start(task_id, req.query, context, direct=use_direct)
     return {"task_id": task_id, "status": "processing"}
 
 
@@ -139,7 +216,7 @@ async def start_legacy_task(query: Any, context: Any = None):
         )
     except ValidationError as exc:
         raise RequestValidationError(exc.errors()) from exc
-    return await create_task(req)
+    return await _create_task(req)
 
 
 @router.get("/{task_id}")

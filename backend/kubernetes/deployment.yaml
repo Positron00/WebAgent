@@ -57,6 +57,13 @@ spec:
             secretKeyRef:
               name: webagent-secrets
               key: api-key
+        # Recurring research: without it the backend refuses scheduler fields (scheduling off).
+        - name: WEBAGENT_SCHEDULER_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: scheduler-token
+              optional: true
         - name: TAVILY_API_KEY
           valueFrom:
             secretKeyRef:
@@ -128,6 +135,56 @@ spec:
           mountPath: /app/data
         - name: logs
           mountPath: /app/logs
+      # Recurring research scheduler (recurring-research spec D1, REC-118): one process, same image,
+      # in this pod because the data volume is ReadWriteOnce. It runs no models (RNFR-02) and stays
+      # idle until schedule.enabled (WEBAGENT_SCHEDULER_ENABLED) is true.
+      - name: scheduler
+        image: webagent/backend:3.10.1
+        imagePullPolicy: Always
+        command: ["python", "-m", "app.scheduler"]
+        env:
+        - name: WEBAGENT_ENV
+          value: "prod"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: WEBAGENT_BACKEND_URL
+          value: "http://127.0.0.1:8000"
+        - name: WEBAGENT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: api-key
+        - name: WEBAGENT_SCHEDULER_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: scheduler-token
+              optional: true
+        resources:
+          limits:
+            cpu: "250m"
+            memory: "192Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+        livenessProbe:
+          exec:
+            command: ["python", "-m", "app.scheduler", "--health"]
+          initialDelaySeconds: 120
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: data
+          mountPath: /app/data
       volumes:
       - name: tmp
         emptyDir: {}

@@ -17,8 +17,10 @@ import {
   PaperClipIcon,
   InformationCircleIcon,
   CodeBracketIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import Link from "next/link";
 import { MAX_IMAGE_BYTES, IMAGE_TOO_LARGE } from "@/utils/imageCheck";
 
 export default function Chat() {
@@ -145,7 +147,14 @@ export default function Chat() {
   return (
     <div className="w-full flex flex-col items-center">
       {/* Canvas Toggle Button */}
-      <div className="w-full max-w-[95%] mx-auto flex justify-end mb-2">
+      <div className="w-full max-w-[95%] mx-auto flex justify-between items-center mb-2">
+        <Link
+          href="/topics"
+          className="flex items-center text-sm text-gray-300 hover:text-white p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        >
+          <ClockIcon className="w-5 h-5 mr-1" aria-hidden="true" />
+          Topics
+        </Link>
         {hasSourcesOrCode && (
           <button
             onClick={toggleCanvas}

@@ -1,4 +1,4 @@
-export type Role = 'user' | 'assistant' | 'system';
+export type Role = "user" | "assistant" | "system";
 
 export interface Source {
   id: string;
@@ -9,8 +9,16 @@ export interface Source {
   domain?: string;
 }
 
-import type { RouteInfo } from '@/types/routing';
-import type { GuardRefusal, SecuritySummary } from '@/types/security';
+import type { RouteInfo } from "@/types/routing";
+import type { GuardRefusal, SecuritySummary } from "@/types/security";
+
+/** The completed research task behind an answer; "Track this" turns it into a topic (REC-116). */
+export interface ResearchTaskRef {
+  id: string;
+  title?: string;
+  /** The supervisor's self-contained version of the question (REC-110). */
+  standaloneQuery?: string;
+}
 
 export interface ChatMessage {
   id?: string;
@@ -23,10 +31,11 @@ export interface ChatMessage {
   imageAttached?: boolean;
   security?: SecuritySummary;
   refusal?: GuardRefusal;
+  task?: ResearchTaskRef;
 }
 
 export interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   error?: string;
-} 
+}

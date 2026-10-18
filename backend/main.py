@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from datetime import datetime
 
@@ -29,8 +30,9 @@ from app.api.router import api_router, health_router
 from app.api.endpoints.task import router as task_router
 from app.api.endpoints.guard import router as guard_router
 from app.api.endpoints.triage import router as triage_router
+from app.api.endpoints.topics import router as topics_router
 from starlette.concurrency import run_in_threadpool
-from app.services import result_store, triage_collect
+from app.services import result_store, topics, triage_collect
 from app.security import records as security_records
 from app.security.decision import get_engine
 from app.security.alignment_model import warm_up as warm_up_alignment_model
@@ -44,6 +46,7 @@ from app.core.metrics import setup_metrics, mark_worker_dead, PrometheusMiddlewa
 from app.core.startup_checks import (
     check_dev_exposure,
     check_production_settings,
+    check_scheduler_token,
     check_task_timeouts,
     server_code_execution_enabled,
 )
@@ -59,6 +62,7 @@ async def _startup(app: FastAPI) -> None:
     # Also run before uvicorn starts in the Docker image (see app/core/startup_checks.py).
     check_production_settings(settings.ENABLE_CODE_EXECUTION)
     check_task_timeouts()
+    check_scheduler_token()
     cfg = getattr(settings, "TRIAGE", None)
     if cfg and cfg.enabled:
         await run_in_threadpool(warm_up)
@@ -73,13 +77,15 @@ async def _startup(app: FastAPI) -> None:
     app.state.triage_cleanup_task = asyncio.create_task(triage_collect.cleanup_daily())
     app.state.security_cleanup_task = asyncio.create_task(security_records.cleanup_daily())
     app.state.results_cleanup_task = asyncio.create_task(result_store.cleanup_daily())
+    app.state.topics_cleanup_task = asyncio.create_task(topics.cleanup_daily())
     drift_store.cleanup(settings.RESULTS_RETENTION_DAYS)
     if settings.DRIFT_ENABLED:
         app.state.drift_task = asyncio.create_task(drift_store.compute_loop())
 
 
 def _shutdown(app: FastAPI) -> None:
-    for name in ("triage_cleanup_task", "security_cleanup_task", "results_cleanup_task", "drift_task"):
+    for name in ("triage_cleanup_task", "security_cleanup_task", "results_cleanup_task", "topics_cleanup_task",
+                 "drift_task"):
         task = getattr(app.state, name, None)
         if task is not None:
             task.cancel()
@@ -149,6 +155,12 @@ app.include_router(
     tags=["guard"],
     dependencies=[Depends(require_api_key)],
 )
+app.include_router(
+    topics_router,
+    prefix="/api/topics",
+    tags=["topics"],
+    dependencies=[Depends(require_api_key)],
+)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -162,7 +174,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content=error_body(
             "validation_error",
             "Request validation failed",
-            exc.errors(),
+            # Custom validators put the ValueError itself in `ctx`; send its message.
+            jsonable_encoder(exc.errors(), custom_encoder={Exception: str}),
         ),
     )
 

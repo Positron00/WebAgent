@@ -75,6 +75,7 @@ function buildAssistantMessage(response: ChatCompletionResponse): ChatMessage {
   };
   if (agentic && message.sources) assistantMessage.sources = message.sources;
   if (agentic && message.logs) assistantMessage.logs = message.logs;
+  if (agentic && message.task) assistantMessage.task = message.task;
   if (response.security) assistantMessage.security = response.security;
   return assistantMessage;
 }

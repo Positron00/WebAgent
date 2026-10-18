@@ -1,0 +1,34 @@
+# Grafana alert rules of recurring research (recurring-research spec REC-117).
+# Kept apart from webagent-alerts.yaml, whose rules all show the backend's webagent_alert_active.
+# These read the topic collector's metrics directly. Kubernetes gets this file too: deploy.sh builds
+# the grafana-alerting ConfigMap from this whole folder. Grafana reads it only at startup.
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: webagent-scheduler
+    folder: WebAgent
+    interval: 1m
+    rules:
+      - uid: webagent-scheduler-down
+        title: Scheduler down
+        condition: C
+        data:
+          # Seconds since the scheduler's last heartbeat, while its last heartbeat said enabled; else 0.
+          # No scheduler deployed (no lock file, so no series) also gives 0.
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: '((time() - max(webagent_scheduler_heartbeat_timestamp)) and on() (max(webagent_scheduler_enabled) == 1)) or vector(0)'
+              instant: true
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [600]}}]}
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        labels: {severity: critical, service: scheduler}
+        annotations:
+          summary: The scheduler's heartbeat is more than 10 minutes old while scheduling is enabled; no scheduled run starts.
+          runbook: docs/RUNBOOK.md#drift-and-alerts

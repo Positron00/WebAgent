@@ -35,6 +35,7 @@ function print_usage {
   echo "  OPENAI_API_KEY      OpenAI API key"
   echo "  WEBAGENT_SECURITY_SECRET_KEY  Random secret, at least 32 characters"
   echo "  WEBAGENT_API_KEY              Key clients send in the X-API-Key header"
+  echo "  WEBAGENT_SCHEDULER_TOKEN      Optional: secret shared by the backend and the scheduler (recurring research)"
   echo "  GRAFANA_ADMIN_PASSWORD        Grafana admin password"
   echo ""
   echo "Optional environment variables:"
@@ -181,6 +182,7 @@ kubectl create secret generic webagent-secrets -n "$NAMESPACE" \
   --from-literal=api-key="$WEBAGENT_API_KEY" \
   --from-literal=tavily-api-key="${TAVILY_API_KEY:-}" \
   --from-literal=langsmith-api-key="${LANGSMITH_API_KEY:-}" \
+  --from-literal=scheduler-token="${WEBAGENT_SCHEDULER_TOKEN:-}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Process the deployment template (no secrets in it)

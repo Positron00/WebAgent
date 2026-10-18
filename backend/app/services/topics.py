@@ -6,15 +6,22 @@ The scheduler imports this module for the models and the read helpers only; it n
 """
 from __future__ import annotations
 
+import asyncio
+import logging
+import os
 import re
+import shutil
 import uuid
-from datetime import datetime
-from typing import Any, Callable, Dict, List, Literal, Optional
+from contextlib import contextmanager
+from datetime import datetime, timezone
+from typing import Any, Callable, Dict, Iterator, List, Literal, Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.services import topic_files as files
+
+logger = logging.getLogger(__name__)
 
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 _EMAIL = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]+$")
@@ -167,3 +174,163 @@ def update_definition(topic_id: str, change: Callable[[TopicDefinition], None]) 
         defn = TopicDefinition.model_validate(defn.model_dump())
         files.write_json_atomic(path, defn.model_dump(mode="json"))
         return defn
+
+
+# --- run records (read-only here; the scheduler writes them) -------------------------------------
+
+def _run_sort_key(record: Dict[str, Any]) -> Any:
+    moment = files.parse_time(record.get("started_at")) or files.parse_time(record.get("completed_at"))
+    return moment or datetime.min.replace(tzinfo=timezone.utc)
+
+
+def list_runs(topic_id: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    """The topic's run records, newest first (by `started_at`, then `completed_at`)."""
+    folder = files.runs_dir(topic_id)
+    if not folder.is_dir():
+        return []
+    records = []
+    for path in folder.glob("*.json"):
+        if not files.is_uuid(path.stem):
+            continue
+        record = files.read_json(path)
+        if record is not None:
+            record.setdefault("run_id", path.stem)
+            records.append(record)
+    records.sort(key=_run_sort_key, reverse=True)
+    return records[:limit] if limit is not None else records
+
+
+def load_run(topic_id: str, run_id: str) -> Optional[Dict[str, Any]]:
+    if not files.is_uuid(run_id):
+        return None
+    return files.read_json(files.run_path(topic_id, run_id))
+
+
+def new_source_count(record: Optional[Dict[str, Any]]) -> Optional[int]:
+    """How many sources a run found that the last runs didn't (REC-111), or None."""
+    if not record:
+        return None
+    new = (record.get("change") or {}).get("new_sources")
+    if isinstance(new, list):
+        return len(new)
+    if isinstance(new, int) and not isinstance(new, bool):
+        return new
+    return None
+
+
+# --- deletion and retention (REC-114) ------------------------------------------------------------
+
+SCHEDULER_STALE_SECONDS = 180
+
+
+def scheduler_alive(now: Optional[datetime] = None) -> bool:
+    """True if `.scheduler.lock` holds a heartbeat younger than 180 s (from anyone, backend too)."""
+    lock = files.read_json(files.scheduler_lock_path())
+    if not lock:
+        return False
+    beat = files.parse_time(lock.get("heartbeat"))
+    if beat is None:
+        return False
+    now = now or files.utcnow()
+    return (now - beat).total_seconds() < SCHEDULER_STALE_SECONDS
+
+
+def _run_task_ids(topic_id: str) -> List[str]:
+    task_ids = []
+    for record in list_runs(topic_id):
+        task_id = record.get("task_id")
+        if not files.is_uuid(task_id) and files.is_uuid(record.get("run_id")):
+            task_id = files.task_id_for_run(record["run_id"])
+        if files.is_uuid(task_id):
+            task_ids.append(str(task_id))
+    return task_ids
+
+
+def _remove_topic_files(topic_id: str) -> None:
+    """The scheduler's part of a delete, done by the backend while it holds the lock (REC-114)."""
+    from app.services import result_store
+
+    for task_id in _run_task_ids(topic_id):
+        result_store.delete_result(task_id)
+    shutil.rmtree(files.topic_dir(topic_id), ignore_errors=True)
+
+
+def _remove_definition(topic_id: str) -> bool:
+    """Delete a tombstoned definition and its lock file. False if it isn't (or no longer) deleted."""
+    path = files.definition_path(topic_id)
+    with files.locked(path):
+        defn = load_definition(topic_id)
+        if defn is not None and defn.status != "deleted":
+            return False
+        path.unlink(missing_ok=True)
+        # The topic is gone for good, so no writer will want this lock again.
+        path.with_name(path.name + ".lock").unlink(missing_ok=True)
+    return True
+
+
+@contextmanager
+def _backend_owns_scheduler_lock(now: datetime) -> Iterator[bool]:
+    """Take `.scheduler.lock` as `owner: backend` if no scheduler is live. Yields whether it did.
+
+    The flock on the lock file's own lock keeps the two backend workers from both taking over;
+    the heartbeat written as `owner: backend` makes a starting scheduler wait (REC-114).
+    """
+    lock_path = files.scheduler_lock_path()
+    with files.locked(lock_path):
+        if scheduler_alive(now):
+            yield False
+            return
+        mine = {"pid": os.getpid(), "heartbeat": now.isoformat(), "enabled": False, "owner": "backend"}
+        files.write_json_atomic(lock_path, mine)
+        try:
+            yield True
+        finally:
+            current = files.read_json(lock_path) or {}
+            if current.get("owner") == "backend" and current.get("pid") == os.getpid():
+                lock_path.unlink(missing_ok=True)
+
+
+def cleanup_deleted(now: Optional[datetime] = None, topic_ids: Optional[List[str]] = None) -> int:
+    """Finish deleting tombstoned topics (REC-114). Returns how many definitions were removed.
+
+    A topic whose folder is gone loses its definition. A topic whose folder remains is left to a
+    live scheduler; with none, the backend removes the runs' results and the folder itself under
+    the scheduler lock, then the definition. Never raises.
+    """
+    now = now or files.utcnow()
+    removed = 0
+    try:
+        candidates = [
+            d.topic_id for d in list_definitions(include_deleted=True)
+            if d.status == "deleted" and (topic_ids is None or d.topic_id in topic_ids)
+        ]
+        if not candidates:
+            return 0
+        leftover = []
+        for topic_id in candidates:
+            if files.topic_dir(topic_id).exists():
+                leftover.append(topic_id)
+            elif _remove_definition(topic_id):
+                removed += 1
+        if leftover:
+            with _backend_owns_scheduler_lock(now) as owned:
+                if owned:
+                    for topic_id in leftover:
+                        defn = load_definition(topic_id)
+                        if defn is None or defn.status != "deleted":
+                            continue
+                        _remove_topic_files(topic_id)
+                        if _remove_definition(topic_id):
+                            removed += 1
+    except Exception as exc:  # noqa: BLE001 - a cleanup must never take a worker down
+        logger.warning("Topic cleanup failed: %s", type(exc).__name__)
+    if removed:
+        logger.info("Topic cleanup removed %d deleted topics", removed)
+    return removed
+
+
+async def cleanup_daily(interval_sec: float = 24 * 3600) -> None:
+    """Run `cleanup_deleted` now and then once a day, as `result_store.cleanup_daily` (REC-114)."""
+    while True:
+        await asyncio.to_thread(cleanup_deleted)
+        await asyncio.sleep(interval_sec)

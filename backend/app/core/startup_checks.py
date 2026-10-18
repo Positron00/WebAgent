@@ -50,6 +50,21 @@ def check_task_timeouts() -> None:
         )
 
 
+_scheduler_token_logged = False
+
+
+def check_scheduler_token() -> None:
+    """Log once that scheduled runs can't reach this backend without the scheduler token (REC-118).
+
+    Not a failure: topics can still be created and read; the scheduler-only fields and routes answer
+    as if absent until WEBAGENT_SCHEDULER_TOKEN is set."""
+    global _scheduler_token_logged
+    if settings.SCHEDULER_TOKEN or _scheduler_token_logged:
+        return
+    _scheduler_token_logged = True
+    logging.getLogger(__name__).info("scheduling off: no WEBAGENT_SCHEDULER_TOKEN")
+
+
 def server_code_execution_enabled() -> bool:
     """The API server runs generated code only when explicitly enabled."""
     return os.getenv("WEBAGENT_ENABLE_CODE_EXECUTION", "false").lower() == "true"
