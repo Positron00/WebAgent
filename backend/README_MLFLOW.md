@@ -2,6 +2,8 @@
 
 This document describes how to use MLflow with WebAgent, ensuring that all experiments and artifacts are stored in the correct directory structure.
 
+> **Since 3.10.0** the backend installs only the MLflow client (`mlflow-skinny`, 2.x). To run the tracking server or the UI described here, install the full package: `pip install -r backend/requirements-demos.txt` (it adds `mlflow` 2.x). The backend itself only logs runs, and only when `MLFLOW_TRACKING_URI` is set. If the tracking store can't be used, it turns tracking off and keeps running.
+
 ## Important: MLflow Directory Location
 
 WebAgent uses MLflow for experiment tracking, model versioning, and artifact storage. All MLflow artifacts should be stored in the `backend/mlruns` directory, not in the project root.

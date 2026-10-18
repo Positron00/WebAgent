@@ -1,434 +1,260 @@
-# WebAgent Architecture Documentation
+# WebAgent Architecture
 
-This document provides a comprehensive overview of the WebAgent platform architecture, detailing the components, interactions, and design decisions.
+How the parts of WebAgent 3.10.1 fit together: the web app, the backend, the research workflow, the security guard, triage, the stores, and observability. Each section names the code that implements it. Feature designs and requirements are in `planning/specs/`.
 
-## Overview
+## System overview
 
-WebAgent is a sophisticated AI system built as a microservice architecture that combines a modern Next.js frontend with a powerful LangGraph-based multi-agent backend. The platform enables complex research, analysis, and reporting through specialized AI agents.
-
-## Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WebAgent Platform v3.10.0                          │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌────────────────┐                         ┌─────────────────────────────┐ │
-│  │                │      REST API           │                             │ │
-│  │  Frontend      │◄────────────────────────┤  Backend API Layer          │ │
-│  │  Next.js       │                         │  FastAPI + Middleware       │ │
-│  │  React         │─────────────────────────►  • Security                 │ │
-│  │  TailwindCSS   │                         │  • Rate Limiting            │ │
-│  │                │                         │  • Metrics                  │ │
-│  └────────────────┘                         └───────────────┬─────────────┘ │
-│           │                                                 │               │
-│           │        ┌──────────────────┐                     │               │
-│           └────────┤ State Management │                     │               │
-│                    └──────────────────┘                     ▼               │
-│                                                  ┌─────────────────────────┐ │
-│  ┌────────────────────────────────────────────┐ │                         │ │
-│  │             Monitoring & Observability     │ │  Task Manager           │ │
-│  │  • Prometheus Metrics                      │ │  • Async Processing     │ │
-│  │  • Grafana Dashboards                      │ │  • Task State Storage   │ │
-│  │  • Structured Logging                      │ │  • Result Caching       │ │
-│  │  • LangSmith Tracing                       │ │                         │ │
-│  └──────────────────┬─────────────────────────┘ └───────────┬─────────────┘ │
-│                     │                                       │               │
-│                     ▼                                       ▼               │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                       LangGraph Orchestration                          │ │
-│  │                                                                        │ │
-│  │  ┌─────────┐        ┌─────────────┐         ┌────────────┐            │ │
-│  │  │         │        │             │         │            │            │ │
-│  │  │Supervisor◄───────┤Team Manager ◄─────────┤Senior      │            │ │
-│  │  │Agent    │        │Agent        │         │Research    │            │ │
-│  │  │         ├──┐     │             │         │Agent       │            │ │
-│  │  └─────────┘  │     └─────────────┘         └────────────┘            │ │
-│  │               │            ▲                      ▲                    │ │
-│  │               │            │                      │                    │ │
-│  │               ▼            │                      │                    │ │
-│  │  ┌─────────────────────────┴──────────────────────┴───────────────┐   │ │
-│  │  │                                                                │   │ │
-│  │  │  ┌─────────────┐    ┌─────────────┐     ┌────────────┐        │   │ │
-│  │  │  │             │    │             │     │            │        │   │ │
-│  │  │  │Web Research │    │Internal     │     │Data        │        │   │ │
-│  │  │  │Agent        │    │Research     │     │Analysis    │        │   │ │
-│  │  │  │             │    │Agent        │     │Agent       │        │   │ │
-│  │  │  └─────────────┘    └─────────────┘     └────────────┘        │   │ │
-│  │  │         │                  │                   │               │   │ │
-│  │  │         └──────────────────┴───────────────────┘               │   │ │
-│  │  │                            │                                   │   │ │
-│  │  └────────────────────────────┼───────────────────────────────────┘   │ │
-│  └─────────────────────────────────────────────────────────────────────────┘ │
-│                                  │                                           │
-│    ┌─────────────────────────────┼───────────────────────────────────────┐   │
-│    │                             │  External Integrations                │   │
-│    │                             ▼                                       │   │
-│    │  ┌──────────────┐    ┌─────────────┐    ┌─────────────────┐        │   │
-│    │  │              │    │             │    │                 │        │   │
-│    │  │ Together AI  │    │ OpenAI API  │    │ Tavily Search   │        │   │
-│    │  │ Llama 3.3    │    │ GPT-4       │    │                 │        │   │
-│    │  │              │    │             │    │                 │        │   │
-│    │  └──────────────┘    └─────────────┘    └─────────────────┘        │   │
-│    └───────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+```text
+  Browser ── sign in with the access code, chat, Agentic: Off · Auto · Always
+     │
+     ▼
+┌─ Web app ─ Next.js 15 · React 19 ─ src/ ────────────────────────────────────────────┐
+│  middleware.ts: signed session cookie on every page and API route                   │
+│  /api/chat ──── direct answer: guard check (checkpoint 1) ──► Together AI           │
+│  /api/triage, /api/task ── proxy to the backend, adding X-API-Key and the session ─┐ │
+└─────────────────────────────────────────────────────────────────────────────────────┼─┘
+                                                                                      ▼
+┌─ Backend ─ FastAPI ─ backend/ ──────────────────────────────────────────────────────────┐
+│  API key · rate limit per session · size limit · one error format                       │
+│                                                                                         │
+│  Triage: rules, then a MiniLM classifier ──► direct: one model call                     │
+│                                          └─► research: run supervisor (7 min, budget)   │
+│                                                 │                                       │
+│                                                 ▼                                       │
+│                                   LangGraph research workflow                           │
+│                                                                                         │
+│  Security guard, in process: Cedar policies + local classifiers, shadow mode            │
+│    checkpoint 1: every text before a model  ── ContextDefender                          │
+│    checkpoint 2: every tool call and subgoal ── intent signals (+ judge if on)          │
+│                                                                                         │
+│  data/: results/ · vectordb/ · graph · artifacts/ · drift/ · security/ · triage/        │
+│  Observability: /metrics · /api/v1/observability · logs · LangSmith                     │
+└───────┬───────────────────────┬───────────────────────┬─────────────────────────────────┘
+        ▼                       ▼                       ▼
+   Together AI             Tavily search          Prometheus + Grafana
+   (OpenAI if set)         (web research)         (Compose or Kubernetes), LangSmith
 ```
 
-## Key Architecture Components
+The web app and the backend are separate processes. The backend is the only thing that runs agents, holds the documents and decides security. The web app never calls Tavily and never sees the backend's stores. For direct answers it calls Together AI itself, after the backend's guard has checked the conversation.
 
-### 1. Frontend Layer
+## Web app (`src/`)
 
-The frontend provides a user-friendly interface for interacting with the WebAgent platform:
+- **Stack:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS. React context holds state (`AppContext`, `ChatContext`), and `fetch` makes all HTTP calls.
+- **Sign-in (`middleware.ts`, `utils/session.ts`):**
+  - The operator sets a shared access code (`WEBAGENT_ACCESS_CODE`). `/login` exchanges it for a session cookie signed with HMAC-SHA256 (`WEBAGENT_SESSION_SECRET`).
+  - The middleware checks the cookie on every page and API route. Without one, a page redirects to `/login` and an API route answers 401. Only the static files and `/api/health` stay open.
+  - Production refuses to run without the code and the secret (503), unless `WEBAGENT_ACCESS_CODE_DISABLED=true`.
+- **API routes (`src/app/api/`):**
+  - `chat`: a direct answer, guard check first (see below).
+  - `triage` and `task` (with `[taskId]` and `cancel`): proxies to the backend. They add `X-API-Key` and `X-WebAgent-Client: s:<session>`, so the backend rate-limits each session, and they never forward the browser's own forwarding headers.
+  - `auth/login`, `auth/logout`, `settings`, `health`, `ping`.
+- **Direct answers (`/api/chat`):**
+  1. The conversation goes to the backend's `POST /api/guard/input` (checkpoint 1) with a 3-second timeout.
+  2. A refusal is returned as is: 403 for declined, 409 for consent needed, with a token to send back.
+  3. If the backend can't be reached, a local pattern check (`utils/guardPatterns.ts`) runs instead, and the answer carries a notice that the full check was unavailable.
+  4. The model call goes to Together AI with the user's AI style and knowledge focus.
+- **Research answers:** `POST /api/task`, then a poll of `GET /api/task/{id}` every few seconds. While a run works, the poll returns its current step; **Stop** calls the cancel route.
+- **Security headers (`next.config.js`):** Content Security Policy (scripts from self, `unsafe-inline` because Next bootstraps inline without nonces), `X-Frame-Options: DENY`, `nosniff`, a referrer policy, and HSTS in production. `next/image` loads remote images only from `WEBAGENT_IMAGE_HOSTS`.
+- **The rest of the UI:**
+  - the Agentic menu, answer labels, **Research this in depth**, **Try again** and **Answer directly instead**;
+  - the consent dialog and the security note with **Approve**;
+  - source and code side panels, image attachment and screenshots;
+  - appearance and high-contrast settings, and an offline banner.
 
-- **Technology Stack**:
-  - Next.js 15.5 with React 19
-  - TailwindCSS for responsive styling
-  - TypeScript for type safety
-  - Axios for API requests
-  - React Context API for state management
+## Backend API layer (`backend/main.py`, `app/api/`, `app/core/`)
 
-- **Key Features**:
-  - Responsive chat interface
-  - Real-time updates of task status
-  - File upload support
-  - Markdown rendering
-  - Error handling and retry mechanisms
-  - Offline support
-  - Accessibility features
+- **Authentication:** `X-API-Key` on every route except `/health`, `/api/v1/health/` and `/metrics` (`core/security.py`). It's required in uat and prod, and the server won't start there without `WEBAGENT_API_KEY` and `WEBAGENT_SECURITY_SECRET_KEY`.
+- **Middleware (`core/middleware.py`):** CORS, security headers, request logging, and a request size limit, each added once.
+- **Rate limiting:**
+  - 60 requests a minute per caller by default, counted in memory per worker.
+  - Behind the web app, the caller is the sign-in session (`X-WebAgent-Client`). That header is accepted only from `WEBAGENT_TRUSTED_PROXIES` or from a caller holding the API key; other callers are identified by the right-most untrusted `X-Forwarded-For` address.
+  - Health checks and `/metrics` are never limited. A limited request gets 429 with `Retry-After`.
+- **One error format:** `{"error": {"code", "message"}}` (FastAPI's `detail` is kept too). Intake-guard refusals keep their flat shape, which the web app reads.
+- **Startup checks (`core/startup_checks.py`)** refuse to start when anything is unsafe or missing:
+  - production settings, task time limits, triage and security model files;
+  - a security classifier that hasn't passed its gate (unless it is installed shadow-only);
+  - code execution in uat or prod without the Docker sandbox;
+  - in dev, binding to a public address.
+- **Routes:** listed with their fields in [api_reference.md](api_reference.md). The current ones are `/api/task`, `/api/triage` and `/api/guard/input`. The `/api/v1/chat`, `/api/v1/tasks` and `/api/v1/chat/completions` routes are older, OpenAI-style entry points onto the same task path.
 
-### 2. Backend API Layer
+## Tasks (`app/services/task_manager.py`, `run_supervisor.py`, `result_store.py`)
 
-The backend API layer handles all incoming requests and provides endpoints for the frontend:
+- **Two paths:** `POST /api/task` runs a task on one of them. The workflow (`run_workflow`) builds and runs the LangGraph graph. The direct path (`run_direct`) makes one text-only model call. The result records which one ran (`route`) and why (`decided_by`: `mode`, `rule`, `model`, `fallback`, `config` or `override`).
+- **Where tasks run:** in the server process, as FastAPI background tasks.
+- **The run supervisor bounds each research run:**
+  - it stops after `WEBAGENT_TASK_MAX_SECONDS` (420) and on cancel;
+  - it stops at `WEBAGENT_TASK_TOKEN_BUDGET` (0, off by default);
+  - it publishes the current step for polls (`services/progress.py`);
+  - a failed run gets an `error_code`: `timeout`, `budget`, `cancelled` or `escalated`.
+- **Status storage:**
+  - `data/results/<task_id>.json` is written when a task starts and again when it ends, so any worker can answer a poll and finished reports survive a restart.
+  - Task IDs are UUIDs, and only UUIDs are accepted, so an ID can't point outside the folder.
+  - There is no checkpointing: a restart loses runs in progress, and a task still `processing` after `WEBAGENT_TASK_TIMEOUT_MINUTES` (30) is reported as interrupted.
+  - Results are deleted after `WEBAGENT_RESULTS_RETENTION_DAYS` (30).
+- **Follow-ups:** up to 8 earlier turns (`previous_messages`) travel with a task, and the supervisor rewrites a follow-up as a complete question.
 
-- **Technology Stack**:
-  - FastAPI for high-performance async API
-  - Middleware components for security and metrics
-  - Pydantic for request/response validation
-  - API keys (`X-API-Key`) for authentication; the web app adds its own shared access code
+## Research workflow (`app/graph/workflows.py`, `app/agents/`)
 
-- **Key Components**:
-  - API router for endpoint organization
-  - Rate limiting middleware
-  - Security headers middleware
-  - Input validation and sanitization
-  - Error handling with structured logging
-  - Health check endpoints
-  - Prometheus metrics
+```text
+ question ─► Supervisor ── plans: web? internal? document? ── rewrites follow-ups as full questions
+                 │
+                 ├── document only ──► Document Extraction ──► done
+                 │
+                 └── research ──► ┌─ Web Research ──────┐  (in parallel)
+                        ▲         └─ Internal Research ─┘
+                        │                   │
+                        │                   ▼
+                        └── another round ─ Senior Research ── scores 1–10, asks follow-up questions
+                                            │
+                                            ▼ good enough, or round limit reached
+                                       Team Manager ── writes the report
+                                         │      ▲
+                         needs analysis  ├──► Data Analysis ─────────────────┤
+                         needs code      └──► Coding Assistant ─► Coding Review ┘
+                                            │
+                                            ▼
+                                     report saved to data/results/<task_id>.json
+```
 
-### 3. Task Management
+| Agent | File | Does |
+| --- | --- | --- |
+| Supervisor | `supervisor.py` | Plans the research (`models/research_plan.py`: web search, internal knowledge, document extraction) and writes the standalone question and its sub-questions |
+| Web Research | `web_research.py` | Searches the web with Tavily (`services/web_search.py`) and summarises the results with sources |
+| Internal Research | `internal_research.py` | Retrieves from the loaded documents: Chroma vectors plus BM25, merged |
+| Senior Research | `senior_research.py` | Scores the findings 1–10 and asks follow-up questions for another round, at most `agents.senior_research.max_follow_up_questions` times (3 in dev and uat, 5 in prod) |
+| Document Extraction | `document_extraction_agent.py` | Extracts from one document (`document_id`) when that's all the plan needs |
+| Team Manager | `team_manager.py` | Writes the final report; calls Data Analysis or the Coding Assistant when the question needs it |
+| Data Analysis | `data_analysis.py` | Patterns, figures and suggested charts from the findings |
+| Coding Assistant, Coding Review | `coding_assistant.py`, `coding_review.py` | Write code for the report, and check it |
 
-The task management system handles the asynchronous processing of user requests:
+- **Parallel research:** web and internal research run at the same time (`run_research_agents`); one failing doesn't stop the other. Everything else runs one step at a time.
+- **Model calls:** every agent's model call goes through `services/llm.py` to the configured provider. The default is Together AI `meta-models/Muse-Glimmer-30B`; OpenAI is used only where an agent sets `provider: openai`. Each agent can set its own `model` and `max_tokens` under `agents:` in `config/{env}.yaml`. A reply cut off at its limit is logged, and temporary errors (429, 5xx) are retried with backoff.
+- **Generated code:** it runs only through `utils/code_sandbox.py`, without the server's API keys. `WEBAGENT_CODE_SANDBOX=local` is for dev; uat and prod require `docker` (`backend/sandbox/`: no network, CPU and memory limits). The server itself never runs model-written code unless it's explicitly enabled.
 
-- **Key Features**:
-  - Task creation and tracking
-  - State persistence
-  - Result caching
-  - Progress updates
-  - Concurrent task handling
-  - Error recovery
+## Security guard (`app/security/`)
 
-- **Implementation**:
-  - FastAPI background tasks run each workflow in the server process
-  - Each task's status is saved to `backend/data/results/<task_id>.json` when it is created and when it finishes, so every server worker can answer polls and finished reports survive a restart
-  - A task still "processing" after `WEBAGENT_TASK_TIMEOUT_MINUTES` (30) is reported as interrupted
-  - UUID task IDs (only UUIDs are accepted, so an ID can't point outside the results folder)
-  - Each task runs one of two paths: the LangGraph workflow (`run_workflow`) or a direct path (`run_direct`) that makes one text-only model call without building the graph. Results record which one ran (`route`, `decided_by`)
+The guard puts two checkpoints in the path of every task. Both ask the same in-process decision point: Cedar policies (`backend/config/security/policies.cedar`, evaluated by `decision.py`) over a context of scores and facts.
 
-### Agentic triage
+| Outcome | Meaning |
+| --- | --- |
+| `allow` | Go ahead |
+| `verify` | Ask the judge (an LLM check, off by default) or a classifier's confident band; if neither is available, treat it as the policy says |
+| `consent` | The user must confirm first (a signed, single-use token) |
+| `decline` | Refuse, with a reason |
+| `escalate` | Stop the task |
+
+- **Checkpoint 1, before every model call (`context_defender.py`, `guard.py`):**
+  - Every context item is scored on four axes: the user's turn, earlier turns, web pages, documents, code output.
+  - The axes are **injection**, **harm**, **sensitive data** and **jailbreak**. ContextDefender scores them: a MiniLM-L12 classifier, `models/security/` version `cd-2026-10-13-2`, which passed its release gate.
+  - A flagged web page chunk is dropped and the task becomes **tainted** (`ledger.py`). A risky user turn is declined, sent for consent or verified. A search that would carry a secret is declined, and one carrying personal data is verified.
+  - The web app's direct chat uses the same check through `POST /api/guard/input`.
+- **Checkpoint 2, before every tool action and plan subgoal (`tool_guard.py`, `intent.py`, `signals.py`):**
+  - Web search, internal retrieval, document extraction, code execution, and the supervisor's and senior research's rewritten questions.
+  - Its signals:
+    - alignment with the task text and with the user's own turns (MiniLM cosine);
+    - **risk above intent** (harm of the call minus harm of the request);
+    - private text copied into a web search (salted shingles, kept in memory per task);
+    - tools the plan didn't ask for;
+    - drift across the task.
+  - Acting rules today come from the original policies: on a tainted task, a search goes to verify and code needs consent; dangerous code, a secret in a search, and a document from the wrong source are declined. An action the guard skipped can be approved with the web app's **Approve**, which reruns the task with a signed, single-use approval.
+- **The intent classifier (3.9.0).** A fine-tuned cross-encoder for checkpoint 2, `models/security/alignment/` version `ac-2026-10-17-1`.
+  - It failed its release gate, so it is installed **shadow-only**: its scores are recorded next to the cosine signals and never decide.
+  - A model that passes the gate replaces the cosine signals in the policy context.
+- **Modes:** `input_mode` and `tool_mode` are `shadow` (record what would happen, block nothing) or `act`. Every environment runs in shadow now. The nine checkpoint 2 intent rules are shadow-only whatever the mode, until each one's threshold is measured (`planning/specs/checkpoint2-intent/`).
+- **Collection:** with `collect: true` (uat), decisions are written as rows to `data/security/collected/` for review. Outside dev, those rows hold scores and decisions, not question text.
+- **Design and status:** `planning/specs/agentic-security/` and `planning/specs/checkpoint2-intent/`.
+
+## Agentic triage (`app/services/triage.py`, `triage_model.py`)
 
 The web app's Agentic control has three modes: Off, Auto and Always. In Auto, a question goes to the research workflow only when it needs it.
 
-- **Who decides:** the backend classifies (`POST /api/triage`, `app/services/triage.py`); the web app routes. A direct answer goes through the web app's `/api/chat`, which keeps the user's prompt settings and needs no polling; a research answer goes through `/api/task`.
-- **How:** rules first (an image or a greeting → direct; "research …", "write a report …" → research), then frozen `all-MiniLM-L6-v2` embeddings and a logistic regression (`models/triage/`, about 10 ms on CPU). If the classifier can't load, the answer is research.
-- **API clients:** `/api/task` and `/api/v1/chat/completions` take `mode: off | auto | always` and use the same classifier. No mode and no `agentic` flag means `off`.
-- **Learning:** shadow mode and "Research this in depth" clicks can save questions for review (`data/triage/collected/`, off outside dev, deleted after 30 days). A new classifier version ships only if it passes the release gate on a held-out test set; uat/prod keep triage off until one does.
-- Design: `planning/specs/agentic-triage/`.
-
-### 4. LangGraph Orchestration
-
-The core of the WebAgent platform is the LangGraph-based agent orchestration system:
-
-- **Key Components**:
-  - Workflow definitions
-  - Agent state management
-  - Routing logic
-  - Error handling and retries
-  - Tracing with LangSmith
-
-- **Implementation**:
-  - LangGraph for agent orchestration
-  - Directed graph for agent interactions
-  - State transitions with validation
-  - Conditional routing based on agent outputs
-
-### 5. Agent Implementation
-
-The system includes seven specialized agents:
-
-- **Supervisor Agent**:
-  - Analyzes user queries
-  - Plans research approach
-  - Coordinates other agents
-  - Determines research needs
-
-- **Web Research Agent**:
-  - Performs web searches via Tavily
-  - Extracts relevant information
-  - Cites sources properly
-  - Formats findings for other agents
-
-- **Internal Research Agent**:
-  - Queries internal knowledge base
-  - Retrieves relevant documents
-  - Performs semantic search
-  - Synthesizes internal knowledge
-
-- **Senior Research Agent**:
-  - Verifies and fact-checks information
-  - Resolves conflicting information
-  - Requests additional research when needed
-  - Creates comprehensive summaries
-
-- **Data Analysis Agent**:
-  - Identifies patterns in research data
-  - Determines appropriate visualizations
-  - Prepares data for presentation
-  - Generates insights and conclusions
-
-- **Coding Assistant Agent**:
-  - Creates data visualizations
-  - Writes Python code for analysis
-  - Generates charts and graphs
-  - Ensures code correctness
-
-- **Team Manager Agent**:
-  - Compiles final reports
-  - Integrates findings from all agents
-  - Ensures report quality and completeness
-  - Formats information for readability
-
-### 6. External Integrations
-
-The system integrates with several external services:
-
-- **Language Models**:
-  - Together AI (Llama 3.3 70B Instruct Turbo Free) - primary
-  - OpenAI API (GPT-4) - fallback
-  - Provider abstraction for easy switching
-
-- **Web Search**:
-  - Tavily Search API for web research
-  - Configurable depth and result count
-
-- **Knowledge Storage**:
-  - Vector database for semantic search
-  - Document storage and retrieval
-  - Embedding generation
-
-### 7. Monitoring & Observability
-
-Comprehensive monitoring and observability features:
-
-- **Metrics**:
-  - Prometheus for metrics collection
-  - Request counts and latencies
-  - LLM usage statistics
-  - Task processing metrics
-  - Custom business metrics
-
-- **Logging**:
-  - Structured JSON logging
-  - Log levels based on environment
-  - Request ID tracking
-  - Error context capture
-  - Rotation and retention policies
-
-- **Tracing**:
-  - LangSmith integration for LLM tracing
-  - Agent interaction tracing
-  - Performance monitoring
-  - Error analysis
-
-- **Health Checks**:
-  - Basic and detailed health endpoints
-  - Dependency status reporting
-  - Self-diagnostics
-
-## Communication Flow
-
-The typical flow of a user request through the system:
-
-1. User submits a query through the frontend interface
-2. Frontend sends request to backend API
-3. Backend validates request and creates a new task
-4. Task Manager initiates asynchronous processing
-5. Supervisor Agent analyzes query and plans research approach
-6. Research Agents (Web and Internal) gather information in parallel
-7. Senior Research Agent verifies and synthesizes findings
-8. Data Analysis Agent processes information and identifies insights
-9. Coding Assistant generates visualizations if needed
-10. Team Manager creates final comprehensive report
-11. Result is stored in Task Manager
-12. Frontend polls for task completion
-13. Result is displayed to user with formatting
-
-## Error Handling & Resilience
-
-The system includes comprehensive error handling and resilience features:
-
-- **Rate Limiting**:
-  - Per-caller limit (60 requests per minute by default), counted in memory per server worker
-  - Behind the web app's proxy, the caller is the user's sign-in session (`X-WebAgent-Client`, accepted from `WEBAGENT_TRUSTED_PROXIES` or API-key holders)
-  - Health checks and `/metrics` are never limited; a limited request gets `429` with `Retry-After`
-
-- **Circuit Breakers**:
-  - Automatic detection of service failures
-  - Graceful degradation
-  - Fallback mechanisms
-
-- **LLM Fallbacks**:
-  - Provider switching on failure
-  - Retry mechanisms with backoff
-  - Model parameter adjustment
-  - Per-agent output limits (`agents.<name>.max_tokens`), with a logged warning when a reply is cut off at its limit
-
-- **Request Validation**:
-  - Comprehensive input validation
-  - Size limits
-  - Content sanitization
-  - Type checking
-
-- **Monitoring Alerts**:
-  - Error rate thresholds
-  - Performance degradation detection
-  - Resource utilization alerts
-
-## Deployment Architecture
-
-The system supports multiple deployment options:
-
-- **Docker-based Deployment**:
-  - Multi-stage build on Python 3.12, pinned by `backend/constraints.txt`; runs as `WEBAGENT_ENV=prod` as a non-root user
-  - NLTK data installed at build time; `GET /health` as the health check
-  - Docker Compose for local deployment (backend, Prometheus, Grafana)
-  - A separate sandbox image (`backend/sandbox`) for running model-written code with no network
-
-- **Kubernetes Deployment**:
-  - Namespace isolation
-  - Deployment configurations
-  - Service definitions
-  - Ingress rules
-  - Resource requests and limits
-  - Read-only root filesystem; `/app/data` on a persistent volume, `emptyDir` for `/app/logs` and `/tmp`
-  - One replica (Recreate updates) until `/app/data` is on a shared ReadWriteMany volume
-
-- **Scaling Strategy**:
-  - Horizontal scaling for API layer
-  - Vertical scaling for compute-intensive agents
-  - Caching for repeated requests
-  - Resource optimization
-
-## Configuration Management
-
-The system uses a hierarchical configuration system:
-
-- **Environment-based Configuration**:
-  - Development (dev)
-  - User Acceptance Testing (uat)
-  - Production (prod)
-
-- **Configuration Sources** (in priority order):
-  - `.env.local` for sensitive information (but `WEBAGENT_ENV` set in the shell or container wins)
-  - Environment variables with `WEBAGENT_` prefix (`WEBAGENT_SECURITY_*` override the YAML security block)
-  - YAML files by environment
-  - Default values in code
-
-- **Key Configuration Categories**:
-  - API settings
-  - CORS configuration
-  - Database connections
-  - LLM parameters
-  - Security settings
-  - Logging configuration
-  - Rate limits
-
-## Security Considerations
-
-The system implements multiple security measures:
-
-- **API Security**:
-  - Rate limiting per caller (per sign-in session through the web app)
-  - API key authentication (`X-API-Key`; required in uat and prod)
-  - Request size limiting
-  - Signed, single-use consent and approval tokens for the security guard
-
-- **HTTP Security**:
-  - Security headers middleware
-  - CORS protection
-  - HTTPS enforcement
-  - Content security policy
-
-- **Data Protection**:
-  - Input sanitization
-  - Parameter validation
-  - API key protection
-  - Environment variable isolation
-
-- **Infrastructure Security**:
-  - Container isolation
-  - Least privilege principles
-  - Dependency scanning
-  - Regular updates
-
-## Performance Optimization
-
-Performance is optimized through several techniques:
-
-- **Caching**:
-  - Result caching for repeated queries
-  - Token count caching
-  - Agent state caching
-
-- **Parallel Processing**:
-  - Concurrent agent execution
-  - Asynchronous API handlers
-  - Background task processing
-
-- **Resource Management**:
-  - Memory usage monitoring
-  - Task prioritization
-  - Request throttling under load
-
-## Future Roadmap
-
-Planned enhancements to the architecture:
-
-1. **Enhanced LLM Integration**:
-   - Support for more providers
-   - Local model deployment options
-   - Hybrid approaches
-
-2. **Advanced Caching**:
-   - Semantic caching for similar queries
-   - Distributed cache with Redis
-   - Partial result caching
-
-3. **Improved Scalability**:
-   - Kafka-based event system
-   - Stateless agent design
-   - Distributed tracing
-
-4. **Enhanced Security**:
-   - Fine-grained permissions
-   - API key rotation
-   - Advanced threat detection
-
-5. **User Personalization**:
-   - User profiles
-   - Customized research preferences
-   - History-aware responses
-
-## Conclusion
-
-The WebAgent architecture provides a robust, scalable, and maintainable platform for AI-powered research and analysis workflows. The multi-agent approach allows for complex reasoning and task handling, while the microservice design enables independent scaling and development of components. 
+- **Who decides:** the backend classifies (`POST /api/triage`); the web app routes. A direct answer goes through the web app's `/api/chat`, and a research answer through `/api/task`.
+- **How:** rules first (an image or a greeting → direct; "research …" or "write a report …" → research). Then frozen `all-MiniLM-L6-v2` embeddings and a logistic regression (`models/triage/`, about 10 ms on CPU). If the classifier can't load, the answer is research.
+- **API clients:** `/api/task` and `/api/v1/chat/completions` take `mode: off | auto | always`. With no mode and no `agentic` flag, the mode is `off`.
+- **Learning:**
+  - Shadow mode and "Research this in depth" clicks can save questions for review (`data/triage/collected/`). This is off outside dev unless configured, and rows are deleted after 30 days.
+  - A new classifier version ships only if it passes its release gate.
+  - Shadow mode records Always-mode questions only; in Auto, triage routes for real.
+- **Design:** `planning/specs/agentic-triage/`.
+
+## Documents and stores (`app/services/`)
+
+| Store | Where | Holds |
+| --- | --- | --- |
+| Task results | `data/results/` | One JSON file per task: question, status, timings, report |
+| Vector store | `data/vectordb/` (Chroma, embedded in the process) | Document chunks and embeddings for internal research |
+| Graph store | Neo4j when `DATABASE_GRAPH_DB_URL` is set, else NetworkX in memory | Document relationships (same source, and links made in code) |
+| Artifacts | `WEBAGENT_ARTIFACTS_PATH` (a local folder) | A copy of each loaded document and its metadata |
+| Drift | `data/drift/` | Samples and frozen references for the drift detectors, shared by workers |
+| Collection | `data/security/collected/`, `data/triage/collected/` | Guard and triage rows for review (when collection is on) |
+| MLflow | `data/mlruns/` | Optional experiment tracking for internal research (`MLFLOW_TRACKING_URI`) |
+
+- **How documents get in:** through `POST /api/v1/documents/upload` or `scripts/batch_document_loader.py` (`document_loader.py`). Each one is parsed (PDF, Word, HTML, text, Markdown, CSV, JSON), summarised, chunked into the vector store, linked in the graph store and copied to the artifacts folder. Topics come from LDA, capped by `WEBAGENT_LDA_MAX_CHARS`.
+- **Who sees them:** loaded documents are shared by every task on the server. There are no per-user spaces.
+- **When they're checked:** at retrieval, by checkpoint 1, like any other context.
+
+## Observability (`app/core/metrics.py`, `app/core/drift*`, `app/api/routes/observability.py`)
+
+- **Metrics:** `/metrics` for Prometheus. It covers requests and latencies, model calls and tokens per agent, task outcomes and durations, guard decisions per checkpoint and policy, shadow decisions, intent signals, the shadow classifier's scores, triage routes, and drift. With several workers it uses the multiprocess collector.
+- **Drift:**
+  - Measured on real traffic: model speed and tokens per agent, embeddings of questions and results, and document processing time, size and type. Each is compared with a frozen reference taken from the first samples.
+  - Six alerts: model drift, model errors, rate limits, token use, document drift and document errors.
+  - They appear at `/api/v1/observability/{drift,alerts,health}` (API key needed), on the Grafana "Model Drift" dashboard, and in Grafana's alert list. The references are reset with the `reset_baseline` routes.
+- **Logs:**
+  - Plain-text logs in `logs/webagent-<env>.log`.
+  - Every line written during a task carries `[task <first 8 characters of its ID>]`.
+  - Outside dev, a question appears in the logs only as its length.
+- **Traces:** with `LANGSMITH_API_KEY` set, each task is one LangSmith trace (project `webagent-research`) with every agent step and token count.
+- **Dashboards:** `backend/grafana/` for Compose, and `backend/kubernetes/monitoring/` for a cluster.
+
+## Configuration
+
+- **Environments:** `WEBAGENT_ENV` selects `config/{dev,uat,prod}.yaml`. Those files hold agents, models, limits, the guard and triage modes, and drift settings.
+- **Precedence:**
+  1. `WEBAGENT_ENV` from the shell or container.
+  2. `.env.local` (keys and overrides; git-ignored).
+  3. `WEBAGENT_*` environment variables (`WEBAGENT_SECURITY_*` override the YAML security block).
+  4. The YAML file.
+  5. Code defaults.
+
+  `.env.local.example` lists every setting.
+- **The three environments:**
+  - **dev:** API key off, debug errors, Swagger on, triage collection on.
+  - **uat:** prod-like, with collection on for the shadow week.
+  - **prod:** keys required, Swagger off, the Docker sandbox required.
+
+## Deployment
+
+- **Docker image (`backend/Dockerfile`):**
+  - A two-stage build on `python:3.12-slim` with the exact versions in `constraints.txt` and the CPU build of torch.
+  - It runs as `WEBAGENT_ENV=prod` as a non-root user, with NLTK data and the MiniLM encoder baked in.
+  - `GET /health` is its health check, and `WEB_CONCURRENCY` sets the number of uvicorn workers.
+  - Run `git lfs pull` before building so the model files are real.
+- **Docker Compose (`backend/docker-compose.yml`):** the backend, Prometheus and Grafana, on 127.0.0.1 only. `docs/RUNBOOK.md` shows how to run it as uat with its own data folder.
+- **Kubernetes (`backend/kubernetes/`):**
+  - One replica with Recreate updates, until `/app/data` is on a shared ReadWriteMany volume.
+  - A read-only root filesystem; `emptyDir` for logs and `/tmp`; resource limits (3 GiB of memory).
+  - The NetworkPolicy limits port 8000 to the ingress and monitoring namespaces, and the Ingress answers 404 for `/metrics`.
+  - An optional backup CronJob.
+- **Web app:** `next build` and `next start`, or Vercel (`VERCEL_DEPLOYMENT.md`). It needs `WEBAGENT_BACKEND_URL` and the same `WEBAGENT_API_KEY` as the backend.
+- **Dependencies:**
+  - CI audits both sides (`pip-audit`, `npm audit`), and a new advisory fails the build.
+  - The accepted advisories, which need a major-version migration and can't be reached in WebAgent, are explained in `backend/SECURITY_DEPENDENCIES.md`.
+
+## Limits and what isn't built
+
+- No scheduled or recurring tasks, saved topics, or email and other user notifications. The only alerts are the operator alerts above.
+- No per-user accounts: one shared access code, and shared documents.
+- One server's memory holds the rate limits, and one data folder holds the state. Scaling past one machine needs shared storage for `data/` and a shared rate-limit store.
+- No checkpointing of research runs.
+- Images reach only direct answers.
+
+## Where the work is going
+
+The plans are in `planning/`:
+
+- `improvement-plan.md` for the platform;
+- `checkpoint2-upgrade-plan.md` for the intent checks;
+- `observability-plan-3.6.0.md` for drift.
+
+The next steps are a shadow week on 3.10.0, to measure the guard's false-positive rates and collect reviewed real calls. After that come switching the guard's rules from shadow to act one at a time, and retraining the intent classifier.

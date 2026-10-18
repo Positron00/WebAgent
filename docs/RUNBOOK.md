@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.10.0 -t <registry>/webagent-backend:3.10.0 backend/
-   docker push <registry>/webagent-backend:3.10.0
+   docker build --build-arg APP_VERSION=3.10.1 -t <registry>/webagent-backend:3.10.1 backend/
+   docker push <registry>/webagent-backend:3.10.1
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.10.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.10.1 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -197,6 +197,21 @@ decide, and uat and prod start with it. 3.9.0 ships the retrained MiniLM-L6 this
 at an empty folder. Nothing new is stored:
 private text is kept only as salted hashes in memory for the task, and outside dev no intent or
 subgoal text is logged or collected.
+
+## Local uat with Docker Compose
+
+For a shadow week or a prod-like check on one machine. The backend, Prometheus and Grafana all bind to 127.0.0.1.
+
+1. `git lfs pull`.
+2. Write a Compose override outside the repo that sets `LOG_LEVEL=INFO`, `WEB_CONCURRENCY=2` and a fresh data folder mounted at `/app/data`. The shadow-week runbook has the file.
+3. Start it from the repo root:
+   ```bash
+   WEBAGENT_ENV=uat APP_VERSION=<version> docker compose -f backend/docker-compose.yml \
+     -f ~/webagent-uat-compose.yml --env-file .env.local up -d --build
+   ```
+4. Run the web app on another port: `npx next dev -p 3002 -H 127.0.0.1`. Grafana uses 3001.
+
+Without the override, the stack runs as `dev`, keeps its data in the `webagent-data` Docker volume, and logs at DEBUG. That's fine for development, but not for uat data. Full steps: `planning/specs/agentic-security/shadow-week-runbook.md` section 1.
 
 ## Metrics exposure
 

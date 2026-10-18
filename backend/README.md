@@ -4,49 +4,41 @@ The backend component of the WebAgent platform, built with FastAPI, LangGraph, a
 
 ## Architecture
 
-The WebAgent backend is built on a multi-agent architecture that leverages LangGraph for workflow orchestration. The system consists of several specialized agents that work together to process complex research tasks:
+The backend runs the research agents, the security guard and triage, and holds the documents and task results. The full picture, including the web app, is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). The research workflow (`app/graph/workflows.py`):
 
-```
-┌─────────────────────────────────────────────────────┐
-│                  LangGraph Workflow                 │
-│                                                     │
-│  ┌─────────┐   ┌────────────┐   ┌────────────────┐  │
-│  │Supervisor│──►│ Research   │──►│ Senior        │  │
-│  │ Agent    │   │ Agents     │   │ Research      │  │
-│  └─────────┘   └────────────┘   │ Agent         │  │
-│       │             ▲           └───────┬────────┘  │
-│       │             │                   │           │
-│       ▼             └───────────────────┘           │
-│  ┌─────────────┐            │                       │
-│  │ Document    │            ▼                       │
-│  │ Extraction  │    ┌────────────────┐              │
-│  │ Agent       │    │ Specialized    │              │
-│  └─────────────┘    │ Agents         │              │
-│       │             └───────┬────────┘              │
-│       │                     │                       │
-│       └─────────┐    ┌─────┘                       │
-│                 ▼    ▼                              │
-│          ┌───────────────────┐                      │
-│          │ Team Manager      │                      │
-│          │ Agent             │                      │
-│          └───────────────────┘                      │
-└─────────────────────────────────────────────────────┘
+```text
+ question ─► Supervisor ── plans: web? internal? document? ── rewrites follow-ups as full questions
+                 │
+                 ├── document only ──► Document Extraction ──► done
+                 │
+                 └── research ──► ┌─ Web Research ──────┐  (in parallel)
+                        ▲         └─ Internal Research ─┘
+                        │                   │
+                        │                   ▼
+                        └── another round ─ Senior Research ── scores 1–10, asks follow-up questions
+                                            │
+                                            ▼ good enough, or round limit reached
+                                       Team Manager ── writes the report
+                                         │      ▲
+                         needs analysis  ├──► Data Analysis ─────────────────┤
+                         needs code      └──► Coding Assistant ─► Coding Review ┘
 ```
 
 ### Core Components
 
-1. **Supervisor Agent**: The entry point for all requests, analyzes user queries and orchestrates the workflow
-2. **Research Agents**: Gather information from the web and internal knowledge sources
-3. **Senior Research Agent**: Evaluates research quality and can request additional research in a feedback loop
-4. **Document Extraction Agent**: Processes documents to extract structured information
-5. **Specialized Agents**: Handle specific tasks like data analysis and code generation
-6. **Team Manager Agent**: Synthesizes outputs from multiple agents into a final response
+1. **Supervisor**: plans the research (web, internal, document) and writes the standalone question and its sub-questions
+2. **Web and Internal Research**: run in parallel; Tavily for the web, Chroma vectors plus BM25 for loaded documents
+3. **Senior Research**: scores the findings and asks for further rounds, at most `agents.senior_research.max_follow_up_questions` (3 in dev and uat, 5 in prod)
+4. **Document Extraction**: extracts from one document when that's all a task needs
+5. **Team Manager**: writes the report, calling **Data Analysis** or the **Coding Assistant** (followed by **Coding Review**) when the question needs them
+6. **Security guard** (`app/security/`): checkpoint 1 before every model call, checkpoint 2 before every tool call and plan subgoal; shadow mode in every environment today
+7. **Triage** (`app/services/triage.py`): decides per question whether it needs the research agents
 
 ### Key Features
 
 - **LangGraph Workflow**: Flexible agent orchestration with conditional routing
 - **Document Processing**: Extract and analyze information from various document formats
-- **Research Loop**: Iterative research capabilities with up to 3 feedback loops
+- **Research Loop**: further research rounds until the senior research agent is satisfied, at most 3 (dev, uat) or 5 (prod)
 - **API Integration**: FastAPI server with comprehensive endpoint documentation
 
 ### Diagnostics & Testing System
@@ -92,7 +84,7 @@ The diagnostics can help identify issues with:
 ## Prerequisites
 
 - Python 3.12 (the `agents` conda environment)
-- Together AI API key (default LLM provider); OpenAI, Anthropic, Groq or Gemini keys are optional fallbacks
+- Together AI API key (the default provider). An agent can use OpenAI or Anthropic instead with `provider:` in its config; nothing falls back automatically. Groq and Gemini also need their LangChain packages, which aren't installed by default
 - Tavily API key (web research)
 - LangSmith API key (optional, for tracing)
 
@@ -104,10 +96,11 @@ The diagnostics can help identify issues with:
    cd WebAgent
    ```
 
-2. Install dependencies (pinned by `backend/constraints.txt`):
+2. Fetch the model weights (Git LFS) and install dependencies (exact versions in `backend/constraints.txt`):
    ```bash
-   pip install -r requirements.txt
-   # (from repo root: runtime + dev, with backend/constraints.txt pins; the Docker image installs backend/requirements.txt only)
+   git lfs pull
+   pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+   # from the repo root: runtime + dev tools with the constraints; the Docker image installs backend/requirements.txt only
    ```
 
 3. Create `.env.local` in the repo root from the template and add your keys:
@@ -132,13 +125,13 @@ Access the API documentation at http://localhost:8000/api/v1/docs
 
 ### Production Server
 
-For production deployments, use Gunicorn with Uvicorn workers:
+Run uvicorn with several workers (the Docker image does this, with `WEB_CONCURRENCY` workers):
 
 ```bash
-gunicorn main:app -k uvicorn.workers.UvicornWorker -w 4 --bind 0.0.0.0:8000
+cd backend && uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-Several workers are fine: a task's status is saved in `backend/data/results/` as soon as it is created, so any worker can answer a poll. Running on several machines needs that folder on shared storage.
+Several workers are fine: a task's status is saved in `backend/data/results/` as soon as it is created, so any worker can answer a poll. Running on several machines needs that folder on shared storage. In uat and prod, run `python -m app.core.startup_checks` first (the image does), and set `PROMETHEUS_MULTIPROC_DIR` to an empty folder for the metrics.
 
 ### Running with Docker
 
@@ -157,7 +150,7 @@ docker run -p 8000:8000 --env-file ../.env.local -e WEBAGENT_ENV=prod \
 
 - The image sets `WEBAGENT_ENV=prod`. `.env.local` sets `WEBAGENT_ENV=dev`, and `--env-file` overrides the image, so pass `-e WEBAGENT_ENV=prod` after it. In prod the container stops at once with `Startup check failed: ...` if `WEBAGENT_SECURITY_SECRET_KEY` or `WEBAGENT_API_KEY` is missing (the check runs before uvicorn starts).
 - `GET /health` is the container health check; it needs no API key.
-- NLTK data is installed at build time. Task results, the model registry and the Hugging Face cache live in `/app/data`; mount a volume there to keep them.
+- NLTK data and the MiniLM encoder are installed at build time. Task results, documents, drift and collection data live in `/app/data`; mount a volume there to keep them. Run `git lfs pull` before building, or the model folders hold pointer files.
 - `WEB_CONCURRENCY` sets the number of uvicorn workers (default 4).
 
 ## Diagnostics and Monitoring
@@ -314,6 +307,7 @@ backend/
 │   │   ├── document_extraction_agent.py # Document extraction
 │   │   ├── data_analysis.py          # Data analysis agent
 │   │   ├── coding_assistant.py       # Coding assistant agent
+│   │   ├── coding_review.py          # Reviews the coding assistant's code
 │   │   └── team_manager.py           # Team manager agent
 │   ├── api/              # API endpoints
 │   ├── core/             # Core functionality
@@ -327,14 +321,23 @@ backend/
 │   │   ├── task.py                 # Task models and workflow state
 │   │   ├── research_plan.py        # Research plan shared by supervisor, routers and research agents
 │   │   └── chat.py                 # Chat models
+│   ├── security/         # Security guard: checkpoints 1 and 2, ContextDefender, intent signals,
+│   │                     #   Cedar decisions, ledger, judge, collection (policies in config/security/)
 │   ├── services/         # External service integrations
-│   │   ├── llm.py                  # LLM service client
+│   │   ├── llm.py                  # LLM service client (every agent's model call)
 │   │   ├── task_manager.py         # Runs workflows; task status
-│   │   └── result_store.py         # Task status and results on disk (shared by workers)
+│   │   ├── run_supervisor.py       # Time limit, token budget, cancel, progress
+│   │   ├── result_store.py         # Task status and results on disk (shared by workers)
+│   │   ├── triage.py, triage_model.py  # Agentic triage: rules and the MiniLM classifier
+│   │   ├── web_search.py           # Tavily
+│   │   └── vectordb.py, graphdb.py, document_loader.py  # Documents and their stores
 │   └── utils/            # Utility functions
 │       ├── code_sandbox.py         # Runs generated code (local or docker)
 │       ├── nltk_data.py            # NLTK data without startup downloads
 │       └── diagnostics.py          # System diagnostics
+├── config/               # dev/uat/prod YAML; security policies
+├── models/               # ContextDefender, alignment classifier, triage (LFS); optional model services
+├── scripts/              # Training, gates, dataset builders, benchmarks
 ├── sandbox/              # Docker image for generated code
 ├── tests/                # Test suite
 ├── main.py               # Application entry point
@@ -478,15 +481,7 @@ With `LANGSMITH_API_KEY` set, each task is one LangSmith trace in the project `w
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit your changes: `git commit -am 'Add new feature'`
-4. Push to the branch: `git push origin feature-name`
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
+See [CONTRIBUTING.md](../CONTRIBUTING.md). The project is licensed under MIT.
 
 ### Services
 
@@ -562,7 +557,7 @@ The backend is organized into the following key directories:
 
 ### Configuration and Data
 - `config/`: Configuration files
-- `data/`: Data storage and processing (`results/`, `registry/`, `vectordb/` are generated and git-ignored; `sample_docs/` is tracked)
+- `data/`: Data storage (`results/`, `vectordb/`, `drift/`, `security/collected/`, `triage/collected/`, `mlruns/` are generated and git-ignored; `sample_docs/`, `security/` and `triage/` training data are tracked, partly through LFS)
 - `sandbox/`: Docker image for running generated code (`WEBAGENT_CODE_SANDBOX=docker`)
 - `kubernetes/`: Deployment manifests and `deploy.sh`
 

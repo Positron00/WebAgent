@@ -1,5 +1,8 @@
 # MLflow Integration for Self-Hosted LLM Service
 
+> The self-hosted LLM image installs the full MLflow package itself (`requirements-llm.txt`). The main backend has only the client (`mlflow-skinny`, since 3.10.0); for a tracking server next to it, `pip install -r backend/requirements-demos.txt`.
+
+
 This guide explains how to use MLflow with the WebAgent self-hosted LLM service to track experiments, compare model performance, and optimize hyperparameters.
 
 ## Overview

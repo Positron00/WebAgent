@@ -24,11 +24,14 @@ conda create -n agents python=3.12
 conda activate agents
 ```
 
-3. Install dependencies:
+3. Fetch the model weights and install dependencies:
 
 ```bash
-pip install -r backend/requirements.txt -c backend/constraints.txt
+git lfs pull     # ContextDefender, the alignment classifier and triage are LFS files
+pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 ```
+
+`requirements.txt` in the repo root adds the dev tools and the exact versions in `backend/constraints.txt`. The CPU index keeps torch to its CPU build.
 
 4. Set up environment variables in the repo root:
 
@@ -79,7 +82,7 @@ npm run stack:up     # docker compose -f backend/docker-compose.yml --env-file .
 npm run stack:down   # stop it
 ```
 
-`stack:up` also tags the backend image with the version from `package.json`.
+`stack:up` also tags the backend image with the version from `package.json`. To run the stack as uat with its own data folder (for example for a shadow week), see "Local uat with Docker Compose" in [docs/RUNBOOK.md](../docs/RUNBOOK.md).
 
 This will start:
 - WebAgent backend on port 8000
@@ -106,6 +109,7 @@ From the repo root:
 python -m pytest backend/tests              # all tests
 python -m pytest backend/tests/unit         # unit tests
 python -m pytest backend/tests/integration  # integration tests
+python -m pytest backend/tests -m needs_lfs # tests that load the real model weights
 npm run coverage:backend                    # with a coverage report
 ```
 
@@ -120,12 +124,8 @@ The local development setup includes Prometheus and Grafana for monitoring:
 
 ### Grafana Dashboards
 
-The WebAgent Backend Dashboard provides:
-- HTTP request rates by status code
-- Request duration by endpoint
-- LLM request rates and durations
-- Token usage metrics
-- Task completion rates
+- **WebAgent Backend Dashboard:** HTTP request rates by status code, request duration by endpoint, LLM request rates and durations, token use, task completion rates.
+- **Model Drift Dashboard:** drift per detector (model speed and tokens per agent, embeddings, documents) and the six alerts. Grafana's alert list shows the same alerts (see "Drift and alerts" in [docs/RUNBOOK.md](../docs/RUNBOOK.md)).
 
 ## Configuration
 
