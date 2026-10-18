@@ -3,16 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/contexts/AppContext";
 import { ChatProvider } from "@/contexts/ChatContext";
-import dynamic from 'next/dynamic';
+import BrowserCompatibilityWarning from "@/components/BrowserCompatibilityWarningClient";
 
-// Dynamically import the browser compatibility warning component
-// to avoid server-side rendering issues with browser detection
-const BrowserCompatibilityWarning = dynamic(
-  () => import('@/components/BrowserCompatibilityWarning'),
-  { ssr: false }
-);
-
-const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "WebAgent",

@@ -15,7 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install dependencies at the known-good versions in constraints.txt
 COPY requirements.txt constraints.txt ./
-RUN pip install --no-cache-dir --user -r requirements.txt -c constraints.txt
+# The CPU wheel index keeps torch to the CPU build (PyPI's default pulls the CUDA libraries on amd64).
+RUN pip install --no-cache-dir --user --extra-index-url https://download.pytorch.org/whl/cpu \
+    -r requirements.txt -c constraints.txt
 
 # Stage 2: Runtime
 FROM python:3.12-slim

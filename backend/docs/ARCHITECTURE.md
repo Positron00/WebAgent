@@ -10,7 +10,7 @@ WebAgent is a sophisticated AI system built as a microservice architecture that 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WebAgent Platform v3.9.0                          │
+│                           WebAgent Platform v3.10.0                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌────────────────┐                         ┌─────────────────────────────┐ │
@@ -82,7 +82,7 @@ WebAgent is a sophisticated AI system built as a microservice architecture that 
 The frontend provides a user-friendly interface for interacting with the WebAgent platform:
 
 - **Technology Stack**:
-  - Next.js 14.2+ with React 18
+  - Next.js 15.5 with React 19
   - TailwindCSS for responsive styling
   - TypeScript for type safety
   - Axios for API requests

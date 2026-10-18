@@ -55,7 +55,7 @@ function toBase64Url(bytes: Uint8Array): string {
     .replace(/=+$/, "");
 }
 
-function fromBase64Url(text: string): Uint8Array | null {
+function fromBase64Url(text: string): Uint8Array<ArrayBuffer> | null {
   if (!/^[A-Za-z0-9_-]*$/.test(text)) return null;
   try {
     const binary = atob(text.replace(/-/g, "+").replace(/_/g, "/"));

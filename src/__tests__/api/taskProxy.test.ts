@@ -16,11 +16,11 @@ const fetchMock = jest.fn();
 let postTask: (req: Request) => Promise<Response>;
 let getTask: (
   req: Request,
-  ctx: { params: { taskId: string } },
+  ctx: { params: Promise<{ taskId: string }> },
 ) => Promise<Response>;
 let cancelTask: (
   req: Request,
-  ctx: { params: { taskId: string } },
+  ctx: { params: Promise<{ taskId: string }> },
 ) => Promise<Response>;
 
 beforeAll(async () => {
@@ -78,7 +78,7 @@ describe("/api/task proxy", () => {
 
     const response = await getTask(
       new Request("http://localhost/api/task/t1"),
-      { params: { taskId: "t1" } },
+      { params: Promise.resolve({ taskId: "t1" }) },
     );
 
     expect(forwarded().url).toBe("http://backend.test:9000/api/task/t1");
@@ -90,7 +90,7 @@ describe("/api/task proxy", () => {
     fetchMock.mockResolvedValue(new Response("{}", { status: 200 }));
 
     await getTask(new Request("http://localhost/api/task/x"), {
-      params: { taskId: "../admin?x=1" },
+      params: Promise.resolve({ taskId: "../admin?x=1" }),
     });
 
     expect(forwarded().url).toBe(
@@ -105,7 +105,7 @@ describe("/api/task proxy", () => {
       new Request("http://localhost/api/task/t1", {
         headers: { "x-webagent-session": "sid-A" },
       }),
-      { params: { taskId: "t1" } },
+      { params: Promise.resolve({ taskId: "t1" }) },
     );
 
     expect(forwarded().headers.get("X-WebAgent-Client")).toBe("s:sid-A");
@@ -142,7 +142,7 @@ describe("/api/task proxy", () => {
 
     const response = await getTask(
       new Request("http://localhost/api/task/t1"),
-      { params: { taskId: "t1" } },
+      { params: Promise.resolve({ taskId: "t1" }) },
     );
 
     expect(response.status).toBe(503);
@@ -167,9 +167,11 @@ describe("/api/task proxy", () => {
       });
 
     const accepted = await cancelTask(request(), {
-      params: { taskId: "../t1" },
+      params: Promise.resolve({ taskId: "../t1" }),
     });
-    const finished = await cancelTask(request(), { params: { taskId: "t1" } });
+    const finished = await cancelTask(request(), {
+      params: Promise.resolve({ taskId: "t1" }),
+    });
 
     const { url, init, headers } = forwarded();
     expect(url).toBe("http://backend.test:9000/api/task/..%2Ft1/cancel");
