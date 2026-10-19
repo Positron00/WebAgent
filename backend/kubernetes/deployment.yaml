@@ -5,7 +5,7 @@ metadata:
   namespace: default
   labels:
     app: webagent-backend
-    version: "3.12.0"
+    version: "3.12.1"
 spec:
   # One replica: task status, results and the security/triage collection live in /app/data,
   # a ReadWriteOnce volume. To run more replicas, use a shared ReadWriteMany volume instead.
@@ -20,7 +20,7 @@ spec:
     metadata:
       labels:
         app: webagent-backend
-        version: "3.12.0"
+        version: "3.12.1"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
@@ -34,7 +34,7 @@ spec:
       containers:
       - name: webagent-backend
         # deploy.sh sets the registry with -r (default: webagent/backend).
-        image: webagent/backend:3.12.0
+        image: webagent/backend:3.12.1
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
@@ -63,6 +63,49 @@ spec:
             secretKeyRef:
               name: webagent-secrets
               key: scheduler-token
+              optional: true
+        # Topic email (notifications.email); all optional, set by deploy.sh from the environment.
+        - name: WEBAGENT_PUBLIC_URL
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: public-url
+              optional: true
+        - name: WEBAGENT_SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: smtp-host
+              optional: true
+        - name: WEBAGENT_SMTP_PORT
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: smtp-port
+              optional: true
+        - name: WEBAGENT_SMTP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: smtp-username
+              optional: true
+        - name: WEBAGENT_SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: smtp-password
+              optional: true
+        - name: WEBAGENT_SMTP_FROM
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: smtp-from
+              optional: true
+        - name: WEBAGENT_SMTP_TLS
+          valueFrom:
+            secretKeyRef:
+              name: webagent-secrets
+              key: smtp-tls
               optional: true
         - name: TAVILY_API_KEY
           valueFrom:
@@ -139,7 +182,7 @@ spec:
       # in this pod because the data volume is ReadWriteOnce. It runs no models (RNFR-02) and stays
       # idle until schedule.enabled (WEBAGENT_SCHEDULER_ENABLED) is true.
       - name: scheduler
-        image: webagent/backend:3.12.0
+        image: webagent/backend:3.12.1
         imagePullPolicy: Always
         command: ["python", "-m", "app.scheduler"]
         env:

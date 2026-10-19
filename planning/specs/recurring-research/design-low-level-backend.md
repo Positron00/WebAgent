@@ -23,7 +23,12 @@ Paths are relative to `backend/`. Phase A is §1–§10; phase B is §11–§13.
 | `app/core/metrics.py` | changed | `origin` label; the topic collector | REC-108, REC-117 |
 | `app/core/config_def.py`, `config.py` | changed | `ScheduleConfig`, `NotificationsConfig`, `LLMConfig.price_*` | REC-118 |
 | `app/core/startup_checks.py` | changed | Scheduler and email checks | REC-118, REC-136 |
-| `main.py` | changed | Routers; daily topic and notify cleanup | REC-102, REC-115 |
+| `main.py` | changed | Routers; daily topic and notify cleanup; access-log redaction | REC-102, REC-115, RNFR-03 |
+| `app/services/run_origin.py` | new | The `topic_run` context variable that drift, collection and metrics read | REC-108 |
+| `app/core/topic_metrics.py` | new | `TopicCollector`, registered by `metrics.py` | REC-117 |
+| `app/api/endpoints/topic_summary.py`, `topic_notify.py` | new (B) | The scheduler-only summarize and notify routes | REC-130, REC-131, REC-138 |
+| `app/core/log_context.py`, `app/core/middleware.py` | changed (B) | `redact_url` and a filter on the uvicorn and httpx loggers: `token=` values never reach logs | RNFR-03, RNFR-06 |
+| `app/agents/team_manager.py` | changed | Its own task-completion metric calls removed (every research task was counted twice) | REC-108 |
 | `app/services/notify_tokens.py` | new (B) | Signed confirm and unsubscribe tokens | REC-133, REC-134 |
 | `app/services/notify_email.py` | new (B) | Messages, transports, caps, ledger | REC-132 – REC-138 |
 | `app/api/endpoints/notify.py` | new (B) | Confirm and unsubscribe; one-click | REC-134 |
@@ -184,7 +189,7 @@ Tests cover Europe/Paris and America/New_York across both DST changes, a weekly 
 ```python
 def main() -> None:                 # python -m app.scheduler
     checks()                        # enabled → token set, backend /health reachable (3 tries)
-    with SchedulerLock(TOPICS_DIR / ".scheduler.lock") as lock:   # exits if a fresh heartbeat exists
+    with SchedulerLock(TOPICS_DIR / ".scheduler.lock", wait_for_holder=240) as lock:   # waits out a dead holder; exits next to a live one
         reconcile()                  # REC-106
         while True:
             lock.beat(enabled=cfg.enabled)
@@ -218,7 +223,7 @@ def main() -> None:                 # python -m app.scheduler
 - **`reconcile()`:** for each run in `starting` or `running`, `GET /api/task/{task_id}`. On 200 it's polled in a thread; on 404 it's marked `failed`, `not_started`.
 - **`start_run`:**
   - The POST has a 30 s timeout; polling is every 15 s for 10 min, after which the run is marked `failed`, `poll_timeout`, and keeps being polled once more after the next tick.
-  - **Errors:** 403 and 409 are `failed` (`intake_refused`), 429 is `failed` (`rate_limited`), 5xx or a connection error is `failed` (`backend_unreachable`).
+  - **Errors:** 403, and 409 without `task_exists`, are `failed` (`intake_refused`); 409 `task_exists` means the task already runs (polled); 429 is `failed` (`rate_limited`); 5xx or a connection error is `failed` (`backend_unreachable`); any other 4xx is `failed` (`rejected`); a POST timeout is polled, and a 404 then means `not_started`; a failed task keeps the backend's `error_code`. A run past the 10-minute poll is `poll_timeout`, with one late poll after the next tick so a task that did run still has its usage counted.
 - **Headers:** `X-API-Key` (when set), `X-WebAgent-Scheduler`, and `X-WebAgent-Client: schedule:<topic_id>`.
 - **Imports:** `app.core.config`, `app.services.topic_files`, `topics` (models only), `schedule_math`, `topic_runs` and `httpx`. No agents, security or ML (RNFR-02).
 
@@ -247,8 +252,8 @@ def sign(purpose: Literal["confirm", "unsubscribe"], topic_id: str, address: str
 def verify(token: str, purpose: str) -> Optional[Tuple[str, str]]   # (topic_id, address), or None
 ```
 
-- **Tokens:** `base64url(json{p, t, a, e})` + `.` + `base64url(hmac_sha256(SECRET, payload))`. Confirm tokens expire in 48 h; unsubscribe tokens don't. Used confirm tokens are recorded in the ledger by SHA-256.
-- **Building a message:** `EmailMessage()` with `Subject`, `From` (`WEBAGENT_SMTP_FROM`), `To`, `List-Unsubscribe`, `List-Unsubscribe-Post` and `Auto-Submitted: auto-generated`. The body is plain text; the templates are in §6.6 of the plan and REC-135.
+- **Tokens:** `base64url(json{p, t, a, e})` + `.` + `base64url(hmac_sha256(SECRET, payload))`, where `a` is a keyed hash of the address, not the address (URLs reach request logs). `verify` returns `(topic_id, address_ref)`, and callers compare it with `notify_tokens.matches(ref, email)`. A used confirm token gives 404 on lookup. Confirm tokens expire in 48 h; unsubscribe tokens don't. Used confirm tokens are recorded in the ledger by SHA-256.
+- **Building a message:** `EmailMessage(policy=SMTP policy with max_line_length=998)`, so the long `List-Unsubscribe` URL stays literal on the wire (with the default 78 it would be RFC 2047-encoded and unreadable to mail clients), with `Subject`, `From` (`WEBAGENT_SMTP_FROM`), `To`, `List-Unsubscribe`, `List-Unsubscribe-Post` and `Auto-Submitted: auto-generated`. The body is plain text; the templates are in §6.6 of the plan and REC-135.
 - **Transports:** `LogTransport.send(msg)` logs the subject length and kind. `SmtpTransport.send(msg)` uses `smtplib.SMTP` with `starttls()` or `SMTP_SSL`, `login`, `send_message`, a 20 s timeout and 2 retries (2 s, 8 s).
 - **Caps:** checked under flock in `ledger-<today>.json`: per run (1), per instance per day (50), and confirmations per hashed address per day (3).
 - **Notice domains:** they come from the run's sources whose URL isn't in the result's `security.dropped` refs (act mode) or `security.shadow_flagged` refs (shadow mode).
@@ -261,11 +266,11 @@ def verify(token: str, purpose: str) -> Optional[Tuple[str, str]]   # (topic_id,
 | Interface | Shape |
 |---|---|
 | `POST /api/topics/{id}/summarize` | Scheduler token and API key. Body `{run_id, previous_run_id}`. Response `{summary: str or null, changed: bool, tokens: {input, output}, error?: str}`. Module `app/api/endpoints/topic_summary.py` |
-| `POST /api/topics/{id}/notify` | Scheduler token and API key. Body `{kind: "run", "hold" or "deletion", run_id?}`. Response `{sent: int, skipped: int, reason?: str}`. Module `app/api/endpoints/topic_notify.py`. A backend-side failure is a 200 with `reason`; a run never fails because of email |
+| `POST /api/topics/{id}/notify` | Scheduler token and API key. Body `{kind: "run", "hold" or "deletion", run_id?}` (`run_id` is required for `run`: 422 without it). Response `{sent: int, skipped: int, reason?: str}`, where reason is one of `email_disabled`, `no_subscribers`, `already_sent`, `run_not_found`, `run_not_completed`, `daily_cap`, `send_failed`, `topic_not_found` or `error`. Module `app/api/endpoints/topic_notify.py`. A backend-side failure is a 200 with `reason`; a run never fails because of email |
 | `GET /api/notify/lookup?token=…` | API key (the web app's server adds it). Response `{topic_name, purpose: "confirm" or "unsubscribe"}`, or 404 for an invalid or expired token. Read-only |
 | `POST /api/notify/confirm` | API key. Body `{token}`. Response `{status: "confirmed"}`; 404 if invalid, used or expired |
 | `POST /api/notify/unsubscribe` | API key. Body `{token}` (JSON), or form `List-Unsubscribe=One-Click` with `?token=` in the query. Response `{status: "unsubscribed"}`, idempotent; 404 if invalid |
-| `PATCH /api/topics/{id}` | Adds `add_subscriber: "<email>"` and `remove_subscriber: "<email>"`. Adding answers 409 `subscriber_limit` past 5, and sends one confirmation (§12) |
+| `PATCH /api/topics/{id}` | Adds `add_subscriber: "<email>"` and `remove_subscriber: "<email>"`. Adding answers 409 `subscriber_limit` past 5, 409 `email_disabled` when email is off, and 422 for an invalid address. It sends one confirmation (§12), reported as `confirmation: sent, failed, capped or not_needed` in the response. Re-adding an unconfirmed address refreshes it and sends one more confirmation, within the daily cap |
 | Run record, written by the scheduler | `change.summary` (str or null), `change.summary_error` (str, when the call failed), `change.changed` (now also true for a summary other than "No material change"), and `flagged_refs` (a list of URLs). `flagged_refs` are the refs from the result's `security.dropped` and `security.shadow_flagged`, so the notice email can leave those domains out |
 | `security.shadow_flagged` | A list of `{source, ref, policy_id}`, added by `hop_guard.check_hop` in shadow mode for untrusted items whose would-be outcome was `decline` or `escalate`. Merged by `ledger.merge`, and returned by `TaskManager._security_block` |
 
@@ -309,7 +314,7 @@ class LLMConfig(BaseModel):          # added
 ## 14. Metrics (`metrics.py`)
 
 - **`origin` label:** added to `webagent_tasks_total` and `webagent_task_duration_seconds`, with values `interactive` and `schedule`. Existing dashboard queries sum over labels and keep working; the dashboard JSON is checked in task A10.
-- **`TopicCollector`:** registered on `WEBAGENT_REGISTRY`. On each scrape it reads `counters.json` (runs by outcome, changes by kind, holds by reason, missed slots), every `state.json` (for `webagent_topics{state}`), `usage-<month>.json` with the config limits, and `.scheduler.lock`. Reads are cached for 15 s, so a burst of scrapes costs one read of each file.
+- **`TopicCollector`:** registered on `WEBAGENT_REGISTRY`, and also on the per-scrape registry `metrics_payload` builds when `PROMETHEUS_MULTIPROC_DIR` is set (several workers). On each scrape it reads `counters.json` (runs by outcome, changes by kind, holds by reason, missed slots), every `state.json` (for `webagent_topics{state}`), `usage-<month>.json` with the config limits, and `.scheduler.lock`. Reads are cached for 15 s, so a burst of scrapes costs one read of each file.
 - **Email:** `webagent_email_sent_total{kind, outcome}` is an ordinary counter, incremented by the backend (phase B).
 
 ## 15. Tests

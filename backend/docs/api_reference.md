@@ -1,6 +1,6 @@
 # WebAgent API Reference
 
-This document provides a comprehensive reference for the WebAgent Backend API (v3.12.0).
+This document provides a comprehensive reference for the WebAgent Backend API (v3.12.1).
 
 ## Base URL
 
@@ -230,7 +230,7 @@ Gets the status of the backend services.
 ```json
 {
   "status": "ok",
-  "version": "3.12.0",
+  "version": "3.12.1",
   "llm": {
     "status": "ok",
     "provider": "together",
@@ -451,7 +451,7 @@ Topics are questions the scheduler researches again daily or weekly. Every route
   - Errors: 409 `subscriber_limit` (5 per topic), 409 `email_disabled` (email is off), 422 for an invalid address.
 - **Scheduler-only routes**, which need `X-WebAgent-Scheduler` as well as the API key:
   - `POST /api/topics/{id}/summarize` with `{run_id, previous_run_id}` → `{summary, changed, tokens, error?}`;
-  - `POST /api/topics/{id}/notify` with `{kind: run|hold|deletion, run_id?}` → `{sent, skipped, reason?}`.
+  - `POST /api/topics/{id}/notify` with `{kind: run|hold|deletion, run_id?}` (`run_id` required for `run`) → `{sent, skipped, reason?}`. Email problems answer 200 with a `reason`: `email_disabled`, `no_subscribers`, `already_sent`, `run_not_found`, `run_not_completed`, `daily_cap`, `send_failed`, `topic_not_found` or `error`.
 
 ### Notify routes (3.12.0)
 
@@ -530,7 +530,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.12.0"
+  "version": "3.12.1"
 }
 ```
 
@@ -543,7 +543,7 @@ Used by the Docker health check and Kubernetes probes. Served at the server root
 ```json
 {
   "status": "ok",
-  "version": "3.12.0",
+  "version": "3.12.1",
   "environment": "prod"
 }
 ```
@@ -560,7 +560,7 @@ Performs a detailed health check with information about connected services.
 {
   "api": {
     "status": "ok",
-    "version": "3.12.0"
+    "version": "3.12.1"
   },
   "llm_service": {
     "status": "ok",

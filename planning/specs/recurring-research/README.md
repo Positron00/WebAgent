@@ -1,6 +1,6 @@
 # Spec: recurring research with tracked summaries and email alerts
 
-Status: v4, phase A released (3.11.0), phase B implemented (3.12.0), 2026-10-18 · Source plan: [`planning/recurring-research-plan.md`](../../recurring-research-plan.md) · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A: topics, scheduler, history, web app), 3.12.0 (phase B: change summaries, email). Both are deployed after shadow week 2.
+Status: v5, phase A released (3.11.0), phase B released (3.12.0), code and documents aligned (3.12.1), 2026-10-18 · Source plan: [`planning/recurring-research-plan.md`](../../recurring-research-plan.md) · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A: topics, scheduler, history, web app), 3.12.0 (phase B: change summaries, email). Both are deployed after shadow week 2.
 
 ## What this work does
 
@@ -121,4 +121,11 @@ Requirements say *what*; the designs say *how*; tasks say *in what order*. When 
   2. **Tokens in URLs reached the logs** (the request log, uvicorn's access log, httpx). They're now redacted, and tokens carry an address hash, not the address.
 - **Dev only:** `next dev` prints request URLs with tokens; `next start` doesn't log requests (RUNBOOK).
 - **Still open (B7):** the email provider and From address (the user's choice), SPF and DKIM, and a trial with a real mail client.
+
+## Alignment check (3.12.1)
+
+The code was checked against every requirement and design, and the plan against both:
+
+- **One code gap:** email couldn't be turned on in Compose or Kubernetes, because the backend didn't get `WEBAGENT_PUBLIC_URL` or `WEBAGENT_SMTP_*`. Fixed, with a test that every secret key the manifest reads is filled by `deploy.sh`.
+- **The rest were document gaps:** behaviour the code has but the documents didn't say, or said differently (plan §13, items 45–47). They're now written into the requirements, the designs and the plan.
 

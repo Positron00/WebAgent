@@ -5,7 +5,7 @@ Every file and line reference below was checked against the code on 2026-10-13.
 Decisions in section 4 were made on 2026-10-13, and the plan reflects them.
 Releases 3.2.7–3.5.0 are specified in
 [`planning/specs/platform-improvements/`](specs/platform-improvements/README.md); when the
-two disagree, the spec wins. **Current platform release: 3.12.0** (2026-10-17).
+two disagree, the spec wins. **Current platform release: 3.12.1** (2026-10-17).
 File and line references below describe 3.2.6; what was done and what is still open is in the
 spec's [implementation status](specs/platform-improvements/tasks.md#implementation-status-2026-10-14).
 
