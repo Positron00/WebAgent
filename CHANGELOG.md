@@ -2,6 +2,22 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.12.1 - 2026-10-18
+
+A check of 3.11.0 and 3.12.0's code against the recurring-research spec and plan.
+
+### Fixed
+- **Topic email couldn't be turned on in a deployment.** Neither the Compose file nor the Kubernetes manifest passed `WEBAGENT_PUBLIC_URL` or the `WEBAGENT_SMTP_*` settings to the backend, so with email enabled, the backend's startup check refused to start. Compose now passes them from `.env.local`. On Kubernetes they're optional keys in `webagent-secrets`, which `deploy.sh` fills from the environment. A test checks that every secret key the manifest reads is filled by `deploy.sh`.
+
+### Changed
+- **The spec and plan describe what was built:**
+  - the scheduler lock waits out a dead holder instead of exiting, and the lock's fields are written down;
+  - the run record's fields, the scheduler's error kinds, `webagent_scheduler_enabled`, and skips as `outcome="skipped"`;
+  - the notify rules, reasons and deduplication, and no retry on permanent SMTP refusals;
+  - address hashes in tokens, and the 998-character mail policy;
+  - the web app's receipts and lookup-before-POST;
+  - the current file lists.
+
 ## 3.12.0 - 2026-10-18
 
 Recurring research, phase B: **change summaries** and **email** for topics (recurring-research spec, tasks B0–B7). Email is off until an operator sets it up (`docs/RUNBOOK.md`, "Recurring research"); while the security guard is in shadow mode, emails carry a notice only.

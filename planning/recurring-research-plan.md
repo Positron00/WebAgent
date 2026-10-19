@@ -1,6 +1,6 @@
 # Plan: recurring research with tracked summaries and email alerts
 
-Status: v5, phase A released as 3.11.0 and phase B implemented as 3.12.0 (2026-10-18), aligned with the spec 2026-10-18 (spec in `specs/recurring-research/`, which wins where the two differ), decided 2026-10-18 (D1–D8 and the search cap accepted as recommended; §11) · checked against the code three times, gaps fixed in §13 · 2026-10-17 · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A), 3.12.0 (phase B), both deployed after shadow week 2
+Status: v6, phase A released as 3.11.0 and phase B as 3.12.0, code and documents aligned in 3.12.1 (2026-10-18), aligned with the spec 2026-10-18 (spec in `specs/recurring-research/`, which wins where the two differ), decided 2026-10-18 (D1–D8 and the search cap accepted as recommended; §11) · checked against the code three times, gaps fixed in §13 · 2026-10-17 · Base: `main` at v3.10.1 (`270a012`) · Releases: 3.11.0 (phase A), 3.12.0 (phase B), both deployed after shadow week 2
 
 ## 1. Summary
 
@@ -129,7 +129,7 @@ The schedule state (`state.json`, scheduler only) holds `{"next_due": "2026-10-2
 
 - **The loop:** every 60 s, load the topics that are `active` with no hold, and pick those whose `next_due` has passed or that have an unhandled run request. Start at most 2 runs at a time, oldest due first. Advance `next_due` to the next slot after now: missed slots are **not** backfilled, so a topic runs once on catch-up.
 - **Single runner:**
-  - A lock file `data/topics/.scheduler.lock` holds the PID and a heartbeat refreshed every 60 s. A second scheduler that finds a fresh heartbeat (under 180 s old) exits.
+  - A lock file `data/topics/.scheduler.lock` holds the PID and a heartbeat refreshed every 60 s. A second scheduler that finds a fresh heartbeat (under 180 s old) waits up to 240 s for it to go stale and then takes over; next to a live holder it exits. Exiting at once made a restart after a crash or a redeploy into a crash loop (found in the 3.11.0 end-to-end check).
   - Compose and Kubernetes run one instance; the lock guards against a mistaken second one.
   - With `WEBAGENT_SCHEDULER_ENABLED=false` (`schedule.enabled: false`, the default in every environment until an operator turns it on after shadow week 2) the service idles and still writes its heartbeat.
 - **Crash safety:**
@@ -264,7 +264,7 @@ The schedule state (`state.json`, scheduler only) holds `{"next_due": "2026-10-2
   - `webagent_topic_runs_total{outcome}`, `webagent_topic_run_seconds`, `webagent_topic_changes_total{kind}` (new sources, summary changed);
   - `webagent_topic_budget_used{kind}` and `webagent_topic_budget_limit{kind}` (credits, dollars), `webagent_topic_held_total{reason}`, `webagent_topics{state}` (active, paused, held);
   - `webagent_email_sent_total{kind, outcome}` (confirm, notice, summary, hold, deletion; sent, failed, capped), an ordinary counter incremented by the backend;
-  - `webagent_scheduler_heartbeat_timestamp`, `webagent_scheduler_missed_slots_total`.
+  - `webagent_scheduler_heartbeat_timestamp`, `webagent_scheduler_enabled`, `webagent_scheduler_missed_slots_total`; daily-cap skips count as `webagent_topic_runs_total{outcome="skipped"}`.
 - **Grafana alert rules (two new):** "scheduler down" (heartbeat older than 10 min) and "scheduled budget 80%". The six drift alerts are unchanged, and scheduled runs don't feed the embedding drift.
 - **Dashboard:** a "Recurring research" row on the WebAgent Backend dashboard.
 
@@ -330,7 +330,7 @@ New environment settings: `WEBAGENT_SCHEDULER_TOKEN` (backend and scheduler only
 - **Scheduler:**
   - due selection and next slot across DST changes;
   - no backfill;
-  - the lock (a second scheduler exits; a stale heartbeat is taken over);
+  - the lock (a second scheduler waits out a dead holder and takes over, never a live one; a stale heartbeat is taken over);
   - crash recovery with the fixed task ID (`starting` that the backend knows, `starting` it doesn't, `running`);
   - concurrency cap.
 - **Backend:**
@@ -394,11 +394,11 @@ Next: the spec (`planning/specs/recurring-research/`), then phase A.
 
 - **Backend, new:**
   - `app/scheduler.py`, `app/services/topics.py`, `app/services/topic_files.py`, `app/services/schedule_math.py`, `app/services/topic_runs.py`, `app/core/scheduler_auth.py`, `app/services/notify_email.py`, `app/services/notify_tokens.py`;
-  - `app/api/endpoints/topics.py` (CRUD, run, resume, runs, summarize, notify), `app/api/endpoints/notify.py` (lookup, confirm, unsubscribe, one-click), a daily topics and notify cleanup next to the results cleanup.
+  - `app/api/endpoints/topics.py` (CRUD, run, resume, runs), `app/api/endpoints/topic_summary.py` and `topic_notify.py` (scheduler-only summarize and notify), `app/api/endpoints/notify.py` (lookup, confirm, unsubscribe, one-click), `app/core/topic_metrics.py` (the collector), `app/services/run_origin.py` (the `topic_run` context variable), a daily topics and notify cleanup next to the results cleanup.
 - **Backend, changed:**
   - `app/api/endpoints/task.py`, `app/services/task_manager.py`, `app/services/task_budget.py` (per-run budget, split counts), `app/services/together_llm.py` (input and output), `app/agents/web_research.py` (per-task search cap and credits), `app/agents/supervisor.py` or `task_manager.py` (`standalone_query` saved);
   - `app/security/hop_guard.py` and `app/security/ledger.py` (`shadow_flagged`, phase B), `app/services/drift_embeddings.py` (skip scheduled queries), `app/services/triage_collect.py`, `app/security/records.py` (`origin`);
-  - `app/core/metrics.py`, `app/core/config_def.py`, `app/core/config.py`, `app/core/startup_checks.py`, `config/{dev,uat,prod}.yaml`;
+  - `app/core/log_context.py` and `app/core/middleware.py` (token redaction in logs), `app/agents/team_manager.py` (its duplicate task metrics removed), `app/core/metrics.py`, `app/core/config_def.py`, `app/core/config.py`, `app/core/startup_checks.py`, `config/{dev,uat,prod}.yaml`;
   - `main.py` (routers), `docker-compose.yml` (scheduler service), `kubernetes/deployment.yaml` (scheduler sidecar), `deploy.sh`, `grafana/` (row and two alert rules), a topic-metrics collector in `app/core/metrics.py`.
 - **Web app:**
   - `src/app/topics/`, `src/app/notify/{confirm,unsubscribe}/`, `src/app/api/topics/**`, `src/app/api/notify/**`;
@@ -466,4 +466,21 @@ Checking the plan and the spec against each other (2026-10-18) found and fixed t
 42. **`schedule.enabled` defaults:** the plan said false "in dev"; it's false in every environment (RNFR-05).
 43. **The notify pages' name lookup** would have needed a fifth public route. It's now a server-side call, so only the four public routes exist.
 44. **Phases and files:** phase A names the search-cap measurement (A0) and phase B `shadow_flagged` (B0). §12 lists the spec's new modules (`topic_files`, `schedule_math`, `scheduler_auth`) and the guard files B0 changes. Retention for the ledger (30 days) and usage files (13 months) is stated.
+
+Checking 3.11.0 and 3.12.0's code against the spec and this plan (2026-10-18) found and fixed these:
+
+45. **Topic email couldn't be turned on in a deployment.** Neither Compose nor the Kubernetes manifest passed `WEBAGENT_PUBLIC_URL` or the `WEBAGENT_SMTP_*` settings to the backend, so with email enabled, its startup check would refuse to start. They're now passed: Compose from `.env.local`, Kubernetes as optional keys in `webagent-secrets` that `deploy.sh` fills from the environment.
+46. **The lock waits, it doesn't exit** (changed in 3.11.0's end-to-end check). This plan's §6.2 and §9, and the spec's high-level and backend designs, still said it exits. They're aligned now, and the lock's fields (`host`, `instance`, `released`) are written down.
+47. **Behaviour built but not specified**, now in the requirements and designs:
+    - the run record's extra fields (`topic_id`, `trigger`, `title`, `duration_seconds`, `flagged_refs`);
+    - the scheduler's error kinds (`rejected`, `task_exists` treated as running, the late poll);
+    - `webagent_scheduler_enabled`, and skips counted as `outcome="skipped"`;
+    - notify only with a confirmed subscriber, the reasons list, and 422 without a `run_id`;
+    - the deletion notice marked before sending;
+    - notice deduplication per day, and no retry on permanent SMTP refusals;
+    - a flagged URL hiding its whole domain;
+    - the PATCH `confirmation` field, and re-adding an unconfirmed address;
+    - address hashes in tokens, and the 998-character mail policy;
+    - the web app's lookup-before-POST, signed receipts, and its 415 and 413 answers;
+    - the topic collector on the multiprocess registry.
 

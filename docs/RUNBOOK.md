@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.12.0 -t <registry>/webagent-backend:3.12.0 backend/
-   docker push <registry>/webagent-backend:3.12.0
+   docker build --build-arg APP_VERSION=3.12.1 -t <registry>/webagent-backend:3.12.1 backend/
+   docker push <registry>/webagent-backend:3.12.1
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.12.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.12.1 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -232,7 +232,7 @@ Topics are questions WebAgent researches again daily or weekly (3.11.0; spec `pl
 **Email (3.12.0)** is off until `notifications.email.enabled: true`. Turning it on:
 
 1. **Choose a provider and a From address on a domain you control,** and set up SPF and DKIM there. Or use the provider's own sending domain.
-2. **Set the connection** in `.env.local` or the deployment's secrets: `WEBAGENT_SMTP_HOST`, `WEBAGENT_SMTP_PORT` (587 for STARTTLS, 465 with `WEBAGENT_SMTP_TLS=ssl`), `WEBAGENT_SMTP_USERNAME`, `WEBAGENT_SMTP_PASSWORD` and `WEBAGENT_SMTP_FROM`.
+2. **Set the connection.** Compose passes these from `.env.local`; on Kubernetes, export them before `deploy.sh`, which stores them as optional keys in `webagent-secrets`: `WEBAGENT_SMTP_HOST`, `WEBAGENT_SMTP_PORT` (587 for STARTTLS, 465 with `WEBAGENT_SMTP_TLS=ssl`), `WEBAGENT_SMTP_USERNAME`, `WEBAGENT_SMTP_PASSWORD` and `WEBAGENT_SMTP_FROM`.
 3. **Set `WEBAGENT_PUBLIC_URL`** to the web app's public address. Email links go there, so a laptop's `localhost` only works on that machine.
 4. **Set `notifications.email.transport: smtp`.** The default, `log`, writes messages to the log instead of sending them. The backend refuses to start with SMTP but no host, From address or public URL.
 5. **Check delivery:** subscribe your own address on a topic, then confirm it. Check that the confirmation and a run notice arrive (not in spam), and that **Unsubscribe** in your mail client works.

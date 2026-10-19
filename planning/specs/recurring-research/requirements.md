@@ -83,9 +83,9 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 
 **REC-105 Single runner (must).**
 
-- **Lock:** the scheduler holds `data/topics/.scheduler.lock`, with its PID and a heartbeat refreshed every 60 s. A scheduler that finds a heartbeat under 180 s old **waits** for it to go stale (checking every 15 s, for up to 240 s) and then takes it over. A holder that keeps beating is never taken over, and the waiting scheduler exits after 240 s. Waiting instead of exiting at once keeps a restart after a crash or a redeploy from becoming a crash loop (found in the end-to-end check, 2026-10-18).
+- **Lock:** the scheduler holds `data/topics/.scheduler.lock` (`{pid, heartbeat, enabled, owner, host, instance}`; `released: true` after a clean exit, so the next scheduler can start at once while the old heartbeat still ages for the alert), refreshed every 60 s. A scheduler that finds a heartbeat under 180 s old **waits** for it to go stale (checking every 15 s, for up to 240 s) and then takes it over. A holder that keeps beating is never taken over, and the waiting scheduler exits after 240 s. Waiting instead of exiting at once keeps a restart after a crash or a redeploy from becoming a crash loop (found in the end-to-end check, 2026-10-18).
 - **Disabled:** with `schedule.enabled: false` (`WEBAGENT_SCHEDULER_ENABLED`), the scheduler idles and writes a heartbeat with `enabled: false`.
-- Check: tests for a second instance, a stale lock, and disabled.
+- Check: tests for a second instance (waits, then takes over a dead holder; never a live one), a stale lock, release, and disabled.
 
 **REC-106 Crash safety (must).**
 
@@ -130,7 +130,7 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 
 **REC-111 Run history and source diff (must).**
 
-- **Run record:** after a run finishes, the scheduler writes `{run_id, task_id, status, error_code, started_at, completed_at, usage, report, sources, change}`. `report` and `sources` are copied from the result, so they outlive the results cleanup.
+- **Run record:** after a run finishes, the scheduler writes `{run_id, topic_id, task_id, status, trigger (slot or request), error_code, started_at, completed_at, duration_seconds, usage, title, report, sources, change, flagged_refs}`. `report` and `sources` are copied from the result, so they outlive the results cleanup.
 - **Normalising URLs:** lower-case the host and strip `www.`; drop the fragment and the `utm_*`, `fbclid`, `gclid` parameters; drop a trailing `/`.
 - **The diff:** `change.new_sources` are this run's URLs not in the last 3 runs; `change.dropped_sources` are those in the previous run and not this one. The first run marks all its sources new, with `change.first: true`.
 - Check: unit tests on normalisation and the diff, and on the first run.
@@ -167,7 +167,7 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 **REC-117 Metrics and alerts (must).** The backend exports topic metrics through a custom collector that reads the scheduler's files, so there's one scrape target:
 
 - **Counters** (from `counters.json`, which only grows): `webagent_topic_runs_total{outcome}`, `webagent_topic_changes_total{kind}` (`new_sources`, `summary_changed`), `webagent_topic_held_total{reason}`, `webagent_scheduler_missed_slots_total`.
-- **Gauges:** `webagent_topics{state}`, `webagent_topic_budget_used{kind}` (credits, dollars) with `webagent_topic_budget_limit{kind}`, `webagent_scheduler_heartbeat_timestamp`.
+- **Gauges:** `webagent_topics{state}`, `webagent_topic_budget_used{kind}` (credits, dollars) with `webagent_topic_budget_limit{kind}`, `webagent_scheduler_heartbeat_timestamp`, and `webagent_scheduler_enabled` (from the lock, for the alert's "while enabled"). A daily-cap skip counts as `webagent_topic_runs_total{outcome="skipped"}`.
 - **Histogram:** `webagent_topic_run_seconds`.
 - **Alert:** a Grafana rule, "Scheduler down": heartbeat older than 10 min while `schedule.enabled`.
 - **Dashboard:** a "Recurring research" row on the WebAgent Backend dashboard.
@@ -196,7 +196,7 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 **REC-131 Notify decision (must).**
 
 - **Changed:** `change.changed` is true when there are new sources, or a summary other than "No material change", or it's the first run.
-- **When to send:** with `notify.when: changes` the scheduler asks for an email only when changed; with `always`, after every completed run. The request is `POST /api/topics/{id}/notify` (scheduler token, run ID); failed runs never notify.
+- **When to send:** with `notify.when: changes` the scheduler asks for an email only when changed; with `always`, after every completed run. The request is `POST /api/topics/{id}/notify` (scheduler token, run ID), and only for a topic with at least one confirmed subscriber; failed runs never notify. A notify failure is logged by ID and never affects the run.
 - Check: tests on the decision table.
 
 **REC-132 Transport (must).**
@@ -226,8 +226,8 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 **REC-135 Content (must).** Email is plain text (UTF-8), with no HTML, images or tracking. Headers are built with `email.message.EmailMessage`.
 
 - **Subject:** `WebAgent: <name> — <YYYY-MM-DD>`, with control characters removed and the name cut to 60 characters.
-- **Notice:** the run date, the new-source count, the new sources' **domains only**, as text, and a link to `{WEBAGENT_PUBLIC_URL}/topics/<id>`.
-  - Only domains of sources checkpoint 1 didn't flag are listed: not in the result's `security.dropped` (act mode), and not in `security.shadow_flagged` (shadow mode).
+- **Notice:** the run date, the count of unflagged new sources, their **domains only**, as text, and a link to `{WEBAGENT_PUBLIC_URL}/topics/<id>`.
+  - Only domains of sources checkpoint 1 didn't flag are listed: not in the result's `security.dropped` (act mode), and not in `security.shadow_flagged` (shadow mode). A flagged URL removes every new source on its domain, so even that domain name isn't sent.
   - `security.shadow_flagged` is new: checkpoint 1 records the would-be drops in shadow mode.
 - **Summary** (REC-136): the summary bullets, then the new sources as domain and path cut to 100 characters, then the link.
 - **Footer:** why the mail was sent, the unsubscribe link, and "Written by an AI research assistant."
@@ -239,12 +239,12 @@ Creating, or resuming to active, beyond `schedule.max_active_topics` (10) answer
 
 **REC-137 Caps and ledger (must).**
 
-- **Caps:** at most 1 topic email per topic per run, and 50 emails a day per instance (`max_emails_per_day`). Over the cap, an email is dropped and counted.
+- **Caps:** at most 1 topic email per topic per run (also checked against the previous day's ledger), hold and deletion notices at most once per topic per kind per day, and 50 emails a day per instance (`max_emails_per_day`). Over a cap, an email is dropped and counted. Permanent SMTP refusals (recipient or sender refused, authentication) aren't retried.
 - **Ledger:** `data/notify/ledger-<YYYY-MM-DD>.json` records sends by kind and outcome, hashed addresses for the per-address cap, and used confirm tokens. The backend writes it under flock.
 - **Metrics:** `webagent_email_sent_total{kind, outcome}`, where kind is confirm, notice, summary, hold or deletion, and outcome is sent, failed or capped.
 - Check: tests on the caps and the metrics.
 
-**REC-138 Hold and deletion notices (must).** When a topic gets `hold: failures`, and 7 days before a 90-day-paused topic is deleted, confirmed subscribers get one notice each, through `POST /api/topics/{id}/notify` with a `kind`.
+**REC-138 Hold and deletion notices (must).** When a topic gets `hold: failures`, and 7 days before a 90-day-paused topic is deleted, confirmed subscribers get one notice each, through `POST /api/topics/{id}/notify` with a `kind` and no `run_id`. The scheduler marks the deletion notice as sent (`deletion_notice_at` in the state) before the call, so it goes out at most once; a lost send isn't retried, and Resume clears the mark.
 
 - Check: tests.
 

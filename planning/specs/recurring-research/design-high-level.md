@@ -90,7 +90,7 @@ The backend runs the task like any other, except that it uses `token_budget`, sk
 | Task fails (timeout, budget, guard, error) | No new report | Recorded with `error_code`; 3 in a row → `hold: failures` (REC-112) |
 | Scheduler crash or restart | — | Fixed task IDs; `starting` and `running` records reconciled (REC-106) |
 | Mac asleep, host down | Missed slots | Each topic runs once on catch-up; `webagent_scheduler_missed_slots_total` counts the misses |
-| Two schedulers | — | The lock; the second one exits (REC-105) |
+| Two schedulers | — | The lock: a second one waits up to 240 s for a dead holder's heartbeat to expire, then takes over; next to a live holder it exits (REC-105) |
 | Allowance short | No runs | `hold: budget` on every topic until the month changes or the allowance is raised (REC-113) |
 | Summary call fails | — | The source diff only (REC-130) |
 | SMTP fails | No email | 2 retries, then recorded as `failed` in the ledger and metrics; the run is unaffected |

@@ -80,9 +80,13 @@ const TASK_FIELDS = ["query", "mode", "agentic", "previous_messages", "triage_ov
 ## 6. Notify pages (phase B)
 
 - **The pages:** `/notify/confirm?token=…` and `/notify/unsubscribe?token=…` are server components that render the topic name and one button. To show the name, they call the backend's read-only `GET /api/notify/lookup?token=…` **from the server**, with the API key, through `forwardToBackend`. It verifies the token and returns the name only. There's no web route for the lookup, so the public routes stay the four below.
-  - The button's form POSTs to `/api/notify/confirm` or `/api/notify/unsubscribe`, and the page then shows the result ("Confirmed", "You won't get more emails about <name>").
+  - The button's form POSTs to `/api/notify/confirm` or `/api/notify/unsubscribe`. The proxy first checks the token with the read-only lookup, so a token for the other page is refused before anything changes. It then answers 303 back to the page, with a relative `?receipt=…` on success or `?error=invalid` or `?error=unavailable`.
+  - **The result** comes from the receipt: a short signed `{purpose, name, time}`, valid 1 h, keyed from `WEBAGENT_SESSION_SECRET` (or the API key, or a per-process random key). It's used because a used confirm token no longer verifies, and because it means a "Confirmed" page can't be crafted.
+  - The pages are `force-dynamic`, with `referrer: no-referrer` and `noindex`.
   - An invalid or expired token shows "This link has expired or isn't valid", with no detail.
 - **The proxies:** `/api/notify/confirm` and `/api/notify/unsubscribe` forward `{token}` to the backend without a session. They add `X-API-Key`, so the backend accepts them, and no `X-WebAgent-Client`, so all public calls share the proxy's rate-limit bucket.
-  - `/api/notify/unsubscribe` also accepts the RFC 8058 one-click form (`application/x-www-form-urlencoded`, `List-Unsubscribe=One-Click`, token in the query).
+  - `/api/notify/unsubscribe` also accepts the RFC 8058 one-click form (`application/x-www-form-urlencoded`, `List-Unsubscribe=One-Click`, token in the query), and answers it with JSON, never a redirect.
+  - **JSON requests** (`{token}`) get JSON back. Other content types get 415, and bodies over 8 KB get 413.
+  - **JSON errors** carry no backend detail: `invalid_token` (404), `rate_limited` (429), `unavailable` (503).
 - **The middleware matcher** excludes exactly `notify/confirm`, `notify/unsubscribe`, `api/notify/confirm` and `api/notify/unsubscribe`, and a test pins the list.
 - **CSP:** unchanged; the forms post to the same origin (`form-action 'self'`).
