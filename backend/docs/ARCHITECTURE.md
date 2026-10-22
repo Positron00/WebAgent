@@ -163,7 +163,7 @@ The guard puts two checkpoints in the path of every task. Both ask the same in-p
   - It failed its release gate, so it is installed **shadow-only**: its scores are recorded next to the cosine signals and never decide.
   - A model that passes the gate replaces the cosine signals in the policy context.
 - **Modes:** `input_mode` and `tool_mode` are `shadow` (record what would happen, block nothing) or `act`. Every environment runs in shadow now. The nine checkpoint 2 intent rules are shadow-only whatever the mode, until each one's threshold is measured (`planning/specs/checkpoint2-intent/`).
-- **Collection:** with `collect: true` (uat), decisions are written as rows to `data/security/collected/` for review. Outside dev, those rows hold scores and decisions, not question text.
+- **Collection:** with `collect: true` (uat), decisions are written as rows to `data/security/collected/` for review. The rows hold scores, decisions, web-result URLs and tool arguments (search queries, code), which the review needs. Outside dev, user text is kept only as a hash, and intent, subgoal and private text not at all. `scripts/shadow_week_report.py` turns the rows into the week's decisions without printing any text.
 - **Design and status:** `planning/specs/agentic-security/` and `planning/specs/checkpoint2-intent/`.
 
 ## Agentic triage (`app/services/triage.py`, `triage_model.py`)

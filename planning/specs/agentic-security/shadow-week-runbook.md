@@ -86,6 +86,21 @@ python scripts/review_security_collection.py --dir /app/data/security/collected
 
 ## 4. End of the week: review
 
+0. Run the report. One command gives every number the week has to decide, as counts only, and can be rerun at any point during the week to see how far along it is:
+   ```bash
+   python scripts/shadow_week_report.py --data ~/webagent-uat-data-3.10.0 --since 2026-10-17 \
+       --prometheus http://127.0.0.1:9090 --json report.json [--labels review_labelled.csv]
+   ```
+   It covers:
+   - volume against the 2,000-item target;
+   - checkpoint 1's would-be outcomes and, with labels, its false-positive bound;
+   - each checkpoint 2 intent rule's would-act rate against its SEC-130 target, and where the week's data puts each threshold;
+   - the shadow classifier next to phase A;
+   - searches and tokens per research run, which set `max_searches_per_task` and the token budgets;
+   - triage's routes;
+   - the act-mode checklist below.
+
+   It suggests no value from fewer than 20 tasks or 100 searches.
 1. Write the labelling sheet: every untrusted item (web page, document, retrieved passage, tool output) the guard would have acted on, with its URL for web pages and its scores, never text:
    ```bash
    python scripts/review_security_collection.py --dir /app/data/security/collected --sheet review.csv
