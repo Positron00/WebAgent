@@ -15,6 +15,7 @@ Tools for the shadow week, and a browser-to-backend test suite, which found thre
 - **A topic's stored reports never opened.** The run record keeps the report as a Markdown string, as the spec says, but the web app read only an object form and showed "This run has no stored report." It now reads the string. A test uses the record exactly as the scheduler writes it.
 - **The operator's default agentic mode didn't apply after first sign-in.** The app asked for `/api/settings` on the sign-in page, got 401, settled on Off and never asked again. Now it skips the sign-in and email-link pages, treats 401 as "not yet", and asks again on the next page.
 - **Screen readers could announce "You are currently offline" at any time.** The banner was always in the page, hidden off-screen, with `role="alert"`. It's now rendered only while the app is offline.
+- **certifi 2026.10.19** (from 2026.7.22) for PYSEC-2026-4320, published after 3.12.1. It's the CA bundle the backend trusts for outbound HTTPS.
 - **ARCHITECTURE.md** describes collected security rows correctly: scores, decisions, URLs and tool arguments (search queries, code), with user text kept only as a hash outside dev.
 
 ## 3.12.1 - 2026-10-18
