@@ -1,6 +1,6 @@
 # Deploying WebAgent to Vercel
 
-[![version](https://img.shields.io/badge/version-3.12.1-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.13.0-blue.svg)](https://semver.org)
 
 This guide explains how to deploy the WebAgent web app (Next.js) to Vercel. Vercel runs only the web app; the multi-agent FastAPI backend runs on a server you control, and the web app reaches it through `/api/task`.
 

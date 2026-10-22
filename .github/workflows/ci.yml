@@ -62,3 +62,41 @@ jobs:
             --ignore-vuln PYSEC-2025-217 --ignore-vuln PYSEC-2026-2288 --ignore-vuln PYSEC-2026-2289 \
             --ignore-vuln PYSEC-2026-2290 --ignore-vuln PYSEC-2026-3929 --ignore-vuln PYSEC-2026-4174
       - run: python -m pytest backend/tests -q -m "not needs_lfs and not real_triage_model" --cov=backend/app --cov-report=term --cov-fail-under=50
+
+  # Browser to backend: sign-in, a research run on the fake model, Track this, Run now through the
+  # scheduler, and email subscribe/confirm/unsubscribe through a local SMTP sink (scripts/e2e/).
+  # Git LFS weights are pointer files here; the backend runs in dev, where triage and the guard fall back.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            backend/constraints.txt
+            backend/requirements-dev.txt
+      - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+      - run: python -m nltk.downloader -q punkt punkt_tab stopwords wordnet maxent_ne_chunker words
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: scripts/e2e/stack.sh start
+      - run: npx playwright test
+      - if: always()
+        run: scripts/e2e/stack.sh stop
+      # Logs and traces only; .e2e/env holds the run's throwaway secrets and stays out.
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            playwright-report/
+            test-results/
+            .e2e/logs/
+          retention-days: 7

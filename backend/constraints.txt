@@ -24,7 +24,7 @@ black==26.10.1
 build==1.6.1
 cachetools==5.5.2
 cedarpy==4.12.2
-certifi==2026.7.22
+certifi==2026.10.19
 cffi==2.1.1
 charset-normalizer==3.5.2
 chroma-hnswlib==0.7.6

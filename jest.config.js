@@ -6,6 +6,7 @@ module.exports = {
     "<rootDir>/.next/",
     "<rootDir>/src/__tests__/utils/test-utils.tsx",
     "<rootDir>/scripts/test.js",
+    "<rootDir>/e2e/", // Playwright end-to-end specs (npm run test:e2e)
   ],
   testRegex: "(/__tests__/.*|\\.(test|spec))\\.[jt]sx?$",
   transform: {

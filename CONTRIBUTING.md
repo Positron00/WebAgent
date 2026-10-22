@@ -58,6 +58,7 @@ See [docs/TESTING.md](docs/TESTING.md).
 
 - **web:** `npm ci`, `npm audit --omit=dev --audit-level=high`, lint, type check, Jest with coverage, and `next build`.
 - **backend:** install with the constraints, NLTK data, `ruff check`, `pip-audit` on `backend/constraints.txt`, and pytest without the real-model tests, with a coverage floor.
+- **e2e:** the backend and web app installed as above, Chromium for Playwright, `scripts/e2e/stack.sh start`, and `npx playwright test` (see [docs/TESTING.md](docs/TESTING.md#end-to-end-tests-playwright)). A failed run uploads the Playwright report, traces and the stack's logs.
 
 `models` runs the tests marked `needs_lfs` and `real_triage_model` against the real LFS weights, every Monday and when started by hand (`workflow_dispatch`).
 

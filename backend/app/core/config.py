@@ -397,8 +397,26 @@ def _attach_schedule(settings_obj):
     schedule = schedule or ScheduleConfig()
     settings_obj.SCHEDULE = schedule.model_copy(
         update={"enabled": _triage_bool("WEBAGENT_SCHEDULER_ENABLED", schedule.enabled)})
-    notifications = getattr(app_config, "notifications", None) if app_config else None
-    settings_obj.NOTIFICATIONS = notifications or NotificationsConfig()
+    notifications = (getattr(app_config, "notifications", None) if app_config else None) or NotificationsConfig()
+    email = notifications.email
+    log = logging.getLogger(__name__)
+
+    def _choice(env_name: str, allowed: tuple, current: str) -> str:
+        raw = (os.getenv(env_name) or "").strip().lower()
+        if not raw:
+            return current
+        if raw not in allowed:
+            log.warning("Invalid %s=%s; using YAML", env_name, raw)
+            return current
+        return raw
+
+    # Environment overrides, like WEBAGENT_SCHEDULER_ENABLED (recurring-research REC-118).
+    email = email.model_copy(update={
+        "enabled": _triage_bool("WEBAGENT_EMAIL_ENABLED", email.enabled),
+        "transport": _choice("WEBAGENT_EMAIL_TRANSPORT", ("log", "smtp"), email.transport),
+        "mode": _choice("WEBAGENT_EMAIL_MODE", ("notice", "summary"), email.mode),
+    })
+    settings_obj.NOTIFICATIONS = notifications.model_copy(update={"email": email})
     llm = getattr(app_config, "llm", None) if app_config else None
     settings_obj.PRICE_INPUT_PER_MILLION = getattr(llm, "price_input_per_million", 0.35)
     settings_obj.PRICE_OUTPUT_PER_MILLION = getattr(llm, "price_output_per_million", 1.50)

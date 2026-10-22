@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   storage,
   AccessibilitySettings,
@@ -78,12 +79,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTheme(storage.getTheme());
     setAccessibility(storage.getAccessibilitySettings());
     setIsOffline(!navigator.onLine);
+  }, []);
+
+  // The operator's default mode (GET /api/settings) for someone who hasn't picked one. Not on the
+  // sign-in and notify pages, where the request answers 401; and a 401 isn't final, so the default
+  // is loaded once sign-in navigates into the app (the provider isn't remounted by that navigation).
+  const pathname = usePathname();
+  const [defaultLoaded, setDefaultLoaded] = useState(false);
+  useEffect(() => {
+    if (defaultLoaded) return;
+    if (getSavedAgenticMode()) {
+      setDefaultLoaded(true);
+      return;
+    }
+    if (pathname === "/login" || pathname?.startsWith("/notify")) {
+      setModeReady(true);
+      return;
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), SETTINGS_TIMEOUT_MS);
 
     fetch("/api/settings", { cache: "no-store", signal: controller.signal })
       .then(async (res) => {
+        if (res.status === 401) return; // not signed in yet: try again after sign-in
         if (!res.ok) throw new Error(`settings ${res.status}`);
         const data = (await res.json()) as { defaultAgenticMode?: string };
         const value = data.defaultAgenticMode?.trim().toLowerCase();
@@ -92,15 +111,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         } else {
           setAgenticModeState("off");
         }
+        setDefaultLoaded(true);
       })
       .catch(() => {
         setAgenticModeState("off");
+        setDefaultLoaded(true);
       })
       .finally(() => {
         clearTimeout(timeoutId);
         setModeReady(true);
       });
-  }, []);
+  }, [pathname, defaultLoaded]);
 
   const setAgenticMode = (mode: AgenticMode) => {
     setAgenticModeState(mode);

@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppProvider } from "@/contexts/AppContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import BrowserCompatibilityWarning from "@/components/BrowserCompatibilityWarningClient";
+import OfflineBanner from "@/components/OfflineBanner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -25,15 +26,7 @@ export default function RootLayout({
           <ChatProvider>
             <div className="min-h-screen bg-[#191919] transition-colors">
               <BrowserCompatibilityWarning />
-              <div
-                id="offline-banner"
-                className="fixed top-0 left-0 right-0 bg-yellow-500 text-black p-2 text-center transform transition-transform duration-300 ease-in-out translate-y-[-100%] data-[visible=true]:translate-y-0"
-                data-visible="false"
-                role="alert"
-                aria-live="polite"
-              >
-                You are currently offline. Some features may be limited.
-              </div>
+              <OfflineBanner />
               {children}
             </div>
           </ChatProvider>

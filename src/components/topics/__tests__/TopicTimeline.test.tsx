@@ -167,6 +167,29 @@ describe("TopicTimeline", () => {
     expect(container.querySelector("script")).toBeNull();
   });
 
+  it("opens a report stored the way the scheduler writes it: a string next to the run's title", async () => {
+    fetchMock.mockResolvedValue(
+      reply(200, {
+        run_id: RUN_NEW,
+        topic_id: TOPIC,
+        status: "completed",
+        title: "Weekly report",
+        report: "## Findings\n\nPostgres 19 shipped.",
+        sources: [],
+        change: { status: "first" },
+      }),
+    );
+    render(<TopicTimeline topicId={TOPIC} runs={runs} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Open report" })[0]);
+    const report = await screen.findByRole("article", {
+      name: "Stored report",
+    });
+    expect(
+      within(report).getByRole("heading", { name: "Findings" }),
+    ).toBeInTheDocument();
+    expect(report).toHaveTextContent("Postgres 19 shipped.");
+  });
+
   it("shows an error when the report can't be read", async () => {
     fetchMock.mockResolvedValue(reply(404, { detail: "Not found" }));
     render(<TopicTimeline topicId={TOPIC} runs={runs} />);
