@@ -43,6 +43,10 @@ services:
       - WEBAGENT_SMTP_PASSWORD=${WEBAGENT_SMTP_PASSWORD:-}
       - WEBAGENT_SMTP_FROM=${WEBAGENT_SMTP_FROM:-}
       - WEBAGENT_SMTP_TLS=${WEBAGENT_SMTP_TLS:-}
+      # Empty keeps notifications.email from the YAML (true/false; log/smtp; notice/summary).
+      - WEBAGENT_EMAIL_ENABLED=${WEBAGENT_EMAIL_ENABLED:-}
+      - WEBAGENT_EMAIL_TRANSPORT=${WEBAGENT_EMAIL_TRANSPORT:-}
+      - WEBAGENT_EMAIL_MODE=${WEBAGENT_EMAIL_MODE:-}
       # Drift and alerts (3.6.0); empty means the code default.
       - TOGETHER_API_BASE=${TOGETHER_API_BASE:-}
       - WEBAGENT_DRIFT_ENABLED=${WEBAGENT_DRIFT_ENABLED:-true}

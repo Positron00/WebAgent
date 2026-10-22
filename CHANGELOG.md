@@ -2,6 +2,21 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.13.0 - 2026-10-21
+
+Tools for the shadow week, and a browser-to-backend test suite, which found three bugs.
+
+### Added
+- **Shadow-week report.** `python backend/scripts/shadow_week_report.py --since <date>` gathers everything the shadow week decides in one place. It covers checkpoint 1 and 2 scores against the thresholds with false-positive bounds, how often each shadow intent rule fires, the shadow classifier, searches per task, tokens per run with suggested budgets, triage, the Prometheus figures for the window, and a checklist. It prints counts and scores only, never the text of a question or a page. It suggests a value only when there are enough rows. The runbook's step 0 runs it.
+- **End-to-end tests (Playwright).** `e2e/` drives Chromium against the built web app, the backend and the scheduler, using the fake Together server and a local SMTP sink. The tests cover sign-in, a research answer, **Track this**, **Run now** through the scheduler, the stored report, and email subscribe, confirm, notice and one-click unsubscribe. `scripts/e2e/stack.sh` starts and stops the stack, and the new `e2e` CI job runs the suite. See `docs/TESTING.md`.
+- **`WEBAGENT_EMAIL_ENABLED`, `WEBAGENT_EMAIL_TRANSPORT`, `WEBAGENT_EMAIL_MODE`** override `notifications.email` without editing the YAML, like `WEBAGENT_SCHEDULER_ENABLED`. Compose passes them from `.env.local`. The startup checks still apply.
+
+### Fixed
+- **A topic's stored reports never opened.** The run record keeps the report as a Markdown string, as the spec says, but the web app read only an object form and showed "This run has no stored report." It now reads the string. A test uses the record exactly as the scheduler writes it.
+- **The operator's default agentic mode didn't apply after first sign-in.** The app asked for `/api/settings` on the sign-in page, got 401, settled on Off and never asked again. Now it skips the sign-in and email-link pages, treats 401 as "not yet", and asks again on the next page.
+- **Screen readers could announce "You are currently offline" at any time.** The banner was always in the page, hidden off-screen, with `role="alert"`. It's now rendered only while the app is offline.
+- **ARCHITECTURE.md** describes collected security rows correctly: scores, decisions, URLs and tool arguments (search queries, code), with user text kept only as a hash outside dev.
+
 ## 3.12.1 - 2026-10-18
 
 A check of 3.11.0 and 3.12.0's code against the recurring-research spec and plan.

@@ -304,7 +304,7 @@ class LLMConfig(BaseModel):          # added
     price_output_per_million: float = 1.50
 ```
 
-- **Environment:** `WEBAGENT_SCHEDULER_ENABLED`, `WEBAGENT_SCHEDULER_TOKEN`, `WEBAGENT_BACKEND_URL`, `WEBAGENT_PUBLIC_URL`, and `WEBAGENT_SMTP_{HOST,PORT,USERNAME,PASSWORD,FROM,TLS}`. They follow the existing precedence (`.env.local` and environment over YAML).
+- **Environment:** `WEBAGENT_SCHEDULER_ENABLED`, `WEBAGENT_SCHEDULER_TOKEN`, `WEBAGENT_BACKEND_URL`, `WEBAGENT_PUBLIC_URL`, and `WEBAGENT_SMTP_{HOST,PORT,USERNAME,PASSWORD,FROM,TLS}`, and (3.13.0) `WEBAGENT_EMAIL_{ENABLED,TRANSPORT,MODE}` over `notifications.email`. They follow the existing precedence (`.env.local` and environment over YAML).
 - **Startup checks:**
   - The scheduler, when enabled, needs the token.
   - The backend logs "scheduling off: no WEBAGENT_SCHEDULER_TOKEN" once.

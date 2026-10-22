@@ -97,3 +97,8 @@ backend/diagnostics_results.json
 
 # MLflow artifact store (generated)
 mlartifacts/
+
+# End-to-end tests (scripts/e2e/stack.sh, Playwright)
+.e2e/
+playwright-report/
+test-results/

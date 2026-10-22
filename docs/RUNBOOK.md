@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.12.1 -t <registry>/webagent-backend:3.12.1 backend/
-   docker push <registry>/webagent-backend:3.12.1
+   docker build --build-arg APP_VERSION=3.13.0 -t <registry>/webagent-backend:3.13.0 backend/
+   docker push <registry>/webagent-backend:3.13.0
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.12.1 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.13.0 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -238,6 +238,7 @@ Topics are questions WebAgent researches again daily or weekly (3.11.0; spec `pl
 5. **Check delivery:** subscribe your own address on a topic, then confirm it. Check that the confirmation and a run notice arrive (not in spam), and that **Unsubscribe** in your mail client works.
 6. **`mode: summary`** (the change summary in the email) is refused at startup unless `security_guard.input_mode: act`. Leave it on `notice` while the guard is in shadow mode.
 
+- **Without editing the YAML (3.13.0):** `WEBAGENT_EMAIL_ENABLED` (`true`/`false`), `WEBAGENT_EMAIL_TRANSPORT` (`log`/`smtp`) and `WEBAGENT_EMAIL_MODE` (`notice`/`summary`) override `notifications.email` on the backend. Compose passes them from `.env.local`; empty keeps the YAML, and an invalid value logs a warning and keeps it too. The startup checks above still apply. On Kubernetes, set the YAML.
 - **Limits:** 5 subscribers per topic, 50 emails a day, and 3 confirmations per address per day.
 - **The ledger:** `data/notify/` keeps send counts and hashed addresses for 30 days.
 - **Alert "Scheduled budget 80%":** fires when scheduled runs have used 80% of either allowance.

@@ -63,7 +63,7 @@ const TASK_FIELDS = ["query", "mode", "agentic", "previous_messages", "triage_ov
   - An empty state links to the chat: "Track a research answer to see it here."
 - **`/topics/[topicId]`:** the header holds the name, the question, the schedule, the state and the actions. Under it, `TopicTimeline`, newest first:
   - **Each entry:** the date, the status (or `error_code` in words, as `ResearchFailed` does), the change ("First report", "N new sources", or the summary bullets in phase B), and **Open report**.
-  - **Open report** renders the stored report through the same Markdown component as chat answers (`react-markdown`, no raw HTML), with its sources panel.
+  - **Open report** renders the stored report through the same Markdown component as chat answers (`react-markdown`, no raw HTML), with its sources panel. The run record's `report` is the result's Markdown as a string, with the run's `title` beside it (requirements, run record).
 - **Polling:** the list and the detail refresh every 30 s while visible (`document.visibilityState`).
 - **Accessibility:** controls have labels, the dialog traps focus, and the state is text as well as colour.
 

@@ -296,10 +296,14 @@ export function parseRunList(data: unknown): TopicRunEntry[] {
 export function parseRunDetail(data: unknown): TopicRunDetail | null {
   const entry = parseRunEntry(data);
   if (!entry || !isObj(data)) return null;
+  // The run record keeps the result's report as a string next to its own `title` (REC run record);
+  // an object `{title, content}` is accepted too.
   const report =
-    isObj(data.report) && typeof data.report.content === "string"
-      ? { title: str(data.report.title), content: data.report.content }
-      : null;
+    typeof data.report === "string" && data.report.trim()
+      ? { title: str(data.title), content: data.report }
+      : isObj(data.report) && typeof data.report.content === "string"
+        ? { title: str(data.report.title), content: data.report.content }
+        : null;
   const sources = parseSources(
     data.sources ?? (isObj(data.report) ? data.report.sources : undefined),
   );

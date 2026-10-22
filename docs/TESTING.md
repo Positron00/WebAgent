@@ -1,6 +1,6 @@
 # Testing Guide
 
-WebAgent has two test suites: Jest for the Next.js web app and pytest for the FastAPI backend. Neither calls a real LLM or web service; model replies and HTTP responses are faked, so the tests are fast, free and repeatable.
+WebAgent has three test suites: Jest for the Next.js web app, pytest for the FastAPI backend, and a small Playwright suite that drives the two together in a browser. None calls a real LLM, search or mail service; model replies and HTTP responses are faked, so the tests are fast, free and repeatable.
 
 ## Running Tests
 
@@ -155,6 +155,29 @@ monkeypatch.setattr(agent, "_generate_with_retry", fake_generate)
 ```
 
 For whole workflows, patch the agent factories in `app.graph.workflows` (see `test_workflow_state_flow.py`).
+
+## End-to-end Tests (Playwright)
+
+`e2e/` drives a real browser against the built web app, the backend and the scheduler, all on `127.0.0.1`:
+
+- **`research-and-topics.spec.ts`:** sign-in keeps the app closed; a question becomes a research answer, then a topic (**Track this**); **Run now** goes through the scheduler and the stored report opens.
+- **`email.spec.ts`:** subscribe, confirm by the button on the link's page (opening the link alone changes nothing), get the run notice, and unsubscribe in one click with the `List-Unsubscribe` link.
+
+```bash
+npx playwright install chromium   # once
+npm run e2e:stack                 # start the stack (builds the web app; E2E_SKIP_BUILD=1 reuses the build)
+npm run test:e2e                  # run the suite, about 1.5 minutes
+npm run e2e:stop
+```
+
+`scripts/e2e/stack.sh` starts the fake Together server (`scripts/fake_together.py`), a STARTTLS SMTP sink (`scripts/e2e/smtp_sink.py`, one JSON file per message in `.e2e/mail/`), the backend in dev, the scheduler and `next start`. It writes throwaway secrets and a self-signed certificate to `.e2e/` (git-ignored) and uses ports 3100, 8100, 18210 and 2526 (`E2E_*_PORT` change them). There is no Tavily key, so web research degrades; without Git LFS weights, triage and the guard fall back as they do in dev.
+
+Two things to know when writing a test:
+
+- The session cookie is `Secure`, and Playwright's request client won't send it over plain http. Call the app's API from inside the page with `api(page, method, url, body)` in `e2e/helpers.ts`. Use `page.request` only for calls that come without a session, such as the one-click unsubscribe a mail client sends.
+- The scheduler ticks once a minute. Wait for its work with `waitForText` (reloads until the text shows) or `waitForMail`, not a fixed sleep.
+
+Logs are in `.e2e/logs/`. A failed test keeps a trace: `npx playwright show-trace test-results/<test>/trace.zip`.
 
 ## Best Practices
 
