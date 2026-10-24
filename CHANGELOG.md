@@ -2,6 +2,15 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.13.1 - 2026-10-25
+
+Fixes the two CI failures on main after 3.13.0. Nothing the server runs changes except the pypdf security fix.
+
+### Fixed
+- **pypdf 6.21.1 → 6.21.2** for CVE-2026-115572, CVE-2026-115580 and CVE-2026-115585 (new advisories; `pip-audit` failed CI). pypdf parses uploaded PDFs.
+- **E2E stack runs the backend with Hugging Face offline** (`HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, as the backend tests already do). On main after 3.13.0, the first scheduled run hung for about five minutes trying to download the base MiniLM encoder. Its notice arrived after the email test had timed out.
+- **Repeated local e2e runs**: `stack.sh start` now renews the SMTP sink's two-day certificate before it expires and clears `.e2e/data`. Before this, a reused `.e2e` failed the email confirm (`SSLCertVerificationError`) and topic creation (409 `topic_limit`).
+
 ## 3.13.0 - 2026-10-21
 
 Tools for the shadow week, and a browser-to-backend test suite, which found three bugs.

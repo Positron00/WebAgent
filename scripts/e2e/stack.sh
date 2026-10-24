@@ -31,6 +31,8 @@ wait_for() {  # url, name
 start() {
   mkdir -p "$E2E_DIR"/{logs,certs,mail,data}
   rm -f "$E2E_DIR"/mail/*.json
+  # Fresh data each start: topics left by earlier runs reach max_active_topics (409 on create).
+  rm -rf "${E2E_DIR:?}"/data/*
   umask 077
   if [ ! -f "$E2E_DIR/env" ]; then
     {
@@ -44,7 +46,8 @@ start() {
   # shellcheck disable=SC1091
   . "$E2E_DIR/env"
   umask 022
-  if [ ! -f "$E2E_DIR/certs/cert.pem" ]; then
+  # The sink's certificate lasts two days; renew it when it has less than an hour left.
+  if ! openssl x509 -checkend 3600 -noout -in "$E2E_DIR/certs/cert.pem" >/dev/null 2>&1; then
     openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=127.0.0.1" \
       -addext "subjectAltName=IP:127.0.0.1,DNS:localhost" \
       -keyout "$E2E_DIR/certs/key.pem" -out "$E2E_DIR/certs/cert.pem" 2>/dev/null
@@ -67,6 +70,8 @@ start() {
     WEBAGENT_EMAIL_ENABLED=true WEBAGENT_EMAIL_TRANSPORT=smtp WEBAGENT_PUBLIC_URL="http://127.0.0.1:$WEB_PORT"
     WEBAGENT_SMTP_HOST=127.0.0.1 WEBAGENT_SMTP_PORT="$SMTP_PORT" WEBAGENT_SMTP_FROM=webagent@e2e.test
     SSL_CERT_FILE="$E2E_DIR/certs/cert.pem" WEBAGENT_SCHEDULER_ENABLED=true
+    # Models fall back without weights; a Hugging Face download attempt once hung a run for ~5 minutes in CI.
+    HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
   )
   (cd "$ROOT/backend" && exec env "${backend_env[@]}" "$PY" -m uvicorn main:app --host 127.0.0.1 --port "$BACKEND_PORT") \
     < /dev/null > "$E2E_DIR/logs/backend.log" 2>&1 & echo $! > "$E2E_DIR/backend.pid"
