@@ -7,7 +7,8 @@ Two candidates from the same rows:
 - siamese: logistic heads on [u, v, |u-v|, u*v] of ContextDefender's encoder embeddings.
 Both are calibrated (isotonic, on a fold held out from train) and get thresholds and an uncertain
 band from that fold (`alignment_training.choose_thresholds`). The gate (`eval_alignment_model.py`)
-then decides which one ships.
+then decides which one ships. Generated rows (rl-generator) never enter the calibration fold; `--seed`
+(default 13) sets the fold, shuffling, torch and numpy; metadata.json records it and any `variant.json`.
 
     python scripts/train_alignment_model.py --kind cross_encoder --encoder sentence-transformers/all-MiniLM-L6-v2 \
         --out models/security/alignment-candidates/l6
@@ -32,6 +33,7 @@ for p in (BACKEND, BACKEND / "scripts"):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
+from alignment_data import GENERATED, dataset_of  # noqa: E402
 from alignment_training import (DATA_DIR, call_text, choose_thresholds, labels, load_split,  # noqa: E402
                                 raw_risk)
 from sklearn.isotonic import IsotonicRegression  # noqa: E402
@@ -48,13 +50,15 @@ def data_hash(data_dir: Path) -> str:
     return h.hexdigest()[:16]
 
 
-def split_calibration(rows: List[dict], share: float = 0.1):
-    rng = random.Random(SEED)
-    order = list(range(len(rows)))
-    rng.shuffle(order)
-    cut = int(len(rows) * share)
-    calib = [rows[i] for i in order[:cut]]
-    train = [rows[i] for i in order[cut:]]
+def split_calibration(rows: List[dict], share: float = 0.1, seed: int = SEED):
+    """(train, calibration): the fold is `share` of the real rows only; generated rows (rl-generator
+    SEC-214) always train. Without generated rows this is the same fold and order as before."""
+    real = [i for i, r in enumerate(rows) if dataset_of(r["origin"]) not in GENERATED]
+    generated = [i for i, r in enumerate(rows) if dataset_of(r["origin"]) in GENERATED]
+    random.Random(seed).shuffle(real)
+    cut = int(len(real) * share)
+    calib = [rows[i] for i in real[:cut]]
+    train = [rows[i] for i in real[cut:] + generated]
     return train, calib
 
 
@@ -65,7 +69,8 @@ def calibrate(p_aligned_raw, risk_raw, rows):
     return {"aligned": cal_a, "risk": cal_r}
 
 
-def finish(out: Path, kind: str, base: str, calib_rows, p_raw, r_raw, extra: dict, data_dir: Path = DATA_DIR) -> None:
+def finish(out: Path, kind: str, base: str, calib_rows, p_raw, r_raw, extra: dict, data_dir: Path = DATA_DIR,
+           seed: int = SEED) -> None:
     calibrators = calibrate(p_raw, r_raw, calib_rows)
     joblib.dump(calibrators, out / "calibrators.joblib")
     p_cal = calibrators["aligned"].predict(p_raw)
@@ -73,7 +78,10 @@ def finish(out: Path, kind: str, base: str, calib_rows, p_raw, r_raw, extra: dic
     chosen = choose_thresholds(calib_rows, p_cal, r_cal)
     meta = {"kind": kind, "version": f"ac-{date.today().isoformat()}-{extra.pop('n', 1)}", "base_encoder": base,
             "max_length": 128, "data_hash": data_hash(data_dir), "trained_rows": extra.pop("trained_rows"),
-            **chosen, **extra}
+            **chosen, **extra, "train_seed": seed}
+    variant = data_dir / "variant.json"
+    if variant.is_file():
+        meta["variant"] = json.loads(variant.read_text(encoding="utf-8"))
     (out / "metadata.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({k: meta[k] for k in ("kind", "version", "thresholds", "uncertain_band")}, indent=2))
 
@@ -83,7 +91,8 @@ def train_cross_encoder(args, train_rows, calib_rows) -> None:
     from torch import nn
     from transformers import AutoModel, AutoTokenizer
 
-    torch.manual_seed(SEED)
+    seed = getattr(args, "seed", SEED)
+    torch.manual_seed(seed)
     device = "mps" if args.device == "auto" and torch.backends.mps.is_available() else (
         "cpu" if args.device == "auto" else args.device)
     tok = AutoTokenizer.from_pretrained(args.encoder)
@@ -108,7 +117,7 @@ def train_cross_encoder(args, train_rows, calib_rows) -> None:
 
     order = list(range(len(train_rows)))
     for epoch in range(args.epochs):
-        random.Random(SEED + epoch).shuffle(order)
+        random.Random(seed + epoch).shuffle(order)
         enc.train()
         total = 0.0
         for start in range(0, len(order), args.batch):
@@ -136,7 +145,7 @@ def train_cross_encoder(args, train_rows, calib_rows) -> None:
     torch.save({"aligned": heads["aligned"].cpu().state_dict(), "risk": heads["risk"].cpu().state_dict(),
                 "hidden": hidden, "pooling": "mean", "max_length": 128}, out / "heads.pt")
     finish(out, "cross_encoder", args.encoder, calib_rows, np.array(p_raw), np.array(r_raw),
-           {"trained_rows": len(train_rows), "epochs": args.epochs, "lr": args.lr}, args.data)
+           {"trained_rows": len(train_rows), "epochs": args.epochs, "lr": args.lr}, args.data, seed)
 
 
 def siamese_features(rows: List[dict]) -> np.ndarray:
@@ -150,17 +159,18 @@ def siamese_features(rows: List[dict]) -> np.ndarray:
 def train_siamese(args, train_rows, calib_rows) -> None:
     from sklearn.linear_model import LogisticRegression
 
+    seed = getattr(args, "seed", SEED)
     aligned_y, risk_y = labels(train_rows)
     x = siamese_features(train_rows)
-    heads = {"aligned": LogisticRegression(max_iter=2000, class_weight="balanced", random_state=SEED).fit(x, aligned_y),
-             "risk": LogisticRegression(max_iter=2000, class_weight="balanced", random_state=SEED).fit(x, risk_y)}
+    heads = {"aligned": LogisticRegression(max_iter=2000, class_weight="balanced", random_state=seed).fit(x, aligned_y),
+             "risk": LogisticRegression(max_iter=2000, class_weight="balanced", random_state=seed).fit(x, risk_y)}
     xc = siamese_features(calib_rows)
     p_raw = heads["aligned"].predict_proba(xc)[:, 1]
     r_raw = raw_risk(heads["risk"].predict_proba(xc))
     args.out.mkdir(parents=True, exist_ok=True)
     joblib.dump(heads, args.out / "heads.joblib")
     finish(args.out, "siamese", "context_defender", calib_rows, p_raw, r_raw, {"trained_rows": len(train_rows)},
-           args.data)
+           args.data, seed)
 
 
 def main() -> int:
@@ -173,11 +183,13 @@ def main() -> int:
     ap.add_argument("--lr", type=float, default=3e-5)
     ap.add_argument("--device", default="auto")
     ap.add_argument("--data", type=Path, default=DATA_DIR)
+    ap.add_argument("--seed", type=int, default=SEED, help="calibration split, shuffling, torch and numpy (SEC-217)")
     args = ap.parse_args()
+    np.random.seed(args.seed)
     rows = load_split("train", args.data)
     if not rows:
         ap.error(f"no training rows under {args.data}")
-    train_rows, calib_rows = split_calibration(rows)
+    train_rows, calib_rows = split_calibration(rows, seed=args.seed)
     (train_cross_encoder if args.kind == "cross_encoder" else train_siamese)(args, train_rows, calib_rows)
     return 0
 

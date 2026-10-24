@@ -2,6 +2,29 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.14.0 - Unreleased
+
+Tooling for an RL generator of benign hard training rows for the checkpoint 2 classifier (R0 of `planning/rl-plan.md`; spec `planning/specs/rl-generator/`). Nothing the server runs changes: no change under `backend/app/`, `backend/config/` or the image.
+
+### Added
+- **`backend/scripts/rl_generator/`.** Two modes only: H writes harmless calls that serve a nearby but different goal, and L writes harmless look-alikes. Every sample must pass three checks before it is kept. ContextDefender's harm score must be below the installed model's verify threshold (20). An LLM judge on Together, a different model family from the agent's, must confirm the label. The frozen classifier must get it wrong. The scripts print counts and scores only, never row text.
+  - `seeds.py`: seeds from the committed train split and a novelty bank.
+  - `prompted.py`: the untrained Qwen2.5 baseline, with a cost estimate, a credit stop rule and judge candidates.
+  - `train.py` and `train_logic.py`: GRPO with LoRA (TRL), resumable checkpoints and a reward-hacking guard.
+  - `sample.py`: rows from a trained adapter, including held-out sets.
+  - `review.py`: blind review sheets and verdicts.
+  - `variant.py`: the base build plus reviewed rows, at a share. `--batches` picks one round's batches.
+  - `compare.py`: the R2 comparison and its decision rule.
+  - `colab_train.ipynb`: the Colab driver.
+- **New sources `rl-gen-h` and `rl-gen-l`** (approved 2026-10-23). They are local-only and train-only, and `--check-data` enforces both.
+- **`backend/requirements-train.txt`**: trl, peft, accelerate, datasets, fsspec and pyarrow, pinned and audited by `pip-audit` in CI. It is never part of the image or `constraints.txt`.
+
+### Changed
+- `train_alignment_model.py`:
+  - Generated rows are never in the calibration fold. With no generated rows the fold is identical to before: the same rows in the same order. A `none` variant of the current build reproduced `ac-2026-10-17-1`'s gate numbers exactly.
+  - New `--seed` option (default 13). `metadata.json` records `train_seed` and the variant.
+- `eval_alignment_model.py`: reports metrics by role (training sources vs evaluation-only sources) and on held-out generated sets (`--extra`), as a report only. The gate's checks are unchanged.
+
 ## 3.13.0 - 2026-10-21
 
 Tools for the shadow week, and a browser-to-backend test suite, which found three bugs.

@@ -194,7 +194,9 @@ Since 3.9.0 a model that failed its gate can be installed **shadow-only**
 `webagent_guard_shadow_classifier_risk`, and `shadow_classifier_*` in collection rows) but never
 decide, and uat and prod start with it. 3.9.0 ships the retrained MiniLM-L6 this way (88 MB, LFS:
 `git lfs pull` before building the image). To turn it off, point `security_guard.alignment_model_dir`
-at an empty folder. Nothing new is stored:
+at an empty folder. Since 3.14.0 the gate's report also splits results by role (training sources vs
+evaluation-only sources) and can score held-out generated sets (`--extra`); neither changes the
+gate. Nothing new is stored:
 private text is kept only as salted hashes in memory for the task, and outside dev no intent or
 subgoal text is logged or collected.
 

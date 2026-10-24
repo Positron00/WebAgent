@@ -159,7 +159,7 @@ The guard puts two checkpoints in the path of every task. Both ask the same in-p
     - tools the plan didn't ask for;
     - drift across the task.
   - Acting rules today come from the original policies: on a tainted task, a search goes to verify and code needs consent; dangerous code, a secret in a search, and a document from the wrong source are declined. An action the guard skipped can be approved with the web app's **Approve**, which reruns the task with a signed, single-use approval.
-- **The intent classifier (3.9.0).** A fine-tuned cross-encoder for checkpoint 2, `models/security/alignment/` version `ac-2026-10-17-1`.
+- **The intent classifier (3.9.0).** A fine-tuned cross-encoder for checkpoint 2, `models/security/alignment/` version `ac-2026-10-17-1`. Since 3.14.0, offline tooling (`scripts/rl_generator/`, not part of the server) can add reviewed benign generated rows to its training data.
   - It failed its release gate, so it is installed **shadow-only**: its scores are recorded next to the cosine signals and never decide.
   - A model that passes the gate replaces the cosine signals in the policy context.
 - **Modes:** `input_mode` and `tool_mode` are `shadow` (record what would happen, block nothing) or `act`. Every environment runs in shadow now. The nine checkpoint 2 intent rules are shadow-only whatever the mode, until each one's threshold is measured (`planning/specs/checkpoint2-intent/`).

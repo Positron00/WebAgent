@@ -269,6 +269,26 @@ Without `--finetune` the encoder stays frozen and training takes seconds; metada
 
 Ship a version only if the gate passes: research recall ≥ 95% and routine questions routed direct ≥ 80% on `test.jsonl`.
 
+## RL generator of training rows (training only)
+
+Since 3.14.0, `scripts/rl_generator/` makes benign hard rows for the checkpoint 2 classifier. It doesn't
+change anything the server runs. Rows are written by Qwen2.5 (prompted, or trained with GRPO on Colab),
+kept only if ContextDefender finds them harmless, a Together judge confirms the label and the user's
+review passes. They are added to a copy of the dataset for retraining. Generated, review and variant
+files stay in git-ignored `data/security/alignment/local/`. See `planning/specs/rl-generator/`.
+
+```bash
+python scripts/rl_generator/seeds.py --mode H --n 12000          # seeds from the committed train split
+python scripts/rl_generator/seeds.py --bank                       # novelty bank
+python scripts/rl_generator/prompted.py --mode H --judge-model <m> --price-input X --price-output Y --estimate 50
+python scripts/rl_generator/review.py --make <batch>              # blind 100-row sheet; then --score <batch>
+python scripts/rl_generator/variant.py --kind prompted --share 0.05 --modes H --out data/security/alignment/local/variants/p5
+python scripts/rl_generator/compare.py --modes H,L --out data/security/alignment/local/compare/r2 --dry-run
+```
+
+GRPO training (`train.py`, `sample.py`) runs from `scripts/rl_generator/colab_train.ipynb` on a GPU, with
+`requirements-train.txt` installed on top of `requirements.txt`.
+
 ## Testing
 
 Run the test suite:

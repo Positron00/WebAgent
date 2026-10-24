@@ -6,7 +6,14 @@ advisories below stay open because the fix needs the package's next major versio
 own migration. None of them is reachable in WebAgent, for the reason given. Review this list when
 any of these packages moves to a new major version, and remove an entry once its fix ships.
 
-Last reviewed: 2026-10-17 (release 3.10.0).
+Training-only pins (since 3.14.0): `backend/requirements-train.txt` (trl, peft, accelerate, datasets,
+fsspec, pyarrow) is audited on its own in CI (`pip-audit -r backend/requirements-train.txt`), with no
+accepted advisories. It is never installed in the image. The training environment (Colab) uses fsspec
+2026.6.0 instead of `constraints.txt`'s 2026.9.0, because datasets 5.0.1 needs fsspec <= 2026.6.0; both
+carry the PYSEC-2026-4217 fix. It also uses pyarrow 25.0.1, because pyarrow 26 refuses the pinned
+numpy 1.26.
+
+Last reviewed: 2026-10-17 (release 3.10.0); training pins 2026-10-23.
 
 | Package (version) | Advisory | Fixed in | Why WebAgent is not affected |
 |---|---|---|---|

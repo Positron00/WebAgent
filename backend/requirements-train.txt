@@ -1,0 +1,15 @@
+# Training-only dependencies for the RL generator (planning/specs/rl-generator, SNFR-21).
+# Never installed in the served image and not part of constraints.txt. Install together with
+# requirements.txt and constraints.txt minus its fsspec line (the Colab notebook does this):
+#   grep -v '^fsspec==' backend/constraints.txt > /tmp/c.txt
+#   pip install -r backend/requirements.txt -r backend/requirements-train.txt -c /tmp/c.txt
+# Exact pins, audited by pip-audit in CI. trl 1.14 needs transformers >= 4.56.2 (4.57.6 pinned).
+# datasets 5.0.1 needs fsspec <= 2026.6.0, so the training environment uses fsspec 2026.6.0
+# (constraints.txt has 2026.9.0 for the server); both versions carry the PYSEC-2026-4217 fix.
+trl==1.14.2
+peft==0.21.2
+accelerate==1.15.0
+datasets==5.0.1
+fsspec==2026.6.0
+# datasets needs pyarrow >= 21; pyarrow 26 refuses numpy < 2 (1.26.4 is pinned for the gated models).
+pyarrow==25.0.1

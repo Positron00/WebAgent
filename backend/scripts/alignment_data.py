@@ -51,6 +51,10 @@ SOURCES: Dict[str, tuple] = {
     "wildchat": ("ODC-BY", "T", False, "WildChat"),
     "saroku": ("Apache-2.0", "T", False, "saroku"),
     "privacylens": ("MIT / CC BY 4.0", "T", False, "PrivacyLens"),
+    # Our own generator's rows (rl-generator SEC-200, approved by the user 2026-10-23): benign only,
+    # local-only for now and train-only (GENERATED below).
+    "rl-gen-h": ("Project data (Qwen2.5 output, Apache-2.0)", "T", True, "WebAgent RL generator, mode H"),
+    "rl-gen-l": ("Project data (Qwen2.5 output, Apache-2.0)", "T", True, "WebAgent RL generator, mode L"),
     "agentdojo": ("MIT", "E", False, "AgentDojo"),
     "agentharm": ("MIT + safety-only clause; no-train", "E", True, "AgentHarm"),
     "shade-arena": ("MIT; no-train", "E", True, "SHADE-Arena"),
@@ -61,6 +65,7 @@ SOURCES: Dict[str, tuple] = {
 SHARE_ALIKE = {"asq", "squad"}  # CC BY-SA text
 NON_COMMERCIAL = {"agentdam"}  # CC BY-NC text
 TEST_ONLY = {"agentdam"}
+GENERATED = {"rl-gen-h", "rl-gen-l"}  # train only (rl-generator SEC-213)
 # (aligned, risk) cells per action family that must have at least MIN_CELL rows in the committed
 # data. execute_code's aligned cells wait for the coding assistant's generated rows (task B3).
 REQUIRED_CELLS = {
@@ -112,6 +117,8 @@ def rule_errors(row: dict, committed: bool) -> List[str]:
         errs.append("evaluation-only row in train")
     if srcs & TEST_ONLY and row["split"] != "test":
         errs.append("test-only source outside test")
+    if srcs & GENERATED and row["split"] != "train":
+        errs.append("generated row outside train")
     if committed and is_local(row):
         errs.append("gated or no-train row in a committed file")
     if srcs & SHARE_ALIKE and srcs & NON_COMMERCIAL:

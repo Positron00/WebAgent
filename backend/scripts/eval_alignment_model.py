@@ -9,10 +9,13 @@ false-positive rule); otherwise the baseline ships. Writes `metadata.json["test"
 candidate; `--install` copies the one that ships to `models/security/alignment/`. When none passes,
 `--install-shadow` installs the candidate with the best off-intent recall there as shadow-only
 (SEC-128: `metadata.json["deployment"] = "shadow"`): its scores are recorded and never decide.
-Counts only.
+`metadata.json["test"]` also has `by_role` (T and E rows apart) and, with `--extra <file>`, recall
+(mode H) or held share (mode L) on held-out generated sets (rl-generator SEC-215, SEC-216); neither
+is part of `checks` or `passed`. Counts only.
 
     python scripts/eval_alignment_model.py --model models/security/alignment-candidates/l6 \
-        --model models/security/alignment-candidates/siamese [--install | --install-shadow]
+        --model models/security/alignment-candidates/siamese [--install | --install-shadow] \
+        [--extra data/security/alignment/local/generated/rl_gen_h_heldout.jsonl]
 """
 from __future__ import annotations
 
@@ -25,7 +28,7 @@ import sys
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Sequence
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 BACKEND = Path(__file__).resolve().parents[1]
@@ -35,6 +38,7 @@ for p in (BACKEND, BACKEND / "scripts"):
 
 import numpy as np  # noqa: E402
 
+from alignment_data import GENERATED, dataset_of, read_jsonl  # noqa: E402
 from alignment_training import (DATA_DIR, call_text, expected_calibration_error, is_lookalike,  # noqa: E402
                                 is_real_aligned, load_split, wilson_upper)
 
@@ -74,6 +78,37 @@ def report(rows: List[dict], p: np.ndarray, risk: np.ndarray, th: Dict[str, int]
     return out
 
 
+def by_role(rows: List[dict], p: np.ndarray, risk: np.ndarray, th: Dict[str, int]) -> Dict[str, object]:
+    """The report on role T rows and role E rows apart, without `held_by_source` (SEC-215)."""
+    out: Dict[str, object] = {}
+    for role in ("T", "E"):
+        idx = [i for i, r in enumerate(rows) if r.get("role") == role]
+        if idx:
+            rep = report([rows[i] for i in idx], p[idx], risk[idx], th)
+            rep.pop("held_by_source")
+            out[role] = rep
+        else:
+            out[role] = None
+    return out
+
+
+def load_extra(path: Path) -> tuple:
+    """(mode, rows) of a held-out generated set; SystemExit unless every row is one rl-gen-* source."""
+    rows = read_jsonl(path)
+    datasets = {dataset_of(r.get("origin", "")) for r in rows}
+    if not rows or len(datasets) != 1 or not datasets <= GENERATED:
+        raise SystemExit(f"{path.name}: --extra takes a held-out generated set (rows of one rl-gen-* source only)")
+    return ("H" if datasets == {"rl-gen-h"} else "L"), rows
+
+
+def extra_report(mode: str, rows: List[dict], p: np.ndarray, risk: np.ndarray, th: Dict[str, int]) -> Dict[str, object]:
+    """Mode H rows should be held as off-intent (recall); mode L rows should pass (held share)."""
+    off = (p * 100) < th["search_align_at"]
+    held = off if mode == "H" else off | (risk >= th["risk_verify_at"])
+    rate = round(float(held.mean()), 4) if len(rows) else None
+    return {"rows": len(rows), "held": int(held.sum()), ("recall" if mode == "H" else "held_share"): rate}
+
+
 def latency(model, rows: List[dict], n: int = 200) -> Dict[str, float]:
     sample = (rows * (n // max(len(rows), 1) + 1))[:n]
     for r in sample[:10]:
@@ -100,7 +135,7 @@ def passes(test: Dict[str, object], lat: Dict[str, float]) -> Dict[str, bool]:
             "latency_p95_ms": ok(lat["p95_ms"], TARGETS["latency_p95_ms"], False)}
 
 
-def evaluate(model_dir: Path, data_dir: Path) -> Dict[str, object]:
+def evaluate(model_dir: Path, data_dir: Path, extra: Sequence[Path] = ()) -> Dict[str, object]:
     from app.security import alignment_model
 
     model = alignment_model.load(model_dir, require_gate=False)
@@ -109,7 +144,14 @@ def evaluate(model_dir: Path, data_dir: Path) -> Dict[str, object]:
     meta = json.loads((model_dir / "metadata.json").read_text(encoding="utf-8"))
     th = meta["thresholds"]
     test_rows, probe_rows = load_split("test", data_dir), load_split("probe", data_dir)
-    test = report(test_rows, *score(model, test_rows), th)
+    p, risk = score(model, test_rows)
+    test = report(test_rows, p, risk, th)
+    test["by_role"] = by_role(test_rows, p, risk, th)
+    if extra:
+        test["extra"] = {}
+        for path in extra:
+            mode, rows = load_extra(path)
+            test["extra"][path.stem] = extra_report(mode, rows, *score(model, rows), th)
     probe = report(probe_rows, *score(model, probe_rows), th) if probe_rows else None
     lat = latency(model, test_rows)
     checks = passes(test, lat)
@@ -121,11 +163,15 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", type=Path, action="append", required=True)
     ap.add_argument("--data", type=Path, default=DATA_DIR)
+    ap.add_argument("--extra", type=Path, action="append", default=[],
+                    help="a held-out generated set (rl_gen_<mode>_heldout.jsonl), report only (SEC-216)")
     ap.add_argument("--install", action="store_true", help="copy the model that ships to models/security/alignment")
     ap.add_argument("--install-shadow", action="store_true",
                     help="when none passes, install the best candidate as shadow-only (SEC-128)")
     args = ap.parse_args()
-    results = {str(m): evaluate(m, args.data) for m in args.model}
+    for path in args.extra:
+        load_extra(path)  # refuse a wrong file before scoring anything
+    results = {str(m): evaluate(m, args.data, args.extra) for m in args.model}
     siamese = [r for r in results.values() if r["kind"] == "siamese"]
     best_siamese = max((r["test"]["off_intent_recall"] or 0 for r in siamese), default=-1)
     shipping = None
@@ -141,12 +187,26 @@ def main() -> int:
                         "passed": r["passed"] and path == shipping, "targets": TARGETS}
         meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"shipping": shipping, "results": results}, indent=2, default=str))
+    for path, r in results.items():
+        print(summary_lines(Path(path).name, r["test"]))
     if args.install and shipping:
         _install(Path(shipping), deployment="gated")
     elif args.install_shadow and not shipping and results:
         best = max(results, key=lambda p: results[p]["test"]["off_intent_recall"] or 0)
         _install(Path(best), deployment="shadow")
     return 0 if shipping else 1
+
+
+def summary_lines(name: str, test: Dict[str, object]) -> str:
+    """One line per role and per extra set: counts and rates only."""
+    lines = []
+    for role, rep in (test.get("by_role") or {}).items():
+        if rep:
+            lines.append(f"{name} role {role}: rows {rep['rows']}, off-intent recall {rep['off_intent_recall']}, "
+                         f"risk recall {rep['risk_recall']}, look-alikes held {rep['lookalikes_held']}")
+    for set_name, rep in (test.get("extra") or {}).items():
+        lines.append(f"{name} extra {set_name}: " + ", ".join(f"{k} {v}" for k, v in rep.items()))
+    return "\n".join(lines)
 
 
 def _install(model_dir: Path, *, deployment: str) -> None:

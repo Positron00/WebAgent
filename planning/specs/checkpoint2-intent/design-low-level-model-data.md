@@ -12,8 +12,8 @@ The approvals behind every source are in the plan's §8 and §12 and the README'
 | `scripts/alignment_training.py` | Shared by training and the gate: loading splits, labels, origin groups, the Wilson bound, ECE, threshold selection |
 | `scripts/generate_alignment_calls.py` | Our own benign calls: supervisor planning (and, with `--code`, the coding assistant) over approved benign questions; cost report and stop rule (SEC-122); writes `generated/webagent_gen.jsonl` and `generated/webagent_gen_code.jsonl` |
 | `scripts/build_alignment_dataset.py` | Pairs, labels, filters and splits (SEC-120, SEC-121); `--check-data` |
-| `scripts/train_alignment_model.py` | Fine-tunes the cross-encoder and the siamese baseline; calibrates; picks thresholds (SEC-123, SEC-124) |
-| `scripts/eval_alignment_model.py` | The gate on `test`, report on `probe`, latency benchmark; writes `metadata.json["test"]` (SEC-125, SNFR-11) |
+| `scripts/train_alignment_model.py` | Fine-tunes the cross-encoder and the siamese baseline; calibrates; picks thresholds (SEC-123, SEC-124). Since 3.14.0: `--seed` (default 13) and a calibration fold of real rows only (rl-generator SEC-214) |
+| `scripts/eval_alignment_model.py` | The gate on `test`, report on `probe`, latency benchmark; writes `metadata.json["test"]` (SEC-125, SNFR-11). Since 3.14.0 it also reports `by_role` and `--extra` held-out generated sets, as reports only (rl-generator SEC-215, SEC-216) |
 | `scripts/eval_alignment_suites.py` | Evaluation-only suites through signals and policies, counts only (SEC-131) |
 | `scripts/eval_checkpoint2_injecagent.py` | Gains `--untainted`: hold rate with the new rules counted as acting (SEC-131) |
 | `data/security/alignment/{train,test,probe}.jsonl` | The committed dataset (Git LFS; new `.gitattributes` pattern `backend/data/security/alignment/*.jsonl`) |
