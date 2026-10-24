@@ -4,7 +4,7 @@ All notable changes to the WebAgent Platform will be documented in this file.
 
 ## 3.14.0 - Unreleased
 
-Tooling for an RL generator of benign hard training rows for the checkpoint 2 classifier (R0 of `planning/rl-plan.md`; spec `planning/specs/rl-generator/`). Nothing the server runs changes: no change under `backend/app/`, `backend/config/` or the image.
+Tooling for an RL generator of benign hard training rows for the checkpoint 2 classifier (R0 of `planning/rl-plan.md`; spec `planning/specs/rl-generator/`). Nothing the server runs changes: no change under `backend/app/` or `backend/config/`, and the image differs only by the pypdf security fix.
 
 ### Added
 - **`backend/scripts/rl_generator/`.** Two modes only: H writes harmless calls that serve a nearby but different goal, and L writes harmless look-alikes. Every sample must pass three checks before it is kept. ContextDefender's harm score must be below the installed model's verify threshold (20). An LLM judge on Together, a different model family from the agent's, must confirm the label. The frozen classifier must get it wrong. The scripts print counts and scores only, never row text.
@@ -24,6 +24,11 @@ Tooling for an RL generator of benign hard training rows for the checkpoint 2 cl
   - Generated rows are never in the calibration fold. With no generated rows the fold is identical to before: the same rows in the same order. A `none` variant of the current build reproduced `ac-2026-10-17-1`'s gate numbers exactly.
   - New `--seed` option (default 13). `metadata.json` records `train_seed` and the variant.
 - `eval_alignment_model.py`: reports metrics by role (training sources vs evaluation-only sources) and on held-out generated sets (`--extra`), as a report only. The gate's checks are unchanged.
+
+### Fixed
+- **pypdf 6.21.1 → 6.21.2** for CVE-2026-115572, CVE-2026-115580 and CVE-2026-115585 (new advisories; `pip-audit` failed CI). pypdf parses uploaded PDFs.
+- **E2E stack runs the backend with Hugging Face offline** (`HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, as the backend tests already do). On main after 3.13.0, the first scheduled run hung for about five minutes trying to download the base MiniLM encoder. Its notice arrived after the email test had timed out.
+- **Repeated local e2e runs**: `stack.sh start` now renews the SMTP sink's two-day certificate before it expires and clears `.e2e/data`. Before this, a reused `.e2e` failed the email confirm (`SSLCertVerificationError`) and topic creation (409 `topic_limit`).
 
 ## 3.13.0 - 2026-10-21
 
