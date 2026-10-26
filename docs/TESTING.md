@@ -170,7 +170,7 @@ npm run test:e2e                  # run the suite, about 1.5 minutes
 npm run e2e:stop
 ```
 
-`scripts/e2e/stack.sh` starts the fake Together server (`scripts/fake_together.py`), a STARTTLS SMTP sink (`scripts/e2e/smtp_sink.py`, one JSON file per message in `.e2e/mail/`), the backend in dev, the scheduler and `next start`. It writes throwaway secrets and a self-signed certificate to `.e2e/` (git-ignored) and uses ports 3100, 8100, 18210 and 2526 (`E2E_*_PORT` change them). There is no Tavily key, so web research degrades; without Git LFS weights, triage and the guard fall back as they do in dev.
+`scripts/e2e/stack.sh` starts the fake Together server (`scripts/fake_together.py`), a STARTTLS SMTP sink (`scripts/e2e/smtp_sink.py`, one JSON file per message in `.e2e/mail/`), the backend in dev, the scheduler and `next start`. It writes throwaway secrets and a self-signed certificate to `.e2e/` (git-ignored) and uses ports 3100, 8100, 18210 and 2526 (`E2E_*_PORT` change them). There is no Tavily key, so web research degrades; without Git LFS weights, triage and the guard fall back as they do in dev. The backend runs with Hugging Face offline (`HF_HUB_OFFLINE=1`), so a missing model falls back at once instead of being downloaded. Each `start` clears `.e2e/data/` and `.e2e/mail/`, and renews the certificate (valid two days) when it has less than an hour left.
 
 Two things to know when writing a test:
 

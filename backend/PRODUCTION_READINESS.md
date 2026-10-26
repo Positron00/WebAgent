@@ -2,7 +2,7 @@
 
 What to check before exposing the backend, and what's already in place. The history is in `CHANGELOG.md`.
 
-## Production checklist (3.13.0)
+## Production checklist (3.13.1)
 
 Before exposing the backend:
 

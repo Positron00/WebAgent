@@ -1,6 +1,6 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.13.0-blue.svg)](https://semver.org)
+[![version](https://img.shields.io/badge/version-3.13.1-blue.svg)](https://semver.org)
 [![last-updated](https://img.shields.io/badge/last%20updated-2026--10--18-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent research assistant. Ask a question in the chat. WebAgent then either answers it directly in a few seconds, or sends it to a team of research agents. The agents search the web and your own documents, check each other's work, and return a sourced report in a few minutes. A security guard checks everything the models read and every tool call they make.
@@ -229,7 +229,7 @@ npm run dev                   # web app on http://localhost:3000 (add -- -p 3002
 
 ## Deploying
 
-- **Docker:** `docker build --build-arg APP_VERSION=3.13.0 -t webagent/backend:3.13.0 backend/`. The image runs as `prod` and as a non-root user, and starts only with `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY` set. Run `git lfs pull` first. See [backend/README.md](backend/README.md#running-with-docker).
+- **Docker:** `docker build --build-arg APP_VERSION=3.13.1 -t webagent/backend:3.13.1 backend/`. The image runs as `prod` and as a non-root user, and starts only with `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY` set. Run `git lfs pull` first. See [backend/README.md](backend/README.md#running-with-docker).
 - **Kubernetes:** see [backend/kubernetes/README.md](backend/kubernetes/README.md). `deploy.sh` needs `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD`.
 - **Vercel** (web app only): see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Agentic modes need `WEBAGENT_BACKEND_URL` pointing at a running backend.
 - **Operating it:** deploys, rollback, key rotation, backups, spending caps, alerts and the security guard's modes are covered in [docs/RUNBOOK.md](docs/RUNBOOK.md).

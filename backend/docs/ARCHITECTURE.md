@@ -1,6 +1,6 @@
 # WebAgent Architecture
 
-How the parts of WebAgent 3.13.0 fit together: the web app, the backend, the research workflow, the security guard, triage, the stores, and observability. Each section names the code that implements it. Feature designs and requirements are in `planning/specs/`.
+How the parts of WebAgent 3.13.1 fit together: the web app, the backend, the research workflow, the security guard, triage, the stores, and observability. Each section names the code that implements it. Feature designs and requirements are in `planning/specs/`.
 
 ## System overview
 
