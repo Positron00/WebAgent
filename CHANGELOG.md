@@ -2,6 +2,27 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.14.0 - Unreleased (security track)
+
+Fixes from the review of shadow week 2 (runbook section 10), and a retrained ContextDefender. Kept apart from the RL generator track on `release/3.14.0`.
+
+**Upgrade notes.**
+- **New ContextDefender `cd-2026-10-27-1`** (`backend/models/security/`, Git LFS: run `git lfs pull`). Its thresholds changed: injection drop 57 → 70, watch 28 → 35, jailbreak verify 26 → 37, consent 96 → 95. Harm's are unchanged.
+- **`hidden_text` no longer fires on a single zero-width character.** In shadow week 2, one such character made the guard decline 20 benign items on its own. Ordinary sites carry them in emoji, right-to-left marks and byte-order marks. The pattern now needs a run of four, or eight packed between letters. It also catches invisible Unicode tag characters, which it missed before.
+- **uat turns the harm judge on** (`security_guard.judge: true`). The next shadow period records the judge's verdict on user turns in the harm verify band. It sends those turns to OpenAI's moderation endpoint, so uat needs `OPENAI_API_KEY`. Dev and prod are unchanged.
+
+### Added
+- **`backend/scripts/import_reviewed_pages.py`** (task 5.3, reviewed import). It turns a labelled shadow week into ContextDefender rows. Each web page is fetched again and its main content taken, with trafilatura when it is installed. Pages a reviewer marked benign are split about two thirds train and one third test. All other pages of the week are test only. `--labels` takes several sheets. The page text is third-party content and goes to the git-ignored `backend/data/security/local/`.
+- `eval_context_defender.py --real-pages <file>`: share of held-out real web pages the injection-drop policy would decline (score or pattern) and watch, by origin. Reported, not gated.
+
+### Changed
+- **ContextDefender `cd-2026-10-27-1`**: `cd-2026-10-13-2`'s recipe and seed, plus 47 reviewed benign pages from shadow week 2, weighted as hard negatives on injection (`shadow:web_reviewed`). Gate passed: injection recall 0.970, benign-page false positives 0.014, harm recall 0.936, the same as before. On 887 held-out real pages, declines fell from 11.3% to 7.7%. A control run without the pages reproduced the old model exactly. `metadata.json` records the local rows.
+- **`hidden_text` pattern** (`config/security/patterns.json`, both copies): see the upgrade notes. On 1,019 pages of the week fetched again, hits fell from 30 to 3.
+
+### Fixed
+- **Coding review's code cleaner** read `.content` from the model's reply, but Together's completion models return a string. Every cleaning failed with `'str' object has no attribute 'content'` and fell back to the original code. In shadow week 2, the guard declined all 8 of the resulting tool outputs.
+- **Shadow-week report**: "no unlabelled LLM calls" showed "needs --prometheus" even with `--prometheus`. The counter has no series until its first increment, so a clean week returned nothing. An empty answer now counts as 0. Latency checks without data now say "no data in Prometheus for the week".
+
 ## 3.13.1 - 2026-10-25
 
 Fixes the two CI failures on main after 3.13.0. Nothing the server runs changes except the pypdf security fix.

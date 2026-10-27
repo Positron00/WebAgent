@@ -147,7 +147,7 @@ The guard puts two checkpoints in the path of every task. Both ask the same in-p
 
 - **Checkpoint 1, before every model call (`context_defender.py`, `guard.py`):**
   - Every context item is scored on four axes: the user's turn, earlier turns, web pages, documents, code output.
-  - The axes are **injection**, **harm**, **sensitive data** and **jailbreak**. ContextDefender scores them: a MiniLM-L12 classifier, `models/security/` version `cd-2026-10-13-2`, which passed its release gate.
+  - The axes are **injection**, **harm**, **sensitive data** and **jailbreak**. ContextDefender scores them: a MiniLM-L12 classifier, `models/security/` version `cd-2026-10-27-1`, which passed its release gate.
   - A flagged web page chunk is dropped and the task becomes **tainted** (`ledger.py`). A risky user turn is declined, sent for consent or verified. A search that would carry a secret is declined, and one carrying personal data is verified.
   - The web app's direct chat uses the same check through `POST /api/guard/input`.
 - **Checkpoint 2, before every tool action and plan subgoal (`tool_guard.py`, `intent.py`, `signals.py`):**

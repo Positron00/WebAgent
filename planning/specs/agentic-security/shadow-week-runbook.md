@@ -10,7 +10,7 @@ Goal: run the security guard on real uat traffic for about a week in shadow mode
 
 The week runs either on one machine with Docker (how the 2026-10-13 week ran: there is no uat cluster yet) or in Kubernetes. Keep one version for the whole week, so the numbers are comparable. Settings for both:
 
-- `backend/config/uat.yaml`, `security_guard:` — `enabled: true`, `input_mode: shadow`, `tool_mode: shadow`, `collect: true`, `judge: false` (set in 3.2.2).
+- `backend/config/uat.yaml`, `security_guard:` — `enabled: true`, `input_mode: shadow`, `tool_mode: shadow`, `collect: true`, `judge: true` (off from 3.2.2; on since 3.14.0, so the week records the harm judge's verdicts on verify-band user turns; it sends those turns to OpenAI's moderation endpoint).
 - `uat.yaml`, `triage:` — `enabled: true`, `mode: shadow`, `collect: true`, `llm_tiebreak: false` (set in 3.2.3). Triage collection in uat stores question text; approved for this week (triage task 2.12).
 - Environment: `WEBAGENT_ENV=uat`, `WEB_CONCURRENCY=2`, a real `WEBAGENT_SECURITY_SECRET_KEY` (signs consent and approval tokens) and `WEBAGENT_API_KEY` (the web app sends the same key), plus the Together, Tavily and OpenAI keys. The guard itself uses `OPENAI_API_KEY` only if the harm judge is turned on.
 - `git lfs pull` first: the ContextDefender encoder and dataset are LFS files; without them the image has pointer files and the guard can't score.
@@ -151,3 +151,11 @@ A simulated week ran on 3.2.4 in Docker (arm64) with the uat settings and real T
 - **Documents:** 2 of 3 injected emails scored 100; one scored 3 (missed). Both clean emails were allowed.
 - **Triage:** 38 of 40 questions routed as expected; the 2 misses were research questions it routed direct with high confidence. No uncertain scores.
 - No guard errors, no unlabelled LLM calls, no `scores_unavailable`.
+
+## 10. What shadow week 2 found (3.10.0, 2026-10-17 to 22)
+
+About 120 tasks: the user's own, plus 113 public research questions (Researchy Questions rated not harmful, and HotpotQA). 2,043 untrusted items judged. Every flagged page was labelled; none held an injection.
+
+- **Checkpoint 1 false positives: 95 of 2,043 (4.65%, upper bound 5.48%).** That fails section 5. By cause: 60 were the model on web pages, 20 were the `hidden_text` pattern alone (one zero-width character), 8 were the ethics demo document retrieved in unrelated tasks, and 8 were tool outputs carrying the coding review's crash message.
+- **3.14.0 acts on all but the demo document.** It narrows `hidden_text` and fixes the coding review. It installs `cd-2026-10-27-1`, retrained with 47 of the reviewed pages: on 887 held-out pages of the week, declines fell from 11.3% to 7.7% (main content fetched again, which is harsher than Tavily's extracts). Projected on this week: about 2.0–2.3%, still not clearly under the bound. Next: label the pages the new model still flags, retrain, and stop demo documents from being retrieved in unrelated tasks.
+- **Harm verify** fired 21 times on 3 benign questions. OpenAI moderation cleared all 3, so 3.14.0 turns the judge on in uat for the next period. One moderation call in four timed out at the 3 s limit; watch `webagent_guard_judge_total{verdict="ERROR"}`.

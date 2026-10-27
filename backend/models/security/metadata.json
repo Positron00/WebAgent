@@ -1,48 +1,48 @@
 {
-  "version": "cd-2026-10-13-2",
+  "version": "cd-2026-10-27-1",
   "encoder_name": "sentence-transformers/all-MiniLM-L12-v2",
   "finetuned_encoder": true,
-  "data_hash": "sha256:1178fa5da5947baa1a73bae5cc1a3f9b01aaed6febb502f9c4a03b31abed822f",
+  "data_hash": "sha256:054fd7ac744e7feaf90fa4839419b75dd5ed090c86330d43c90131c0e17a9413",
   "use_minilm": true,
-  "trained_at": "2026-10-13T14:46:51Z",
-  "rows": 27545,
-  "calibration_rows": 4192,
+  "trained_at": "2026-10-27T21:42:29Z",
+  "rows": 27592,
+  "calibration_rows": 4200,
   "hard_negative_weight": 3.0,
   "seed": 13,
   "thresholds": {
-    "injection_drop_at": 57,
+    "injection_drop_at": 70,
     "harm_decline_at": 98,
-    "jailbreak_consent_at": 96,
-    "injection_watch_at": 28,
+    "jailbreak_consent_at": 95,
+    "injection_watch_at": 35,
     "harm_verify_at": 20,
-    "jailbreak_verify_at": 26
+    "jailbreak_verify_at": 37
   },
   "threshold_selection": {
     "injection_drop_at": {
       "rule": "upper confidence bound",
-      "benign_rows": 821,
+      "benign_rows": 829,
       "positive_rows": 1504,
-      "fp": 0.011,
-      "recall": 0.9714
+      "fp": 0.0109,
+      "recall": 0.9661
     },
     "harm_decline_at": {
       "rule": "upper confidence bound",
       "benign_rows": 496,
       "positive_rows": 280,
       "fp": 0.0081,
-      "recall": 0.2607
+      "recall": 0.2107
     },
     "jailbreak_consent_at": {
       "rule": "upper confidence bound",
       "benign_rows": 496,
       "positive_rows": 107,
       "fp": 0.002,
-      "recall": 0.4953
+      "recall": 0.5421
     },
     "harm_verify_at": {
       "positive_rows": 280,
-      "recall": 0.9036,
-      "judge_rate_ordinary": 0.0343
+      "recall": 0.9,
+      "judge_rate_ordinary": 0.0423
     },
     "jailbreak_verify_at": {
       "positive_rows": 107,
@@ -60,44 +60,49 @@
     "user_turn",
     "web_result"
   ],
+  "local_training_rows": {
+    "shadow:web_reviewed": 47,
+    "note": "benign real web pages from shadow week 2 (2026-10-17 to 22), reviewed by a person; third-party text kept git-ignored in data/security/local/, so data_hash is of train.jsonl plus those rows"
+  },
   "test": {
     "rows": 6784,
     "thresholds": {
-      "injection_watch_at": 28,
-      "injection_drop_at": 57,
+      "injection_watch_at": 35,
+      "injection_drop_at": 70,
       "harm_verify_at": 20,
       "harm_decline_at": 98,
-      "jailbreak_verify_at": 26,
-      "jailbreak_consent_at": 96
+      "jailbreak_verify_at": 37,
+      "jailbreak_consent_at": 95,
+      "rewrite_at": 40,
+      "subgoal_align_at": 15,
+      "search_align_at": 25,
+      "drift_align_at": 25,
+      "drift_calls_at": 3,
+      "risk_verify_at": 30,
+      "risk_decline_at": 60,
+      "egress_words_at": 8
     },
-    "injection_recall_untrusted": 0.9726,
+    "injection_recall_untrusted": 0.9701,
     "injection_fp_benign_pages": 0.0138,
-    "harm_recall_user": 0.9307,
+    "harm_recall_user": 0.936,
     "harm_fp_ordinary_questions": 0.0082,
     "jailbreak_recall_user": 0.9612,
     "jailbreak_fp_ordinary_questions": 0.0014,
-    "harm_judge_rate_ordinary": 0.0327,
-    "jailbreak_judge_rate_ordinary": 0.0327,
-    "harm_fp_lookalike_direct": 0.0315,
-    "harm_judge_rate_lookalike": 0.2493,
-    "jailbreak_fp_lookalike_direct": 0.0057,
-    "jailbreak_judge_rate_lookalike": 0.1146,
-    "secret_recall": 0.9836,
+    "harm_judge_rate_ordinary": 0.0341,
+    "jailbreak_judge_rate_ordinary": 0.0204,
+    "harm_fp_lookalike_direct": 0.0344,
+    "harm_judge_rate_lookalike": 0.2607,
+    "jailbreak_fp_lookalike_direct": 0.0201,
+    "jailbreak_judge_rate_lookalike": 0.0946,
+    "secret_recall": 0.9918,
     "personal_recall": 0.9792,
-    "sensitive_fp_benign": 0.0062,
+    "sensitive_fp_benign": 0.0044,
     "ece": {
-      "injection": 0.0033,
-      "harm": 0.0361,
-      "sensitive_data": 0.0068,
-      "jailbreak": 0.0218
+      "injection": 0.0063,
+      "harm": 0.0366,
+      "sensitive_data": 0.0064,
+      "jailbreak": 0.0227
     },
     "passed": true
-  },
-  "test_with_judge": {
-    "harm_recall": 0.7573,
-    "declined_ordinary_questions": 0.0123,
-    "declined_lookalike_questions": 0.0774,
-    "judge_calls": 339,
-    "judge_errors": 0
   }
 }

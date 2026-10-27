@@ -297,6 +297,8 @@ PROM_QUERIES = {   # {r} is the week's range, so earlier traffic (e.g. a dev sta
     "unlabelled_llm_calls": "sum(increase(webagent_guard_unlabelled_total[{r}]))",
     "peak_rss_bytes_per_worker": 'max(max_over_time(memory_usage_bytes{{type="rss"}}[{r}]))',
 }
+# Labelled counters have no series until their first increment, so an empty answer means 0
+ZERO_WHEN_EMPTY = {"unlabelled_llm_calls"}
 
 
 def prom_range(since: Optional[str], now: Optional[datetime] = None) -> str:
@@ -319,7 +321,7 @@ def prometheus(url: Optional[str], since: Optional[str] = None) -> Dict[str, Any
                                         timeout=10) as reply:
                 data = json.load(reply)
             result = data.get("data", {}).get("result", [])
-            out[name] = round(float(result[0]["value"][1]), 4) if result else None
+            out[name] = round(float(result[0]["value"][1]), 4) if result else (0.0 if name in ZERO_WHEN_EMPTY else None)
         except Exception as exc:  # noqa: BLE001 - optional; report, don't fail
             out[name] = None
             out.setdefault("errors", []).append(f"{name}: {type(exc).__name__}")
@@ -333,19 +335,20 @@ def checklist(volume_items: int, fp: Optional[Dict[str, Any]], cp1: Dict[str, An
     upper = (fp or {}).get("false_positive_rate_upper_95")
     p1, p2 = prom.get("checkpoint1_p95_seconds"), prom.get("checkpoint2_p95_seconds")
     rss = prom.get("peak_rss_bytes_per_worker")
+    missing = "no data in Prometheus for the week" if prom.get("checked") else "needs --prometheus"
     return [
         item("about 2,000 untrusted items judged", volume_items >= UNTRUSTED_TARGET, f"{volume_items} judged"),
         item("false-positive upper bound <= 2% (labelled)", None if upper is None else upper <= FP_UPPER_TARGET,
              "label the sheet first (--labels)" if upper is None else f"upper 95% bound {upper:.4f}"),
-        item("checkpoint 1 p95 < 150 ms", None if p1 is None else p1 < 0.15, "needs --prometheus" if p1 is None else f"{p1:.3f} s"),
-        item("checkpoint 2 p95 < 20 ms", None if p2 is None else p2 < 0.02, "needs --prometheus" if p2 is None else f"{p2:.4f} s"),
+        item("checkpoint 1 p95 < 150 ms", None if p1 is None else p1 < 0.15, missing if p1 is None else f"{p1:.3f} s"),
+        item("checkpoint 2 p95 < 20 ms", None if p2 is None else p2 < 0.02, missing if p2 is None else f"{p2:.4f} s"),
         # Per-worker RSS counts the shared, memory-mapped model files once per worker, so 2 x RSS
         # overstates the pod; the pod's own figure (docker stats, kubectl top) decides this check.
         item("memory <= 2.4 GiB per pod (two workers)", None,
              "measure the pod with `docker stats` or `kubectl top pod`" + (
                  "" if rss is None else f"; peak RSS of one worker {rss / 2**30:.2f} GiB (includes shared model pages)")),
         item("no unlabelled LLM calls", None if prom.get("unlabelled_llm_calls") is None else prom["unlabelled_llm_calls"] == 0,
-             "needs --prometheus" if prom.get("unlabelled_llm_calls") is None else f"{prom['unlabelled_llm_calls']:.0f}"),
+             missing if prom.get("unlabelled_llm_calls") is None else f"{prom['unlabelled_llm_calls']:.0f}"),
         item("scores_unavailable near 0", cp1.get("scores_unavailable", 0) == 0, f"{cp1.get('scores_unavailable', 0)} items"),
         item("declined / consent user turns read and judged reasonable", None,
              "manual: their counts are in checkpoint 1's outcomes; text isn't collected outside dev"),

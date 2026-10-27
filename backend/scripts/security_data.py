@@ -103,6 +103,8 @@ LOOKALIKE_ORIGINS = {
     "cosmopedia:web": ("injection",),
     "oasst:assistant": ("injection",),
     "trustairlab:regular": ("jailbreak",),
+    # Real web pages the shadow week flagged and a reviewer marked benign (import_reviewed_pages.py).
+    "shadow:web_reviewed": ("injection",),
 }
 
 

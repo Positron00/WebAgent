@@ -409,7 +409,8 @@ CLEANED CODE:"""
             # Use the o3-mini model for efficient code cleaning
             messages = [HumanMessage(content=prompt)]
             response = self.code_cleaner_model.invoke(messages)
-            cleaned_code = response.content.strip()
+            # Completion-style models return a str, chat models a message
+            cleaned_code = str(getattr(response, "content", response)).strip()
             
             # Remove any markdown code block markers if present
             if cleaned_code.startswith("```python"):

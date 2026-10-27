@@ -94,3 +94,26 @@ def test_prometheus_range_covers_the_week_only(since, expected):
     from datetime import datetime, timezone
 
     assert report.prom_range(since, now=datetime(2026, 10, 21, tzinfo=timezone.utc)) == expected
+
+
+def test_empty_prometheus_answers_are_zero_calls_but_unmeasured_latency(monkeypatch):
+    # A clean week has no unlabelled-call series at all; that is 0 calls, not "needs --prometheus"
+    class Reply:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return b'{"status": "success", "data": {"result": []}}'
+
+    monkeypatch.setattr(report.urllib.request, "urlopen", lambda *a, **k: Reply())
+    prom = report.prometheus("http://prometheus:9090", "2026-10-17")
+    assert prom["unlabelled_llm_calls"] == 0.0
+    assert prom["checkpoint1_p95_seconds"] is None
+
+    checks = {c["check"]: c for c in report.checklist(2000, None, {}, prom)}
+    assert checks["no unlabelled LLM calls"]["status"] == "met"
+    assert checks["checkpoint 1 p95 < 150 ms"]["detail"] == "no data in Prometheus for the week"
+    assert report.checklist(2000, None, {}, {"checked": False})[2]["detail"] == "needs --prometheus"

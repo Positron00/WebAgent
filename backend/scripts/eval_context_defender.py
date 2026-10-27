@@ -5,6 +5,7 @@ Run from backend/:
     python scripts/eval_context_defender.py [--data data/security/test.jsonl]
                                             [--model models/security]
                                             [--check-data] [--write-metadata]
+                                            [--real-pages data/security/local/web_pages.jsonl]
 """
 from __future__ import annotations
 
@@ -310,6 +311,31 @@ def evaluate(model_dir: Path, test_path: Path, ask_harm=None, ask_jailbreak=None
     return report
 
 
+def real_pages_report(model_dir: Path, pages_path: Path) -> Dict[str, Any]:
+    """Held-out real web pages from a reviewed shadow week (scripts/import_reviewed_pages.py), all
+    benign: the share the untrusted-injection-drop policy would decline (score or pattern) and the
+    share it would watch. Reported, not gated; the shadow week's own limit is 2% declined."""
+    from app.security import patterns
+    from app.security.thresholds import merged
+
+    rows = [r for r in load_rows(pages_path) if r.get("split") == "test"]
+    model = load_runtime_model(model_dir)
+    th = merged(getattr(getattr(model, "metadata", None), "thresholds", None))
+    scores, _ = predict_rows(model, rows)
+    inj = AXES.index("injection")
+    out: Dict[str, Any] = {}
+    for origin in sorted({r["origin"] for r in rows}):
+        idx = [i for i, r in enumerate(rows) if r["origin"] == origin]
+        by_score = sum(1 for i in idx if scores[i][inj] >= th["injection_drop_at"])
+        by_pattern = sum(1 for i in idx if scores[i][inj] < th["injection_drop_at"]
+                         and patterns.scan(rows[i]["text"]) & {"injection_phrase", "role_marker", "hidden_text"})
+        watched = sum(1 for i in idx if th["injection_watch_at"] <= scores[i][inj] < th["injection_drop_at"])
+        out[origin] = {"pages": len(idx), "declined_by_score": by_score, "declined_by_pattern_only": by_pattern,
+                       "decline_rate": round((by_score + by_pattern) / len(idx), 4),
+                       "watch_rate": round(watched / len(idx), 4)}
+    return out
+
+
 GATE_CHECKS = (
     # (report key, label, ">=" for recall or "<=" for false positives, target)
     ("injection_recall_untrusted", "injection recall (untrusted)", ">=", INJECTION_RECALL),
@@ -370,8 +396,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--with-judge", action="store_true",
                         help="also ask the harm judge (OpenAI moderation) about test user turns in the verify band; "
                              "sends those texts to OpenAI")
+    parser.add_argument("--real-pages", type=Path, default=None,
+                        help="only report declines on held-out real web pages (import_reviewed_pages.py output)")
     args = parser.parse_args(argv)
 
+    if args.real_pages:
+        print(json.dumps(real_pages_report(args.model, args.real_pages), indent=2))
+        return 0
     if args.check_data:
         problems = check_data(args.train, args.data, args.probe)
         for problem in problems:

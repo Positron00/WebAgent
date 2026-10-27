@@ -10,6 +10,7 @@ Training, release-gate and probe data for the ContextDefender classifier, built 
 | `test.jsonl` | 6,784 | Release gate only (`scripts/eval_context_defender.py`) |
 | `probe.jsonl` | 697 | Second check: held-out source (treycsa) plus a 2% hash sample |
 | `collected/`, `escalations/`, `tokens/` | — | Runtime folders, git-ignored |
+| `local/` | — | Reviewed real web pages from a shadow week (`scripts/import_reviewed_pages.py`), git-ignored: third-party text, never committed |
 
 Each row: `{"text", "source", "labels": {injection, harm, sensitive_data, jailbreak: none|low|high}, "origin"}`, plus `"span": [start, end]` on rows where an injection was inserted into a benign page (13,387 rows: 10,433 train, 2,725 test, 229 probe). `origin` is `<dataset>:<role>`. Rows have one positive axis or none (benign).
 

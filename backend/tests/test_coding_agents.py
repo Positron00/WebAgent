@@ -2,6 +2,7 @@
 import json
 
 import pytest
+from langchain_core.messages import AIMessage
 
 from app.agents import coding_assistant as assistant_module
 from app.agents import coding_review as review_module
@@ -173,3 +174,17 @@ async def test_review_runs_the_fixed_code_when_the_original_failed(monkeypatch):
     assert report["original_execution"]["success"] is False
     assert report["fixed_execution"] == {"success": True, "result": "4.0"}
     assert report["improvement_explanation"] == "Imported math before using it."
+
+
+@pytest.mark.parametrize("reply", ["```python\nx = 1\nprint(x)\n```", AIMessage(content="x = 1\nprint(x)")])
+def test_code_cleaner_accepts_text_and_message_replies(reply):
+    # Completion-style models (Together) return a str; this used to fail with
+    # "'str' object has no attribute 'content'" and fall back to the original code.
+    agent = CodingReviewAgent()
+
+    class Cleaner:
+        def invoke(self, messages):
+            return reply
+
+    agent.code_cleaner_model = Cleaner()
+    assert agent.llm_clean_code("x=1\nprint( x )") == "x = 1\nprint(x)"

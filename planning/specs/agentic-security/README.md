@@ -1,10 +1,14 @@
 # Spec: security checkpoints (pre-LLM and pre-tool)
 
-Status: phases 0–4 implemented, running in shadow mode; ContextDefender `cd-2026-10-13-2` **passed the release gate** (2026-10-13), so checkpoint 1 may go to act mode when the operators choose (`input_mode: act`; not switched yet) · Release 3.2.1 · Source plan: [`planning/agentic-security-plan.md`](../../agentic-security-plan.md) (v5) · 2026-10-13
+Status: phases 0–4 implemented, running in shadow mode; ContextDefender `cd-2026-10-27-1` **passed the release gate** (2026-10-27). Shadow week 2 measured 4.65% false positives on real pages, over the 2% bound (runbook section 10), so checkpoint 1 stays in shadow · Release 3.14.0 (first: 3.2.1) · Source plan: [`planning/agentic-security-plan.md`](../../agentic-security-plan.md) (v5) · 2026-10-13
 
 Next: checkpoint 2 checked against the user's intent (rogue subgoals, risk above intent, egress) is specified in [`../checkpoint2-intent/`](../checkpoint2-intent/README.md) (SEC-100 onwards; its `off-intent-search-verify` will replace SEC-044a's shadow rule).
 
-## ContextDefender status (2026-10-13)
+## ContextDefender status (2026-10-27)
+
+`cd-2026-10-27-1`: `cd-2026-10-13-2`'s recipe (same seed), trained on `train.jsonl` plus 47 benign real web pages from shadow week 2. Their text is third-party, so it stays in the git-ignored `data/security/local/` (`scripts/import_reviewed_pages.py`, task 5.3). Its gate numbers match `-13-2`'s: injection recall 0.970, benign-page false positives 0.014, harm recall 0.936. New thresholds: injection drop 70 (watch 35), jailbreak verify 37, consent 95; harm unchanged at 20 and 98. On 887 held-out real pages, declines fell from 11.3% to 7.7%. A control run without the pages reproduced `-13-2` exactly, so the pages caused the drop. The ethics demo document still scores 98.
+
+### Earlier: `cd-2026-10-13-2` (2026-10-13)
 
 `cd-2026-10-13-2`: fine-tuned from **`all-MiniLM-L12-v2`** (12 layers) on the same 35,026 rows as `-13-1` (data README), 96-token windows. Thresholds (SEC-028a), all chosen with the upper confidence bound of the held-out false-positive rate: injection drop 57 (watch 28); harm verify 20, decline 98; jailbreak verify 26, consent 96. Injection used a point estimate with a margin until this version; it gave 36 for this model, whose test false positives sat exactly at the 2% limit (the second time that rule landed on the limit), and the held-out part now has 821 benign untrusted rows, enough for the bound. That rule change was made after seeing that result.
 
