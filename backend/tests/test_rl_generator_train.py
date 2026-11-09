@@ -221,6 +221,7 @@ def test_settings_and_args():
     assert s["num_generations"] == 8 and s["per_device_train_batch_size"] == 16 and s["gradient_accumulation_steps"] == 4
     assert (s["max_completion_length"], s["temperature"], s["beta"], s["learning_rate"]) == (96, 0.9, 0.04, 1e-5)
     assert s["warmup_steps"] == 20 and s["lr_scheduler_type"] == "cosine" and s["save_steps"] == 50
+    assert s["loss_type"] == "dapo"  # explicit, so a TRL upgrade can't change it silently
     assert s["use_cpu"] and not s["bf16"] and not s["fp16"] and not s["log_completions"]
     assert train.precision(True, True) == "bf16" and train.precision(True, False) == "fp16"
     assert train.precision(False, False) == "fp32"
@@ -237,6 +238,7 @@ def test_grpo_config_accepts_settings(tmp_path):
                              "--credit-left", "1"])
     cfg = GRPOConfig(**train.grpo_settings(args, "fp32"))
     assert cfg.generation_batch_size == 64 and cfg.steps_per_generation == 4 and cfg.num_generations == 8
+    assert cfg.loss_type == "dapo"
 
 
 # --- sample.py ------------------------------------------------------------------------------

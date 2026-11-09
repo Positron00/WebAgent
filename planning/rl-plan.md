@@ -132,7 +132,7 @@ that.
 | Choice | Proposal | Decision |
 |---|---|---|
 | Generator base | **Qwen2.5-0.5B-Instruct** for the 20-step Colab test, **Qwen2.5-1.5B-Instruct** for R1 (Apache-2.0, so its outputs may train other models). Not Qwen2.5-3B, which has a different licence. The licence goes into the data README entry | D4 (decided) |
-| Algorithm | GRPO with LoRA (TRL), group size 8, a KL penalty to the base model; stops early if the judged-valid rate falls (reward hacking) | — |
+| Algorithm | GRPO with LoRA (TRL), with DAPO's token-level loss (`loss_type="dapo"`, decided 2026-11-01), group size 8, a KL penalty to the base model; stops early if the judged-valid rate falls (reward hacking) | — |
 | Prompted baseline | The **untrained** generator base (same model, so only RL differs), run on the Mac, best-of-8 with the same filters; a new `scripts/rl_generator/prompted.py` with the same cost estimate and credit-stop rule as `generate_alignment_calls.py` (that script runs the supervisor, a different job) | — |
 | Target | Frozen `ac-2026-10-17-1`, then each retrained candidate in turn | — |
 | Compute | R0 needs no GPU: prompted generation runs the small base model on the Mac and the judge uses Together credit. R1 trains on **Google Colab Pro+** (D2). The frozen target classifier (88 MB), ContextDefender (for the harmless filter) and the novelty encoder run in the same session | D2 (decided) |

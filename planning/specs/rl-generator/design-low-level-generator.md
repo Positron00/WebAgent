@@ -230,6 +230,7 @@ python scripts/rl_generator/train.py --mode H --seeds seeds_h.jsonl --bank novel
 | Prompts | The mode's generator prompt per `train`-part seed; shuffled with seed 7, cycled |
 | Group | `num_generations=8`; 2 prompts per device step (TRL's `per_device_train_batch_size` counts completions: 16), gradient accumulation 4 (64 completions per update) |
 | Generation | `max_completion_length=96`, `temperature=0.9`, `top_p` at TRL's default 1.0 (sampling uses 0.95) |
+| Loss | `loss_type="dapo"`, set explicitly: GRPO's per-token surrogate, normalised by active tokens across the accumulated batch (no length bias). DAPO's other fixes: the overlong penalty is ours (§4); no higher upper clip (one update per generation batch keeps the ratio near 1); no dynamic sampling unless the pilot's logs show most seed groups have identical rewards |
 | KL | `beta=0.04` to the base model |
 | Optimiser | AdamW, learning rate 1e-5, warm-up 20 steps, cosine decay |
 | LoRA | `peft.LoraConfig(r=16, lora_alpha=32, lora_dropout=0.05, target_modules=["q_proj","k_proj","v_proj","o_proj"])` |

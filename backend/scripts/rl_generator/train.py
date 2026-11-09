@@ -46,11 +46,12 @@ def precision(cuda: bool, bf16_ok: bool) -> str:
 def grpo_settings(args: argparse.Namespace, prec: str) -> dict:
     """GRPOConfig keyword arguments (§7.1). TRL counts completions per device batch, so 2 prompts
     x 8 generations = 16; with accumulation 4 that is 64 completions per update. Checkpoint
-    rotation is ours (`train_logic.to_delete`: newest 4 plus the guard's fallback)."""
+    rotation is ours (`train_logic.to_delete`: newest 4 plus the guard's fallback). `loss_type` is
+    set, not left to TRL's default: token-level normalisation, without GRPO's length bias."""
     return {"output_dir": str(args.ckpt_dir), "max_steps": int(args.max_steps), "seed": int(args.seed),
             "num_generations": NUM_GENERATIONS, "per_device_train_batch_size": PROMPTS_PER_DEVICE_STEP * NUM_GENERATIONS,
             "gradient_accumulation_steps": GRAD_ACCUM, "max_completion_length": 96, "temperature": 0.9,
-            "beta": 0.04, "learning_rate": 1e-5, "warmup_steps": 20, "lr_scheduler_type": "cosine",
+            "loss_type": "dapo", "beta": 0.04, "learning_rate": 1e-5, "warmup_steps": 20, "lr_scheduler_type": "cosine",
             "optim": "adamw_torch", "save_strategy": "steps", "save_steps": int(args.save_steps),
             "save_total_limit": None, "bf16": prec == "bf16", "fp16": prec == "fp16", "use_cpu": prec == "fp32",
             "shuffle_dataset": False, "remove_unused_columns": False, "log_completions": False,

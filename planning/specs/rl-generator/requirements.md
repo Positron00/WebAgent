@@ -100,7 +100,8 @@ verdicts to `LOCAL/review/judge-choice.jsonl` for choosing the judge (SEC-212).
 - Check: pytest with a fake generator, target and judge (selection, stop rule, resume, candidates).
 
 **SEC-209 GRPO trainer.** `scripts/rl_generator/train.py` trains a LoRA adapter on the generator
-base with TRL's GRPO (group size 8, KL coefficient 0.04, learning rate 1e-5, seed fixed), reward
+base with TRL's GRPO trainer (`loss_type="dapo"`, set explicitly: token-level normalisation, no length
+bias; group size 8, KL coefficient 0.04, learning rate 1e-5, seed fixed), reward
 SEC-207, one adapter per mode, prompts from the seeds' `train` part only. It saves a checkpoint
 every 50 steps to `--ckpt-dir`, resumes from the latest, and stops at `--max-steps`, on the judge's
 stop rules (SEC-203, SEC-208), or when the judged-valid rate over the last 200 steps falls below
