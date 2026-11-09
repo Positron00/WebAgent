@@ -25,6 +25,21 @@ Tooling for an RL generator of benign hard training rows for the checkpoint 2 cl
   - New `--seed` option (default 13). `metadata.json` records `train_seed` and the variant.
 - `eval_alignment_model.py`: reports metrics by role (training sources vs evaluation-only sources) and on held-out generated sets (`--extra`), as a report only. The gate's checks are unchanged.
 
+## 3.13.2 - 2026-11-09
+
+Security release for new advisories; `pip-audit` failed CI on main and on every PR. Nothing else the server runs changes.
+
+### Fixed
+- **pypdf 6.21.2 → 6.21.4** for CVE-2026-119203 to CVE-2026-119209 (seven advisories; 6.21.3 fixes four, 6.21.4 the other three). pypdf parses uploaded PDFs.
+- **pyasn1 0.6.4 → 0.6.5** for CVE-2026-119194 to CVE-2026-119197, and **oauthlib 4.0.0 → 4.0.1** for CVE-2026-49272. Both are transitive dependencies, pinned in `backend/constraints.txt`.
+
+### Upgrade notes
+- Rebuild the backend image (`APP_VERSION=3.13.2`); no configuration changes.
+
+## 3.13.1 - 2026-10-25
+
+Fixes the two CI failures on main after 3.13.0. Nothing the server runs changes except the pypdf security fix.
+
 ### Fixed
 - **pypdf 6.21.1 → 6.21.2** for CVE-2026-115572, CVE-2026-115580 and CVE-2026-115585 (new advisories; `pip-audit` failed CI). pypdf parses uploaded PDFs.
 - **E2E stack runs the backend with Hugging Face offline** (`HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, as the backend tests already do). On main after 3.13.0, the first scheduled run hung for about five minutes trying to download the base MiniLM encoder. Its notice arrived after the email test had timed out.

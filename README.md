@@ -1,7 +1,7 @@
 # WebAgent Platform
 
-[![version](https://img.shields.io/badge/version-3.13.0-blue.svg)](https://semver.org)
-[![last-updated](https://img.shields.io/badge/last%20updated-2026--10--18-lightgrey.svg)](https://github.com/Positron00/WebAgent)
+[![version](https://img.shields.io/badge/version-3.13.2-blue.svg)](https://semver.org)
+[![last-updated](https://img.shields.io/badge/last%20updated-2026--11--09-lightgrey.svg)](https://github.com/Positron00/WebAgent)
 
 A multi-agent research assistant. Ask a question in the chat. WebAgent then either answers it directly in a few seconds, or sends it to a team of research agents. The agents search the web and your own documents, check each other's work, and return a sourced report in a few minutes. A security guard checks everything the models read and every tool call they make.
 
@@ -30,7 +30,7 @@ WebAgent is non-commercial and licensed under MIT.
   - Checkpoint 2 checks every tool call and every agent-written subgoal against what the user actually asked.
   - Both run local classifiers and Cedar policies inside the server. They currently run in **shadow mode**: they record what they would do and block nothing.
 - **Stays observable.**
-  - Prometheus metrics, and drift detection on real traffic (model speed and tokens, embeddings, documents) with six alerts.
+  - Prometheus metrics, and drift detection on real traffic (model speed and tokens, embeddings, documents) with six alerts, plus two for the scheduler (down, monthly budget at 80%).
   - LangSmith traces of every run.
   - Every log line written during a task carries the task's ID.
   - Saved reports are kept for 30 days.
@@ -39,39 +39,49 @@ WebAgent is non-commercial and licensed under MIT.
 ## Architecture
 
 ```text
-  Browser ── sign in with the access code, chat, Agentic: Off · Auto · Always
+  Browser ── sign in with the access code · chat · Agentic: Off · Auto · Always · Topics
      │
      ▼
-┌─ Web app ─ Next.js 15 · React 19 ─ port 3000 ───────────────────────────────────────┐
-│  middleware: signed session cookie on every page and API route                      │
-│  /api/chat ──── direct answer: guard check (checkpoint 1) ──► Together AI           │
-│  /api/triage, /api/task ── proxy to the backend, adding X-API-Key and the session ─┐ │
-└─────────────────────────────────────────────────────────────────────────────────────┼─┘
-                                                                                      ▼
-┌─ Backend ─ FastAPI ─ port 8000 ─────────────────────────────────────────────────────────┐
-│  API key · rate limit per session · size limit · one error format                       │
-│                                                                                         │
-│  Triage: rules, then a MiniLM classifier ──► direct: one model call                     │
-│                                          └─► research: run supervisor (7 min, budget)   │
-│                                                 │                                       │
-│                                                 ▼                                       │
-│                                   LangGraph research workflow (next diagram)            │
-│                                                                                         │
-│  Security guard, in process: Cedar policies + local classifiers, shadow mode            │
-│    checkpoint 1: every text before a model  ── ContextDefender (injection, harm,        │
-│                                                sensitive data, jailbreak)               │
-│    checkpoint 2: every tool call and subgoal ── intent alignment, risk above intent,    │
-│                                                private-text egress, drift              │
-│                                                                                         │
-│  data/: results/ (task reports) · vectordb/ (Chroma) · graph (Neo4j or NetworkX)        │
-│         artifacts/ (document copies) · drift/ · security/ and triage/ collection        │
-│  Observability: /metrics · /api/v1/observability (drift, alerts) · logs · LangSmith     │
-│  Topics API · data/topics/ ◄── Scheduler (separate process): due runs → /api/task       │
-│    (scheduler token; topics, schedule state, run history, monthly allowance)            │
-└───────┬───────────────────────┬───────────────────────┬─────────────────────────────────┘
-        ▼                       ▼                       ▼
-   Together AI             Tavily search          Prometheus + Grafana
-   (OpenAI if set)         (web research)         (Compose or Kubernetes), LangSmith
+┌─ Web app ─ Next.js 15 · React 19 ─ port 3000 ────────────────────────────────────────────┐
+│  middleware: signed session cookie on every page and API route                           │
+│  pages: chat · /topics · /notify (email confirm, unsubscribe) · /login                   │
+│  /api/chat ── direct answer, after the backend's guard check ──► Together AI             │
+│  /api/triage · /api/task · /api/topics · /api/notify ── proxy to the backend,            │
+│                                                        adding X-API-Key and the session  │
+└────────────────────────────────────────────┬─────────────────────────────────────────────┘
+                                             ▼
+┌─ Backend ─ FastAPI ─ port 8000 ──────────────────────────────────────────────────────────┐
+│  API key · rate limit per session · size limit · one error format                        │
+│                                                                                          │
+│  Triage: rules, then a MiniLM classifier ──► direct: one model call                      │
+│                                          └─► research: run supervisor (7 min, budget)    │
+│                                                 │                                        │
+│                                                 ▼                                        │
+│                                   LangGraph research workflow (next diagram)             │
+│                                                                                          │
+│  Security guard, in process: Cedar policies + local classifiers, shadow mode             │
+│    checkpoint 1: every text before a model  ── ContextDefender (injection, harm,         │
+│                                                sensitive data, jailbreak); /api/guard    │
+│                                                checks direct answers for the web app     │
+│    checkpoint 2: every tool call and subgoal ── intent alignment, risk above intent,     │
+│                                                private-text egress, drift                │
+│                                                                                          │
+│  Topics: /api/topics (definitions, runs, change summaries) · /api/notify (email sign-up) │
+│  data/: results/ (task reports) · vectordb/ (Chroma) · graph (Neo4j or NetworkX)         │
+│         artifacts/ (document copies) · topics/ (topics, run history) · notify/           │
+│         drift/ · security/ and triage/ collection                                        │
+│  Observability: /metrics · /api/v1/observability (drift, alerts) · logs · LangSmith      │
+└────┬──────────────────┬──────────────────┬──────────────────┬────────────────────────────┘
+     ▼                  ▼                  ▼                  ▼                     ▲
+  Together AI        Tavily search      SMTP server        Prometheus + Grafana     │
+  (OpenAI if set)    (web research)     (topic email)      (Compose or Kubernetes), │
+                                                           LangSmith                │
+                                                  ┌─ Scheduler ─ own process ───────┴──────┐
+                                                  │ due runs ──► /api/task, then           │
+                                                  │ /summarize and /notify                 │
+                                                  │ own token · monthly allowance          │
+                                                  │ Compose service or Kubernetes sidecar  │
+                                                  └────────────────────────────────────────┘
 ```
 
 The research workflow, as built in `backend/app/graph/workflows.py`:
@@ -79,25 +89,26 @@ The research workflow, as built in `backend/app/graph/workflows.py`:
 ```text
  question ─► Supervisor ── plans: web? internal? document? ── rewrites follow-ups as full questions
                  │
-                 ├── document only ──► Document Extraction ──► done
+                 ├── a document to extract ──► Document Extraction ──► done
+                 ├── nothing to research ────────────────────────────► done
                  │
-                 └── research ──► ┌─ Web Research ──────┐  (in parallel)
-                        ▲         └─ Internal Research ─┘
-                        │                   │
+                 └── research ──► ┌─ Web Research ──────┐  in parallel, only those
+                        ▲         │  Internal Research  │  the plan asks for
+                        │         └─────────┬───────────┘
                         │                   ▼
-                        └── another round ─ Senior Research ── scores 1–10, asks follow-up questions
+                        └─ another round ◄─ Senior Research ── scores 1–10, asks follow-up questions
                                             │
                                             ▼ good enough, or round limit reached
-                                       Team Manager ── writes the report
-                                         │      ▲
-                         needs analysis  ├──► Data Analysis ─────────────────┤
-                         needs code      └──► Coding Assistant ─► Coding Review ┘
-                                            │
+                                       Team Manager ── writes the report ◄──────────────────────┐
+                                            │                                                   │
+                                            ├── analysis ──► Data Analysis ─────────────────────┤
+                                            ├── code ──► Coding Assistant ──► Coding Review ────┘
+                                            │   (each at most once per run)
                                             ▼
                                      report saved to data/results/<task_id>.json
 ```
 
-Every model call in the workflow passes checkpoint 1. Every web search, internal retrieval, code execution and plan subgoal passes checkpoint 2. Details: [backend/docs/ARCHITECTURE.md](backend/docs/ARCHITECTURE.md).
+Every model call in the workflow passes checkpoint 1. Every web search, internal retrieval, code execution and plan subgoal passes checkpoint 2. A failing step ends the run early, except that research carries on when only one of the two research agents fails. Scheduled topic runs take the same path: the scheduler starts them through `/api/task` in Always mode. Details: [backend/docs/ARCHITECTURE.md](backend/docs/ARCHITECTURE.md).
 
 **Optional, separate:** `backend/models/` is a gateway-and-registry toolkit for hosting your own transformer models. The agent workflow doesn't use it.
 
@@ -192,6 +203,7 @@ A finished task's `result` holds the report, `route` (`direct` or `agentic`), `d
 - Python 3.12, Node.js 18.18 or later, Git with Git LFS (the security and triage models are LFS files)
 - A Together AI API key (required) and a Tavily API key (for web research). OpenAI is optional.
 - Docker, for the Compose stack, the image, and the code sandbox in uat and prod
+- Optional: an SMTP account, only if topics should send email ([docs/RUNBOOK.md](docs/RUNBOOK.md#recurring-research))
 
 ### Install
 
@@ -225,11 +237,11 @@ npm run dev                   # web app on http://localhost:3000 (add -- -p 3002
 | Swagger (dev only) | <http://localhost:8000/api/v1/docs> |
 | Health | <http://localhost:8000/health> |
 
-**Local stack with monitoring.** Add `GRAFANA_ADMIN_PASSWORD` to `.env.local` and run `npm run stack:up`. That starts the backend, Prometheus (`:9090`) and Grafana (`:3001`) in Docker, all on 127.0.0.1. To run it as uat, for example for a shadow week, see [docs/RUNBOOK.md](docs/RUNBOOK.md#local-uat-with-docker-compose).
+**Local stack with monitoring.** Add `GRAFANA_ADMIN_PASSWORD` to `.env.local` and run `npm run stack:up`. That starts the backend, the topic scheduler, Prometheus (`:9090`) and Grafana (`:3001`) in Docker, all on 127.0.0.1. The scheduler idles until `WEBAGENT_SCHEDULER_ENABLED=true` and a `WEBAGENT_SCHEDULER_TOKEN` are set in `.env.local`. To run it as uat, for example for a shadow week, see [docs/RUNBOOK.md](docs/RUNBOOK.md#local-uat-with-docker-compose).
 
 ## Deploying
 
-- **Docker:** `docker build --build-arg APP_VERSION=3.13.0 -t webagent/backend:3.13.0 backend/`. The image runs as `prod` and as a non-root user, and starts only with `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY` set. Run `git lfs pull` first. See [backend/README.md](backend/README.md#running-with-docker).
+- **Docker:** `docker build --build-arg APP_VERSION=3.13.2 -t webagent/backend:3.13.2 backend/`. The image runs as `prod` and as a non-root user, and starts only with `WEBAGENT_SECURITY_SECRET_KEY` and `WEBAGENT_API_KEY` set. Run `git lfs pull` first. See [backend/README.md](backend/README.md#running-with-docker).
 - **Kubernetes:** see [backend/kubernetes/README.md](backend/kubernetes/README.md). `deploy.sh` needs `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY` and `GRAFANA_ADMIN_PASSWORD`.
 - **Vercel** (web app only): see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md). Agentic modes need `WEBAGENT_BACKEND_URL` pointing at a running backend.
 - **Operating it:** deploys, rollback, key rotation, backups, spending caps, alerts and the security guard's modes are covered in [docs/RUNBOOK.md](docs/RUNBOOK.md).
@@ -243,9 +255,15 @@ npm run test:backend          # backend (pytest, in the agents conda env)
 npm run coverage:backend
 npm run lint:backend          # ruff
 python -m backend.diagnostics.runners.run_all     # system diagnostics
+
+npx playwright install chromium   # once, for the end-to-end tests
+npm run e2e:stack                 # web app, backend, scheduler, fake Together and a mail sink
+npm run test:e2e                  # Playwright, about 1.5 minutes
+npm run e2e:stop
 ```
 
 - **Offline tests:** backend tests fail if one opens a network connection, and they never trace to LangSmith.
+- **End-to-end tests:** `e2e/` drives a real browser through sign-in, research, **Track this**, **Run now** and topic email. The stack uses ports 3100, 8100, 18210 and 2526, needs no API keys (Together is faked, and web research runs without Tavily), and keeps its data, mail and logs in `.e2e/`. CI runs it as the `e2e` job.
 - **Model tests:** tests that need the real model weights are marked `needs_lfs`. CI skips them, and the weekly `models` workflow runs them.
 - **Dependency audits:** CI also audits dependencies (`pip-audit`, `npm audit`), and a new advisory fails the build. See [backend/SECURITY_DEPENDENCIES.md](backend/SECURITY_DEPENDENCIES.md).
 - **More:** [docs/TESTING.md](docs/TESTING.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -259,6 +277,8 @@ python -m backend.diagnostics.runners.run_all     # system diagnostics
 5. **"The research took too long and was stopped."** The backend stops a run after `WEBAGENT_TASK_MAX_SECONDS` (420 s). In the task's LangSmith trace, look for a model call that stops exactly at its `max_tokens` limit, which the log also reports as "stopped at the max_tokens limit". Adjust that agent's `max_tokens` in `backend/config/{env}.yaml`.
 6. **LangSmith steps stuck as "pending", or traces in another project.** Usually a `LANGSMITH_PROJECT` exported in your shell; the backend overrides it, so restart the backend.
 7. **A backend test fails with "Test tried to open a network connection".** The test reached a real service (LLM, Tavily, LangSmith, Hugging Face, NLTK). Fake it instead; see [docs/TESTING.md](docs/TESTING.md).
+8. **A topic never runs.** Scheduling is off by default. The backend and the scheduler both need `WEBAGENT_SCHEDULER_TOKEN`, scheduling must be on (`schedule.enabled` or `WEBAGENT_SCHEDULER_ENABLED=true`), and the scheduler process must be running. A topic marked **held: budget** waits for next month's allowance, and **held: failures** waits for **Resume**. See [docs/RUNBOOK.md](docs/RUNBOOK.md#recurring-research).
+9. **Topic emails don't arrive.** Email is off by default, and the default transport, `log`, writes messages to the backend log instead of sending them. Turn it on with `notifications.email.enabled: true` and `transport: smtp` (or `WEBAGENT_EMAIL_ENABLED=true` and `WEBAGENT_EMAIL_TRANSPORT=smtp`), then set the `WEBAGENT_SMTP_*` settings and `WEBAGENT_PUBLIC_URL`. An address gets nothing until it's confirmed with the button on the confirmation link's page; opening the link alone doesn't confirm it.
 
 ## What WebAgent doesn't do
 
@@ -275,12 +295,14 @@ python -m backend.diagnostics.runners.run_all     # system diagnostics
 | [backend/docs/ARCHITECTURE.md](backend/docs/ARCHITECTURE.md) | How the parts fit: web app, backend, workflow, security guard, triage, stores, observability |
 | [backend/README.md](backend/README.md) | Backend setup, configuration, project layout, adding an agent |
 | [backend/docs/api_reference.md](backend/docs/api_reference.md) | Every endpoint, field and error code |
-| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Deploying and operating: rollback, keys, backups, alerts, the security guard |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Deploying and operating: rollback, keys, backups, alerts, the security guard, the scheduler and email |
+| [backend/PRODUCTION_READINESS.md](backend/PRODUCTION_READINESS.md) | The production checklist for the current release |
 | [backend/LOCAL_DEVELOPMENT.md](backend/LOCAL_DEVELOPMENT.md) | Local development details |
 | [docs/TESTING.md](docs/TESTING.md), [CONTRIBUTING.md](CONTRIBUTING.md) | Tests, CI and contributing |
 | [SECURITY.md](SECURITY.md), [backend/SECURITY_DEPENDENCIES.md](backend/SECURITY_DEPENDENCIES.md) | Reporting a vulnerability; dependency advisories |
 | [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md), [backend/kubernetes/README.md](backend/kubernetes/README.md) | Deploying the web app and the backend |
-| `planning/specs/` | Designs and requirements for each feature (security guard, triage, observability, platform) |
+| [CHANGELOG.md](CHANGELOG.md) | What changed in each release, with upgrade notes |
+| `planning/specs/` | Designs and requirements for each feature (security guard and its checkpoint 2 upgrade, triage, observability, recurring research, platform) |
 
 ## Acknowledgments
 
