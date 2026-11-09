@@ -23,6 +23,17 @@ Fixes from the review of shadow week 2 (runbook section 10), and a retrained Con
 - **Coding review's code cleaner** read `.content` from the model's reply, but Together's completion models return a string. Every cleaning failed with `'str' object has no attribute 'content'` and fell back to the original code. In shadow week 2, the guard declined all 8 of the resulting tool outputs.
 - **Shadow-week report**: "no unlabelled LLM calls" showed "needs --prometheus" even with `--prometheus`. The counter has no series until its first increment, so a clean week returned nothing. An empty answer now counts as 0. Latency checks without data now say "no data in Prometheus for the week".
 
+## 3.13.2 - 2026-11-09
+
+Security release for new advisories; `pip-audit` failed CI on main and on every PR. Nothing else the server runs changes.
+
+### Fixed
+- **pypdf 6.21.2 → 6.21.4** for CVE-2026-119203 to CVE-2026-119209 (seven advisories; 6.21.3 fixes four, 6.21.4 the other three). pypdf parses uploaded PDFs.
+- **pyasn1 0.6.4 → 0.6.5** for CVE-2026-119194 to CVE-2026-119197, and **oauthlib 4.0.0 → 4.0.1** for CVE-2026-49272. Both are transitive dependencies, pinned in `backend/constraints.txt`.
+
+### Upgrade notes
+- Rebuild the backend image (`APP_VERSION=3.13.2`); no configuration changes.
+
 ## 3.13.1 - 2026-10-25
 
 Fixes the two CI failures on main after 3.13.0. Nothing the server runs changes except the pypdf security fix.
