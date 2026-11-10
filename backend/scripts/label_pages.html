@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page Review Desk</title>
+<style>
+/* Layout: one sticky decision bar on top, the scored chunks below, hottest chunk first. */
+:root {
+  color-scheme: light;
+  --bg: #f5f6f4;
+  --surface: #ffffff;
+  --ink: #1d2320;
+  --muted: #5d6762;
+  --line: #d9ddd9;
+  --accent: #2f6f5e;
+  --benign: #2f6f5e;
+  --malicious: #b3402f;
+  --skip: #6b6f7a;
+  --hot: #fbe7c6;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #151917; --surface: #1d2321; --ink: #e4e8e5; --muted: #9aa49f; --line: #333b38;
+    --accent: #6cbfa6; --benign: #4fa58b; --malicious: #e0715f; --skip: #8d92a0; --hot: #4a3b1f;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #151917; --surface: #1d2321; --ink: #e4e8e5; --muted: #9aa49f; --line: #333b38;
+  --accent: #6cbfa6; --benign: #4fa58b; --malicious: #e0715f; --skip: #8d92a0; --hot: #4a3b1f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); padding: 0 16px 48px; }
+header {
+  position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line);
+  padding-block: 12px; display: grid; gap: 10px; max-width: 980px; margin: 0 auto;
+}
+.row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.progress { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+.url { font: 13px var(--mono); word-break: break-all; color: var(--ink); }
+.url a { color: var(--accent); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 12px var(--mono); padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
+.chip.done-benign { color: var(--benign); border-color: var(--benign); }
+.chip.done-injection { color: var(--malicious); border-color: var(--malicious); }
+button {
+  font: 600 14px var(--sans); border-radius: 6px; padding: 8px 14px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.benign { background: var(--benign); border-color: var(--benign); color: #fff; }
+button.malicious { background: var(--malicious); border-color: var(--malicious); color: #fff; }
+button.skip { color: var(--skip); }
+kbd { font: 11px var(--mono); opacity: .75; margin-left: 4px; }
+input#note {
+  flex: 1 1 220px; min-width: 0; font: 14px var(--sans); padding: 7px 10px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+label.follow { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+main { max-width: 980px; margin: 16px auto 0; display: grid; gap: 12px; }
+.status { color: var(--muted); font-size: 14px; }
+.chunk { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+.chunk.top { background: var(--hot); }
+.chunk h3 { margin: 0 0 6px; font: 600 12px var(--mono); letter-spacing: .03em; color: var(--muted); }
+.chunk p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 80ch; }
+details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+details[open] { display: grid; gap: 12px; }
+.toast { position: fixed; bottom: 16px; right: 16px; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .2s; }
+.toast.on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <strong id="sheet">Loading sheet…</strong>
+    <span class="progress" id="progress"></span>
+  </div>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="url" id="url"></div>
+  <div class="meta" id="meta"></div>
+  <div class="row">
+    <button class="benign" id="b-benign">Benign<kbd>B</kbd></button>
+    <button class="malicious" id="b-malicious">Malicious<kbd>M</kbd></button>
+    <button class="skip" id="b-skip">Skip<kbd>S</kbd></button>
+    <button id="b-back">Back<kbd>←</kbd></button>
+    <button id="b-open">Open page<kbd>O</kbd></button>
+    <input id="note" placeholder="Note (optional): where the instruction is, what it says">
+    <label class="follow"><input type="checkbox" id="follow"> Follow in second window</label>
+  </div>
+</header>
+<main id="main"><p class="status">Fetching the first page…</p></main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let rows = [], idx = 0, pageWin = null;
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;   // page text is untrusted: text only, never HTML
+  return n;
+}
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); setTimeout(() => t.classList.remove("on"), 1200); }
+function firstOpen(from) {
+  for (let i = from; i < rows.length; i++) if (!rows[i].label) return i;
+  for (let i = 0; i < from; i++) if (!rows[i].label) return i;
+  return -1;
+}
+function openPage() {
+  pageWin = window.open(rows[idx].ref, "label-page");
+}
+
+async function show(i) {
+  idx = i;
+  const r = rows[i];
+  const done = rows.filter(x => x.label).length;
+  $("progress").textContent = `row ${i + 1} of ${rows.length} · ${done} labelled · ${rows.length - done} to go`;
+  $("bar").style.width = `${100 * done / rows.length}%`;
+  $("url").replaceChildren();
+  const a = el("a", null, r.ref); a.href = r.ref; a.target = "label-page"; a.rel = "noreferrer";
+  $("url").append(a);
+  const meta = $("meta"); meta.replaceChildren();
+  meta.append(el("span", "chip", `injection ${r.injection}`), el("span", "chip", `jailbreak ${r.jailbreak}`));
+  if (r.pattern_hits) meta.append(el("span", "chip", `patterns ${r.pattern_hits}`));
+  if (r.label) meta.append(el("span", `chip done-${r.label}`, `labelled ${r.label}`));
+  $("note").value = r.note || "";
+  if ($("follow").checked) openPage();
+
+  const main = $("main");
+  main.replaceChildren(el("p", "status", "Fetching and scoring the page…"));
+  const page = await (await fetch(`/api/page/${i}`)).json();
+  if (idx !== i) return;
+  main.replaceChildren();
+  if (!page.chunks.length) {
+    main.append(el("p", "status", `No text (${page.status}). Use "Open page" to judge it, or skip.`));
+    return;
+  }
+  const scored = page.chunks[0].injection != null;
+  main.append(el("p", "status", scored
+    ? `${page.chunks.length} chunk(s) of the ${page.extractor} extract, highest injection score first. Only the highlighted one usually matters.`
+    : `Model not loaded; the whole ${page.extractor} extract is shown.`));
+  const card = (c, top) => {
+    const d = el("section", top ? "chunk top" : "chunk");
+    d.append(el("h3", null, scored ? `CHUNK ${c.n + 1} · injection ${c.injection} · jailbreak ${c.jailbreak}` : "PAGE TEXT"),
+             el("p", null, c.text));
+    return d;
+  };
+  page.chunks.slice(0, 2).forEach((c, k) => main.append(card(c, k === 0)));
+  if (page.chunks.length > 2) {
+    const more = el("details"); more.append(el("summary", null, `Show the other ${page.chunks.length - 2} chunk(s)`));
+    page.chunks.slice(2).forEach(c => more.append(card(c, false)));
+    main.append(more);
+  }
+}
+
+async function answer(choice) {
+  const r = rows[idx];
+  const res = await fetch("/api/label", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ index: idx, ref: r.ref, choice, note: $("note").value }) });
+  const body = await res.json();
+  if (!res.ok) { toast(body.error || "Not saved"); return; }
+  r.label = body.label; r.note = $("note").value;
+  toast(choice === "skip" ? "Skipped" : `Saved: ${body.label}`);
+  const next = choice === "skip" ? (idx + 1 < rows.length ? idx + 1 : firstOpen(0)) : firstOpen(idx + 1);
+  if (next === -1) { show(idx); $("main").prepend(el("p", "status", "Every row is labelled. Stop the server with Ctrl-C.")); }
+  else show(next);
+}
+
+$("b-benign").onclick = () => answer("benign");
+$("b-malicious").onclick = () => answer("malicious");
+$("b-skip").onclick = () => answer("skip");
+$("b-back").onclick = () => idx > 0 && show(idx - 1);
+$("b-open").onclick = openPage;
+document.addEventListener("keydown", e => {
+  if (e.target === $("note") || e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === "b") answer("benign");
+  else if (k === "m") answer("malicious");
+  else if (k === "s") answer("skip");
+  else if (k === "o") openPage();
+  else if (e.key === "ArrowLeft" && idx > 0) show(idx - 1);
+  else return;
+  e.preventDefault();
+});
+
+(async () => {
+  const sheet = await (await fetch("/api/sheet")).json();
+  rows = sheet.rows;
+  $("sheet").textContent = sheet.name;
+  const start = firstOpen(0);
+  show(start === -1 ? 0 : start);
+})();
+</script>
+</body>
+</html>

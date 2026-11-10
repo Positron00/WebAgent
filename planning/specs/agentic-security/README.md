@@ -1,10 +1,14 @@
 # Spec: security checkpoints (pre-LLM and pre-tool)
 
-Status: phases 0–4 implemented, running in shadow mode; ContextDefender `cd-2026-10-27-1` **passed the release gate** (2026-10-27). Shadow week 2 measured 4.65% false positives on real pages, over the 2% bound (runbook section 10), so checkpoint 1 stays in shadow · Release 3.14.0 (first: 3.2.1) · Source plan: [`planning/agentic-security-plan.md`](../../agentic-security-plan.md) (v5) · 2026-10-13
+Status: phases 0–4 implemented, running in shadow mode; ContextDefender `cd-2026-11-10-1` **passed the release gate** (2026-11-10). Shadow week 2 measured 4.65% false positives on real pages, over the 2% bound (runbook section 10), so checkpoint 1 stays in shadow · Release 3.14.0 (first: 3.2.1) · Source plan: [`planning/agentic-security-plan.md`](../../agentic-security-plan.md) (v5) · 2026-10-13
 
 Next: checkpoint 2 checked against the user's intent (rogue subgoals, risk above intent, egress) is specified in [`../checkpoint2-intent/`](../checkpoint2-intent/README.md) (SEC-100 onwards; its `off-intent-search-verify` will replace SEC-044a's shadow rule).
 
-## ContextDefender status (2026-10-27)
+## ContextDefender status (2026-11-10)
+
+`cd-2026-11-10-1`: the same recipe, trained on `train.jsonl` plus 88 benign real web pages from shadow week 2, reviewed in two rounds (the second round: the 68 pages `cd-2026-10-27-1` still declined, all benign). Its injection drop point is the first chosen recall-first (SEC-028a): 75, where the old rule gave 49. Gate: injection recall 0.957, benign-page false positives 0.009, harm recall 0.931. Thresholds: injection drop 75 (watch 37), jailbreak verify 20, consent 91; harm unchanged at 20 and 98. Held-out real pages (884, main content fetched again; the reviewed ones weighted back to the week's mix, since they were picked for being declined): declines 9.6% with `cd-2026-10-27-1`, 4.1% with this model.
+
+### Earlier: `cd-2026-10-27-1` (2026-10-27, not released)
 
 `cd-2026-10-27-1`: `cd-2026-10-13-2`'s recipe (same seed), trained on `train.jsonl` plus 47 benign real web pages from shadow week 2. Their text is third-party, so it stays in the git-ignored `data/security/local/` (`scripts/import_reviewed_pages.py`, task 5.3). Its gate numbers match `-13-2`'s: injection recall 0.970, benign-page false positives 0.014, harm recall 0.936. New thresholds: injection drop 70 (watch 35), jailbreak verify 37, consent 95; harm unchanged at 20 and 98. On 887 held-out real pages, declines fell from 11.3% to 7.7%. A control run without the pages reproduced `-13-2` exactly, so the pages caused the drop. The ethics demo document still scores 98.
 
