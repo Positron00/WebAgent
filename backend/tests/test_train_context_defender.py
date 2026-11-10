@@ -6,6 +6,7 @@ from pathlib import Path
 
 import joblib
 import numpy as np
+import pytest
 
 from tests.fakes.triage import HashEncoder
 
@@ -249,6 +250,32 @@ def test_wilson_upper_bound():
     assert train_cd.wilson_upper(0, 0) == 1.0
     assert 0.015 < train_cd.wilson_upper(0, 169) < 0.017  # zero false positives in 169 still allows ~1.6%
     assert train_cd.wilson_upper(0, 1000) < 0.003
+
+
+def test_wilson_lower_bound():
+    assert train_cd.wilson_lower(0, 0) == 0.0
+    assert 0.965 < train_cd.wilson_lower(980, 1000) < 0.975
+    assert train_cd.wilson_lower(950, 1000) < 0.95  # a point estimate at the target doesn't meet it
+
+
+@pytest.mark.parametrize("high, low_score, expected, rule", [
+    (980, 0.50, 90, "upper confidence bound, recall first"),  # 98% at 90: the highest score meeting 95%
+    (900, 0.50, 50, "upper confidence bound, recall first"),  # 90% at 90 is short; all 1,000 at 50
+    (500, 0.10, 30, "upper confidence bound"),  # never 95%: falls back to the lowest passing score
+])
+def test_injection_drop_is_the_highest_score_meeting_the_recall_target(high, low_score, expected, rule):
+    rows, inj = [], []
+    for i in range(500):  # benign pages, all low: every score in 30..95 passes the false-positive bound
+        rows.append(_row(f"p{i}", "web_result", origin="wildchat:assistant"))
+        inj.append(0.1)
+    for i in range(1000):  # injections: `high` of them at 0.90, the rest at `low_score`
+        rows.append(_row(f"i{i}", "web_result", axis="injection", origin="bipia:email"))
+        inj.append(0.90 if i < high else low_score)
+    scores = {a: np.zeros(len(rows)) for a in security_data.AXES}
+    scores["injection"] = np.array(inj)
+    chosen, report = train_cd.select_thresholds(rows, scores)
+    assert chosen["injection_drop_at"] == expected
+    assert report["injection_drop_at"]["rule"] == rule
 
 
 def test_acting_thresholds_use_the_confidence_bound():
