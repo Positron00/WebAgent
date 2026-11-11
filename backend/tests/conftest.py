@@ -90,6 +90,24 @@ def _isolate_triage(request, tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _drain_judge_pool(monkeypatch):
+    """Each test gets its own guard-judge pool, drained before the test's settings are restored.
+
+    A judge call that outlived its test (it times out after JUDGE_TIMEOUT_SEC but the thread runs
+    on) used to finish after the data folder was restored and write a drift sample into the real
+    `data/drift/`.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    from app.security import judge
+
+    pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="guard-judge")
+    monkeypatch.setattr(judge, "_pool", pool)
+    yield
+    pool.shutdown(wait=True)
+
+
+@pytest.fixture(autouse=True)
 def _isolate_rate_limit(monkeypatch):
     """Each test starts with an empty rate-limit bucket, so suites don't 429 each other by order."""
     from app.core import security

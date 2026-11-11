@@ -77,6 +77,7 @@ backend/data/security/collected/
 backend/data/security/escalations/
 backend/data/security/tokens/
 backend/data/security/local/
+backend/data/drift/
 # Gated and no-train rows for the checkpoint 2 classifier: never committed (the repository is public).
 backend/data/security/alignment/local/
 backend/demos/logs/

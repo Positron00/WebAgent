@@ -82,7 +82,7 @@ Phase B: about 40 h, plus the generation run.
 | ID | Task | Covers | Depends | Done when | Est. |
 |---|---|---|---|---|---|
 | C2 | Red-team suite: plan-check and egress cases from approved data; benign suite re-run | SEC-131, SNFR-03, SNFR-04 | A13 | Both suites pass with the rule set to act in a test configuration | 4 h |
-| C1 | For each rule, in order (`private-egress-decline`, `call-risk-above-intent-decline`, `off-intent-search-verify`, `subgoal-harm-decline`, then the rest): threshold from shadow data or the gate, shadow false-positive rate on reviewed tasks within target, remove `@shadow`, release | SEC-130 | Shadow week, B10 (for model-based thresholds), C2 | The rule acts with `tool_mode: act`; its measurement in the PR | 2 h per rule |
+| C1 | For each rule, in order (`private-egress-decline`, `call-risk-above-intent-decline`, `off-intent-search-verify`, `subgoal-harm-decline`, then the rest): threshold from shadow data or the gate, shadow false-positive rate on reviewed tasks within target, remove `@shadow`, release | SEC-130, SNFR-19 | Shadow week, B10 (for model-based thresholds), C2 | The rule acts with `tool_mode: act`; its measurement in the PR | 2 h per rule |
 
 ## Requirement coverage
 

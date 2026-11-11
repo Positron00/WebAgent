@@ -43,7 +43,7 @@ Total for phases 0–3 and 5: about 13 working days (8 h each), plus the shadow 
 | 1.5 | `build_model_input` in `app/services/triage.py` (only this function for now) | REQ-014 | — | pytest: short follow-up joins, long one doesn't, truncation | 1 h |
 | 1.6 | `backend/scripts/triage_data.py` (`load_rows`) and `backend/scripts/train_triage.py`: load, split, embed, fit, pick the highest threshold that meets recall (≤ 0.5), centroids, write `classifier.joblib` + `metadata.json` | REQ-022 | 1.5 | Smoke test with a fake encoder and 20 rows; real run < 2 min | 4 h |
 | 1.7 | `backend/scripts/eval_triage.py`: metrics, per-category confusion, worst errors, exit code, `--check-data` (incl. near-duplicates), `--write-metadata` | REQ-020, 021, 023 | 1.6 | Exit code test with a fake model above and below target | 3 h |
-| 1.8 | Train v1 (`triage-2026-10-a`), run the gate, commit artifacts | NFR-04 | 1.3, 1.4, 1.7 | Gate passes, or the gap is written down with a plan (more data, or SetFit early) | 2 h |
+| 1.8 | Train v1 (`triage-2026-10-a`), run the gate, commit artifacts | NFR-04, REQ-023 | 1.3, 1.4, 1.7 | Gate passes, or the gap is written down with a plan (more data, or SetFit early) | 2 h |
 | 1.9 | Time `/api/chat` for 20 routine questions (median, p95); confirm or change the < 10 s target | NFR-02 | — | Numbers in this spec's README and the plan | 1 h |
 | 1.10 | Measure classify latency (p50/p95) and resident memory of one loaded model on CPU | NFR-01, 06 | 1.8 | Numbers recorded; feed task 2.9 | 1 h |
 
@@ -122,7 +122,7 @@ Total for phases 0–3 and 5: about 13 working days (8 h each), plus the shadow 
 | REQ-017 | 2.1, 2.3, 4.4 |
 | REQ-018 | 2.3 |
 | REQ-020 | 1.1–1.4, 1.7 |
-| REQ-021 | 1.1, 1.2, 1.7 |
+| REQ-021 | 1.1, 1.2, 1.7, 1.4 |
 | REQ-022 | 1.6 |
 | REQ-023 | 1.7, 1.8 |
 | REQ-024 | 4.3 |
