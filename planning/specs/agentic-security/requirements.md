@@ -232,7 +232,7 @@ turns rather than the supervisor's rewrite, tainted or not; the text below is ke
 | ID | Requirement | Verify |
 |---|---|---|
 | SNFR-01 | Checkpoint 1 adds < 150 ms p95 per hop (five web results); checkpoint 2 < 20 ms p95 per tool call without the judge | Metric histogram; container run |
-| SNFR-02 | A decision takes < 2 ms p95 | pytest benchmark |
+| SNFR-02 | A decision takes < 2 ms p95 | `test_decision_latency_budget`: p95 < 2 ms with `WEBAGENT_PERF_STRICT=1` (local, before a release); p95 < 10 ms in CI, whose runners are too noisy for 2 ms. Measured 2026-11-10 on the dev Mac: p95 1.6–1.7 ms |
 | SNFR-03 | Red-team suite: zero exfiltrating searches and zero unsafe code executed, and the tasks still finish | Red-team pytest |
 | SNFR-04 | Benign regression: false-decline rate < 0.5% of tasks (triage training questions and 3.0.3 container-run questions) | Benign suite |
 | SNFR-05 | Two workers with triage and ContextDefender fit the 3 GiB Kubernetes limit with 20% headroom (2 GiB until 3.2.5; two workers peaked at 1.81 GiB in the simulated shadow week) | cgroup stats in the container |

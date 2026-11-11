@@ -1,4 +1,5 @@
 """Cedar decision point: load, lint, schema, policy tests, severity (SEC-010–SEC-014)."""
+import os
 import time
 from pathlib import Path
 
@@ -59,11 +60,23 @@ forbid (principal, action, resource) when { context.consented };"""
 
 
 def test_decision_latency_budget():
-    started = time.perf_counter()
-    for _ in range(50):
-        decision.decide("web_research", "converse", "task-1", {"source": "user_turn"})
-    elapsed_ms = (time.perf_counter() - started) * 1000.0
-    assert elapsed_ms / 50 < 50  # generous; spec target ~2 ms
+    """SNFR-02: a decision takes < 2 ms p95.
+
+    The strict 2 ms bound runs with WEBAGENT_PERF_STRICT=1 (locally, before a release); shared CI
+    runners are too noisy for it, so there the bound is 10 ms, which still catches real regressions.
+    Measured 2026-11-10 on the dev Mac: p95 1.6-1.7 ms.
+    """
+    bound_ms = 2.0 if os.getenv("WEBAGENT_PERF_STRICT") == "1" else 10.0
+    for source in ("user_turn", "web"):
+        decision.decide("web_research", "converse", "warm-up", {"source": source})
+        samples = []
+        for i in range(300):
+            started = time.perf_counter()
+            decision.decide("web_research", "converse", f"task-{i}", {"source": source})
+            samples.append((time.perf_counter() - started) * 1000.0)
+        samples.sort()
+        p95 = samples[int(0.95 * len(samples))]
+        assert p95 < bound_ms, f"decide() p95 {p95:.2f} ms for source={source} (bound {bound_ms} ms)"
 
 
 def test_shadow_only_policy_is_recorded_but_never_applied(tmp_path):

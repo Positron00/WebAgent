@@ -36,12 +36,12 @@ Phases 1 and 2 can run in parallel. Total for phases 0–4: about 140 h (≈ 18 
 | ID | Task | Covers | Depends | Done when | Est. |
 |---|---|---|---|---|---|
 | 1.1 | `types.py`; `ledger.py` (hops, taint, counters, `merge`) | SEC-039 | 0.5 | pytest: merge of two ledgers | 3 h |
-| 1.2 | `decision.py`: load, annotation map, lint (incl. SEC-052 and no consent for untrusted sources), schema validation, `policy_tests.yaml`, `decide()` with defaults and severity; `policies.cedar` with the 15 starting policies and their test rows | SEC-010–SEC-014, SEC-052 | 0.1 | `test_security_decision.py` passes; a broken policy fails loading | 5 h |
+| 1.2 | `decision.py`: load, annotation map, lint (incl. SEC-052 and no consent for untrusted sources), schema validation, `policy_tests.yaml`, `decide()` with defaults and severity; `policies.cedar` with the 15 starting policies and their test rows | SEC-010–SEC-014, SEC-052, SEC-061, SNFR-02 | 0.1 | `test_security_decision.py` passes; a broken policy fails loading | 5 h |
 | 1.3 | `patterns.py` + `config/security/patterns.json`: the full `pattern_hits` vocabulary (context-item and tool-argument patterns), with the user-turn exception for tool arguments | SEC-021 (tool part), SEC-041 | — | `test_security_patterns.py` table passes | 3 h |
 | 1.4 | `code_checks.py` | SEC-043 | — | `test_security_code_checks.py` table passes | 3 h |
 | 1.5 | `alignment.py` with the base MiniLM (shared loader that ContextDefender reuses in phase 2) | SEC-044 | — | pytest: on-task query high, exfiltrating query low | 2 h |
-| 1.6 | `tool_guard.py` and the hooks at every call site (3 searches, 2 retrievals, document load, every code execution attempt); shadow mode; decline counter; document provenance | SEC-040, SEC-042, SEC-046, SEC-047, SEC-062 | 1.1–1.5 | `test_security_tool_guard.py` passes, including "tool not called after decline" in act mode | 5 h |
-| 1.7 | Metrics, decision log lines, the tool parts of the `security` block on results | SEC-080, SEC-081, SEC-082 | 1.6 | pytest reads the registry; `caplog` shows no text outside dev | 3 h |
+| 1.6 | `tool_guard.py` and the hooks at every call site (3 searches, 2 retrievals, document load, every code execution attempt); shadow mode; decline counter; document provenance | SEC-040, SEC-042, SEC-046, SEC-047, SEC-062, SEC-061 | 1.1–1.5 | `test_security_tool_guard.py` passes, including "tool not called after decline" in act mode | 5 h |
+| 1.7 | Metrics, decision log lines, the tool parts of the `security` block on results | SEC-080, SEC-081, SEC-082, SNFR-09 | 1.6 | pytest reads the registry; `caplog` shows no text outside dev | 3 h |
 | 1.8 | `records.py`: escalation queue, collection, daily cleanup; `.gitignore` entries | SEC-060, SEC-064 | 1.6 | `test_security_records.py` passes | 3 h |
 | 1.9 | Startup check for policies; Dockerfile bakes the base MiniLM into `/opt/models` again (ContextDefender and alignment need it) | SEC-014, SEC-065 | 1.2 | uat/prod refuse to start with a broken policy file; image size recorded | 2 h |
 | 1.10 | Red-team cases for exfiltrating searches and network code; benign regression through checkpoint 2 (in act mode inside the test) | SNFR-03, SNFR-04 | 0.4, 1.6 | Zero exfiltrating searches and zero network code executed; benign false declines < 0.5% | 3 h |
@@ -55,14 +55,14 @@ Phases 1 and 2 can run in parallel. Total for phases 0–4: about 140 h (≈ 18 
 | 2.3 | Held-out `test.jsonl` and `probe.jsonl`, split by near-duplicate cluster, with one source held out for each (BIPIA for test, treycsa for probe); `--check-data` with `REQUIRED_CELLS` | SEC-027 | 2.2 | `eval_context_defender.py --check-data` passes (no near-copies ≥ 0.9) | 4 h |
 | 2.4 | `scripts/security_data.py`, `scripts/train_context_defender.py`: router, chunker, featurizers, optional encoder fine-tuning, hard-negative weights, heads, calibration, per-axis thresholds | SEC-022, SEC-023, SEC-024, SEC-028a | 2.2 | Training smoke test with a fake encoder; real run < 5 min | 6 h |
 | 2.5 | `scripts/eval_context_defender.py`: per-axis and per-source metrics, ECE, the gate, `--write-metadata` | SEC-024, SEC-028 | 2.4 | Exit-code test above and below the targets | 4 h |
-| 2.6 | `context_defender.py` runtime: lazy load with back-off, warm-up, cache, pooling, `threat_risk` with `source_weights.yaml`, context-item patterns first, `scores_available` | SEC-020, SEC-021, SEC-025, SEC-026 | 2.4, 1.3 | `test_context_defender.py` passes | 5 h |
+| 2.6 | `context_defender.py` runtime: lazy load with back-off, warm-up, cache, pooling, `threat_risk` with `source_weights.yaml`, context-item patterns first, `scores_available` | SEC-020, SEC-021, SEC-025, SEC-026, SEC-061 | 2.4, 1.3 | `test_context_defender.py` passes | 5 h |
 | 2.7 | Train v1, run the gate and the probe set, commit artifacts; measure p95 latency per hop and memory per worker | SEC-028, SNFR-01, SNFR-05, SNFR-06 | 2.3, 2.5, 2.6 | Gate passes, or the gap is written down with a plan; numbers recorded in the spec README | 3 h |
 
 ## Phase 3: checkpoint 1, shadow (~4–5 d; 32 h)
 
 | ID | Task | Covers | Depends | Done when | Est. |
 |---|---|---|---|---|---|
-| 3.1 | `hop_guard.check_hop`: per-item decisions, outcomes by source, chunk dropping, taint rules, images, `CURRENT_HOP` | SEC-031, SEC-035, SEC-036, SEC-037, SEC-038 | 1.1, 1.2, 2.6 | `test_security_hop_guard.py` passes | 6 h |
+| 3.1 | `hop_guard.check_hop`: per-item decisions, outcomes by source, chunk dropping, taint rules, images, `CURRENT_HOP` | SEC-031, SEC-035, SEC-036, SEC-037, SEC-038, SEC-061 | 1.1, 1.2, 2.6 | `test_security_hop_guard.py` passes | 6 h |
 | 3.2 | Per-agent integration: labelled items and `check_hop` in the supervisor (and `answer_directly`), web research, internal research, senior research, document extraction, coding assistant, coding review (execution output as `tool_output`), data analysis, team manager; `register_template` for each prompt | SEC-030, SEC-031 | 3.1, 0.2 | pytest per agent: a flagged chunk is absent from the formatted prompt; templates aren't scored | 8 h |
 | 3.3 | `GuardedModel` safety net and `webagent_guard_unlabelled_total` | SEC-032 | 3.1 | pytest: a call without `check_hop` is scored as `unlabelled` and counted | 3 h |
 | 3.4 | Merge security ledgers after `run_research_agents` | SEC-039 | 1.1, 3.2 | pytest with two fake parallel agents | 1 h |
@@ -79,9 +79,9 @@ Phases 1 and 2 can run in parallel. Total for phases 0–4: about 140 h (≈ 18 
 
 | ID | Task | Covers | Depends | Done when | Est. |
 |---|---|---|---|---|---|
-| 4.1 | `tokens.py`: issue, redeem, `TokenStore` with `O_EXCL` claims, cleanup | SEC-050, SEC-051, SEC-053 | 0.5 | `test_security_tokens.py` passes (two stores on one folder) | 4 h |
+| 4.1 | `tokens.py`: issue, redeem, `TokenStore` with `O_EXCL` claims, cleanup | SEC-050, SEC-051, SEC-053, SEC-061 | 0.5 | `test_security_tokens.py` passes (two stores on one folder) | 4 h |
 | 4.2 | `/api/task`: 409/403 answers, `consent_token` and `approval_tokens`, `approvals` in results, escalation fails the task with `error_code: "escalated"` | SEC-033, SEC-046, SEC-050, SEC-051 | 4.1, 3.5 | `test_task_guard.py` passes end to end | 3 h |
-| 4.3 | `judge.py` with `get_trusted_llm()`, timeout, cache, metric; user-turn judge for the harm and jailbreak verify bands | SEC-045, SEC-035a | 0.3, 1.6 | pytest with a fake LLM: aligned, not aligned, timeout | 3 h |
+| 4.3 | `judge.py` with `get_trusted_llm()`, timeout, cache, metric; user-turn judge for the harm and jailbreak verify bands | SEC-045, SEC-035a, SEC-061 | 0.3, 1.6 | pytest with a fake LLM: aligned, not aligned, timeout | 3 h |
 | 4.4 | Web types; `apiClient`: guard refusals final (no fallback), tokens in requests, `security` on responses | SEC-092, SEC-093, SEC-094 | 4.2 | `apiClient.guard.test.ts` passes | 3 h |
 | 4.5 | `ChatContext` consent, refusal and approval flows; `ConsentDialog`; `SecuritySummary`; `MessageList` wiring | SEC-092, SEC-093, SEC-094 | 4.4 | `ChatContext.guard.test.tsx` and component tests pass; manual keyboard check of the dialog | 6 h |
 | 4.6 | Switch `input_mode` and `tool_mode` to `act` with the thresholds from the shadow week | SEC-062 | Shadow week, 4.1–4.5 | Config merged; policy tests updated | 2 h |
