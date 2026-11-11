@@ -79,6 +79,8 @@ agents:
     model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.1
     max_documents: 20
+    min_relevance: -5.0          # reranker score below which a retrieved chunk is dropped
+    seed_sample_documents: true  # demo documents into an empty knowledge base
   senior_research:
     model: "meta-models/Muse-Glimmer-30B"
     temperature: 0.2

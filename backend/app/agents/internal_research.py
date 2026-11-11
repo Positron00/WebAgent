@@ -368,7 +368,11 @@ class RAGRetriever:
             except Exception as e:
                 logger.warning(f"Failed to verify vector database contents: {str(e)}")
         
-        # Vector DB is empty or verification failed, need to generate and ingest documents
+        # Vector DB is empty or verification failed. Sample documents are demo content: outside dev
+        # they were retrieved in unrelated tasks and dropped by the guard, so they are opt-in.
+        if not get_agents_config().internal_research.seed_sample_documents:
+            logger.info("Vector database appears empty; sample documents are not seeded (seed_sample_documents is off)")
+            return False
         logger.info("Vector database appears empty. Generating and ingesting documents.")
         
         # Continue with the existing document ingestion process
@@ -591,6 +595,15 @@ class RAGRetriever:
             if TRACKING_ENABLED:
                 task_tracking.log_metric("retrieval_error", 1)
             return []
+
+
+def filter_by_relevance(documents: List[Dict], min_relevance: float) -> List[Dict]:
+    """Drop reranked chunks scoring below min_relevance, so a knowledge base with nothing on the
+    question adds nothing to the prompt (and nothing for the guard to decline)."""
+    kept = [doc for doc in documents if doc.get("score", float("-inf")) >= min_relevance]
+    if len(kept) < len(documents):
+        logger.info(f"Dropped {len(documents) - len(kept)} of {len(documents)} documents below relevance {min_relevance}")
+    return kept
 
 
 class RAGReranker:
@@ -1110,17 +1123,19 @@ class InternalResearchAgent(BaseAgent):
             # Get rerank_top_n configuration
             rerank_top_n = self.config.get("rerank_top_n", 5)
             
-            # 2. Rerank documents if we have more than rerank_top_n documents
-            if len(retrieved_documents) <= rerank_top_n:
-                logger.info(f"Skipping reranking as we have fewer than {rerank_top_n} documents")
-                reranked_documents = retrieved_documents
-            else:
-                logger.info("Reranking retrieved documents")
-                reranked_documents = await self.reranker.rerank(
-                    query=search_query,
-                    documents=retrieved_documents,
-                    top_n=rerank_top_n
+            # 2. Rerank, even a short list: the scores decide relevance, so nothing skips them
+            logger.info("Reranking retrieved documents")
+            reranked_documents = await self.reranker.rerank(
+                query=search_query,
+                documents=retrieved_documents,
+                top_n=rerank_top_n
+            )
+            if self.reranker.initialized:
+                reranked_documents = filter_by_relevance(
+                    reranked_documents, get_agents_config().internal_research.min_relevance
                 )
+            else:
+                logger.warning("Reranker unavailable: retrieved documents are not filtered by relevance")
             
             # Format internal documents for the prompt
             formatted_docs = self._format_internal_documents(reranked_documents)

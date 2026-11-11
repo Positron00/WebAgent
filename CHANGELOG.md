@@ -2,6 +2,17 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
+## 3.14.1 - 2026-11-10
+
+Internal research stops sending unrelated documents to the model. In shadow week 2 the built-in ethics demo document was retrieved for unrelated questions, and the guard would have dropped it 8 times.
+
+**Upgrade notes.**
+- Rebuild the backend image (`APP_VERSION=3.14.1`).
+- **uat and prod no longer seed the sample documents** into an empty knowledge base (`agents.internal_research.seed_sample_documents`, true only in dev). A knowledge base that already holds them keeps them; the relevance cutoff keeps them out of unrelated tasks.
+
+### Changed
+- **Relevance cutoff for internal research** (`agents.internal_research.min_relevance`, default -5.0, the cross-encoder reranker's score). Chunks below it are dropped, and a question with nothing relevant gets "no relevant documents" instead of whatever the knowledge base holds. Every retrieved list is now reranked; before, five chunks or fewer skipped reranking and went to the model unscored. On shadow week 2's 113 public questions, no sample-document chunk scored above -7.6, while 14 of 15 questions the sample documents answer scored -3.9 or more. The one missed was a vague "summarize the internal financial report".
+
 ## 3.14.0 - 2026-11-10
 
 Fixes from the review of shadow week 2 (runbook section 10), a ContextDefender retrained on two rounds of reviewed real pages, and a recall-first injection drop point. The guard stays in shadow mode, so the new model changes what is recorded, not what is allowed. The RL generator tooling on `release/3.14.0` will ship as 3.15.0.
