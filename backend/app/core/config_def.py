@@ -108,6 +108,12 @@ class WebResearchAgentConfig(AgentConfig):
 class InternalResearchAgentConfig(AgentConfig):
     """Internal research agent configuration."""
     max_documents: int = Field(default=20, gt=0)
+    # Reranker (ms-marco cross-encoder) score below which a retrieved chunk is dropped. On shadow
+    # week 2's 113 public questions no sample-document chunk scored above -7.6; 14 of 15 questions
+    # those documents answer scored -3.9 or more.
+    min_relevance: float = -5.0
+    # Write the built-in sample documents into an empty knowledge base (demo only).
+    seed_sample_documents: bool = False
 
 
 class SeniorResearchAgentConfig(AgentConfig):

@@ -223,7 +223,7 @@ keys present in YAML, because `AgentsConfig` is built from the parsed file.
 - **Web research.** Count `perform_web_search` calls in one pass; stop when the count
   reaches `agents.web_research.max_searches_per_task` (default 5; prod 10). Today a pass
   makes at most 3, so the cap changes nothing until someone lowers it.
-- **Internal research.** `k = min(<current k>, agents.internal_research.max_documents)`
+- **Internal research.** `k = min(<current k>, agents.internal_research.max_documents)`; after reranking (always, even for a list no longer than `rerank_top_n`), `filter_by_relevance` keeps chunks with a score ≥ `min_relevance`; an empty knowledge base is seeded with the sample documents only when `seed_sample_documents` is true
   at the two `retrieve_documents` calls (`internal_research.py:1117`, `:1138`). The cap
   is an upper bound, so prod's 50 doesn't raise today's 20.
 - **Remove** any `AgentConfig` field still unused afterwards from `config_def.py` and all
