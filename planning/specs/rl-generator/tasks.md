@@ -1,6 +1,6 @@
 # Tasks: an RL generator of hard training rows for checkpoint 2
 
-Status (2026-10-23): committed on `release/3.14.0` (pushed; not merged): **G1, G3, G4, G5, G8, G10
+Status (2026-10-23; branch renamed 2026-11-13): committed on `release/3.15.0` (pushed; not merged): **G1, G3, G4, G5, G8, G10
 built and tested; G2 built, waiting for the user to agree the four prompts; G9's notebook
 built, its Colab pilot not run.** Next: G6 (judge choice: needs candidate models, prices and the
 user's labels), G7 (needs O2), G9's pilot (Colab), G11 (release, when the user asks). O1 is

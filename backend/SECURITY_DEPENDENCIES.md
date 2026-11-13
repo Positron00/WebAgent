@@ -6,7 +6,7 @@ advisories below stay open because the fix needs the package's next major versio
 own migration. None of them is reachable in WebAgent, for the reason given. Review this list when
 any of these packages moves to a new major version, and remove an entry once its fix ships.
 
-Training-only pins (since 3.14.0): `backend/requirements-train.txt` (trl, peft, accelerate, datasets,
+Training-only pins (since 3.15.0): `backend/requirements-train.txt` (trl, peft, accelerate, datasets,
 fsspec, pyarrow) is audited on its own in CI (`pip-audit -r backend/requirements-train.txt`), with no
 accepted advisories. It is never installed in the image. The training environment (Colab) uses fsspec
 2026.6.0 instead of `constraints.txt`'s 2026.9.0, because datasets 5.0.1 needs fsspec <= 2026.6.0; both

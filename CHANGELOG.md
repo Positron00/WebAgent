@@ -2,7 +2,7 @@
 
 All notable changes to the WebAgent Platform will be documented in this file.
 
-## 3.14.0 - Unreleased
+## 3.15.0 - Unreleased
 
 Tooling for an RL generator of benign hard training rows for the checkpoint 2 classifier (R0 of `planning/rl-plan.md`; spec `planning/specs/rl-generator/`). Nothing the server runs changes: no change under `backend/app/` or `backend/config/`, and the image differs only by the pypdf security fix.
 
@@ -24,6 +24,42 @@ Tooling for an RL generator of benign hard training rows for the checkpoint 2 cl
   - Generated rows are never in the calibration fold. With no generated rows the fold is identical to before: the same rows in the same order. A `none` variant of the current build reproduced `ac-2026-10-17-1`'s gate numbers exactly.
   - New `--seed` option (default 13). `metadata.json` records `train_seed` and the variant.
 - `eval_alignment_model.py`: reports metrics by role (training sources vs evaluation-only sources) and on held-out generated sets (`--extra`), as a report only. The gate's checks are unchanged.
+
+## 3.14.1 - 2026-11-10
+
+Internal research stops sending unrelated documents to the model. In shadow week 2 the built-in ethics demo document was retrieved for unrelated questions, and the guard would have dropped it 8 times.
+
+**Upgrade notes.**
+- Rebuild the backend image (`APP_VERSION=3.14.1`).
+- **uat and prod no longer seed the sample documents** into an empty knowledge base (`agents.internal_research.seed_sample_documents`, true only in dev). A knowledge base that already holds them keeps them; the relevance cutoff keeps them out of unrelated tasks.
+
+### Changed
+- **Relevance cutoff for internal research** (`agents.internal_research.min_relevance`, default -5.0, the cross-encoder reranker's score). Chunks below it are dropped, and a question with nothing relevant gets "no relevant documents" instead of whatever the knowledge base holds. Every retrieved list is now reranked; before, five chunks or fewer skipped reranking and went to the model unscored. On shadow week 2's 113 public questions, no sample-document chunk scored above -7.6, while 14 of 15 questions the sample documents answer scored -3.9 or more. The one missed was a vague "summarize the internal financial report".
+
+## 3.14.0 - 2026-11-10
+
+Fixes from the review of shadow week 2 (runbook section 10), a ContextDefender retrained on two rounds of reviewed real pages, and a recall-first injection drop point. The guard stays in shadow mode, so the new model changes what is recorded, not what is allowed. The RL generator tooling on `release/3.14.0` will ship as 3.15.0.
+
+**Upgrade notes.**
+- Rebuild the backend image (`APP_VERSION=3.14.0`) and run `git lfs pull` for the model.
+- **New ContextDefender `cd-2026-11-10-1`** (`backend/models/security/`, Git LFS: run `git lfs pull`). Its thresholds changed: injection drop 57 → 75, watch 28 → 37, jailbreak verify 26 → 20, consent 96 → 91. Harm's are unchanged.
+- **The injection drop point is now chosen recall-first** (SEC-028a). See Changed.
+- **`hidden_text` no longer fires on a single zero-width character.** In shadow week 2, one such character made the guard decline 20 benign items on its own. Ordinary sites carry them in emoji, right-to-left marks and byte-order marks. The pattern now needs a run of four, or eight packed between letters. It also catches invisible Unicode tag characters, which it missed before.
+- **uat turns the harm judge on** (`security_guard.judge: true`). The next shadow period records the judge's verdict on user turns in the harm verify band. It sends those turns to OpenAI's moderation endpoint, so uat needs `OPENAI_API_KEY`. Dev and prod are unchanged.
+
+### Added
+- **`backend/scripts/label_pages.py`**: a local labelling page for a review sheet. It shows the chunks of each page the guard scored, highest injection score first, and writes Benign, Malicious (`injection`) or Skip straight into the sheet. Localhost only; page text is never saved.
+- **`backend/scripts/import_reviewed_pages.py`** (task 5.3, reviewed import). It turns a labelled shadow week into ContextDefender rows. Each web page is fetched again and its main content taken, with trafilatura when it is installed. Pages a reviewer marked benign are split about two thirds train and one third test. All other pages of the week are test only. `--labels` takes several sheets. The page text is third-party content and goes to the git-ignored `backend/data/security/local/`.
+- `eval_context_defender.py --real-pages <file>`: share of held-out real web pages the injection-drop policy would decline (score or pattern) and watch, by origin. Reported, not gated.
+
+### Changed
+- **ContextDefender `cd-2026-11-10-1`**: `cd-2026-10-13-2`'s recipe and seed, plus 88 reviewed benign pages from shadow week 2, weighted as hard negatives on injection (`shadow:web_reviewed`). The pages were reviewed in two rounds; the second round was the pages a first retrain (`cd-2026-10-27-1`, never released) still declined. Gate passed: injection recall 0.957, benign-page false positives 0.009, harm recall 0.931. On 884 held-out real pages of the week, weighted back to the week's mix, declines fell from 9.6% (`cd-2026-10-27-1`) to 4.1%. A control run without the pages reproduced the old model exactly. `metadata.json` records the local rows.
+- **Injection drop point chosen recall-first** (`train_context_defender.py`, SEC-028a). Among the scores that pass the false-positive bound, it is now the highest whose held-out recall still meets the gate's 95% by the lower confidence bound, instead of the lowest. The lowest spent all the room on recall above the target, and cost real pages that the held-out rows, almost all curated data, don't show: for this model it gave 49 and about 8% of real pages declined. Harm and jailbreak keep the old rule, since their borderline turns go to the judge. Expect injection recall on the gate close to 0.95 from now on.
+- **`hidden_text` pattern** (`config/security/patterns.json`, both copies): see the upgrade notes. On 1,019 pages of the week fetched again, hits fell from 30 to 3.
+
+### Fixed
+- **Coding review's code cleaner** read `.content` from the model's reply, but Together's completion models return a string. Every cleaning failed with `'str' object has no attribute 'content'` and fell back to the original code. In shadow week 2, the guard declined all 8 of the resulting tool outputs.
+- **Shadow-week report**: "no unlabelled LLM calls" showed "needs --prometheus" even with `--prometheus`. The counter has no series until its first increment, so a clean week returned nothing. An empty answer now counts as 0. Latency checks without data now say "no data in Prometheus for the week".
 
 ## 3.13.2 - 2026-11-09
 

@@ -1,6 +1,6 @@
 # Spec: an RL generator of hard training rows for checkpoint 2
 
-Status: v3, R0 tooling committed on `release/3.14.0` (pushed, not merged or released), 2026-10-23 ·
+Status: v3, R0 tooling committed (2026-10-23) on `release/3.15.0` (first `release/3.14.0`; renumbered 2026-11-13 because main released 3.14.0 and 3.14.1), not merged or released ·
 Source plan:
 [`planning/rl-plan.md`](../../rl-plan.md) (v5) · Extends:
 [`../checkpoint2-intent/`](../checkpoint2-intent/README.md) (the classifier: SEC-120 – SEC-128;
@@ -108,9 +108,9 @@ Made while writing this spec (the plan follows them):
 | 34,538 real train rows today (31,085 after the calibration fold); 17,206 seed candidates (ASQ 5,512, `webagent-gen` 4,809, ToolACE 3,209, saroku 2,013, Glaive 1,663) | current build | Share and seed numbers in the designs |
 | `generate_alignment_calls.py` runs the supervisor; its cost estimate and stop rule are reusable, the rest isn't | `generate_alignment_calls.py` | New `rl_generator/prompted.py` imports the helpers |
 
-## Implementation notes (3.14.0, unreleased)
+## Implementation notes (3.15.0, unreleased)
 
-Built in the `~/webagent-dev` worktree and committed on `release/3.14.0`. Tests: the full backend suite passes
+Built in the `~/webagent-dev` worktree and committed on `release/3.14.0`, now `release/3.15.0`. Tests: the full backend suite passes
 (1,400 passed, 4 skipped); the generator tests also pass with TRL 1.14.2 in a scratch venv (123).
 R4 (G18–G21: `build_research_eval.py`, `score_research_run.py`) isn't built yet; it follows R2.
 

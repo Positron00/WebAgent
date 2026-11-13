@@ -7,13 +7,13 @@ Short procedures for production and uat.
 1. Set secrets in your environment or secret store: `WEBAGENT_SECURITY_SECRET_KEY`, `WEBAGENT_API_KEY`, provider keys (`TOGETHER_API_KEY`, `TAVILY_API_KEY`, …), and `GRAFANA_ADMIN_PASSWORD` for monitoring.
 2. Build and push the image (`git lfs pull` first: the encoders are LFS files):
    ```bash
-   docker build --build-arg APP_VERSION=3.13.2 -t <registry>/webagent-backend:3.13.2 backend/
-   docker push <registry>/webagent-backend:3.13.2
+   docker build --build-arg APP_VERSION=3.14.1 -t <registry>/webagent-backend:3.14.1 backend/
+   docker push <registry>/webagent-backend:3.14.1
    ```
 3. Deploy from `backend/kubernetes/` (`-e` is `prod` or `uat`; `-i` is the ingress controller's namespace, used by the NetworkPolicy):
    ```bash
    cd backend/kubernetes
-   ./deploy.sh -e prod -n <ns> -v 3.13.2 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
+   ./deploy.sh -e prod -n <ns> -v 3.14.1 -r <registry>/webagent-backend -H <public host> -i ingress-nginx
    ```
 4. Confirm `kubectl get pods -n <ns>` shows `webagent-backend` ready and `GET /health` returns 200 through the ingress.
 5. Apply monitoring manifests under `backend/kubernetes/monitoring/` if not already applied by `deploy.sh`.
@@ -194,7 +194,7 @@ Since 3.9.0 a model that failed its gate can be installed **shadow-only**
 `webagent_guard_shadow_classifier_risk`, and `shadow_classifier_*` in collection rows) but never
 decide, and uat and prod start with it. 3.9.0 ships the retrained MiniLM-L6 this way (88 MB, LFS:
 `git lfs pull` before building the image). To turn it off, point `security_guard.alignment_model_dir`
-at an empty folder. Since 3.14.0 the gate's report also splits results by role (training sources vs
+at an empty folder. Since 3.15.0 the gate's report also splits results by role (training sources vs
 evaluation-only sources) and can score held-out generated sets (`--extra`); neither changes the
 gate. Nothing new is stored:
 private text is kept only as salted hashes in memory for the task, and outside dev no intent or

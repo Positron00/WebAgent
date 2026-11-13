@@ -1,6 +1,6 @@
 # WebAgent Architecture
 
-How the parts of WebAgent 3.13.2 fit together: the web app, the backend, the research workflow, the security guard, triage, the stores, and observability. Each section names the code that implements it. Feature designs and requirements are in `planning/specs/`.
+How the parts of WebAgent 3.14.1 fit together: the web app, the backend, the research workflow, the security guard, triage, the stores, and observability. Each section names the code that implements it. Feature designs and requirements are in `planning/specs/`.
 
 ## System overview
 
@@ -122,7 +122,7 @@ The web app and the backend are separate processes. The backend is the only thin
 | --- | --- | --- |
 | Supervisor | `supervisor.py` | Plans the research (`models/research_plan.py`: web search, internal knowledge, document extraction) and writes the standalone question and its sub-questions |
 | Web Research | `web_research.py` | Searches the web with Tavily (`services/web_search.py`) and summarises the results with sources |
-| Internal Research | `internal_research.py` | Retrieves from the loaded documents: Chroma vectors plus BM25, merged |
+| Internal Research | `internal_research.py` | Retrieves from the loaded documents: Chroma vectors plus BM25, merged, then reranked with a cross-encoder; chunks scoring below `internal_research.min_relevance` (-5) are dropped, so an unrelated question gets no documents. Sample documents go into an empty knowledge base only with `seed_sample_documents` (dev) |
 | Senior Research | `senior_research.py` | Scores the findings 1–10 and asks follow-up questions for another round, at most `agents.senior_research.max_follow_up_questions` times (3 in dev and uat, 5 in prod) |
 | Document Extraction | `document_extraction_agent.py` | Extracts from one document (`document_id`) when that's all the plan needs |
 | Team Manager | `team_manager.py` | Writes the final report; calls Data Analysis or the Coding Assistant when the question needs it |
@@ -147,7 +147,7 @@ The guard puts two checkpoints in the path of every task. Both ask the same in-p
 
 - **Checkpoint 1, before every model call (`context_defender.py`, `guard.py`):**
   - Every context item is scored on four axes: the user's turn, earlier turns, web pages, documents, code output.
-  - The axes are **injection**, **harm**, **sensitive data** and **jailbreak**. ContextDefender scores them: a MiniLM-L12 classifier, `models/security/` version `cd-2026-10-13-2`, which passed its release gate.
+  - The axes are **injection**, **harm**, **sensitive data** and **jailbreak**. ContextDefender scores them: a MiniLM-L12 classifier, `models/security/` version `cd-2026-11-10-1`, which passed its release gate.
   - A flagged web page chunk is dropped and the task becomes **tainted** (`ledger.py`). A risky user turn is declined, sent for consent or verified. A search that would carry a secret is declined, and one carrying personal data is verified.
   - The web app's direct chat uses the same check through `POST /api/guard/input`.
 - **Checkpoint 2, before every tool action and plan subgoal (`tool_guard.py`, `intent.py`, `signals.py`):**
@@ -159,7 +159,7 @@ The guard puts two checkpoints in the path of every task. Both ask the same in-p
     - tools the plan didn't ask for;
     - drift across the task.
   - Acting rules today come from the original policies: on a tainted task, a search goes to verify and code needs consent; dangerous code, a secret in a search, and a document from the wrong source are declined. An action the guard skipped can be approved with the web app's **Approve**, which reruns the task with a signed, single-use approval.
-- **The intent classifier (3.9.0).** A fine-tuned cross-encoder for checkpoint 2, `models/security/alignment/` version `ac-2026-10-17-1`. Since 3.14.0, offline tooling (`scripts/rl_generator/`, not part of the server) can add reviewed benign generated rows to its training data.
+- **The intent classifier (3.9.0).** A fine-tuned cross-encoder for checkpoint 2, `models/security/alignment/` version `ac-2026-10-17-1`. Since 3.15.0, offline tooling (`scripts/rl_generator/`, not part of the server) can add reviewed benign generated rows to its training data.
   - It failed its release gate, so it is installed **shadow-only**: its scores are recorded next to the cosine signals and never decide.
   - A model that passes the gate replaces the cosine signals in the policy context.
 - **Modes:** `input_mode` and `tool_mode` are `shadow` (record what would happen, block nothing) or `act`. Every environment runs in shadow now. The nine checkpoint 2 intent rules are shadow-only whatever the mode, until each one's threshold is measured (`planning/specs/checkpoint2-intent/`).

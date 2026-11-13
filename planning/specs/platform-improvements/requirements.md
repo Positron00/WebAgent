@@ -154,6 +154,9 @@ without touching the disk.
   that agent; otherwise the global `llm.temperature` stays.
 - `web_research.max_searches_per_task` caps the searches one web research pass makes.
 - `internal_research.max_documents` caps the documents internal research retrieves.
+- `internal_research.min_relevance` (default -5.0, the reranker's score) drops retrieved chunks below it; every
+  retrieved list is reranked, however short. `internal_research.seed_sample_documents` (true in dev only)
+  writes the built-in sample documents into an empty knowledge base (added 2026-11-10).
 - Any per-agent key that is still unused after this change is removed from
   `config_def.py` and the YAML files.
 - Check: pytest, for each YAML file: build each agent and compare its loop limit,

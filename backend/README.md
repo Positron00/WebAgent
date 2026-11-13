@@ -271,7 +271,7 @@ Ship a version only if the gate passes: research recall ≥ 95% and routine ques
 
 ## RL generator of training rows (training only)
 
-Since 3.14.0, `scripts/rl_generator/` makes benign hard rows for the checkpoint 2 classifier. It doesn't
+Since 3.15.0, `scripts/rl_generator/` makes benign hard rows for the checkpoint 2 classifier. It doesn't
 change anything the server runs. Rows are written by Qwen2.5 (prompted, or trained with GRPO on Colab),
 kept only if ContextDefender finds them harmless, a Together judge confirms the label and the user's
 review passes. They are added to a copy of the dataset for retraining. Generated, review and variant
@@ -508,7 +508,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md). The project is licensed under MIT.
 The backend includes several services for data management and infrastructure:
 
 - **Vector Database Service**: Manages document storage and retrieval using ChromaDB
-- **Document Ingestion Service**: Handles generation and ingestion of sample documents into the vector database. Provides unified methods for creating and accessing sample documents across the application.
+- **Document Ingestion Service**: Handles generation and ingestion of sample documents into the vector database. Provides unified methods for creating and accessing sample documents across the application. Internal research seeds them into an empty knowledge base only when `agents.internal_research.seed_sample_documents` is true (dev); in uat and prod an empty knowledge base stays empty.
 - **Document Loader Service**: Processes and loads documents into the system
 - **Graph Database Service**: Manages knowledge graph relationships between documents
 - **LLM Service**: Provides access to large language models

@@ -273,12 +273,29 @@ def wilson_upper(hits: int, n: int, z: float = CONFIDENCE_Z) -> float:
     centre = p + z * z / (2 * n)
     spread = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5)
     return min(1.0, (centre + spread) / (1 + z * z / n))
+
+
+def wilson_lower(hits: int, n: int, z: float = CONFIDENCE_Z) -> float:
+    """Lower end of the Wilson score interval for a rate of hits/n (0.0 when n is 0)."""
+    if n == 0:
+        return 0.0
+    p = hits / n
+    centre = p + z * z / (2 * n)
+    spread = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5)
+    return max(0.0, (centre - spread) / (1 + z * z / n))
 # Verify thresholds: the highest score that still sends >= this share of positives to decline or
 # the judge (the gate's recall target plus a margin, since the held-out part is small).
 VERIFY_RULES = (("harm_verify_at", "harm", "harm_decline_at"), ("jailbreak_verify_at", "jailbreak", "jailbreak_consent_at"))
 VERIFY_RECALL = 0.92
 VERIFY_MIN = 20
 THRESHOLD_MARGIN = 0.75  # aim under the gate's false-positive limit, since the held-out part is small
+# Acting thresholds chosen recall-first since 2026-11-10: among the scores that pass the false-positive
+# bound, the highest whose held-out recall still meets the gate's target by the one-sided 95% Wilson
+# lower bound. The lowest passing score spent all the room on recall above the target, and the
+# held-out benign rows are almost all curated data, so it cost real web pages the rule can't see
+# (cd-2026-11-10-1: 49, with about 8% of held-out real pages declined; 5% at 70, recall still 0.958).
+# Falls back to the lowest passing score when no passing score meets the target.
+RECALL_FIRST = {"injection_drop_at": "INJECTION_RECALL"}
 
 
 def _benign(row: dict) -> bool:
@@ -301,7 +318,9 @@ def row_scores(heads, index, features, owners: List[int], n_rows: int) -> Dict[s
 
 def select_thresholds(rows: List[dict], scores: Dict[str, np.ndarray]) -> Tuple[Dict[str, int], Dict[str, Any]]:
     """Lowest score per axis whose false-positive rate on held-out benign rows meets the gate's limit
-    (with a margin), so recall is as high as that limit allows (SEC-028a)."""
+    (with a margin), so recall is as high as that limit allows; for the keys in RECALL_FIRST, the
+    highest such score that still meets the gate's recall target (SEC-028a)."""
+    import eval_context_defender
     from eval_context_defender import HARM_FP, INJECTION_FP, JAILBREAK_FP
 
     limits = {"injection": INJECTION_FP, "harm": HARM_FP, "jailbreak": JAILBREAK_FP}
@@ -311,17 +330,23 @@ def select_thresholds(rows: List[dict], scores: Dict[str, np.ndarray]) -> Tuple[
         ints = np.round(100 * scores[axis]).astype(int)
         benign = [i for i, r in enumerate(rows) if fp_mask(r)]
         positive = [i for i, r in enumerate(rows) if pos_mask(r) and r["labels"][axis] != "none"]
-        pick = hi
+        passing = []
         for t in range(lo, hi + 1):
             hits = sum(ints[i] >= t for i in benign)
-            ok = (wilson_upper(hits, len(benign)) <= limits[axis] if use_bound
-                  else hits / max(1, len(benign)) <= limits[axis] * THRESHOLD_MARGIN)
-            if ok:
-                pick = t
-                break
+            if (wilson_upper(hits, len(benign)) <= limits[axis] if use_bound
+                    else hits / max(1, len(benign)) <= limits[axis] * THRESHOLD_MARGIN):
+                passing.append(t)
+        pick = passing[0] if passing else hi
+        rule = "upper confidence bound" if use_bound else "point estimate with margin"
+        target = getattr(eval_context_defender, RECALL_FIRST[key]) if key in RECALL_FIRST else None
+        if target is not None and positive:
+            enough = [t for t in passing
+                      if wilson_lower(sum(ints[i] >= t for i in positive), len(positive)) >= target]
+            if enough:
+                pick, rule = max(enough), rule + ", recall first"
         chosen[key] = pick
         report[key] = {
-            "rule": "upper confidence bound" if use_bound else "point estimate with margin",
+            "rule": rule,
             "benign_rows": len(benign), "positive_rows": len(positive),
             "fp": round(sum(ints[i] >= pick for i in benign) / max(1, len(benign)), 4),
             "recall": round(sum(ints[i] >= pick for i in positive) / max(1, len(positive)), 4),
